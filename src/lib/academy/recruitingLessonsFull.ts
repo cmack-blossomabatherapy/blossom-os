@@ -23,12 +23,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Candidate pipeline movement, communication, interview scheduling, clean HR handoff. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Candidate pipeline movement, communication, interview scheduling, clean HR handoff. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -51,12 +46,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Not payroll, final HR compliance, clinical credentialing, CentralReach clinical setup, or performance management. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Not payroll, final HR compliance, clinical credentialing, CentralReach clinical setup, or performance management. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -79,12 +69,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Warm, direct, professional. No candidate sits without owner, status, next action, follow-up date. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Warm, direct, professional. No candidate sits without owner, status, next action, follow-up date. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -108,12 +93,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Where candidates live, current status/pipeline fields, and candidate notes. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Where candidates live, current status/pipeline fields, and candidate notes. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -136,12 +116,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Interview links, availability, booking flow. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Interview links, availability, booking flow. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -164,12 +139,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Invites, meeting links, and reminders. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Invites, meeting links, and reminders. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -192,12 +162,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Where current state staffing needs are communicated today. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Where current state staffing needs are communicated today. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -221,12 +186,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Sources and when an application becomes a candidate. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Sources and when an application becomes a candidate. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -249,12 +209,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Application received → screen → interview scheduled/completed → follow-up → offer/handoff → not selected/ghosted. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Application received → screen → interview scheduled/completed → follow-up → offer/handoff → not selected/ghosted. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -277,12 +232,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Every candidate has an owner, status, next action, and follow-up date. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Every candidate has an owner, status, next action, and follow-up date. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -305,12 +255,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Search by name, phone, email before creating a duplicate or duplicate outreach. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Search by name, phone, email before creating a duplicate or duplicate outreach. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -334,12 +279,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Fast, warm, direct, professional, and specific. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Fast, warm, direct, professional, and specific. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -362,12 +302,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "How quickly and how the first contact goes. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "How quickly and how the first contact goes. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -390,12 +325,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Approved wording; when to text vs email. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Approved wording; when to text vs email. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -418,12 +348,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Log attempt, outcome, and next follow-up date every time. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Log attempt, outcome, and next follow-up date every time. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -447,12 +372,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "5–7 questions covering systems, owner/status, communication documentation, next action, scheduling, boundaries. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "5–7 questions covering systems, owner/status, communication documentation, next action, scheduling, boundaries. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -475,12 +395,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Recruiting vs HR vs Clinical vs State leadership. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Recruiting vs HR vs Clinical vs State leadership. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -503,12 +418,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Walk 3 candidate records end to end with mentor. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Walk 3 candidate records end to end with mentor. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -531,12 +441,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "What went well, what to sharpen next week. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "What went well, what to sharpen next week. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -560,12 +465,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Where and how state needs are communicated today. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Where and how state needs are communicated today. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -588,12 +488,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "RBT/BT, BCBA, office, state-support roles. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "RBT/BT, BCBA, office, state-support roles. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -616,12 +511,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Why postings must match the real need. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Why postings must match the real need. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -644,12 +534,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Escalation points for unclear needs. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Escalation points for unclear needs. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -673,12 +558,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "What fields to confirm first. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "What fields to confirm first. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -701,12 +581,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Experience, employment history, notes. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Experience, employment history, notes. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -729,12 +604,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Role-specific requirements. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Role-specific requirements. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -757,12 +627,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "When to escalate before moving forward. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "When to escalate before moving forward. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -786,12 +651,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Why a screen protects both parties. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Why a screen protects both parties. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -814,12 +674,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Identity, role, location, availability, qualifications. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Identity, role, location, availability, qualifications. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -842,12 +697,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "What you can/can't promise on pay/benefits. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "What you can/can't promise on pay/benefits. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -870,12 +720,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Notes specific enough for the next person to act on. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Notes specific enough for the next person to act on. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -899,12 +744,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Booking links and availability. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Booking links and availability. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -927,12 +767,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Correct date/time, candidate info, meeting link, interviewer. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Correct date/time, candidate info, meeting link, interviewer. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -955,12 +790,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Approved wording and timing. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Approved wording and timing. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -983,12 +813,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Document outcome, set next action. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Document outcome, set next action. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1012,12 +837,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Confirm today's needs before advancing candidates. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Confirm today's needs before advancing candidates. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1040,12 +860,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Move forward vs more info vs not selected. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Move forward vs more info vs not selected. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1068,12 +883,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Complete supervised screens. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Complete supervised screens. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1096,12 +906,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Book, verify, remind, document. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Book, verify, remind, document. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1125,12 +930,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Everything ready before the meeting. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Everything ready before the meeting. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1153,12 +953,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "What the interviewer needs to see. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "What the interviewer needs to see. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1181,12 +976,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Move forward, hold, second interview, not selected, offer recommendation. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Move forward, hold, second interview, not selected, offer recommendation. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1209,12 +999,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Set the next action so nothing drifts. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Set the next action so nothing drifts. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1238,12 +1023,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Cadence and content. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Cadence and content. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1266,12 +1046,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Keep Apploi/current tracker current. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Keep Apploi/current tracker current. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1294,12 +1069,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "How to communicate when a decision is pending. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "How to communicate when a decision is pending. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1322,12 +1092,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Approved process and template. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Approved process and template. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1351,12 +1116,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "How many attempts and over what window. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "How many attempts and over what window. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1379,12 +1139,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Missed interview + next action. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Missed interview + next action. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1407,12 +1162,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "When to move a candidate there. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "When to move a candidate there. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1435,12 +1185,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Judgment points before closing. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Judgment points before closing. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1464,12 +1209,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "What triggers an offer recommendation. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "What triggers an offer recommendation. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1492,12 +1232,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "The information HR needs to move. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "The information HR needs to move. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1520,12 +1255,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Recruiting prepares the recommendation; HR owns compliance. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Recruiting prepares the recommendation; HR owns compliance. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1548,12 +1278,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Where and how to route. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Where and how to route. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1577,12 +1302,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "What Recruiting confirms before handoff. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "What Recruiting confirms before handoff. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1605,12 +1325,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "HR owns background checks and employee file requirements. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "HR owns background checks and employee file requirements. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1633,12 +1348,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "What Recruiting supports vs owns. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "What Recruiting supports vs owns. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1661,12 +1371,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Recruiting vs HR ownership in 5 scenarios. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Recruiting vs HR ownership in 5 scenarios. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1690,12 +1395,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "New applicants, overdue follow-ups, reminders, no-shows, post-interviews, offer/handoff items. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "New applicants, overdue follow-ups, reminders, no-shows, post-interviews, offer/handoff items. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1718,12 +1418,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "What to work first. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "What to work first. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1746,12 +1441,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Keep every required system aligned. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Keep every required system aligned. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1774,12 +1464,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "No candidate closes the day without a next step. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "No candidate closes the day without a next step. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1803,12 +1488,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "No candidate drifts today. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "No candidate drifts today. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1831,12 +1511,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Keep Calendly/Outlook/Teams/Apploi aligned. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Keep Calendly/Outlook/Teams/Apploi aligned. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1859,12 +1534,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Every attempt logged, next follow-up set. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Every attempt logged, next follow-up set. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1887,12 +1557,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Escalate blockers and urgent state needs. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Escalate blockers and urgent state needs. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1916,12 +1581,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Feels human, not scripted. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Feels human, not scripted. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1944,12 +1604,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "When, where, how, with whom. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "When, where, how, with whom. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -1972,12 +1627,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Route detail-heavy questions correctly. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Route detail-heavy questions correctly. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2000,12 +1650,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Outcome, next follow-up, and any escalation. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Outcome, next follow-up, and any escalation. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2029,12 +1674,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Full applicant workup. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Full applicant workup. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2057,12 +1697,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Screen + notes. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Screen + notes. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2085,12 +1720,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Book, verify, remind. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Book, verify, remind. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2113,12 +1743,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Close the loop through HR handoff. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Close the loop through HR handoff. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2142,12 +1767,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "10–15 questions across Apploi, pipeline, state needs, review, communication, scheduling, no-shows, follow-up, offer, handoff, boundaries. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "10–15 questions across Apploi, pipeline, state needs, review, communication, scheduling, no-shows, follow-up, offer, handoff, boundaries. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2170,12 +1790,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Frank conversation with manager. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Frank conversation with manager. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2198,12 +1813,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Name 2 strengths and 2 coaching areas. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Name 2 strengths and 2 coaching areas. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
@@ -2226,12 +1836,7 @@ export const RECRUITING_LESSON_CONTENT: Record<string, LessonContent> = {
     "Concrete targets for the first month of independent work. If this step slips, candidates stall, states can't staff cases, and the family experience is delayed.",
     [
       { heading: "Plain-English explanation", body: "Concrete targets for the first month of independent work. Today at Blossom, Recruiting runs this through Apploi (candidate source of truth), Calendly (interview scheduling), Outlook + Teams (invites, meeting links), and phone/email for warm outreach. Nothing lives only in your head — if it isn't in Apploi or the shared tracker, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.
-2) Review what's missing (resume, credentials, availability, state, contact info).
-3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).
-4) Log the outcome directly on the candidate record in clear language.
-5) Set the next status, next action, and follow-up date.
-6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
+      { heading: "Step-by-step (today's process)", body: "1) Open the candidate record in Apploi and confirm owner + current status.\n2) Review what's missing (resume, credentials, availability, state, contact info).\n3) Take the next action using the approved channel (Calendly invite, Outlook/Teams meeting, phone/email outreach).\n4) Log the outcome directly on the candidate record in clear language.\n5) Set the next status, next action, and follow-up date.\n6) If the candidate is ready for offer/hire, hand off cleanly to HR with the full packet — Recruiting does not own HR paperwork after acceptance." },
       { heading: "What good looks like", body: "Any Recruiting teammate can open the candidate, see exactly what happened, what's missing, who owns the next step, and when it's due — with no need to ask you." },
     ],
     {
