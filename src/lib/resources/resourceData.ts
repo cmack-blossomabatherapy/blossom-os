@@ -630,8 +630,13 @@ export function isVisibleToRole(r: Resource, role: OSRole, state?: string): bool
   // Hard-exclude vault / credential / login-style resources from the standard library.
   if (r.sensitivity === "excluded" || r.attachmentStatus === "excluded") return false;
   if (r.sensitivity === "admin_only" && role !== "super_admin") return false;
-  // Hard safety net — defensive keyword check on title/tags.
-  if (containsCredentialKeywords(r.title) || r.tags.some(containsCredentialKeywords)) return false;
+  // Hard safety net — defensive keyword check on title/tags. Credentialing-department
+  // resources (Credentialing team SOPs, exports, packets) are legitimately named
+  // "credential(s)/credentialing" and must be exempt from the vault-keyword block.
+  const isCredentialingDept =
+    (r.departments ?? []).some((d) => (d || "").toLowerCase() === "credentialing") ||
+    (r.tags ?? []).some((t) => typeof t === "string" && t.startsWith("cred_"));
+  if (!isCredentialingDept && (containsCredentialKeywords(r.title) || r.tags.some(containsCredentialKeywords))) return false;
   // Sensitivity guardrail: sensitive resources are never surfaced to
   // frontline clinical/operational roles even if the row's visibility_roles
   // still lists them (defense in depth alongside the DB cleanup).
