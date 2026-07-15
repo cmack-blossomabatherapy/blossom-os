@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft, Upload, FileSpreadsheet, Sparkles, Download, Search,
+  ArrowLeft, Upload, FileSpreadsheet, Sparkles, Download, Search, Database,
   AlertTriangle, CheckCircle2, X, Filter, Brain, Trash2,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { ReportAIButton } from "@/components/ai/ReportAIButton";
+import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
+import {
+  getBcbaProductivitySharedRows,
+  getBcbaProductivityDatasetStatus,
+  type BcbaSharedBillingRow,
+} from "@/lib/os/bcbaProductivityV3/adminUploadStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -185,6 +191,8 @@ export default function QaSupervisionPtDashboard() {
   const [includeExcluded, setIncludeExcluded] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedRowCount, setSharedRowCount] = useState<number | null>(null);
 
   // filters
   const [search, setSearch] = useState("");
@@ -198,6 +206,82 @@ export default function QaSupervisionPtDashboard() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  /* ---- Auto-load shared admin billing dataset (same source as BCBA V3) ---- */
+  function ingestSharedRows(shared: BcbaSharedBillingRow[], label: string) {
+    const rows: ServiceRow[] = shared
+      .map((r) => {
+        const date = r.date ? parseDate(r.date) : null;
+        return {
+          date,
+          dateRaw: r.date,
+          monthKey: monthKey(date),
+          clientId: r.clientId,
+          clientName: r.clientName || "Unknown Client",
+          providerName: r.renderingProvider || r.rbt || "—",
+          providerId: "",
+          procedureCode: extractProcedureCode(r.code),
+          procedureDescription: r.code,
+          hours: Number(r.hours) || 0,
+          minutes: "",
+          timeFrom: "",
+          timeTo: "",
+          authorizationId: "",
+          payorName: r.payor || "",
+          location: r.state || "",
+          serviceLocation: "",
+          units: "",
+          charges: "",
+          signedByProvider: "",
+          signedByClient: "",
+          isVoid: false,
+          isDeleted: false,
+          isLocked: "",
+          raw: r as unknown as Record<string, string>,
+        };
+      })
+      .filter((r) => r.procedureCode === "97153" || r.procedureCode === "97155" || r.procedureCode === "97156");
+    const months = Array.from(new Set(rows.map((r) => r.monthKey).filter(Boolean))).sort();
+    setAllRows(rows);
+    setAvailableMonths(months);
+    setSelectedMonth(months[months.length - 1] || "");
+    setMissingFields([]);
+    setFileName(label);
+    setGenerated(false);
+  }
+
+  async function loadSharedAdminDataset(silent = false) {
+    setSharedLoading(true);
+    try {
+      const shared = await getBcbaProductivitySharedRows();
+      setSharedRowCount(shared.length);
+      if (!shared.length) {
+        if (!silent) toast.info("Shared admin billing dataset is empty. Upload a CentralReach file above or in Admin → BCBA Productivity Uploads.");
+        return;
+      }
+      ingestSharedRows(shared, "Shared admin billing dataset");
+      if (!silent) toast.success(`Loaded ${shared.length.toLocaleString()} rows from Admin Uploads`);
+    } catch (e: any) {
+      if (!silent) toast.error(`Failed to load admin dataset: ${e?.message ?? e}`);
+    } finally {
+      setSharedLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const status = await getBcbaProductivityDatasetStatus();
+        setSharedRowCount(status.activeRowCount);
+        if (status.activeRowCount > 0 && !fileName) {
+          await loadSharedAdminDataset(true);
+        }
+      } catch {
+        /* silent — user can still upload manually */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ---- File upload ---- */
   async function handleFiles(files: FileList | File[] | null) {
