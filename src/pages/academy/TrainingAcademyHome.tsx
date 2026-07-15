@@ -17,6 +17,7 @@ import { resolveRoleJourney } from "@/lib/training/roleJourneyAssignments";
 import { useRoleJourneyAssignments } from "@/hooks/useRoleJourneyAssignments";
 import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 import { useOSRoleSafe } from "@/contexts/OSRoleContext";
+import { useLastAcademyPosition } from "@/lib/academy/lessonProgress";
 
 /** Warm, color-coded accents for the LMS home. Used sparingly on icon
  *  tiles and status chips so the page feels alive without losing the
@@ -64,6 +65,12 @@ export default function TrainingAcademyHome() {
   // honoring HR overrides for every role (including rbt/bcba).
   const primarySlug = resolvedFromRoles ?? "blossom-os-basics";
   const myPath = TRAINING_PATHS.find((p) => p.slug === primarySlug) ?? null;
+  const lastPos = useLastAcademyPosition();
+  const resumeHref = lastPos
+    ? (lastPos.lessonId
+        ? `/academy/path/${lastPos.journeySlug}/module/${encodeURIComponent(lastPos.moduleId)}/lesson/${encodeURIComponent(lastPos.lessonId)}${lastPos.trackId ? `?track=${lastPos.trackId}` : ""}`
+        : `/academy/path/${lastPos.journeySlug}/module/${encodeURIComponent(lastPos.moduleId)}${lastPos.trackId ? `?track=${lastPos.trackId}` : ""}`)
+    : null;
   const myTraining = myPath
     ? [{ ...myPath, progress: 0, lastOpened: "—" }]
     : [];
