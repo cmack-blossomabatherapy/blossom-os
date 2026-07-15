@@ -266,17 +266,17 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
     description:
       "You are not expected to solve everything alone. Blossom works because departments own their lanes and communicate across them.",
     learningObjective:
-      "Know who owns what and identify the first three department partners you will need in week one.",
+      "Know who owns what across Blossom and identify the first partners in other departments you will rely on in week one.",
     whyThisMatters:
-      "Knowing who owns what prevents delay. If the wrong person is holding the problem, the problem grows. A strong State Director routes issues quickly and respectfully.",
+      "Knowing who owns what prevents delay. If the wrong person is holding a problem, the problem grows. Every role at Blossom — clinical, operations, intake, HR, finance, marketing — succeeds by routing questions to the right owner quickly and respectfully.",
     whatToDo: [
-      "Review the leadership and department map.",
-      "Identify your primary mentor.",
-      "Identify the department leaders you will need during week one.",
-      "Schedule or confirm your first check-in.",
+      "Review the leadership and department map for the whole company.",
+      "Identify your direct manager and your onboarding buddy or mentor.",
+      "Identify the two or three departments outside your own that you will interact with most.",
+      "Schedule or confirm your first check-in with your manager.",
     ],
     completionEvidence:
-      "Write down your mentor, your first three department partners, and one question for each.",
+      "Write down your manager, one partner in each of the two or three departments you will work with most, and one question for each.",
   },
   {
     id: "welcome-how-blossom-works",
