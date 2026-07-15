@@ -593,6 +593,74 @@ export default function ReportsHome() {
         </section>
       )}
 
+        </TabsContent>
+
+        <TabsContent value="departments" className="mt-0 focus-visible:outline-none">
+          <section className="mt-8">
+            <SectionHeader
+              title={`Department dashboards · ${departmentDashboards.length}`}
+              subtitle="Role-scoped KPI dashboards for each department. Save and pin your favorite views."
+            />
+            {departmentDashboards.length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-dashed border-border/60 bg-secondary/20 px-6 py-10 text-center text-[13px] text-muted-foreground">
+                No department dashboards available for your role.
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {departmentDashboards.map((r) => {
+                  const cat = REPORT_CATEGORIES.find((c) => c.id === r.category);
+                  return (
+                    <Link
+                      key={r.id}
+                      to={r.drilldownPath ?? `/reports/${r.id}`}
+                      className="group block"
+                    >
+                      <article
+                        className={cn(
+                          "relative h-full overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition-all duration-300",
+                          "hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-[0_20px_40px_-25px_hsl(265_60%_50%/0.4)]",
+                        )}
+                      >
+                        {cat && (
+                          <div className={cn("absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br opacity-60 blur-2xl", cat.tone)} />
+                        )}
+                        <div className="relative">
+                          <div className="flex items-center justify-between">
+                            <span
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm"
+                              style={{ color: cat?.accent ?? "hsl(265 70% 55%)" }}
+                            >
+                              <LayoutDashboard className="h-4 w-4" />
+                            </span>
+                            <Badge
+                              variant="secondary"
+                              className="rounded-full bg-white/70 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+                            >
+                              {r.kpiPreviews?.length ?? 0} KPIs
+                            </Badge>
+                          </div>
+                          <h3 className="mt-3 text-[14.5px] font-semibold tracking-tight">{r.title}</h3>
+                          <p className="mt-0.5 line-clamp-2 text-[11.5px] leading-snug text-muted-foreground">{r.description}</p>
+                          <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {r.lastUpdated}
+                            </span>
+                            <span className="inline-flex items-center gap-1 font-medium text-[hsl(265_70%_55%)] transition group-hover:translate-x-0.5">
+                              Open dashboard <ArrowUpRight className="h-3 w-3" />
+                            </span>
+                          </div>
+                        </div>
+                      </article>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </TabsContent>
+      </Tabs>
+
       <RequestReportDialog open={requestOpen} onOpenChange={setRequestOpen} />
     </OSShell>
   );
