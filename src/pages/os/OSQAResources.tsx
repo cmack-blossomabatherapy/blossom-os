@@ -13,32 +13,43 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 // =============================================================================
-// QA / Compliance Resource Library
-// Role-scoped operational knowledge for the QA team. Categories, SOP placeholders,
-// workflow placeholders, templates, and quick references — no fake content beyond
-// curated placeholder titles. Search, favorites, recents, and Operational Insights use
-// the established Blossom OS Resource Library pattern.
+// QA Resource Library — Current-State
+// Aligned to the "FINAL - QA Resource Library Upload - 2026-07-14" package.
+// Categories, resource types, PDF-only SOPs, Needs Review labeling, and a video
+// content-gap panel follow the current QA operating model. This is a *current-state*
+// library — do not treat future Blossom OS planning docs as current QA SOPs.
 // =============================================================================
 
 type ResourceType =
-  | "SOP" | "Workflow" | "Guide" | "Template" | "Checklist"
-  | "Reference" | "Platform Guide" | "Escalation Guide" | "Communication Template";
+  | "SOP"
+  | "Training Resource"
+  | "Report/Export"
+  | "Role Packet"
+  | "Signoff"
+  | "Handoff Reference"
+  | "Needs Review";
+
+type ResourceFormat = "PDF" | "CSV" | "DOCX" | "Link";
 
 type Category =
+  | "QA Start Here"
   | "QA SOPs"
-  | "Authorization Review Workflows"
-  | "Progress Report Workflows"
-  | "Treatment Plan Review Workflows"
-  | "Escalations & Follow-Ups"
-  | "Supervision Visibility & QA Coordination"
-  | "Communication Templates"
-  | "QA Operational Standards"
-  | "Training & Reference Materials"
-  | "System Guides & Platform Workflows";
+  | "Clinical Report QA"
+  | "Treatment Plan QA"
+  | "Documentation Standards and Corrections"
+  | "Missing Items and Fax Follow-Up"
+  | "Compliance Reviews and Audits"
+  | "QA Escalation and Trend Reporting"
+  | "QA Role Packet and Signoff"
+  | "QA Training Journey Resources"
+  | "QA Reports, Exports, and Examples"
+  | "Authorizations and Training Handoff References"
+  | "Needs Review - QA Adjacent";
 
 type WorkflowKey =
-  | "qa-review" | "pr-followup" | "tp-review" | "missing-info"
-  | "escalation" | "supervision" | "expiring" | "submission";
+  | "clinical-report" | "treatment-plan" | "documentation" | "missing-info"
+  | "fax-chase" | "compliance-audit" | "escalation" | "trend-reporting"
+  | "signoff" | "handoff";
 
 interface Resource {
   id: string;
@@ -46,189 +57,169 @@ interface Resource {
   description: string;
   category: Category;
   type: ResourceType;
+  format?: ResourceFormat;
+  folder?: string;
   minutes: number;
   updated: string;
   owner?: string;
   href?: string;
   featured?: boolean;
   workflows?: WorkflowKey[];
+  needsReview?: boolean;
+  planningOnly?: boolean;
+  journeyDay?: string;
 }
 
-const TODAY = "2026-05-22";
+const TODAY = "2026-07-14";
+const FOLDER = {
+  sops: "01 - QA SOPs - PDF Only",
+  training: "02 - QA Training Resources",
+  videos: "03 - QA Videos and Media",
+  reports: "04 - QA Reports Exports and Examples",
+  clinicalRefs: "05 - Clinical Report and Treatment Plan QA References",
+  corrections: "06 - Documentation Corrections and Missing Items",
+  rolePacket: "07 - QA Role Packet and Signoff",
+  handoffs: "08 - Authorizations Clinical and Training Handoff References",
+  uploadQA: "09 - Upload QA and Inventory",
+  needsReview: "10 - Needs Review - QA Adjacent",
+} as const;
 
 const resources: Resource[] = [
-  // ------- Featured (drawn from across categories) -------
-  { id: "f1", title: "QA Daily Workflow SOP", description: "The morning scan, queue triage, and end-of-day handoff routine for QA.", category: "QA SOPs", type: "SOP", minutes: 6, updated: "2026-05-18", featured: true, owner: "Rochel Walzman" },
-  { id: "f2", title: "PR Escalation SOP", description: "9-week and 6-week escalation ladders for GA and other states.", category: "Progress Report Workflows", type: "Escalation Guide", minutes: 7, updated: "2026-05-14", featured: true, owner: "Julianne Rodriguez", workflows: ["pr-followup", "escalation"] },
-  { id: "f3", title: "Treatment Plan Review SOP", description: "What QA validates, what gets routed back, what moves to submission.", category: "Treatment Plan Review Workflows", type: "SOP", minutes: 8, updated: "2026-05-12", featured: true, owner: "Amanda Avalos", workflows: ["tp-review", "qa-review"] },
-  { id: "f4", title: "Missing Information Workflow", description: "How to identify, route, and resolve missing documentation by owner.", category: "Authorization Review Workflows", type: "Workflow", minutes: 6, updated: "2026-05-10", featured: true, owner: "Anje Grobler", workflows: ["missing-info"] },
-  { id: "f5", title: "Escalation Standards SOP", description: "When QA escalates, to whom, and what documentation is required.", category: "Escalations & Follow-Ups", type: "SOP", minutes: 5, updated: "2026-05-09", featured: true, owner: "Raizy Folger", workflows: ["escalation"] },
-  { id: "f6", title: "Expiring Authorization Workflow", description: "Operational checkpoints at 90 / 60 / 30 / 14 days.", category: "Authorization Review Workflows", type: "Workflow", minutes: 5, updated: "2026-05-16", featured: true, workflows: ["expiring"], href: "/expiring-items" },
+  // ------- 0. QA Start Here -------
+  { id: "start-1", title: "QA Team - Start Here", description: "Current-state overview of what QA reviews (clinical/report quality, treatment plans, documentation, missing items, compliance, trends) and what QA does not own.", category: "QA Start Here", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 5, updated: "2026-07-14", featured: true, owner: "QA Director" },
+  { id: "start-2", title: "QA Team 4-Week Current-State Onboarding Journey - Overview", description: "Overview of the four-week QA onboarding journey (weeks 1-4) with the modules and resources learners open on each day.", category: "QA Start Here", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 6, updated: "2026-07-14", featured: true, journeyDay: "Week 1 Day 1" },
+  { id: "start-3", title: "QA Role and Scope - Current Operations", description: "Plain-English scope: QA reviews documentation and clinical/report quality, flags missing items and corrections, escalates trends. QA does not replace Clinical supervision, Authorizations, Scheduling, Billing/RCM, HR, or State Director ownership.", category: "QA Start Here", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 4, updated: "2026-07-14" },
 
-  // ------- 1. QA SOPs -------
-  { id: "s1", title: "QA Daily Workflow SOP", description: "Morning scan, queue triage, end-of-day handoff.", category: "QA SOPs", type: "SOP", minutes: 6, updated: "2026-05-18" },
-  { id: "s2", title: "QA Review Process SOP", description: "How treatment auths move through QA Review and back to submission.", category: "QA SOPs", type: "SOP", minutes: 8, updated: "2026-05-15", workflows: ["qa-review"] },
-  { id: "s3", title: "QA Queue Management SOP", description: "Prioritization rules and queue ownership.", category: "QA SOPs", type: "SOP", minutes: 5, updated: "2026-05-13" },
-  { id: "s4", title: "QA Escalation SOP", description: "Internal escalation paths within QA.", category: "QA SOPs", type: "SOP", minutes: 5, updated: "2026-05-11", workflows: ["escalation"] },
-  { id: "s5", title: "QA Follow-Up Standards SOP", description: "Cadence and tone for QA outreach.", category: "QA SOPs", type: "SOP", minutes: 4, updated: "2026-05-09" },
-  { id: "s6", title: "QA Documentation Standards SOP", description: "Note quality, audit trail, and required fields.", category: "QA SOPs", type: "SOP", minutes: 6, updated: "2026-05-07" },
-  { id: "s7", title: "QA Operational Expectations SOP", description: "Daily, weekly, and monthly operational expectations.", category: "QA SOPs", type: "SOP", minutes: 5, updated: "2026-05-05" },
-  { id: "s8", title: "QA Priority Management SOP", description: "How to prioritize across competing operational risks.", category: "QA SOPs", type: "SOP", minutes: 5, updated: "2026-05-03" },
-  { id: "s9", title: "QA Communication Standards SOP", description: "Cross-team tone, response time, and escalation language.", category: "QA SOPs", type: "SOP", minutes: 4, updated: "2026-05-01" },
-  { id: "s10", title: "QA Workflow Ownership SOP", description: "Who owns what across PRs, TPs, and authorizations.", category: "QA SOPs", type: "SOP", minutes: 6, updated: "2026-04-28" },
+  // ------- 1. QA SOPs (PDF ONLY, learner-facing) -------
+  { id: "sop-01", title: "L1 QA Director QA Reviewer Role SOP", description: "L1 SOP defining the QA Director and QA Reviewer roles, ownership boundaries, and daily responsibilities.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 7, updated: "2026-07-14", featured: true, owner: "QA Director" },
+  { id: "sop-02", title: "L2 QA Review Current Operations", description: "Current-state QA review workflow: intake of items into the QA queue, review steps, routing, and closeout.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 8, updated: "2026-07-14" },
+  { id: "sop-03", title: "L2 Clinical Report QA Review Process SOP", description: "How QA reviews clinical/progress reports for accuracy, completeness, and documentation quality.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 8, updated: "2026-07-14", featured: true, workflows: ["clinical-report"] },
+  { id: "sop-04", title: "L2 Treatment Plan QA Current Operations", description: "Current-state treatment plan QA workflow: what QA validates and what gets routed back to the BCBA.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 8, updated: "2026-07-14", featured: true, workflows: ["treatment-plan"] },
+  { id: "sop-05", title: "L2 Documentation Standards Current Operations", description: "Documentation standards QA holds across notes, reports, and treatment plans.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 6, updated: "2026-07-14", workflows: ["documentation"] },
+  { id: "sop-06", title: "L2 Documentation Missing Item Follow-Up Process SOP", description: "How QA identifies missing items, assigns owners, follows up, and closes the loop.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 6, updated: "2026-07-14", workflows: ["missing-info"] },
+  { id: "sop-07", title: "L2 Fax and External Document Chase Process SOP", description: "Fax and external document chase: how QA tracks outbound requests and confirms receipt.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 6, updated: "2026-07-14", workflows: ["fax-chase", "missing-info"] },
+  { id: "sop-08", title: "L2 Corrections Current Operations", description: "How QA routes documentation corrections back to the correct owner and confirms the correction was made.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 6, updated: "2026-07-14", workflows: ["documentation"] },
+  { id: "sop-09", title: "L2 Audits Current Operations", description: "Current-state QA audits: scope, cadence, sampling, and findings write-up.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 7, updated: "2026-07-14", workflows: ["compliance-audit"] },
+  { id: "sop-10", title: "L2 Compliance Reviews Current Operations", description: "How QA runs compliance reviews and coordinates findings with clinical and state leadership.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 7, updated: "2026-07-14", workflows: ["compliance-audit"] },
+  { id: "sop-11", title: "L2 Clinical Quality Metrics Current Operations", description: "Which clinical quality metrics QA tracks today and how they roll up to leadership.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 6, updated: "2026-07-14" },
+  { id: "sop-12", title: "L2 QA Escalation Review Process SOP", description: "Escalation criteria, escalation paths, and communication expectations for QA escalations.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 6, updated: "2026-07-14", featured: true, workflows: ["escalation"] },
+  { id: "sop-13", title: "L2 QA Trend Reporting Process SOP", description: "How QA identifies recurring documentation, clinical, or compliance trends and reports them.", category: "QA SOPs", type: "SOP", format: "PDF", folder: FOLDER.sops, minutes: 6, updated: "2026-07-14", workflows: ["trend-reporting"] },
 
-  // ------- 2. Authorization Review Workflows -------
-  { id: "a1", title: "Authorization Review SOP", description: "End-to-end QA review for authorization packets.", category: "Authorization Review Workflows", type: "SOP", minutes: 8, updated: "2026-05-19", workflows: ["qa-review"] },
-  { id: "a2", title: "In QA Review Workflow", description: "What QA confirms before routing back to Awaiting Submission.", category: "Authorization Review Workflows", type: "Workflow", minutes: 6, updated: "2026-05-17", workflows: ["qa-review"] },
-  { id: "a3", title: "Missing Information Workflow", description: "Map gaps to owners, resolve, and re-queue.", category: "Authorization Review Workflows", type: "Workflow", minutes: 6, updated: "2026-05-10", workflows: ["missing-info"], href: "/missing-information" },
-  { id: "a4", title: "Awaiting Submission Workflow", description: "What blocks submission and how QA unblocks it.", category: "Authorization Review Workflows", type: "Workflow", minutes: 5, updated: "2026-05-08", workflows: ["submission"] },
-  { id: "a5", title: "Expiring Authorization Workflow", description: "Operational checkpoints at 90 / 60 / 30 / 14 days.", category: "Authorization Review Workflows", type: "Workflow", minutes: 5, updated: "2026-05-16", workflows: ["expiring"], href: "/expiring-items" },
-  { id: "a6", title: "Reassessment Workflow", description: "Timing reassessments so QA-cleared lands ≥ 14 days pre-expiration.", category: "Authorization Review Workflows", type: "Workflow", minutes: 6, updated: "2026-05-06" },
-  { id: "a7", title: "Treatment Auth Review SOP", description: "QA expectations specific to treatment authorizations.", category: "Authorization Review Workflows", type: "SOP", minutes: 7, updated: "2026-05-04", workflows: ["tp-review"] },
-  { id: "a8", title: "Authorization Escalation SOP", description: "When to escalate auth risk to QA Lead or SD.", category: "Authorization Review Workflows", type: "SOP", minutes: 5, updated: "2026-05-02", workflows: ["escalation"] },
-  { id: "a9", title: "Authorization Readiness Checklist", description: "Pre-submission checklist for packet completeness.", category: "Authorization Review Workflows", type: "Checklist", minutes: 3, updated: "2026-04-30" },
-  { id: "a10", title: "Payor Workflow Reference Guide", description: "Per-payor cadence and operational expectations.", category: "Authorization Review Workflows", type: "Reference", minutes: 6, updated: "2026-04-27" },
+  // ------- 2. Clinical Report QA -------
+  { id: "crqa-1", title: "Clinical Report QA Reference Guide", description: "Reference for what QA looks for on clinical/progress reports: required sections, common documentation issues, and correction paths.", category: "Clinical Report QA", type: "Training Resource", format: "PDF", folder: FOLDER.clinicalRefs, minutes: 6, updated: "2026-07-14", workflows: ["clinical-report"] },
+  { id: "crqa-2", title: "Clinical Report QA Common Findings", description: "Common QA findings on clinical reports with plain-English examples and the correction owner for each.", category: "Clinical Report QA", type: "Training Resource", format: "PDF", folder: FOLDER.clinicalRefs, minutes: 5, updated: "2026-07-14", workflows: ["clinical-report"] },
+  { id: "crqa-3", title: "Clinical Report QA Journey Checklist", description: "Learner-facing checklist used during the QA journey clinical-report module.", category: "Clinical Report QA", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 3, updated: "2026-07-14", journeyDay: "Week 2", workflows: ["clinical-report"] },
 
-  // ------- 3. Progress Report Workflows -------
-  { id: "p1", title: "Progress Report Collection SOP", description: "Operational SOP for PR collection across all states.", category: "Progress Report Workflows", type: "SOP", minutes: 7, updated: "2026-05-19", workflows: ["pr-followup"] },
-  { id: "p2", title: "GA PR Workflow Guide", description: "Rivky Weissman outreach at 9 weeks; Shira + Rachel engage at 6 weeks.", category: "Progress Report Workflows", type: "Guide", minutes: 5, updated: "2026-05-14", workflows: ["pr-followup", "escalation"] },
-  { id: "p3", title: "Multi-State PR Workflow Guide", description: "Rikki Wallach weekly outreach at 9 weeks; Julianne included.", category: "Progress Report Workflows", type: "Guide", minutes: 5, updated: "2026-05-14", workflows: ["pr-followup", "escalation"] },
-  { id: "p4", title: "PR Escalation SOP", description: "Combined 9-week / 6-week escalation ladder.", category: "Progress Report Workflows", type: "Escalation Guide", minutes: 6, updated: "2026-05-12", workflows: ["pr-followup", "escalation"] },
-  { id: "p5", title: "BCBA Follow-Up Workflow", description: "Cadence, tone, and documentation for BCBA outreach.", category: "Progress Report Workflows", type: "Workflow", minutes: 5, updated: "2026-05-10", workflows: ["pr-followup"] },
-  { id: "p6", title: "State Director Escalation Workflow", description: "SD engagement criteria, hand-off, and exit conditions.", category: "Progress Report Workflows", type: "Workflow", minutes: 5, updated: "2026-05-08", workflows: ["escalation"] },
-  { id: "p7", title: "PR Timeline Expectations", description: "What QA expects at each week of the PR window.", category: "Progress Report Workflows", type: "Reference", minutes: 3, updated: "2026-05-06" },
-  { id: "p8", title: "Parent Signature Workflow", description: "SD re-entry path when parent signature is the blocker.", category: "Progress Report Workflows", type: "Workflow", minutes: 4, updated: "2026-05-04" },
-  { id: "p9", title: "PR Readiness Checklist", description: "Pre-submission checklist specific to PRs.", category: "Progress Report Workflows", type: "Checklist", minutes: 3, updated: "2026-05-02" },
-  { id: "p10", title: "Overdue PR Resolution Workflow", description: "Concrete next-action playbook for overdue PRs.", category: "Progress Report Workflows", type: "Workflow", minutes: 5, updated: "2026-04-30" },
+  // ------- 3. Treatment Plan QA -------
+  { id: "tpqa-1", title: "Treatment Plan QA Reference Guide", description: "Reference for QA review of treatment plans: required sections, signatures, supporting documentation, and routing back to BCBA.", category: "Treatment Plan QA", type: "Training Resource", format: "PDF", folder: FOLDER.clinicalRefs, minutes: 6, updated: "2026-07-14", workflows: ["treatment-plan"] },
+  { id: "tpqa-2", title: "Treatment Plan QA Common Findings", description: "Common QA findings on treatment plans with correction owner and typical resolution path.", category: "Treatment Plan QA", type: "Training Resource", format: "PDF", folder: FOLDER.clinicalRefs, minutes: 5, updated: "2026-07-14", workflows: ["treatment-plan"] },
+  { id: "tpqa-3", title: "Treatment Plan QA Journey Checklist", description: "Learner-facing checklist used during the QA journey treatment-plan module.", category: "Treatment Plan QA", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 3, updated: "2026-07-14", journeyDay: "Week 2", workflows: ["treatment-plan"] },
 
-  // ------- 4. Treatment Plan Review Workflows -------
-  { id: "t1", title: "Treatment Plan Review SOP", description: "QA validation, scoring, and routing for treatment plans.", category: "Treatment Plan Review Workflows", type: "SOP", minutes: 8, updated: "2026-05-15", workflows: ["tp-review"] },
-  { id: "t2", title: "Treatment Plan Readiness Checklist", description: "Required sections, signatures, and supporting documentation.", category: "Treatment Plan Review Workflows", type: "Checklist", minutes: 4, updated: "2026-05-13" },
-  { id: "t3", title: "Missing Information Workflow", description: "TP-specific gaps and resolution paths.", category: "Treatment Plan Review Workflows", type: "Workflow", minutes: 5, updated: "2026-05-11", workflows: ["missing-info"] },
-  { id: "t4", title: "Treatment Plan Escalation SOP", description: "When QA escalates a stalled treatment plan.", category: "Treatment Plan Review Workflows", type: "SOP", minutes: 5, updated: "2026-05-09", workflows: ["escalation"] },
-  { id: "t5", title: "QA Validation Workflow", description: "What QA reviews line-by-line in treatment plans.", category: "Treatment Plan Review Workflows", type: "Workflow", minutes: 6, updated: "2026-05-07" },
-  { id: "t6", title: "Treatment Plan Routing Workflow", description: "Hand-offs between QA, BCBA, and submission.", category: "Treatment Plan Review Workflows", type: "Workflow", minutes: 5, updated: "2026-05-05" },
-  { id: "t7", title: "Submission Readiness Workflow", description: "What must be true before a treatment plan ships.", category: "Treatment Plan Review Workflows", type: "Workflow", minutes: 5, updated: "2026-05-03", workflows: ["submission"] },
-  { id: "t8", title: "BCBA Coordination Workflow", description: "Coordinating BCBA edits, signatures, and clarifications.", category: "Treatment Plan Review Workflows", type: "Workflow", minutes: 5, updated: "2026-05-01" },
-  { id: "t9", title: "Treatment Auth Workflow Guide", description: "How treatment plans connect to treatment authorizations.", category: "Treatment Plan Review Workflows", type: "Guide", minutes: 6, updated: "2026-04-29" },
-  { id: "t10", title: "Treatment Plan QA Standards", description: "Quality standards QA enforces on every plan.", category: "Treatment Plan Review Workflows", type: "Reference", minutes: 5, updated: "2026-04-27" },
+  // ------- 4. Documentation Standards and Corrections -------
+  { id: "doc-1", title: "Documentation Standards Reference", description: "Plain-English reference for the documentation standards QA holds today across notes, reports, and plans.", category: "Documentation Standards and Corrections", type: "Training Resource", format: "PDF", folder: FOLDER.corrections, minutes: 5, updated: "2026-07-14", workflows: ["documentation"] },
+  { id: "doc-2", title: "Corrections Workflow Reference", description: "How to route a documentation correction back to the owner and confirm it was made.", category: "Documentation Standards and Corrections", type: "Training Resource", format: "PDF", folder: FOLDER.corrections, minutes: 4, updated: "2026-07-14", workflows: ["documentation"] },
+  { id: "doc-3", title: "Corrections Log Example (CSV)", description: "Example corrections log so learners can see the columns and cadence used today.", category: "Documentation Standards and Corrections", type: "Report/Export", format: "CSV", folder: FOLDER.reports, minutes: 3, updated: "2026-07-14" },
 
-  // ------- 5. Escalations & Follow-Ups -------
-  { id: "e1", title: "Escalation Standards SOP", description: "Criteria, tone, and documentation for escalations.", category: "Escalations & Follow-Ups", type: "SOP", minutes: 5, updated: "2026-05-18", workflows: ["escalation"] },
-  { id: "e2", title: "Follow-Up Expectations SOP", description: "Follow-up cadence and response-time standards.", category: "Escalations & Follow-Ups", type: "SOP", minutes: 4, updated: "2026-05-16" },
-  { id: "e3", title: "BCBA Escalation Workflow", description: "When and how to escalate a non-responsive BCBA.", category: "Escalations & Follow-Ups", type: "Workflow", minutes: 5, updated: "2026-05-14", workflows: ["escalation"] },
-  { id: "e4", title: "State Director Escalation Guide", description: "What SD escalation looks like across states.", category: "Escalations & Follow-Ups", type: "Escalation Guide", minutes: 5, updated: "2026-05-12", workflows: ["escalation"] },
-  { id: "e5", title: "Escalation Timeline Guide", description: "Standard escalation timeline by workflow type.", category: "Escalations & Follow-Ups", type: "Reference", minutes: 4, updated: "2026-05-10" },
-  { id: "e6", title: "High-Risk Workflow SOP", description: "Operational SOP for ≤ 14-day high-risk workflows.", category: "Escalations & Follow-Ups", type: "SOP", minutes: 5, updated: "2026-05-08" },
-  { id: "e7", title: "Expiration Risk Escalation SOP", description: "Escalation criteria tied to authorization expiration windows.", category: "Escalations & Follow-Ups", type: "SOP", minutes: 5, updated: "2026-05-06", workflows: ["expiring", "escalation"] },
-  { id: "e8", title: "Overdue Workflow Resolution SOP", description: "Standardized resolution path for overdue items.", category: "Escalations & Follow-Ups", type: "SOP", minutes: 5, updated: "2026-05-04" },
-  { id: "e9", title: "Escalation Documentation Standards", description: "What every escalation note must include.", category: "Escalations & Follow-Ups", type: "Reference", minutes: 3, updated: "2026-05-02" },
-  { id: "e10", title: "Workflow Ownership Matrix", description: "Who owns what across PRs, TPs, and authorizations.", category: "Escalations & Follow-Ups", type: "Reference", minutes: 4, updated: "2026-04-30" },
+  // ------- 5. Missing Items and Fax Follow-Up -------
+  { id: "miss-1", title: "Missing Item Follow-Up Reference", description: "How QA identifies missing items, assigns owners, tracks follow-up, and closes the loop.", category: "Missing Items and Fax Follow-Up", type: "Training Resource", format: "PDF", folder: FOLDER.corrections, minutes: 5, updated: "2026-07-14", workflows: ["missing-info"] },
+  { id: "miss-2", title: "Fax and External Document Chase Reference", description: "Reference for fax and external document chase workflows: outbound requests, confirmations, and re-requests.", category: "Missing Items and Fax Follow-Up", type: "Training Resource", format: "PDF", folder: FOLDER.corrections, minutes: 5, updated: "2026-07-14", workflows: ["fax-chase"] },
+  { id: "miss-3", title: "Missing Item Tracker Example (CSV)", description: "Example missing item tracker so learners see columns, statuses, and owner assignments.", category: "Missing Items and Fax Follow-Up", type: "Report/Export", format: "CSV", folder: FOLDER.reports, minutes: 3, updated: "2026-07-14", workflows: ["missing-info"] },
 
-  // ------- 6. Supervision Visibility & QA Coordination -------
-  { id: "v1", title: "Supervision Visibility SOP", description: "QA's role in supervision visibility (operational only).", category: "Supervision Visibility & QA Coordination", type: "SOP", minutes: 5, updated: "2026-05-17", workflows: ["supervision"] },
-  { id: "v2", title: "BCBA & RBT Coordination Guide", description: "Coordinating BCBA / RBT activity with QA workflows.", category: "Supervision Visibility & QA Coordination", type: "Guide", minutes: 6, updated: "2026-05-15" },
-  { id: "v3", title: "Supervision Documentation Workflow", description: "What documentation QA looks for and where.", category: "Supervision Visibility & QA Coordination", type: "Workflow", minutes: 5, updated: "2026-05-13" },
-  { id: "v4", title: "Supervision Escalation SOP", description: "Escalating supervision-related operational risk.", category: "Supervision Visibility & QA Coordination", type: "SOP", minutes: 5, updated: "2026-05-11", workflows: ["escalation"] },
-  { id: "v5", title: "QA Supervision Standards", description: "Operational standards QA holds across supervision visibility.", category: "Supervision Visibility & QA Coordination", type: "Reference", minutes: 4, updated: "2026-05-09" },
-  { id: "v6", title: "PR & Supervision Relationship Guide", description: "How supervision activity affects PR readiness.", category: "Supervision Visibility & QA Coordination", type: "Guide", minutes: 5, updated: "2026-05-07" },
-  { id: "v7", title: "Supervision Risk Workflow", description: "Detecting and surfacing supervision risk operationally.", category: "Supervision Visibility & QA Coordination", type: "Workflow", minutes: 5, updated: "2026-05-05" },
-  { id: "v8", title: "Authorization Impact Reference", description: "How supervision gaps impact authorizations.", category: "Supervision Visibility & QA Coordination", type: "Reference", minutes: 4, updated: "2026-05-03" },
-  { id: "v9", title: "Missing Supervision Documentation Workflow", description: "Resolving missing supervision documentation operationally.", category: "Supervision Visibility & QA Coordination", type: "Workflow", minutes: 5, updated: "2026-05-01" },
-  { id: "v10", title: "Supervision Readiness Checklist", description: "Pre-submission supervision readiness checklist.", category: "Supervision Visibility & QA Coordination", type: "Checklist", minutes: 3, updated: "2026-04-29" },
+  // ------- 6. Compliance Reviews and Audits -------
+  { id: "comp-1", title: "Compliance Review Reference", description: "How QA runs a compliance review today: scope, standards, and findings write-up.", category: "Compliance Reviews and Audits", type: "Training Resource", format: "PDF", folder: FOLDER.corrections, minutes: 6, updated: "2026-07-14", workflows: ["compliance-audit"] },
+  { id: "comp-2", title: "Audit Sampling Reference", description: "How audit sampling works today, and what QA does with the findings.", category: "Compliance Reviews and Audits", type: "Training Resource", format: "PDF", folder: FOLDER.corrections, minutes: 5, updated: "2026-07-14", workflows: ["compliance-audit"] },
+  { id: "comp-3", title: "Audit Findings Example (CSV)", description: "Example audit findings export so learners see the format used today.", category: "Compliance Reviews and Audits", type: "Report/Export", format: "CSV", folder: FOLDER.reports, minutes: 3, updated: "2026-07-14", workflows: ["compliance-audit"] },
 
-  // ------- 7. Communication Templates -------
-  { id: "c1", title: "PR Follow-Up Email Templates", description: "Calm, specific outreach drafts for PRs.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-18", workflows: ["pr-followup"] },
-  { id: "c2", title: "BCBA Reminder Templates", description: "Standard BCBA reminder messaging.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-16" },
-  { id: "c3", title: "Escalation Communication Templates", description: "Tone-correct escalation drafts.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-14", workflows: ["escalation"] },
-  { id: "c4", title: "Missing Documentation Templates", description: "Templated requests for missing documentation.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-12", workflows: ["missing-info"] },
-  { id: "c5", title: "Parent Signature Reminder Templates", description: "Templated outreach for parent signature requests.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-10" },
-  { id: "c6", title: "QA Internal Communication Templates", description: "Templates for QA-to-QA coordination.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-08" },
-  { id: "c7", title: "State Director Escalation Templates", description: "Templated SD escalation drafts.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-06", workflows: ["escalation"] },
-  { id: "c8", title: "Authorization Follow-Up Templates", description: "Templates for general authorization follow-ups.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-04" },
-  { id: "c9", title: "Workflow Update Templates", description: "Standard updates pushed across active workflows.", category: "Communication Templates", type: "Communication Template", minutes: 3, updated: "2026-05-02" },
-  { id: "c10", title: "Operational Communication Standards", description: "Standards for tone, length, and escalation language.", category: "Communication Templates", type: "Reference", minutes: 4, updated: "2026-04-30" },
+  // ------- 7. QA Escalation and Trend Reporting -------
+  { id: "esc-1", title: "QA Escalation Reference", description: "When QA escalates, to whom (QA leadership, Clinical, Operations, Authorizations, State), and what documentation is required.", category: "QA Escalation and Trend Reporting", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 5, updated: "2026-07-14", featured: true, workflows: ["escalation"] },
+  { id: "esc-2", title: "QA Trend Reporting Reference", description: "How QA identifies recurring documentation, clinical, or compliance patterns and reports them to leadership.", category: "QA Escalation and Trend Reporting", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 5, updated: "2026-07-14", workflows: ["trend-reporting"] },
+  { id: "esc-3", title: "QA Trend Report Example (CSV)", description: "Example of a QA trend report export.", category: "QA Escalation and Trend Reporting", type: "Report/Export", format: "CSV", folder: FOLDER.reports, minutes: 3, updated: "2026-07-14", workflows: ["trend-reporting"] },
 
-  // ------- 8. QA Operational Standards -------
-  { id: "o1", title: "QA Accuracy Standards", description: "Accuracy expectations across all QA review work.", category: "QA Operational Standards", type: "Reference", minutes: 4, updated: "2026-05-17" },
-  { id: "o2", title: "Workflow Timeliness Standards", description: "Response and review timeliness expectations.", category: "QA Operational Standards", type: "Reference", minutes: 4, updated: "2026-05-15" },
-  { id: "o3", title: "QA Response Expectations", description: "Expected response times by workflow.", category: "QA Operational Standards", type: "Reference", minutes: 3, updated: "2026-05-13" },
-  { id: "o4", title: "QA Escalation Expectations", description: "Standards around when QA escalates vs follows up.", category: "QA Operational Standards", type: "Reference", minutes: 3, updated: "2026-05-11" },
-  { id: "o5", title: "Documentation Quality Standards", description: "Quality standards for QA notes and audit trail.", category: "QA Operational Standards", type: "Reference", minutes: 4, updated: "2026-05-09" },
-  { id: "o6", title: "Workflow Consistency Standards", description: "Operational consistency across the QA team.", category: "QA Operational Standards", type: "Reference", minutes: 3, updated: "2026-05-07" },
-  { id: "o7", title: "QA Accountability Standards", description: "Ownership, hand-offs, and accountability framing.", category: "QA Operational Standards", type: "Reference", minutes: 3, updated: "2026-05-05" },
-  { id: "o8", title: "Operational Excellence Standards", description: "What operational excellence looks like for QA.", category: "QA Operational Standards", type: "Reference", minutes: 4, updated: "2026-05-03" },
-  { id: "o9", title: "QA Prioritization Guide", description: "How to triage across competing operational risk.", category: "QA Operational Standards", type: "Guide", minutes: 4, updated: "2026-05-01" },
-  { id: "o10", title: "Calm Operations Principles", description: "Operating principles for calm-under-pressure QA work.", category: "QA Operational Standards", type: "Reference", minutes: 3, updated: "2026-04-29" },
+  // ------- 8. QA Role Packet and Signoff -------
+  { id: "pkt-1", title: "QA Role Packet", description: "Role packet for QA Reviewer / QA Director covering current scope, ownership boundaries, and daily rhythm.", category: "QA Role Packet and Signoff", type: "Role Packet", format: "PDF", folder: FOLDER.rolePacket, minutes: 8, updated: "2026-07-14", workflows: ["signoff"] },
+  { id: "pkt-2", title: "QA Onboarding Signoff", description: "Signoff form learners complete at the end of the 4-week QA onboarding journey.", category: "QA Role Packet and Signoff", type: "Signoff", format: "PDF", folder: FOLDER.rolePacket, minutes: 3, updated: "2026-07-14", workflows: ["signoff"], journeyDay: "Week 4" },
 
-  // ------- 9. Training & Reference Materials -------
-  { id: "r1", title: "QA Quick Start Guide", description: "First-week orientation for QA team members.", category: "Training & Reference Materials", type: "Guide", minutes: 8, updated: "2026-05-18" },
-  { id: "r2", title: "QA Workflow Cheat Sheets", description: "One-pagers for the most common QA workflows.", category: "Training & Reference Materials", type: "Reference", minutes: 3, updated: "2026-05-16" },
-  { id: "r3", title: "PR Timeline Quick Reference", description: "9-week and 6-week ladder on a single page.", category: "Training & Reference Materials", type: "Reference", minutes: 2, updated: "2026-05-14" },
-  { id: "r4", title: "Authorization Status Reference", description: "What each authorization status means operationally.", category: "Training & Reference Materials", type: "Reference", minutes: 3, updated: "2026-05-12" },
-  { id: "r5", title: "Escalation Matrix Reference", description: "Owner mapping for every common QA escalation.", category: "Training & Reference Materials", type: "Reference", minutes: 4, updated: "2026-05-10" },
-  { id: "r6", title: "Workflow Status Definitions", description: "Definitions for every workflow status QA uses.", category: "Training & Reference Materials", type: "Reference", minutes: 3, updated: "2026-05-08" },
-  { id: "r7", title: "QA Terminology Guide", description: "Glossary of QA-specific operational terms.", category: "Training & Reference Materials", type: "Reference", minutes: 4, updated: "2026-05-06" },
-  { id: "r8", title: "Operational FAQ", description: "Most common operational questions from new QA members.", category: "Training & Reference Materials", type: "Reference", minutes: 4, updated: "2026-05-04" },
-  { id: "r9", title: "Blossom QA Organizational Structure", description: "Who's who across QA and partnered teams.", category: "Training & Reference Materials", type: "Reference", minutes: 3, updated: "2026-05-02" },
-  { id: "r10", title: "QA Role Expectations Guide", description: "Role expectations across QA seniority levels.", category: "Training & Reference Materials", type: "Guide", minutes: 5, updated: "2026-04-30" },
+  // ------- 9. QA Training Journey Resources -------
+  { id: "jrn-1", title: "QA Journey - Week 1 Resource Pack", description: "Resources referenced across Week 1 modules of the QA journey.", category: "QA Training Journey Resources", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 6, updated: "2026-07-14", journeyDay: "Week 1" },
+  { id: "jrn-2", title: "QA Journey - Week 2 Resource Pack", description: "Resources referenced across Week 2 modules (clinical report QA + treatment plan QA).", category: "QA Training Journey Resources", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 6, updated: "2026-07-14", journeyDay: "Week 2" },
+  { id: "jrn-3", title: "QA Journey - Week 3 Resource Pack", description: "Resources referenced across Week 3 modules (documentation standards, corrections, missing items, fax follow-up).", category: "QA Training Journey Resources", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 6, updated: "2026-07-14", journeyDay: "Week 3" },
+  { id: "jrn-4", title: "QA Journey - Week 4 Resource Pack", description: "Resources referenced across Week 4 modules (compliance, audits, escalation, trend reporting, signoff).", category: "QA Training Journey Resources", type: "Training Resource", format: "PDF", folder: FOLDER.training, minutes: 6, updated: "2026-07-14", journeyDay: "Week 4" },
 
-  // ------- 10. System Guides & Platform Workflows -------
-  { id: "g1", title: "Using QA Dashboard", description: "How to read and act on the QA dashboard.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 4, updated: "2026-05-17", href: "/qa-team" },
-  { id: "g2", title: "Using QA Workspace", description: "Every panel, filter, and shortcut in the QA workspace.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 5, updated: "2026-05-15", href: "/qa-workspace" },
-  { id: "g3", title: "Using QA Queue", description: "Triage, ownership, and prioritization inside the queue.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 4, updated: "2026-05-13", href: "/qa-queue" },
-  { id: "g4", title: "Using Search & Filters", description: "Global search and operational filtering across QA.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 3, updated: "2026-05-11" },
-  { id: "g5", title: "Workflow Timeline Guide", description: "How workflow timelines render and what each event means.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 4, updated: "2026-05-09" },
-  { id: "g6", title: "Internal Notes Guide", description: "How to use internal notes for hand-offs and audit trail.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 3, updated: "2026-05-07" },
-  { id: "g7", title: "Operational Insights Guide", description: "What Operational Insights can and cannot answer for QA.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 4, updated: "2026-05-05", href: "/ai/assistant" },
-  { id: "g8", title: "CentralReach Workflow References", description: "How QA touches CentralReach operationally.", category: "System Guides & Platform Workflows", type: "Reference", minutes: 5, updated: "2026-05-03" },
-  { id: "g9", title: "Monday.com Workflow References", description: "Operational references for legacy Monday workflows.", category: "System Guides & Platform Workflows", type: "Reference", minutes: 5, updated: "2026-05-01" },
-  { id: "g10", title: "QA Operational System Navigation Guide", description: "Where everything lives across Blossom OS for QA.", category: "System Guides & Platform Workflows", type: "Platform Guide", minutes: 5, updated: "2026-04-29" },
+  // ------- 10. QA Reports, Exports, and Examples -------
+  { id: "rpt-1", title: "QA Queue Snapshot Example (CSV)", description: "Example export of the QA queue snapshot used today.", category: "QA Reports, Exports, and Examples", type: "Report/Export", format: "CSV", folder: FOLDER.reports, minutes: 3, updated: "2026-07-14" },
+  { id: "rpt-2", title: "Clinical Report QA Log Example (CSV)", description: "Example clinical report QA log used today.", category: "QA Reports, Exports, and Examples", type: "Report/Export", format: "CSV", folder: FOLDER.reports, minutes: 3, updated: "2026-07-14", workflows: ["clinical-report"] },
+  { id: "rpt-3", title: "Treatment Plan QA Log Example (CSV)", description: "Example treatment plan QA log used today.", category: "QA Reports, Exports, and Examples", type: "Report/Export", format: "CSV", folder: FOLDER.reports, minutes: 3, updated: "2026-07-14", workflows: ["treatment-plan"] },
+
+  // ------- 11. Authorizations and Training Handoff References -------
+  { id: "hand-1", title: "QA to Authorizations Handoff Reference", description: "Handoff reference: what QA hands off to Authorizations for submission and what Authorizations owns from there.", category: "Authorizations and Training Handoff References", type: "Handoff Reference", format: "PDF", folder: FOLDER.handoffs, minutes: 5, updated: "2026-07-14", workflows: ["handoff"] },
+  { id: "hand-2", title: "QA to Clinical Leadership Handoff Reference", description: "Handoff reference for clinical concerns raised during QA that require clinical leadership review.", category: "Authorizations and Training Handoff References", type: "Handoff Reference", format: "PDF", folder: FOLDER.handoffs, minutes: 5, updated: "2026-07-14", workflows: ["handoff"] },
+  { id: "hand-3", title: "QA to Training Handoff Reference", description: "When QA sees a recurring documentation or clinical trend that indicates a training gap, this is how it hands off to Training Management.", category: "Authorizations and Training Handoff References", type: "Handoff Reference", format: "PDF", folder: FOLDER.handoffs, minutes: 5, updated: "2026-07-14", workflows: ["handoff", "trend-reporting"] },
+
+  // ------- 12. Needs Review - QA Adjacent (planning / reference only) -------
+  { id: "nr-1", title: "QA-Adjacent Planning Reference", description: "Planning or reference material adjacent to QA. Not a current QA SOP - do not treat as current operating instruction.", category: "Needs Review - QA Adjacent", type: "Needs Review", format: "PDF", folder: FOLDER.needsReview, minutes: 6, updated: "2026-07-14", needsReview: true, planningOnly: true },
+  { id: "nr-2", title: "QA-Adjacent Blossom OS Concept Note", description: "Future-state concept note. Blossom OS is the training/resource platform in this context - not the current QA operating system. Not required onboarding.", category: "Needs Review - QA Adjacent", type: "Needs Review", format: "PDF", folder: FOLDER.needsReview, minutes: 6, updated: "2026-07-14", needsReview: true, planningOnly: true },
 ];
 
+// ---- Content gap: 03 - QA Videos and Media has no QA-specific videos yet ----
+const videoGap = {
+  folder: FOLDER.videos,
+  note: "No QA-specific videos found in the upload package. Do not invent video resources - these placeholder slots represent planned video content only.",
+  slots: [
+    "QA Department overview video",
+    "Clinical report review walkthrough",
+    "Treatment plan QA walkthrough",
+    "Documentation corrections walkthrough",
+    "Missing item and fax follow-up walkthrough",
+    "QA escalation and trend reporting walkthrough",
+  ],
+};
+
 const workflows: { key: WorkflowKey; label: string; icon: typeof WorkflowIcon }[] = [
-  { key: "qa-review", label: "QA Review", icon: ClipboardCheck },
-  { key: "pr-followup", label: "PR Follow-Up", icon: Activity },
-  { key: "tp-review", label: "Treatment Plan Review", icon: FileText },
-  { key: "missing-info", label: "Missing Information", icon: AlertTriangle },
+  { key: "clinical-report", label: "Clinical Report QA", icon: ClipboardCheck },
+  { key: "treatment-plan", label: "Treatment Plan QA", icon: FileText },
+  { key: "documentation", label: "Documentation & Corrections", icon: BookOpen },
+  { key: "missing-info", label: "Missing Items", icon: AlertTriangle },
+  { key: "fax-chase", label: "Fax Follow-Up", icon: Mail },
+  { key: "compliance-audit", label: "Compliance & Audits", icon: ShieldCheck },
   { key: "escalation", label: "Escalation", icon: Flame },
-  { key: "supervision", label: "Supervision Visibility", icon: ShieldCheck },
-  { key: "expiring", label: "Expiring Items", icon: Clock },
-  { key: "submission", label: "Submission Readiness", icon: Target },
+  { key: "trend-reporting", label: "Trend Reporting", icon: Activity },
+  { key: "signoff", label: "Role Packet & Signoff", icon: ListChecks },
+  { key: "handoff", label: "Handoffs", icon: Share2 },
 ];
 
 const categoryMeta: Record<Category, { icon: typeof FileText; blurb: string }> = {
-  "QA SOPs": { icon: FileText, blurb: "Core QA operational procedures." },
-  "Authorization Review Workflows": { icon: ClipboardCheck, blurb: "Auth review, missing info, submission." },
-  "Progress Report Workflows": { icon: Activity, blurb: "PR collection and escalation ladders." },
-  "Treatment Plan Review Workflows": { icon: FileText, blurb: "QA validation and routing for TPs." },
-  "Escalations & Follow-Ups": { icon: Flame, blurb: "Escalation standards and ownership." },
-  "Supervision Visibility & QA Coordination": { icon: ShieldCheck, blurb: "Supervision visibility (operational)." },
-  "Communication Templates": { icon: MessageSquare, blurb: "Outreach drafts in the Blossom tone." },
-  "QA Operational Standards": { icon: Target, blurb: "Accuracy, timeliness, accountability." },
-  "Training & Reference Materials": { icon: BookOpen, blurb: "Quick starts, cheat sheets, FAQs." },
-  "System Guides & Platform Workflows": { icon: Wrench, blurb: "Blossom OS and platform workflows." },
+  "QA Start Here": { icon: Star, blurb: "Current-state overview and journey entry point." },
+  "QA SOPs": { icon: FileText, blurb: "Current-state QA SOPs (PDF only)." },
+  "Clinical Report QA": { icon: ClipboardCheck, blurb: "Clinical/progress report QA references." },
+  "Treatment Plan QA": { icon: FileText, blurb: "Treatment plan QA references." },
+  "Documentation Standards and Corrections": { icon: BookOpen, blurb: "Standards and correction routing." },
+  "Missing Items and Fax Follow-Up": { icon: AlertTriangle, blurb: "Missing item tracking and fax chase." },
+  "Compliance Reviews and Audits": { icon: ShieldCheck, blurb: "Compliance reviews, audits, findings." },
+  "QA Escalation and Trend Reporting": { icon: Flame, blurb: "Escalation paths and trend reporting." },
+  "QA Role Packet and Signoff": { icon: ListChecks, blurb: "Role packet and onboarding signoff." },
+  "QA Training Journey Resources": { icon: BookOpen, blurb: "Resource packs per journey week." },
+  "QA Reports, Exports, and Examples": { icon: Activity, blurb: "Example exports and report formats." },
+  "Authorizations and Training Handoff References": { icon: Share2, blurb: "Handoffs to Auths, Clinical, Training." },
+  "Needs Review - QA Adjacent": { icon: AlertTriangle, blurb: "Planning references. Not current SOPs." },
 };
 
 const typeIcon: Record<ResourceType, typeof FileText> = {
   SOP: FileText,
-  Workflow: WorkflowIcon,
-  Guide: BookOpen,
-  Template: MessageSquare,
-  Checklist: ListChecks,
-  Reference: BookOpen,
-  "Platform Guide": Wrench,
-  "Escalation Guide": Flame,
-  "Communication Template": Mail,
+  "Training Resource": BookOpen,
+  "Report/Export": Activity,
+  "Role Packet": ListChecks,
+  "Signoff": ListChecks,
+  "Handoff Reference": Share2,
+  "Needs Review": AlertTriangle,
 };
 
 const aiPrompts = [
-  { q: "Show the PR escalation workflow.", a: "Georgia: Rivky Weissman begins weekly outreach at 9 weeks; Shira + Rachel engage at 6 weeks. Other states: Rikki Wallach runs weekly outreach at 9 weeks with Julianne included; SD escalation at 6 weeks if PR still missing." },
-  { q: "Find treatment plan review SOPs.", a: "Open Treatment Plan Review SOP for the full review path. Treatment Plan Readiness Checklist covers required sections, signatures, and supporting docs before submission." },
-  { q: "Explain the QA review process.", a: "Treatment auths sit In QA Review until the assigned reviewer confirms the plan is complete, signed where required, and payor-ready. The auth then moves to Awaiting Submission and ownership returns to the coordinator." },
-  { q: "Show BCBA follow-up templates.", a: "BCBA Reminder Templates and PR Follow-Up Email Templates cover routine outreach. Escalation Communication Templates handle the 6-week escalation point." },
-  { q: "Find expiring authorization workflows.", a: "Open the Expiring Authorization Workflow for the 90 / 60 / 30 / 14 day checkpoints. Expiration Risk Escalation SOP covers escalation criteria tied to expiration windows." },
-  { q: "Show missing information procedures.", a: "Map each gap to its owner using the Missing Information Workflow, then apply Workflow Ownership Matrix for hand-off. Use Missing Documentation Templates for outreach." },
+  { q: "What does the QA team review today?", a: "QA reviews documentation and clinical/report quality, identifies missing items, corrections, documentation issues, and compliance risks, and reports recurring trends. QA does not replace Clinical supervision, Authorizations execution, Scheduling, Billing/RCM, HR, or State Director ownership." },
+  { q: "Show the clinical report QA process.", a: "Open L2 Clinical Report QA Review Process SOP (PDF) plus the Clinical Report QA Reference Guide. Common findings and the journey checklist live in the Clinical Report QA category." },
+  { q: "Show the treatment plan QA process.", a: "Open L2 Treatment Plan QA Current Operations (PDF) and the Treatment Plan QA Reference Guide. Common findings and the journey checklist live in the Treatment Plan QA category." },
+  { q: "How do we handle missing items and fax follow-up?", a: "L2 Documentation Missing Item Follow-Up Process SOP and L2 Fax and External Document Chase Process SOP describe the current process. Reference guides and a CSV tracker example live under Missing Items and Fax Follow-Up." },
+  { q: "When does QA escalate?", a: "L2 QA Escalation Review Process SOP defines the escalation paths. Escalate patterns or urgent issues to QA leadership, Clinical leadership, Operations, Authorizations, or State leadership as appropriate." },
+  { q: "Where are the reports and exports?", a: "The QA Reports, Exports, and Examples category holds example CSV exports for the QA queue snapshot, clinical report QA log, and treatment plan QA log." },
 ];
 
 export default function OSQAResources() {
@@ -274,11 +265,11 @@ export default function OSQAResources() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/60 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               <Library className="h-3 w-3" />
-              Resource Library · QA / Compliance
+              Resource Library · Quality Assurance · Current-State
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">QA Resources</h1>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Operational SOPs, workflows, templates, and references curated for QA. Search by workflow, not by file name.
+              Current-state SOPs, references, role packet, journey resources, and example exports for the QA team. QA SOPs are surfaced as PDFs only. Blossom OS is the training/resource platform - not the current QA operating system.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -293,6 +284,9 @@ export default function OSQAResources() {
             </Button>
           </div>
         </header>
+
+        {/* Video content gap */}
+        {!isFiltering && <VideoGapCard />}
 
         {/* Search */}
         <div className="relative">
@@ -508,6 +502,10 @@ function FeaturedCard({ r, saved, onToggleSave }: { r: Resource; saved: boolean;
       <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.description}</p>
       <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
         <Badge variant="secondary" className="rounded-full text-[10px]">{r.type}</Badge>
+        {r.format && <Badge variant="outline" className="rounded-full text-[10px]">{r.format}</Badge>}
+        {r.needsReview && <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15 text-[10px]">Needs Review</Badge>}
+        {r.planningOnly && <Badge variant="outline" className="rounded-full border-amber-500/40 text-amber-700 text-[10px]">Planning Reference · Not Current SOP</Badge>}
+        {r.journeyDay && <Badge variant="outline" className="rounded-full text-[10px]">Journey · {r.journeyDay}</Badge>}
         <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {r.minutes} min</span>
         <span>·</span>
         <span>Updated {formatDate(r.updated)}</span>
@@ -534,6 +532,9 @@ function ResourceRow({ r, saved, onToggleSave }: { r: Resource; saved: boolean; 
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm font-medium text-foreground">{r.title}</p>
           <Badge variant="secondary" className="rounded-full text-[10px]">{r.type}</Badge>
+          {r.format && <Badge variant="outline" className="rounded-full text-[10px]">{r.format}</Badge>}
+          {r.needsReview && <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15 text-[10px]">Needs Review</Badge>}
+          {r.planningOnly && <Badge variant="outline" className="rounded-full border-amber-500/40 text-amber-700 text-[10px]">Not Current SOP</Badge>}
           <span className="text-[11px] text-muted-foreground">{r.category}</span>
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{r.description}</p>
@@ -625,5 +626,38 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+function VideoGapCard() {
+  return (
+    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-5">
+      <div className="flex items-start gap-3">
+        <div className="grid h-9 w-9 place-items-center rounded-xl bg-amber-500/10 text-amber-600">
+          <PlayCircle className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">Content gap · QA videos</p>
+            <Badge variant="outline" className="rounded-full border-amber-500/40 text-[10px] text-amber-700">
+              {videoGap.folder}
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{videoGap.note}</p>
+          <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
+            {videoGap.slots.map((s) => (
+              <div key={s} className="flex items-center gap-2 rounded-lg border border-dashed border-border/60 bg-card/50 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                <PlayCircle className="h-3 w-3" />
+                <span className="truncate">{s}</span>
+                <Badge variant="secondary" className="ml-auto rounded-full text-[9px]">Planned</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Suppress unused-var lint for TODAY (kept for potential "updated today" copy)
 void TODAY;
+void Users;
+void Target;
+void ExternalLink;
