@@ -1114,6 +1114,7 @@ const App = () => (
                   <Route path="/academy/path/:slug" element={<OSShellPage><TrainingPathDetail /></OSShellPage>} />
                   <Route path="/academy/path/:slug/day/:dayId" element={<OSShellPage><TrainingPathDayDetail /></OSShellPage>} />
                   <Route path="/academy/path/:slug/module/:moduleId" element={<OSShellPage><TrainingModuleRuntime /></OSShellPage>} />
+                  <Route path="/academy/path/:slug/module/:moduleId/lesson/:lessonId" element={<OSShellPage><TrainingLessonRuntime /></OSShellPage>} />
                   <Route path="/my-learning" element={<OSShellPage><MyLearning /></OSShellPage>} />
                   <Route path="/catalog" element={<OSShellPage><TrainingCatalog /></OSShellPage>} />
                   {/* Integrations pages render inside the OS shell only. They
