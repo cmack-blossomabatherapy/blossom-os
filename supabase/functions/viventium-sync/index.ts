@@ -313,19 +313,26 @@ Deno.serve(async (req) => {
     const byVid = new Map<string, string>();
     const byEmail = new Map<string, string>();
     const byCode = new Map<string, string>();
+    const byName = new Map<string, string>();
+    const nameKey = (f?: string | null, l?: string | null) =>
+      f && l ? `${f.trim().toLowerCase()}|${l.trim().toLowerCase()}` : "";
     {
       const { data: existing } = await admin
         .from("employees")
-        .select("id,viventium_employee_id,email,employee_code");
+        .select("id,viventium_employee_id,email,employee_code,first_name,last_name");
       for (const e of (existing ?? []) as {
         id: string;
         viventium_employee_id: string | null;
         email: string | null;
         employee_code: string | null;
+        first_name: string | null;
+        last_name: string | null;
       }[]) {
         if (e.viventium_employee_id) byVid.set(e.viventium_employee_id, e.id);
         if (e.email) byEmail.set(e.email.toLowerCase(), e.id);
         if (e.employee_code) byCode.set(e.employee_code, e.id);
+        const nk = nameKey(e.first_name, e.last_name);
+        if (nk && !byName.has(nk)) byName.set(nk, e.id);
       }
     }
 
@@ -339,6 +346,7 @@ Deno.serve(async (req) => {
         (n.viventium_employee_id && byVid.get(n.viventium_employee_id)) ||
         (n.email && byEmail.get(n.email)) ||
         (n.employee_code && byCode.get(n.employee_code)) ||
+        byName.get(nameKey(n.first_name, n.last_name)) ||
         null;
 
       const directoryPatch: Record<string, unknown> = {
