@@ -193,6 +193,7 @@ export default function BcbaProductivityReportV3() {
   /* ----- shared admin dataset (the only data source) ----- */
   const [sharedStatus, setSharedStatus] = useState<BcbaDatasetStatus | null>(null);
   const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedProgress, setSharedProgress] = useState<{ loaded: number; total: number } | null>(null);
   const [sharedError, setSharedError] = useState("");
 
   useEffect(() => {
@@ -238,11 +239,15 @@ export default function BcbaProductivityReportV3() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadSharedDataset(opts?: { silent?: boolean }) {
+  async function loadSharedDataset(opts?: { silent?: boolean; force?: boolean }) {
     setSharedLoading(true);
     setSharedError("");
+    setSharedProgress(null);
     try {
-      const shared = await getBcbaProductivitySharedRows();
+      const shared = await getBcbaProductivitySharedRows({
+        force: opts?.force,
+        onProgress: (loaded, total) => setSharedProgress({ loaded, total }),
+      });
       const s = await getBcbaProductivityDatasetStatus();
       setSharedStatus(s);
       if (!shared.length) {
@@ -265,6 +270,7 @@ export default function BcbaProductivityReportV3() {
       toast.error(message);
     } finally {
       setSharedLoading(false);
+      setSharedProgress(null);
     }
   }
 
