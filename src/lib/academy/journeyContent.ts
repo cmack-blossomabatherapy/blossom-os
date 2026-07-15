@@ -27,8 +27,9 @@ import { CASE_MANAGER_DAYS, CASE_MANAGER_WEEKS, type CaseManagerDayModule } from
 import { BEHAVIORAL_SUPPORT_DAYS, BEHAVIORAL_SUPPORT_WEEKS, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
 import { ASSISTANT_STATE_DIRECTOR_DAYS, ASSISTANT_STATE_DIRECTOR_WEEKS, type AssistantStateDirectorDayModule } from "@/lib/training/assistantStateDirectorAcademy";
 import { STATE_DIRECTOR_DAYS, STATE_DIRECTOR_WEEKS, type StateDirectorDayModule } from "@/lib/training/stateDirectorAcademy";
+import { MARKETING_BD_DAYS, MARKETING_BD_WEEKS, type MarketingBdDayModule } from "@/lib/training/marketingBdAcademy";
 
-export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager" | "behavioral-support" | "assistant-state-director" | "state-director";
+export type AcademyModuleSource = "academyData" | "rbt" | "bcba" | "intake" | "recruiting" | "authorizations" | "scheduling" | "staffing" | "hr" | "credentialing" | "qa" | "case-manager" | "behavioral-support" | "assistant-state-director" | "state-director" | "marketing-bd";
 
 /** Training-shaped record that carries the original source for routing & resource lookup. */
 export type AcademyJourneyModule = Training & {
@@ -114,6 +115,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
     case "behavioral-support":   return []; // sourced from behavioralSupportAcademy.ts
     case "assistant-state-director": return []; // sourced from assistantStateDirectorAcademy.ts
     case "state-director": return []; // sourced from stateDirectorAcademy.ts
+    case "marketing-and-business-development": return []; // sourced from marketingBdAcademy.ts
     case "hr":                   return []; // sourced from hrAcademy.ts
     case "credentialing":        return []; // sourced from credentialingAcademy.ts
     case "marketing":            return byDept("marketing");
@@ -134,7 +136,7 @@ function sourceTrainingsForSlug(slug: string, all: Training[]): Training[] {
 /** Build the live runtime route for a module id, source-aware. */
 function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
   return (id: string) => {
-    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::") || id.startsWith("state-director::")) {
+    if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::") || id.startsWith("state-director::") || id.startsWith("mbd-")) {
       return `/academy/path/${slug}/module/${encodeURIComponent(id)}`;
     }
     return `/training/${id}`;
@@ -143,7 +145,7 @@ function runtimeRouteForSlug(slug: string): (moduleId: string) => string {
 
 /** Unified per-module status: runtime store for rbt/bcba, academyData for everything else. */
 function unifiedStatus(id: string): "completed" | "in_progress" | "overdue" | "not_started" {
-  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::") || id.startsWith("state-director::")) {
+  if (id.startsWith("rbt::") || id.startsWith("bcba::") || id.startsWith("intake::") || id.startsWith("recruiting::") || id.startsWith("authorizations::") || id.startsWith("scheduling::") || id.startsWith("staffing::") || id.startsWith("hr::") || id.startsWith("credentialing::") || id.startsWith("qa::") || id.startsWith("case-manager::") || id.startsWith("behavioral-support::") || id.startsWith("assistant-state-director::") || id.startsWith("state-director::") || id.startsWith("mbd-")) {
     const s = getRuntimeStatus(id);
     return s === "completed" ? "completed" : s === "in_progress" ? "in_progress" : "not_started";
   }
