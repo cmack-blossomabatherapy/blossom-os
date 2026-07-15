@@ -837,7 +837,7 @@ const App = () => (
                   <Route path="/rbt/supervision" element={<OSRBTSupervision />} />
                   <Route path="/rbt/messages" element={<OSRBTMessages />} />
                   <Route path="/rbt/help" element={<OSRBTHelp />} />
-                  <Route path="/rbt/resources" element={<Navigate to="/resource-library" replace />} />
+                  <Route path="/rbt/resources" element={<OSRBTResources />} />
                   <Route path="/rbt/reports" element={<Navigate to="/reports?audience=rbt" replace />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />

@@ -1,0 +1,1 @@
+CREATE POLICY "Authenticated can read rbt-resources" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'rbt-resources');
