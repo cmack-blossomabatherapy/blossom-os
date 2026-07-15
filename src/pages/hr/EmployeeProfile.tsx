@@ -71,7 +71,7 @@ export default function EmployeeProfile() {
     return (
       <div className="p-10 text-center">
         <p className="text-muted-foreground">Employee not found.</p>
-        <Button asChild variant="outline" size="sm" className="mt-3"><Link to="/hr/directory">Back to directory</Link></Button>
+        <Button asChild variant="outline" size="sm" className="mt-3"><Link to="/user-management">Back to directory</Link></Button>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export default function EmployeeProfile() {
     <div className="space-y-4 animate-fade-in">
       <Card className="overflow-hidden">
         <div className="border-b border-border/50 bg-secondary/25 px-5 py-3 flex items-center justify-between gap-3">
-          <Link to="/hr/directory" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+          <Link to="/user-management" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-3.5 w-3.5" /> Directory
           </Link>
           <EmployeeInfoEditor employee={employee} departments={departments} canEditEmployee={canEditEmployee} canEditPayroll={canEditPayroll} onSaved={() => load(employee.id)} />

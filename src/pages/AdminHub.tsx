@@ -33,7 +33,7 @@ const groups: AdminGroup[] = [
       { to: "/user-management", label: "User Management", desc: "Invite, edit, manage logins & NFC badges, assign roles", icon: UsersRound },
       { to: "/admin/access-requests", label: "Access Requests", desc: "Review pending sign-up requests", icon: UserCheck, badge: "New" },
       { to: "/admin/onboarding-progress", label: "Onboarding Progress", desc: "Search users, view completion & certificates", icon: GraduationCap },
-      { to: "/hr/directory", label: "Employee Directory", desc: "Full company directory", icon: UsersRound },
+      { to: "/user-management", label: "Employee Directory", desc: "Full company directory (now unified with User Management)", icon: UsersRound },
       { to: "/hr/org-chart", label: "Org Chart", desc: "Reporting structure", icon: Workflow },
       { to: "/admin/role-audit", label: "Role Audit Log", desc: "Track permission changes", icon: HistoryIcon },
     ],

@@ -99,7 +99,6 @@ import HRAdminAssistantDashboard from "./pages/training/HRAdminAssistantDashboar
 import AuthorizationCoordinatorJourney from "./pages/training/AuthorizationCoordinatorJourney";
 import BCBAJourney from "./pages/training/BCBAJourney";
 import TrackAnalytics from "./pages/hr/TrackAnalytics";
-import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
 import OrgChartManage from "./pages/hr/OrgChartManage";
@@ -1250,7 +1249,7 @@ const App = () => (
                     <Route path="analytics" element={<AiAnalytics />} />
                     <Route path="appearance" element={<AiAppearance />} />
                   </Route>
-                  <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
+                  <Route path="/hr/directory" element={<Navigate to="/user-management" replace />} />
                   <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
                   <Route path="/hr/org-chart/manage" element={<PermissionRoute permission="hr.employees.edit"><OrgChartManage /></PermissionRoute>} />

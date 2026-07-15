@@ -150,7 +150,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
   ] },
   { title: "HR Suite", items: [
     { label: "HR Dashboard", path: "/hr", perm: "hr.view" },
-    { label: "Employees", path: "/hr/directory", perm: "hr.employees.view" },
+    { label: "Employees", path: "/user-management", perm: "hr.employees.view" },
     { label: "Org Chart", path: "/hr/org-chart", perm: "hr.employees.view" },
     { label: "Onboarding", path: "/hr/onboarding", perm: "hr.onboarding.manage" },
     { label: "Reviews", path: "/hr/reviews", perm: "hr.reviews.view" },
