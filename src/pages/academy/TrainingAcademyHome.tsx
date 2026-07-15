@@ -17,6 +17,7 @@ import { resolveRoleJourney } from "@/lib/training/roleJourneyAssignments";
 import { useRoleJourneyAssignments } from "@/hooks/useRoleJourneyAssignments";
 import { BlossomAIButton } from "@/components/ai/BlossomAIAssistant";
 import { useOSRoleSafe } from "@/contexts/OSRoleContext";
+import { useLastAcademyPosition } from "@/lib/academy/lessonProgress";
 
 /** Warm, color-coded accents for the LMS home. Used sparingly on icon
  *  tiles and status chips so the page feels alive without losing the
@@ -64,6 +65,12 @@ export default function TrainingAcademyHome() {
   // honoring HR overrides for every role (including rbt/bcba).
   const primarySlug = resolvedFromRoles ?? "blossom-os-basics";
   const myPath = TRAINING_PATHS.find((p) => p.slug === primarySlug) ?? null;
+  const lastPos = useLastAcademyPosition();
+  const resumeHref = lastPos
+    ? (lastPos.lessonId
+        ? `/academy/path/${lastPos.journeySlug}/module/${encodeURIComponent(lastPos.moduleId)}/lesson/${encodeURIComponent(lastPos.lessonId)}${lastPos.trackId ? `?track=${lastPos.trackId}` : ""}`
+        : `/academy/path/${lastPos.journeySlug}/module/${encodeURIComponent(lastPos.moduleId)}${lastPos.trackId ? `?track=${lastPos.trackId}` : ""}`)
+    : null;
   const myTraining = myPath
     ? [{ ...myPath, progress: 0, lastOpened: "—" }]
     : [];
@@ -164,6 +171,33 @@ export default function TrainingAcademyHome() {
       <div className="mt-8">
         <WelcomeToBlossomCard />
       </div>
+
+      {/* ---------- Resume where you left off ---------- */}
+      {lastPos && resumeHref && (
+        <Link
+          to={resumeHref}
+          className="group mt-8 flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-transparent to-transparent p-5 transition-all hover:-translate-y-0.5 hover:border-primary/50"
+        >
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <PlayCircle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Resume where you left off</p>
+              <p className="mt-1 truncate text-[15px] font-semibold tracking-tight">
+                {lastPos.lessonTitle || lastPos.moduleTitle || "Continue your lesson"}
+              </p>
+              <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
+                {lastPos.moduleTitle ? `${lastPos.moduleTitle} · ` : ""}
+                Last viewed {new Date(lastPos.updatedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+              </p>
+            </div>
+          </div>
+          <span className="hidden shrink-0 items-center gap-1 text-[12.5px] font-medium text-primary sm:inline-flex">
+            Resume <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+      )}
 
       {/* ---------- My Training (Continue) — role-scoped, single path ---------- */}
       <Section

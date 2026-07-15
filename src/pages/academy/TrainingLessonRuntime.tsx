@@ -73,8 +73,16 @@ export default function TrainingLessonRuntime() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    if (record.status === "not_started") startLesson(decodedModuleId, decodedLessonId);
-  }, [record.status, decodedModuleId, decodedLessonId]);
+    // Always record the visit (updates last-seen and resume pointer); the
+    // store no-ops the status change if the lesson is already in progress
+    // or completed.
+    startLesson(decodedModuleId, decodedLessonId, {
+      journeySlug: slug,
+      trackId: slug === "rbt" ? (rbtTrackId ?? "not_certified") : null,
+      moduleTitle: ctx.title,
+      lessonTitle: lesson.title,
+    });
+  }, [record.status, decodedModuleId, decodedLessonId, slug, rbtTrackId, ctx.title, lesson.title]);
 
   // When all lessons are completed, mark the parent module runtime complete.
   const runtimeCtx: RuntimeContext = useMemo(() => ({
@@ -98,7 +106,12 @@ export default function TrainingLessonRuntime() {
   const moduleHref = `/academy/path/${slug}/module/${encodeURIComponent(decodedModuleId)}${trackSuffix}`;
 
   const onComplete = () => {
-    completeLesson(decodedModuleId, decodedLessonId);
+    completeLesson(decodedModuleId, decodedLessonId, undefined, {
+      journeySlug: slug,
+      trackId: slug === "rbt" ? (rbtTrackId ?? "not_certified") : null,
+      moduleTitle: ctx.title,
+      lessonTitle: lesson.title,
+    });
   };
 
   const isCompleted = record.status === "completed";
