@@ -20,6 +20,7 @@ import { SCHEDULING_LESSON_CONTENT } from "./schedulingLessonsFull";
 import { STAFFING_LESSON_CONTENT } from "./staffingLessonsFull";
 import { HR_LESSON_CONTENT } from "./hrLessonsFull";
 import { CREDENTIALING_LESSON_CONTENT } from "./credentialingLessonsFull";
+import { QA_LESSON_CONTENT } from "./qaLessonsFull";
 
 export interface LessonSection {
   heading: string;
@@ -254,6 +255,7 @@ export function getLessonContent(moduleId: string, lessonId: string): LessonCont
     STAFFING_LESSON_CONTENT[key] ??
     HR_LESSON_CONTENT[key] ??
     CREDENTIALING_LESSON_CONTENT[key] ??
+    QA_LESSON_CONTENT[key] ??
     null
   );
 }
