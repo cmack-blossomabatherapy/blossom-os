@@ -487,12 +487,20 @@ function SourcesList({ sources, onClose }: { sources: AiSource[]; onClose: () =>
         Sources
       </div>
       {sources.map((s, i) => {
-        const to = s.sourceId ? `/resource-library/${s.sourceId}` : s.url;
+        const to = s.url ?? (s.sourceId ? `/resource-library/resource/${s.sourceId}` : undefined);
+        const num = typeof s.number === "number" ? s.number : i + 1;
         const inner = (
-          <span className="flex items-center gap-1.5 text-xs text-foreground/90 hover:text-primary group">
-            <span className="text-[10px] font-mono text-muted-foreground">[{i + 1}]</span>
-            <span className="truncate">{s.title}</span>
-            <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-70 shrink-0" />
+          <span className="flex items-start gap-1.5 text-xs text-foreground/90 hover:text-primary group">
+            <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">[{num}]</span>
+            <span className="min-w-0 flex-1">
+              <span className="truncate block">{s.title}</span>
+              {s.snippet && (
+                <span className="block text-[10.5px] text-muted-foreground line-clamp-2 mt-0.5">
+                  {s.snippet}
+                </span>
+              )}
+            </span>
+            <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-70 shrink-0 mt-0.5" />
           </span>
         );
         if (!to) return <div key={s.id}>{inner}</div>;
