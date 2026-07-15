@@ -25,6 +25,7 @@ import {
   saveCancellationLastSession, loadCancellationLastSession, clearCancellationLastSession,
 } from "@/lib/os/cancellationSavedReports";
 import { pushRecent } from "@/lib/os/reportsCatalog";
+import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 
 /* ============================================================
  * Cancellation Command Center
@@ -868,6 +869,16 @@ export default function CancellationCommandCenter() {
           onChange={(e) => handleBilling(e.target.files)} />
         <input ref={authInput} type="file" accept={SUPPORTED_EXTENSIONS} multiple className="hidden"
           onChange={(e) => handleAuths(e.target.files)} />
+
+        <CentralReachRequirementsCard
+          exportName="Three CentralReach exports — Scheduling (required), Billing, Authorizations"
+          requiredColumns={[
+            "Scheduling: StartDateTime, ClientName, Provider, BCBA, Status, CancelledOn, Reason, ProcedureCode, Hours, Location/State, Payor",
+            "Billing: DateOfService, ClientName, ProcedureCode, TimeWorkedInHours, ClientChargesTotal",
+            "Authorizations: ClientName, BCBA, StartDate, EndDate",
+          ]}
+          filterNote="Scheduling export is required to run the dashboard. Billing enables lost-revenue math. Authorization export drives coverage/leakage. Admin-fed cancellation dataset is coming — upload the CR exports here for now."
+        />
 
         {/* upload chips */}
         <div className="mt-5 grid gap-3 md:grid-cols-3">

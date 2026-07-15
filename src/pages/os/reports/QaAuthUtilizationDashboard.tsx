@@ -17,6 +17,7 @@ import { KpiTile } from "@/components/dashboards/KpiTile";
 import { ChartCard } from "@/components/dashboards/ChartCard";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import type { KpiSpec, ChartSpec, DrilldownSpec } from "@/lib/os/dashboardEngine/types";
+import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 
 /* ============================================================
  * QA Authorization Utilization Dashboard
@@ -506,6 +507,17 @@ export default function QaAuthUtilizationDashboard() {
         </div>
         <ReportAIButton preset="auth-utilization" />
       </div>
+
+      <CentralReachRequirementsCard
+        exportName="CentralReach Authorization export (CSV or XLSX)"
+        requiredColumns={[
+          "ClientName / ClientId", "AuthorizationNumber", "Payor",
+          "ServiceCode / CPT", "AuthorizedHours", "WorkedHours",
+          "PendingHours", "RemainingHours", "StartDate", "ExpirationDate",
+          "BCBA (optional)", "State (optional)",
+        ]}
+        filterNote="Powers both Authorization Analysis and Authorization Utilization — Hour Based. Admin-fed auth dataset is coming; upload the CR export below to run the report today."
+      />
 
       {/* Upload */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">
