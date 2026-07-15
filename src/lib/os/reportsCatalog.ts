@@ -4,6 +4,7 @@ import {
   Sparkles, Stethoscope, Target, TrendingUp, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
+import { DEPARTMENT_DASHBOARDS, DEPARTMENT_DASHBOARD_IDS } from "@/data/departmentDashboards";
 
 export type ReportCategoryId =
   | "operations" | "qa" | "authorizations" | "scheduling" | "recruiting"
@@ -63,6 +64,45 @@ export interface ReportDef {
 }
 
 export const REPORTS: ReportDef[] = [
+  /* ============================================================
+   * Department Dashboards — Pass 01
+   * ------------------------------------------------------------
+   * Small operational dashboards for each department. Rendered by
+   * <DepartmentDashboardView /> via ReportDetail. Definitions live
+   * in src/data/departmentDashboards.ts; entries here surface the
+   * cards on /reports with the right category and role visibility.
+   * ============================================================ */
+  ...DEPARTMENT_DASHBOARDS.map<ReportDef>((d) => {
+    const map: Record<string, ReportCategoryId> = {
+      "department-intake-dashboard": "operations",
+      "department-authorizations-dashboard": "authorizations",
+      "department-staffing-dashboard": "scheduling",
+      "department-scheduling-dashboard": "scheduling",
+      "department-recruiting-dashboard": "recruiting",
+      "department-hr-dashboard": "hr",
+      "department-qa-dashboard": "qa",
+      "department-clinic-dashboard": "clinical",
+      "department-training-dashboard": "training",
+    };
+    return {
+      id: d.id,
+      title: d.title,
+      description: `${d.department} operational dashboard — KPIs, work queue, status breakdown, trend, and risk in one view.`,
+      category: map[d.id] ?? "operations",
+      visibleTo: d.visibleTo,
+      type: "dashboard",
+      owner: d.owner,
+      lastUpdated: "Live",
+      popularity: 80,
+      aiInsight: d.risks[0]?.detail,
+      kpiPreviews: d.kpis.slice(0, 3).map((k) => ({
+        label: k.label, value: k.value, delta: k.delta, trend: k.trend,
+      })),
+      sparkline: d.trend.map((t) => t.value),
+      tags: [d.department, "Dashboard"],
+    };
+  }),
+
   /* ============================================================
    * Reports Consolidation — Approved Six
    * ----------------------------------------------------------------
@@ -327,7 +367,6 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
   // catalog entries remain in REPORTS for cross-linking, drilldowns, and
   // legacy compatibility but are hidden from the Reports page and gated
   // out of direct /reports/<id> URLs via ReportRoleGuard.
-  void role;
   const APPROVED_IDS = [
     "bcba-productivity-report-v3",
     "cancellation-command-center",
@@ -336,9 +375,20 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
     "parent-training",
     "bcba-supervision",
   ];
-  return APPROVED_IDS
+  const approved = APPROVED_IDS
     .map((id) => REPORTS.find((r) => r.id === id))
     .filter((r): r is ReportDef => Boolean(r));
+
+  // Department Dashboards Pass 01 — additive layer on top of the six.
+  // Each department dashboard opts in explicit role visibility so
+  // leadership sees everything and each team sees their own dashboard.
+  const departmentReports = REPORTS.filter((r) => {
+    if (!DEPARTMENT_DASHBOARD_IDS.has(r.id)) return false;
+    if (r.visibleTo === "all") return true;
+    return r.visibleTo.includes(role);
+  });
+
+  return [...approved, ...departmentReports];
 }
 
 export function visibleCategoriesForRole(role: OSRole): (ReportCategoryDef & { count: number; mostViewed?: ReportDef })[] {
