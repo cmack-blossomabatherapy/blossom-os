@@ -734,6 +734,7 @@ function InnerOrgChart() {
                 <ChevronsDownUp className="size-4" />
                 Expand all
               </Button>
+              <ExportMenu exporting={exporting} onExport={exportChart} disabled={rows.length === 0} />
               <Button
                 size="sm"
                 variant="outline"
@@ -765,6 +766,7 @@ function InnerOrgChart() {
                 <ChevronsDownUp className="size-4" />
                 Expand all
               </Button>
+              <ExportMenu exporting={exporting} onExport={exportChart} disabled={rows.length === 0} />
               <div className="flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground">
                 <Lock className="size-3.5" />
                 View only
