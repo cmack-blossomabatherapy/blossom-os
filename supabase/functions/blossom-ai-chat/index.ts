@@ -257,6 +257,20 @@ async function runTool(
     if (name === "search_employees") {
       const q = String(args.query ?? "").trim();
       const empLimit = Math.min(Math.max(1, Number(args.limit) || 25), 200);
+      // Resolve department filter to an id — PostgREST cannot filter the
+      // parent row by an embedded relation column, so `hr_departments.name`
+      // as a filter silently returned every active employee.
+      let departmentId: string | null = null;
+      const deptArg = args.department ? String(args.department).trim() : "";
+      if (deptArg) {
+        const { data: deptRows } = await supabase
+          .from("hr_departments")
+          .select("id, name")
+          .ilike("name", `%${deptArg}%`)
+          .limit(1);
+        if (deptRows && deptRows.length) departmentId = deptRows[0].id as string;
+        else return JSON.stringify({ count: 0, results: [], note: `No department matched "${deptArg}"` });
+      }
       let query = supabase.from("employees")
         .select("id, first_name, last_name, preferred_name, email, phone, extension, job_title, state, status, hr_departments(name)")
         .eq("status", "active")
@@ -268,9 +282,7 @@ async function runTool(
           `first_name.ilike.${like},last_name.ilike.${like},preferred_name.ilike.${like},email.ilike.${like},job_title.ilike.${like}`
         );
       }
-      if (args.department) {
-        query = query.eq("hr_departments.name", String(args.department));
-      }
+      if (departmentId) query = query.eq("department_id", departmentId);
       if (args.state) query = query.eq("state", String(args.state));
       const { data, error } = await query;
       if (error) return JSON.stringify({ error: error.message });
