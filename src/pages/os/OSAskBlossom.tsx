@@ -60,6 +60,8 @@ export default function OSAskBlossom() {
 
   // Sidebar UX state — inline rename + search.
   const [convSearch, setConvSearch] = useState("");
+  type ConvFilter = "all" | "pinned" | "today" | "week";
+  const [convFilter, setConvFilter] = useState<ConvFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
@@ -442,7 +444,7 @@ export default function OSAskBlossom() {
 
         {/* Body */}
         {tab === "chat" && (
-          <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
+          <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)_260px]">
             {/* LEFT: conversations */}
             <aside className="hidden flex-col rounded-2xl border border-border/60 bg-card/90 p-3 backdrop-blur lg:flex lg:max-h-[calc(100vh-240px)]">
               <div className="mb-3 flex items-center justify-between px-1">
@@ -481,11 +483,46 @@ export default function OSAskBlossom() {
                   </button>
                 )}
               </div>
+              <div className="mb-3 flex flex-wrap gap-1">
+                {([
+                  { id: "all", label: "All" },
+                  { id: "pinned", label: "Pinned" },
+                  { id: "today", label: "Today" },
+                  { id: "week", label: "7 days" },
+                ] as { id: ConvFilter; label: string }[]).map((f) => {
+                  const active = convFilter === f.id;
+                  const count =
+                    f.id === "all" ? convs.length :
+                    f.id === "pinned" ? convs.filter((c) => c.pinned).length :
+                    f.id === "today" ? convs.filter((c) => {
+                      const s = new Date(); s.setHours(0,0,0,0);
+                      return new Date(c.updatedAt).getTime() >= s.getTime();
+                    }).length :
+                    convs.filter((c) => Date.now() - new Date(c.updatedAt).getTime() <= 7*86400000).length;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setConvFilter(f.id)}
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium transition",
+                        active
+                          ? "border-transparent bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-sm"
+                          : "border-foreground/[0.08] bg-background/60 text-muted-foreground hover:bg-foreground/[0.05]",
+                      )}
+                    >
+                      {f.label}
+                      <span className={cn("tabular-nums", active ? "text-white/80" : "text-muted-foreground/70")}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
               <ScrollArea className="flex-1 -mx-1 px-1">
                 <ConversationList
                   convs={convs}
                   activeId={activeId}
                   search={convSearch}
+                  filter={convFilter}
                   editingId={editingId}
                   editingTitle={editingTitle}
                   onSelect={(id) => { setActiveId(id); setEditingId(null); }}
@@ -972,20 +1009,25 @@ function groupConversations(list: AiConversation[]) {
 }
 
 function ConversationList({
-  convs, activeId, search, onSelect, ...actions
+  convs, activeId, search, filter = "all", onSelect, ...actions
 }: ConvActions & {
   convs: AiConversation[];
   activeId: string | null;
   search: string;
+  filter?: "all" | "pinned" | "today" | "week";
   onSelect: (id: string) => void;
 }) {
   const q = search.trim().toLowerCase();
-  const filtered = q
-    ? convs.filter((c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.messages.some((m) => m.content.toLowerCase().includes(q)),
-      )
-    : convs;
+  const startOfToday = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
+  const sevenAgo = Date.now() - 7 * 86400000;
+  const filtered = convs.filter((c) => {
+    if (filter === "pinned" && !c.pinned) return false;
+    if (filter === "today" && new Date(c.updatedAt).getTime() < startOfToday) return false;
+    if (filter === "week" && new Date(c.updatedAt).getTime() < sevenAgo) return false;
+    if (!q) return true;
+    return c.title.toLowerCase().includes(q) ||
+      c.messages.some((m) => m.content.toLowerCase().includes(q));
+  });
 
   if (convs.length === 0) {
     return (
