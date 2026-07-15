@@ -238,7 +238,7 @@ export default function BcbaProductivityReportV3() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadSharedDataset() {
+  async function loadSharedDataset(opts?: { silent?: boolean }) {
     setSharedLoading(true);
     setSharedError("");
     try {
@@ -248,13 +248,17 @@ export default function BcbaProductivityReportV3() {
       if (!shared.length) {
         setRows([]);
         setFileName("");
-        toast.info("Shared admin dataset is empty.");
+        if (!opts?.silent) {
+          toast.info("No CentralReach billing rows uploaded yet. Add one from CentralReach Uploads.");
+        }
         setSharedLoading(false);
         return;
       }
       setRows(shared as BillingRow[]);
       setFileName("Shared admin dataset");
-      toast.success(`Loaded ${shared.length.toLocaleString()} shared admin rows`);
+      if (!opts?.silent) {
+        toast.success(`Loaded ${shared.length.toLocaleString()} shared admin rows`);
+      }
     } catch (e: any) {
       const message = e?.message ?? "Failed to load shared admin dataset";
       setSharedError(message);
