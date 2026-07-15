@@ -221,21 +221,6 @@ export default function TrainingAcademyHome() {
         </div>
       </Section>
 
-      {/* ---------- Super Admin: Training Management ---------- */}
-      {isAdmin && (
-        <Section
-          eyebrow="Super Admin"
-          title="Training Management"
-          description="Assign, edit, and report on training across the organization."
-        >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <AdminCard to="/hr/training-management" icon={Users} title="All Users Training Status" body="See who is in progress, overdue, or complete." />
-            <AdminCard to="/hr/training-assign" icon={ClipboardList} title="Assign Training" body="Assign paths to roles, departments, or individuals." />
-            <AdminCard to="/training/academy/editor" icon={Settings2} title="Create / Edit Training Path" body="Build new paths or edit existing structure and content." />
-            <AdminCard to="/training/academy/leadership" icon={BarChart3} title="Training Completion Report" body="Leadership reporting on training engagement." />
-          </div>
-        </Section>
-      )}
     </div>
   );
 }
