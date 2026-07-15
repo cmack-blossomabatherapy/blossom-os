@@ -156,6 +156,7 @@ import TrainingAcademyHome from "./pages/academy/TrainingAcademyHome";
 import TrainingPathDetail from "./pages/academy/TrainingPathDetail";
 import TrainingPathDayDetail from "./pages/academy/TrainingPathDayDetail";
 import TrainingModuleRuntime from "./pages/academy/TrainingModuleRuntime";
+import TrainingLessonRuntime from "./pages/academy/TrainingLessonRuntime";
 import TrackDetail from "./pages/blossom/TrackDetail";
 import Departments from "./pages/blossom/Departments";
 import DepartmentDetail from "./pages/blossom/DepartmentDetail";
