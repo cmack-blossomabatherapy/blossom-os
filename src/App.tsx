@@ -433,6 +433,7 @@ import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
 import OSQAReviewBoard from "./pages/os/OSQAReviewBoard";
 import OSBCBAResources from "./pages/os/OSBCBAResources";
+import OSCaseManagerResources from "./pages/os/OSCaseManagerResources";
 import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSCaseManagement from "./pages/os/OSCaseManagement";
@@ -815,7 +816,7 @@ const App = () => (
                   <Route path="/case-manager/service-issues" element={<CMServiceIssues />} />
                   <Route path="/case-manager/escalations" element={<CMEscalations />} />
                   <Route path="/case-manager/community" element={<CMCommunityReferrals />} />
-                  <Route path="/case-manager/resources" element={<Navigate to="/resource-library" replace />} />
+                  <Route path="/case-manager/resources" element={<OSCaseManagerResources />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
                   <Route path="/bcba/clients" element={<OSBCBAClients />} />
