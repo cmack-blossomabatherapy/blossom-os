@@ -209,12 +209,12 @@ function RecruitingAdapter({ def }: { def: DepartmentDashboardDef }) {
         },
       };
     }
-    const stalled = candidates.filter((c) => c.onboarding === "Handoff Needed" || c.onboarding === "Background Pending");
+    const stalled = candidates.filter((c) => c.onboardingStatus === "Handoff Needed" || c.onboardingStatus === "Background Pending");
     const workQueue: DeptWorkQueueRow[] = candidates.slice(0, 6).map((c) => ({
       name: c.name,
-      status: c.onboarding,
+      status: c.onboardingStatus,
       owner: c.role,
-      detail: c.stage,
+      detail: c.candidateStatus,
       tone: (stalled.includes(c) ? "attention" : "neutral") as Tone,
       href: `/recruiting?candidate=${encodeURIComponent(c.id)}`,
     }));
@@ -278,7 +278,7 @@ function QaAdapter({ def }: { def: DepartmentDashboardDef }) {
         },
       };
     }
-    const open = items.filter((r) => r.status !== "Complete" && r.status !== "Submitted to Auth");
+    const open = items.filter((r) => r.status !== "Submitted to Auth");
     const stalled = items.filter((r) => (r.daysInStage ?? 0) > 5);
     const workQueue: DeptWorkQueueRow[] = open.slice(0, 6).map((r) => ({
       name: r.clientName,
