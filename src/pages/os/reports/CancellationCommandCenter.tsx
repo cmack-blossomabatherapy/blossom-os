@@ -641,6 +641,9 @@ export default function CancellationCommandCenter() {
         loadSharedKind("cancellation-authorization", silent),
       ]);
       setSharedAvailable({ scheduling: s, billing: b, authorization: a });
+      // Scheduling is the only required file — auto-build the dashboard as
+      // soon as it loads so admins don't have to click "Build".
+      if (s) setBuilt(true);
       if (!silent && !s && !b && !a) {
         toast.info("No admin-uploaded cancellation datasets found yet.");
       }
@@ -888,12 +891,14 @@ export default function CancellationCommandCenter() {
   const hasData = built && processedAll.length > 0;
 
   function handleBuild() {
-    if (!allUploaded) {
-      toast.error("Upload all three reports (Scheduling, Billing, Authorizations) before building.");
+    if (!hasSchedule) {
+      toast.error("Upload a Scheduling report to build the dashboard. Billing and Authorization are optional.");
       return;
     }
     setBuilt(true);
-    toast.success("Dashboard built from all three reports.");
+    if (allUploaded) toast.success("Dashboard built from Scheduling, Billing, and Authorization reports.");
+    else if (hasBilling || hasAuths) toast.success("Dashboard built. Add the remaining optional reports anytime for richer analytics.");
+    else toast.success("Dashboard built from Scheduling. Add Billing (revenue) or Authorization (BCBA attribution) anytime.");
   }
 
   /* ============================================================
