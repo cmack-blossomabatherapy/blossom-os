@@ -14,6 +14,7 @@ import { pandadocAdapter } from "./providers/pandadoc.ts";
 import { leadtrapAdapter } from "./providers/leadtrap.ts";
 import { calendlyAdapter } from "./providers/calendly.ts";
 import { goIntegrateNavaAdapter } from "./providers/goIntegrateNava.ts";
+import { viventiumAdapter } from "./providers/viventium.ts";
 
 const ADAPTERS: ProviderAdapter[] = [
   mailchimpAdapter,
@@ -31,6 +32,7 @@ const ADAPTERS: ProviderAdapter[] = [
   leadtrapAdapter,
   calendlyAdapter,
   goIntegrateNavaAdapter,
+  viventiumAdapter,
 ];
 
 const REGISTRY = new Map<string, ProviderAdapter>(ADAPTERS.map((a) => [a.id, a]));
