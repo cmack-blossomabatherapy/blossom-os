@@ -20915,6 +20915,66 @@ export type Database = {
         }
         Relationships: []
       }
+      viventium_sync_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          dry_run: boolean
+          error_message: string | null
+          id: string
+          metadata: Json
+          mode: string
+          records_created: number | null
+          records_matched: number | null
+          records_normalized: number | null
+          records_received: number | null
+          records_skipped: number | null
+          records_updated: number | null
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          dry_run?: boolean
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          mode: string
+          records_created?: number | null
+          records_matched?: number | null
+          records_normalized?: number | null
+          records_received?: number | null
+          records_skipped?: number | null
+          records_updated?: number | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          dry_run?: boolean
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          mode?: string
+          records_created?: number | null
+          records_matched?: number | null
+          records_normalized?: number | null
+          records_received?: number | null
+          records_skipped?: number | null
+          records_updated?: number | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       employee_directory: {
