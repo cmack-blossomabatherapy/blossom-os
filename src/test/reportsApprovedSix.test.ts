@@ -29,11 +29,15 @@ describe("Approved six reports — routing & catalog", () => {
     });
   }
 
-  it("visibleReportsForRole returns exactly the six approved reports for every role", () => {
-    const ids = APPROVED.map((r) => r.id).sort();
+  it("visibleReportsForRole always includes the six approved reports for every role", () => {
+    // Pass 02 layers department dashboards on top of the approved six. The
+    // guarantee is that every role continues to see the six — department
+    // dashboards appear additively for roles whose visibleTo list allows it.
+    const approved = APPROVED.map((r) => r.id).sort();
     for (const role of OS_ROLES) {
-      const visible = visibleReportsForRole(role.id).map((r) => r.id).sort();
-      expect(visible).toEqual(ids);
+      const visibleIds = visibleReportsForRole(role.id).map((r) => r.id);
+      const approvedForRole = visibleIds.filter((id) => approved.includes(id)).sort();
+      expect(approvedForRole).toEqual(approved);
     }
   });
 

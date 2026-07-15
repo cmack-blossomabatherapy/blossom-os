@@ -1,4 +1,5 @@
-import { AlertOctagon, AlertTriangle, Info } from "lucide-react";
+import { AlertOctagon, AlertTriangle, ChevronRight, Info } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import type {
   DepartmentDashboardDef, DeptKpi, DeptStatusRow, DeptTrendRow, DeptWorkQueueRow, DeptRiskRow, Tone,
@@ -11,9 +12,36 @@ const toneClasses: Record<Tone, string> = {
   neutral: "text-muted-foreground bg-muted/40 border-border/60",
 };
 
-export function DepartmentDashboardView({ dashboard }: { dashboard: DepartmentDashboardDef }) {
+export type DashboardSourceStatus = "live" | "partial" | "setup";
+
+export interface DashboardSourceInfo {
+  status: DashboardSourceStatus;
+  sources?: string[];
+  lastRefreshed?: string | null;
+}
+
+const sourceBadgeClasses: Record<DashboardSourceStatus, string> = {
+  live: "border-success/30 bg-success/10 text-success",
+  partial: "border-warning/30 bg-warning/10 text-warning",
+  setup: "border-border/60 bg-muted/40 text-muted-foreground",
+};
+
+const sourceBadgeLabel: Record<DashboardSourceStatus, string> = {
+  live: "Live",
+  partial: "Partial",
+  setup: "Setup",
+};
+
+export function DepartmentDashboardView({
+  dashboard,
+  source,
+}: {
+  dashboard: DepartmentDashboardDef;
+  source?: DashboardSourceInfo;
+}) {
   return (
     <div className="space-y-6">
+      {source && <SourceBadge info={source} />}
       <KpiGrid kpis={dashboard.kpis} />
 
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
@@ -29,6 +57,31 @@ export function DepartmentDashboardView({ dashboard }: { dashboard: DepartmentDa
       {dashboard.dataNote && (
         <p className="px-1 text-[11px] italic text-muted-foreground">{dashboard.dataNote}</p>
       )}
+    </div>
+  );
+}
+
+function SourceBadge({ info }: { info: DashboardSourceInfo }) {
+  const sources = (info.sources ?? []).filter(Boolean);
+  const refreshed = info.lastRefreshed
+    ? `Refreshed ${new Date(info.lastRefreshed).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+    : null;
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold uppercase tracking-wide",
+          sourceBadgeClasses[info.status],
+        )}
+        aria-label={`Data source status: ${sourceBadgeLabel[info.status]}`}
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        {sourceBadgeLabel[info.status]}
+      </span>
+      {sources.length > 0 && (
+        <span className="text-muted-foreground">Source: {sources.join(" · ")}</span>
+      )}
+      {refreshed && <span className="text-muted-foreground">· {refreshed}</span>}
     </div>
   );
 }
@@ -66,24 +119,42 @@ function WorkQueueCard({ title, rows }: { title: string; rows: DeptWorkQueueRow[
         <p className="px-4 py-8 text-center text-xs italic text-muted-foreground">Nothing waiting — you're all caught up.</p>
       ) : (
         <ul className="divide-y divide-border/40">
-          {rows.map((r, i) => (
-            <li key={i} className="flex items-center gap-3 px-4 py-2.5">
-              <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                toneClasses[r.tone ?? "neutral"])}>
-                {r.status}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] font-medium text-foreground">{r.name}</p>
-                {r.detail && <p className="truncate text-[11px] text-muted-foreground">{r.detail}</p>}
-              </div>
-              {r.owner && <span className="hidden shrink-0 text-[11px] text-muted-foreground md:inline">{r.owner}</span>}
-              {r.age && <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">{r.age}</span>}
-            </li>
-          ))}
+          {rows.map((r, i) => <WorkQueueItem key={i} row={r} />)}
         </ul>
       )}
     </div>
   );
+}
+
+function WorkQueueItem({ row }: { row: DeptWorkQueueRow }) {
+  const body = (
+    <>
+      <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+        toneClasses[row.tone ?? "neutral"])}>
+        {row.status}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[12.5px] font-medium text-foreground">{row.name}</p>
+        {row.detail && <p className="truncate text-[11px] text-muted-foreground">{row.detail}</p>}
+      </div>
+      {row.owner && <span className="hidden shrink-0 text-[11px] text-muted-foreground md:inline">{row.owner}</span>}
+      {row.age && <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">{row.age}</span>}
+      {row.href && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
+    </>
+  );
+  if (row.href) {
+    return (
+      <li>
+        <Link
+          to={row.href}
+          className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/40 focus-visible:bg-muted/50 focus-visible:outline-none"
+        >
+          {body}
+        </Link>
+      </li>
+    );
+  }
+  return <li className="flex items-center gap-3 px-4 py-2.5">{body}</li>;
 }
 
 function StatusCard({ title, rows }: { title: string; rows: DeptStatusRow[] }) {

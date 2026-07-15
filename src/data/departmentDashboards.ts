@@ -32,6 +32,8 @@ export interface DeptWorkQueueRow {
   age?: string;
   detail?: string;
   tone?: Tone;
+  /** Optional deep-link to the operational record (lead, auth, task…). */
+  href?: string;
 }
 
 export interface DeptStatusRow {

@@ -32,7 +32,7 @@ import { renderSdReport, SD_REPORT_IDS } from "@/components/reports/StateDirecto
 import { renderAuthReport, AUTH_REPORT_IDS } from "@/components/reports/AuthorizationReportViews";
 import { SdFilterBar, loadLastFilters, summarizeFilters, type SdFilters } from "@/components/reports/SdFilterBar";
 import { DEPARTMENT_DASHBOARD_IDS, getDepartmentDashboard } from "@/data/departmentDashboards";
-import { DepartmentDashboardView } from "@/components/reports/DepartmentDashboardView";
+import { ResolvedDepartmentDashboard } from "@/components/reports/ResolvedDepartmentDashboard";
 
 export default function ReportDetail() {
   const { reportId } = useParams<{ reportId: string }>();
@@ -266,7 +266,7 @@ export default function ReportDetail() {
 function ReportContent({ view, reportId }: { view?: string; reportId?: string }) {
   if (reportId && DEPARTMENT_DASHBOARD_IDS.has(reportId)) {
     const def = getDepartmentDashboard(reportId);
-    if (def) return <DepartmentDashboardView dashboard={def} />;
+    if (def) return <ResolvedDepartmentDashboard def={def} />;
   }
   if (reportId && SD_REPORT_IDS.has(reportId)) {
     return <>{renderSdReport(reportId)}</>;
