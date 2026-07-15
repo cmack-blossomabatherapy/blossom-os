@@ -42,7 +42,7 @@ export const apploiAdapter: ProviderAdapter = {
         providerRecordId: String(c.id ?? c.candidate_id),
         recordKind: "candidate",
         recordStatus: c.status ?? c.application_status ?? null,
-        displayTitle: c.name ?? `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "Candidate",
+        displayTitle: (c.name ?? `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim()) || "Candidate",
         occurredAt: c.applied_at ?? c.created_at ?? null,
         personName: c.name ?? null,
         personEmail: c.email ?? null,
