@@ -588,7 +588,20 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {visible.length === 0 ? (
-                    <tr><td colSpan={7} className="px-3 py-8 text-center text-xs text-muted-foreground">No tasks match the current filters.</td></tr>
+                    <tr>
+                      <td colSpan={7} className="px-3 py-10 text-center">
+                        <div className="text-sm font-medium text-foreground">No tasks match these filters</div>
+                        <div className="mt-1 text-xs text-muted-foreground">Try clearing filters or broadening your search.</div>
+                        {(activeFilterCount > 0 || search) && (
+                          <button
+                            onClick={() => { clearAdvanced(); setSearch(""); setFilter("all"); }}
+                            className="mt-3 inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border border-border/70 hover:bg-muted"
+                          >
+                            <X className="h-3 w-3" /> Clear filters
+                          </button>
+                        )}
+                      </td>
+                    </tr>
                   ) : visible.map((r) => {
                     const c = classify(r);
                     const leadName = r.lead?.childName ?? "Lead";
