@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  Sparkles, Plus, Bookmark, Star, History,
-  ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Trash2, X,
+  Sparkles, Plus, Star, History,
+  ArrowUpRight, Clock, Eye, Search, ChevronRight, Trash2, X,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
-import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import {
-  visibleReportsForRole, visibleCategoriesForRole, ROLE_AI_SUMMARY,
+  visibleReportsForRole, visibleCategoriesForRole,
   readRecent, REPORT_CATEGORIES, type ReportDef,
 } from "@/lib/os/reportsCatalog";
 import { useReportFavorites } from "@/hooks/useReportFavorites";
@@ -96,7 +95,6 @@ export default function ReportsHome() {
         return b.popularity - a.popularity;
       });
   }, [reportsWithLive, role]);
-  const aiSummary = ROLE_AI_SUMMARY[role];
   const roleLabel = OS_ROLES.find(r => r.id === role)?.label || role;
 
   const { favorites: favs, toggleFavorite: toggleFav } = useReportFavorites();
@@ -201,12 +199,6 @@ export default function ReportsHome() {
     return ordered;
   }, [reports, supabaseRecentIds]);
 
-  // Blossom AI · Today — surface insights from reports generated today.
-  const todaysGenerated = useMemo(() => {
-    const start = new Date(); start.setHours(0, 0, 0, 0);
-    return savedV3.filter(s => s.savedAt >= start.getTime());
-  }, [savedV3]);
-
   return (
     <OSShell>
       {/* ============== HERO ============== */}
@@ -258,78 +250,12 @@ export default function ReportsHome() {
             )}
           </p>
 
-          {/* AI summary */}
-          <div className="mt-5 grid gap-3 md:grid-cols-[1.4fr_1fr]">
-            <div className="rounded-2xl border border-white/80 bg-white/70 p-4 backdrop-blur">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white shadow-sm">
-                  <Sparkles className="h-3.5 w-3.5" />
-                </span>
-                <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">Blossom AI · Today</p>
-              </div>
-              {todaysGenerated.length > 0 ? (
-                <>
-                  <p className="mt-2 text-[14px] font-medium leading-snug">
-                    {todaysGenerated.length} report{todaysGenerated.length === 1 ? "" : "s"} generated today · live insights from your uploads.
-                  </p>
-                  <div className="mt-3 grid gap-2">
-                    {todaysGenerated.slice(0, 3).map(sr => (
-                      <div key={sr.id} className="rounded-xl border border-[hsl(265_70%_55%/0.18)] bg-[hsl(265_100%_99%)] p-2.5">
-                        <Link to={`/reports/bcba-productivity-report-v3?saved=${sr.id}`} className="flex items-center justify-between gap-2 text-[12px] font-semibold tracking-tight text-foreground hover:text-[hsl(265_70%_55%)]">
-                          <span className="truncate">{sr.name}</span>
-                          <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{new Date(sr.savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
-                        </Link>
-                        <p className="mt-1 text-[11.5px] text-muted-foreground">Open the report to view insights.</p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="mt-2 text-[14px] font-medium leading-snug">{aiSummary.headline}</p>
-                  <div className="mt-3 grid gap-1.5">
-                    {aiSummary.insights.map((ins, i) => {
-                  const Icon = ins.icon;
-                  const tones: Record<string, string> = {
-                    emerald: "text-emerald-600 bg-emerald-50",
-                    violet: "text-[hsl(265_70%_55%)] bg-[hsl(265_100%_97%)]",
-                    amber: "text-amber-600 bg-amber-50",
-                    rose: "text-rose-600 bg-rose-50",
-                    sky: "text-sky-600 bg-sky-50",
-                  };
-                  return (
-                    <div key={i} className="flex items-start gap-2 text-[12.5px] leading-snug">
-                      <span className={cn("mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md", tones[ins.tone])}>
-                        <Icon className="h-3 w-3" />
-                      </span>
-                      <span>{ins.text}</span>
-                    </div>
-                  );
-                })}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <StatTile label="Reports for you" value={String(reports.length)} icon={FileSpreadsheet} />
-              <StatTile label="Recently viewed" value={String(recent.length)} icon={History} />
-              <StatTile label="Saves" value={String(savedV3.length + cancelSaved.length)} icon={Bookmark} />
-              <StatTile label="Categories" value={String(categories.length)} icon={Brain} />
-            </div>
-          </div>
-
-          {/* CTAs */}
+          {/* Search */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <div className="relative w-full max-w-xs">
-              <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…" className="h-9 border-white/80 bg-white/70 pl-9 backdrop-blur" />
+            <div className="relative w-full max-w-md">
+              <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…" className="h-10 border-white/80 bg-white/70 pl-9 backdrop-blur" />
             </div>
-            <ReportAIButton
-              preset="reports-home"
-              contextExtra={`Role: ${roleLabel}. ${reports.length} reports available, ${categories.length} categories.`}
-              label="Ask about reports"
-            />
           </div>
         </div>
       </section>
