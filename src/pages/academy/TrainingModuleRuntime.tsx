@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Clock, PlayCircle, FileText,
-  ListChecks, BookOpen, ShieldCheck, Sparkles, Library, ExternalLink,
+  ListChecks, BookOpen, ShieldCheck, Sparkles, Library, ExternalLink, Download,
   Link2, Wand2, Copy, Map,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,8 @@ import {
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 import { getTrainingPath } from "@/lib/academy/trainingPaths";
 import { useLessonStatuses } from "@/lib/academy/lessonProgress";
+import { getLessonContent, getLessonShell } from "@/lib/academy/lessonContent";
+import { exportModuleToPdf } from "@/lib/academy/lessonPdfExport";
 
 /**
  * Unified academy module runtime for /academy/path/:slug/module/:moduleId.
@@ -151,6 +153,14 @@ export default function TrainingModuleRuntime() {
 
   const lessonIds = (ctx.lessons ?? []).map((l) => l.id);
   const { statuses: lessonStatuses, completedCount: lessonsDone, total: lessonsTotal } = useLessonStatuses(decodedId, lessonIds);
+
+  const onExportModulePdf = () => {
+    const lessons = (ctx.lessons ?? []).map((meta) => ({
+      meta,
+      content: getLessonContent(decodedId, meta.id) ?? getLessonShell(meta, ctx.title),
+    }));
+    exportModuleToPdf(path.title, ctx.title, ctx.description, lessons);
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
