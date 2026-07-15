@@ -75,7 +75,7 @@ const intake: DepartmentDashboardDef = {
   title: "Intake Dashboard",
   department: "Intake",
   owner: "Intake Team",
-  visibleTo: [...LEADERSHIP, ...SD, "intake", "intake_coordinator", "intake_lead"],
+  visibleTo: [...LEADERSHIP, ...SD, "intake_coordinator", "intake_lead"],
   kpis: [
     { label: "Lead Volume (30d)", value: "184", delta: "+12", trend: "up" },
     { label: "Lead → Assessment", value: "34%", delta: "+3pt", trend: "up" },
@@ -254,8 +254,8 @@ const recruiting: DepartmentDashboardDef = {
   owner: "Recruiting Team",
   visibleTo: [
     ...LEADERSHIP, ...SD,
-    "recruiting", "recruiting_team", "recruiting_coordinator", "recruiting_lead", "recruiting_marketing",
-    "hr", "hr_team", "hr_lead",
+    "recruiting_team", "recruiting_coordinator", "recruiting_lead",
+    "hr_team", "hr_lead",
   ],
   kpis: [
     { label: "Applications (30d)", value: "142", delta: "+18", trend: "up" },
@@ -298,7 +298,7 @@ const hr: DepartmentDashboardDef = {
   title: "HR Dashboard",
   department: "HR",
   owner: "HR Team",
-  visibleTo: [...LEADERSHIP, "hr", "hr_team", "hr_lead"],
+  visibleTo: [...LEADERSHIP, "hr_team", "hr_lead"],
   kpis: [
     { label: "Onboarding In Progress", value: "12", delta: "+3", trend: "up" },
     { label: "Onboarding Complete (30d)", value: "9", delta: "+2", trend: "up" },
@@ -427,7 +427,7 @@ const training: DepartmentDashboardDef = {
   owner: "Training Team",
   visibleTo: [
     ...LEADERSHIP, ...SD,
-    "training", "training_manager", "hr", "hr_team", "hr_lead",
+    "training_manager", "hr_team", "hr_lead",
   ],
   kpis: [
     { label: "Completion Rate", value: "78%", delta: "+4pt", trend: "up" },
