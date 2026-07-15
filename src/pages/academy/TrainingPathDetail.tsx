@@ -364,7 +364,7 @@ function DayCard({ slug, day, trackSuffix = "" }: { slug: string; day: JourneyDa
         {day.requiredCount > 0 && <span className="text-amber-700">{day.requiredCount} required</span>}
       </div>
       <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-primary">
-        {isComplete ? <><CheckCircle2 className="h-3.5 w-3.5" /> Review day</> : next ? <><PlayCircle className="h-3.5 w-3.5" /> {day.completedCount > 0 ? "Continue day" : "Start day"}</> : <>Open day</>}
+        {isComplete ? <><CheckCircle2 className="h-3.5 w-3.5" /> Review day</> : next ? <><PlayCircle className="h-3.5 w-3.5" /> {(day.completedCount > 0 || day.inProgressCount > 0) ? "Continue day" : "Start day"}</> : <>Open day</>}
         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
