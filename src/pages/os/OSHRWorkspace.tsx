@@ -4,7 +4,7 @@ import {
   Workflow, GraduationCap, ClipboardCheck, ShieldCheck, Inbox, MessageSquare,
   Sparkles, UserPlus, CalendarPlus, BookOpen, ChevronRight, Search,
   CheckCircle2, AlertTriangle, Clock, FileText, Heart, TrendingUp, Activity,
-  ClipboardList,
+  ClipboardList, Users,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -142,6 +142,7 @@ function useHRWorkspaceData() {
 /* ---------------- helpers ---------------- */
 
 const TABS = [
+  { key: "directory",   label: "Directory",       icon: Users },
   { key: "onboarding",  label: "Onboarding",      icon: Workflow },
   { key: "orientation", label: "Orientation",     icon: CalendarPlus },
   { key: "training",    label: "Training",        icon: GraduationCap },
@@ -174,7 +175,7 @@ function fullName(e: Pick<Emp, "first_name" | "last_name" | "preferred_name">) {
 /* ---------------- page ---------------- */
 
 export default function OSHRWorkspace() {
-  const [tab, setTab] = useState<TabKey>("onboarding");
+  const [tab, setTab] = useState<TabKey>("directory");
   const [query, setQuery] = useState("");
   const data = useHRWorkspaceData();
 
@@ -276,6 +277,7 @@ export default function OSHRWorkspace() {
               </div>
             </Card>
 
+            {tab === "directory"   && <DirectoryPanel   data={data} empById={empById} query={query} />}
             {tab === "onboarding"  && <OnboardingPanel  data={data} empById={empById} query={query} />}
             {tab === "orientation" && <OrientationPanel data={data} empById={empById} query={query} />}
             {tab === "training"    && <TrainingPanel    data={data} empById={empById} query={query} />}
