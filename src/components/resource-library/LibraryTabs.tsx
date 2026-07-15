@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
-  BookOpen, User, Building2, GraduationCap, FileText, PlayCircle, ShieldAlert, Inbox, Users, ShieldCheck, CalendarClock,
+  BookOpen, User, Building2, GraduationCap, FileText, PlayCircle, ShieldAlert, Inbox, Users, ShieldCheck, CalendarClock, UsersRound,
 } from "lucide-react";
 import { useOSRole } from "@/contexts/OSRoleContext";
 
@@ -13,6 +13,7 @@ const TABS = [
   { to: "/resource-library/recruiting",   label: "Recruiting",  icon: Users },
   { to: "/resource-library/authorizations", label: "Authorizations", icon: ShieldCheck },
   { to: "/resource-library/scheduling", label: "Scheduling", icon: CalendarClock },
+  { to: "/resource-library/staffing", label: "Staffing", icon: UsersRound },
   { to: "/resource-library/training",     label: "Training",    icon: GraduationCap },
   { to: "/resource-library/sops",         label: "SOPs & Forms",icon: FileText },
   { to: "/resource-library/videos",       label: "Videos",      icon: PlayCircle },

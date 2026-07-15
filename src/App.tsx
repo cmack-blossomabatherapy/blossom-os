@@ -426,6 +426,7 @@ import ResourceLibraryIntake from "./pages/resource-library/ResourceLibraryIntak
 import ResourceLibraryRecruiting from "./pages/resource-library/ResourceLibraryRecruiting";
 import ResourceLibraryAuthorizations from "./pages/resource-library/ResourceLibraryAuthorizations";
 import ResourceLibraryScheduling from "./pages/resource-library/ResourceLibraryScheduling";
+import ResourceLibraryStaffing from "./pages/resource-library/ResourceLibraryStaffing";
 import OSBlossomAIManagement from "./pages/os/OSBlossomAIManagement";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
@@ -920,6 +921,9 @@ const App = () => (
                   <Route path="/resource-library/scheduling" element={<ResourceLibraryScheduling />} />
                   <Route path="/resources/scheduling" element={<Navigate to="/resource-library/scheduling" replace />} />
                   <Route path="/scheduling/resources" element={<Navigate to="/resource-library/scheduling" replace />} />
+                  <Route path="/resource-library/staffing" element={<ResourceLibraryStaffing />} />
+                  <Route path="/resources/staffing" element={<Navigate to="/resource-library/staffing" replace />} />
+                  <Route path="/staffing/resources" element={<Navigate to="/resource-library/staffing" replace />} />
                   <Route path="/resource-library/resource/:id" element={<ResourceLibraryDetail />} />
                   <Route path="/resource-library/admin/qa" element={<ResourceLibraryAdminQA />} />
                   <Route path="/admin/blossom-ai" element={<OSBlossomAIManagement />} />
