@@ -44,7 +44,13 @@ export default function ReportDetail() {
     () => new Set(visibleReportsForRole(role).map(r => r.id)),
     [role],
   );
-  const canViewReport = !!report && visibleReportIds.has(report.id);
+  // Department dashboards live on a separate shelf and are intentionally
+  // visible to every role — allow them through the visibility gate here so
+  // clicking a department dashboard tile actually opens the dashboard
+  // instead of the generic "Report not found" state.
+  const isDepartmentDashboard = !!report && DEPARTMENT_DASHBOARD_IDS.has(report.id);
+  const canViewReport =
+    !!report && (visibleReportIds.has(report.id) || isDepartmentDashboard);
   // If this report is meant to open a filtered detail view directly, redirect.
   useEffect(() => {
     if (canViewReport && report?.drilldownPath) {
