@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  Sparkles, Plus, Bookmark, Star, History,
-  ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Trash2, X,
+  Sparkles, Plus, Star, History,
+  ArrowUpRight, Clock, Eye, Search, ChevronRight, Trash2, X,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
-import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import {
-  visibleReportsForRole, visibleCategoriesForRole, ROLE_AI_SUMMARY,
+  visibleReportsForRole, visibleCategoriesForRole,
   readRecent, REPORT_CATEGORIES, type ReportDef,
 } from "@/lib/os/reportsCatalog";
 import { useReportFavorites } from "@/hooks/useReportFavorites";
@@ -96,7 +95,6 @@ export default function ReportsHome() {
         return b.popularity - a.popularity;
       });
   }, [reportsWithLive, role]);
-  const aiSummary = ROLE_AI_SUMMARY[role];
   const roleLabel = OS_ROLES.find(r => r.id === role)?.label || role;
 
   const { favorites: favs, toggleFavorite: toggleFav } = useReportFavorites();
@@ -200,12 +198,6 @@ export default function ReportsHome() {
     }
     return ordered;
   }, [reports, supabaseRecentIds]);
-
-  // Blossom AI · Today — surface insights from reports generated today.
-  const todaysGenerated = useMemo(() => {
-    const start = new Date(); start.setHours(0, 0, 0, 0);
-    return savedV3.filter(s => s.savedAt >= start.getTime());
-  }, [savedV3]);
 
   return (
     <OSShell>
