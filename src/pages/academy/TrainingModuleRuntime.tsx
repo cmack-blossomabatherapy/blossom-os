@@ -23,6 +23,7 @@ import { getCaseManagerDay, type CaseManagerDayModule } from "@/lib/training/cas
 import { getBehavioralSupportDay, type BehavioralSupportDayModule } from "@/lib/training/behavioralSupportAcademy";
 import { getAssistantStateDirectorDay, type AssistantStateDirectorDayModule } from "@/lib/training/assistantStateDirectorAcademy";
 import { getStateDirectorDay, type StateDirectorDayModule } from "@/lib/training/stateDirectorAcademy";
+import { getMarketingBdDay, type MarketingBdDayModule } from "@/lib/training/marketingBdAcademy";
 import {
   useRuntimeRecord, startRuntime, tickRuntime, completeRuntime, persistRuntimeElapsed,
   type RuntimeContext,
@@ -69,6 +70,7 @@ export default function TrainingModuleRuntime() {
     if (parsed.kind === "behavioral-support") return resolveBehavioralSupport(parsed.sourceModuleId);
     if (parsed.kind === "assistant-state-director") return resolveAssistantStateDirector(parsed.sourceModuleId);
     if (parsed.kind === "state-director") return resolveStateDirector(parsed.sourceModuleId);
+    if (parsed.kind === "marketing-bd") return resolveMarketingBd(parsed.sourceModuleId);
     return null;
   }, [parsed.kind, parsed.sourceModuleId]);
 
@@ -474,6 +476,7 @@ export function resolveModuleCtxFromDecodedId(decodedId: string): { ctx: ModuleC
   else if (parsed.kind === "behavioral-support") ctx = resolveBehavioralSupport(parsed.sourceModuleId);
   else if (parsed.kind === "assistant-state-director") ctx = resolveAssistantStateDirector(parsed.sourceModuleId);
   else if (parsed.kind === "state-director") ctx = resolveStateDirector(parsed.sourceModuleId);
+  else if (parsed.kind === "marketing-bd") ctx = resolveMarketingBd(parsed.sourceModuleId);
   return { ctx, kind: parsed.kind ?? null, sourceModuleId: parsed.sourceModuleId ?? null };
 }
 
