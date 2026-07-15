@@ -572,7 +572,15 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
                       catch (e) { toast.error(e instanceof Error ? e.message : `Could not ${label.toLowerCase()}`); }
                     };
                     return (
-                     <tr key={r.task.id} className="hover:bg-muted/30 transition-colors">
+                     <tr
+                       key={r.task.id}
+                       id={`task-${r.task.id}`}
+                       ref={(el) => { rowRefs.current[r.task.id] = el; }}
+                       className={cn(
+                         "hover:bg-muted/30 transition-colors",
+                         focusedTaskId === r.task.id && "bg-primary/10 ring-2 ring-primary/50 animate-pulse",
+                       )}
+                     >
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-1.5">
                             <InlineStatusPicker
