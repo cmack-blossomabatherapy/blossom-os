@@ -66,8 +66,22 @@ export interface DepartmentDashboardDef {
 }
 
 // ---- shared role bundles ---------------------------------------------
-const LEADERSHIP: OSRole[] = ["super_admin", "executive_leadership", "operations_leadership"];
-const SD: OSRole[] = ["state_director", "assistant_state_director", "regional_state_director"];
+// Leadership sees every department dashboard. Includes both legacy
+// (executive_leadership, operations_leadership) and canonical 2026
+// roles (ceo, coo, executive, director_of_operations, operations_manager,
+// systems_admin) so nobody in leadership loses visibility as roles rename.
+const LEADERSHIP: OSRole[] = [
+  "super_admin",
+  "systems_admin",
+  "executive_leadership",
+  "executive",
+  "ceo",
+  "coo",
+  "operations_leadership",
+  "director_of_operations",
+  "operations_manager",
+];
+const SD: OSRole[] = ["state_director", "assistant_state_director", "regional_state_director", "state_va"];
 
 const DEMO_NOTE = "Setup / demo data — structure is live and ready to be wired to real source systems.";
 
