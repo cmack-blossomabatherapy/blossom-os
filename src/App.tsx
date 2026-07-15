@@ -412,11 +412,7 @@ import EscalationCenterPage from "./pages/os/work-queue/EscalationCenter";
 import {
   WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
 } from "./pages/os/system-tools/SystemToolsPages";
-import BcbaProductivityUploads from "./pages/os/system/BcbaProductivityUploads";
-import {
-  AuthorizationSharedUploadsPage,
-  CancellationSharedUploadsPage,
-} from "./pages/os/system/SharedReportDatasetUploads";
+import CentralReachUploads from "./pages/os/system/CentralReachUploads";
 import AuditLogPage from "./pages/os/system-tools/AuditLogPage";
 import EmailCommandCenter from "./pages/os/system/EmailCommandCenter";
 import BlossomOSHome from "./pages/os/home/BlossomOSHome";
@@ -1028,9 +1024,10 @@ const App = () => (
                   <Route path="/system/workflow-inventory" element={<AdminRoute><WorkflowInventoryPage /></AdminRoute>} />
                   <Route path="/system/request-intake" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><RequestIntakePage /></PermissionRoute>} />
                   <Route path="/system/issue-tracker" element={<AdminRoute><IssueTrackerPage /></AdminRoute>} />
-                  <Route path="/system/bcba-productivity-uploads" element={<AdminRoute><BcbaProductivityUploads /></AdminRoute>} />
-                  <Route path="/system/authorization-uploads" element={<AdminRoute><AuthorizationSharedUploadsPage /></AdminRoute>} />
-                  <Route path="/system/cancellation-uploads" element={<AdminRoute><CancellationSharedUploadsPage /></AdminRoute>} />
+                  <Route path="/system/centralreach-uploads" element={<AdminRoute><CentralReachUploads /></AdminRoute>} />
+                  <Route path="/system/bcba-productivity-uploads" element={<Navigate to="/system/centralreach-uploads" replace />} />
+                  <Route path="/system/authorization-uploads" element={<Navigate to="/system/centralreach-uploads" replace />} />
+                  <Route path="/system/cancellation-uploads" element={<Navigate to="/system/centralreach-uploads" replace />} />
                   {/* Legacy redirects for old QA report cards → canonical approved routes */}
                   <Route path="/reports/qa-supervision" element={<Navigate to="/reports/bcba-supervision" replace />} />
                   <Route path="/reports/qa-parent-training" element={<Navigate to="/reports/parent-training" replace />} />
