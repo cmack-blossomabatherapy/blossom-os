@@ -5,8 +5,6 @@
  * local relationships, escalation accountability, and cross-department
  * accountability — using CentralReach visibility, Bloom Growth scorecard/L10,
  * Monday.com / state trackers, Viventium staff status, and Outlook/Teams.
- * The State Director owns state outcomes and holds departments accountable
- * without becoming the permanent operator for any of them.
  */
 
 import type { LessonContent } from "./lessonContent";
@@ -26,11 +24,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "State health, state growth, hours serviced, local relationships, escalation accountability, state performance, staff/client state visibility, and cross-department accountability. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "State health, state growth, hours serviced, local relationships, escalation accountability, state performance, staff/client state visibility, and cross-department accountability. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -57,11 +51,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Not the permanent operator of Intake, Recruiting, Authorizations, Scheduling, Staffing, QA, HR, Credentialing, Billing/RCM, Finance, or Clinical execution. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Not the permanent operator of Intake, Recruiting, Authorizations, Scheduling, Staffing, QA, HR, Credentialing, Billing/RCM, Finance, or Clinical execution. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -88,11 +78,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Hours serviced is the ultimate state operating metric. State health inputs feed it: leads, conversion, staffing capacity, open cases, auth readiness, family experience. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Hours serviced is the ultimate state operating metric. State health inputs feed it: leads, conversion, staffing capacity, open cases, auth readiness, family experience. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -119,11 +105,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Every state issue must have owner, status, next action, and follow-up date. Drive accountability without becoming the bottleneck. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Every state issue must have owner, status, next action, and follow-up date. Drive accountability without becoming the bottleneck. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -150,11 +132,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "State, lead/client/candidate, family, staff/RBT/BCBA, department owner, issue type, status, urgency, owner, next action, follow-up date, state impact. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "State, lead/client/candidate, family, staff/RBT/BCBA, department owner, issue type, status, urgency, owner, next action, follow-up date, state impact. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -181,11 +159,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Read-only visibility into clinical/schedule/client info by permission. Not the state operating layer. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Read-only visibility into clinical/schedule/client info by permission. Not the state operating layer. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -212,11 +186,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Documented, professional leadership communication with departments, staff, families, referral partners. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Documented, professional leadership communication with departments, staff, families, referral partners. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -243,11 +213,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Document contact attempts and outcomes. Never leave leadership follow-up in memory. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Document contact attempts and outcomes. Never leave leadership follow-up in memory. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -274,11 +240,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Where state leadership notes and department handoffs live today. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Where state leadership notes and department handoffs live today. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -305,11 +267,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Leads, conversion, intake status, recruiting / staffing needs, open cases, hours serviced, auth blockers, schedule / staffing issues, clinical / QA concerns, family / staff issues, local marketing / BD activity, escalations. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Leads, conversion, intake status, recruiting / staffing needs, open cases, hours serviced, auth blockers, schedule / staffing issues, clinical / QA concerns, family / staff issues, local marketing / BD activity, escalations. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -336,11 +294,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Where each input lives today and who owns it. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Where each input lives today and who owns it. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -367,11 +321,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Read hours serviced trends, connect them to staffing capacity, open cases, and family experience. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Read hours serviced trends, connect them to staffing capacity, open cases, and family experience. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -398,11 +348,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Categorize department-owned vs state-owned vs leadership-owned vs escalation. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Categorize department-owned vs state-owned vs leadership-owned vs escalation. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -429,11 +375,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Intake, Recruiting, Authorizations, Scheduling, Staffing, QA, Clinical, Case Management, HR, Credentialing, Billing/RCM, Marketing/BD, State Ops, leadership. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Intake, Recruiting, Authorizations, Scheduling, Staffing, QA, Clinical, Case Management, HR, Credentialing, Billing/RCM, Marketing/BD, State Ops, leadership. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -460,11 +402,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Firm follow-up, respectful tone, no bypass of department owners. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Firm follow-up, respectful tone, no bypass of department owners. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -491,11 +429,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Issue, state, client/candidate/family/staff, department owner, requested action, urgency, due/follow-up date, context. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Issue, state, client/candidate/family/staff, department owner, requested action, urgency, due/follow-up date, context. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -522,11 +456,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Escalate through the correct department leader or executive path — never blast every issue. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Escalate through the correct department leader or executive path — never blast every issue. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -553,11 +483,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "5–7 questions covering state health, hours serviced, current systems, department ownership, owner/status/next action, and escalation. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "5–7 questions covering state health, hours serviced, current systems, department ownership, owner/status/next action, and escalation. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -584,11 +510,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "State Director vs Assistant State Director vs VA vs departments. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "State Director vs Assistant State Director vs VA vs departments. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -615,11 +537,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Walk 3 items end-to-end with mentor. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Walk 3 items end-to-end with mentor. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -646,11 +564,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Strengths and coaching areas for Week 2. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Strengths and coaching areas for Week 2. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -677,11 +591,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Leads / referrals, marketing / BD activity, intake conversion, recruiting pipeline, staffing capacity, open cases, auth readiness, family experience, hours serviced. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Leads / referrals, marketing / BD activity, intake conversion, recruiting pipeline, staffing capacity, open cases, auth readiness, family experience, hours serviced. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -708,11 +618,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Read lead sources, conversion, stalls — without becoming Intake. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Read lead sources, conversion, stalls — without becoming Intake. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -739,11 +645,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "When capacity limits growth, escalate to Recruiting / Staffing with specific asks. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "When capacity limits growth, escalate to Recruiting / Staffing with specific asks. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -770,11 +672,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Assign owner and next action to every growth blocker; nothing sits. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Assign owner and next action to every growth blocker; nothing sits. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -801,11 +699,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Referral partners, pediatricians, schools, community organizations, clinics, local providers. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Referral partners, pediatricians, schools, community organizations, clinics, local providers. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -832,11 +726,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "State contacts, local vendors / resources, and state-specific relationship notes. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "State contacts, local vendors / resources, and state-specific relationship notes. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -863,11 +753,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Coordinate with Marketing / BD when local support exists or is planned. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Coordinate with Marketing / BD when local support exists or is planned. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -894,11 +780,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Every relationship touch has owner, outcome, next action, follow-up date. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Every relationship touch has owner, outcome, next action, follow-up date. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -925,11 +807,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "State leads, intake status, family follow-up, VOB readiness, stale follow-ups. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "State leads, intake status, family follow-up, VOB readiness, stale follow-ups. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -956,11 +834,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Track conversion and family experience without owning every step. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Track conversion and family experience without owning every step. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -987,11 +861,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Current scaling reality — support pattern only, not permanent ownership. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Current scaling reality — support pattern only, not permanent ownership. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1018,11 +888,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Intake exists today. State support is not a replacement for Intake ownership. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Intake exists today. State support is not a replacement for Intake ownership. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1049,11 +915,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Open cases, open hours, hard-to-staff cases, staff availability, upcoming needs. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Open cases, open hours, hard-to-staff cases, staff availability, upcoming needs. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1080,11 +942,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Read recruiting pipeline as it affects state capacity — without taking over the funnel. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Read recruiting pipeline as it affects state capacity — without taking over the funnel. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1111,11 +969,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Track state open hours / cases weekly with clear owners. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Track state open hours / cases weekly with clear owners. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1142,11 +996,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Specific asks: role, location, schedule, hours, urgency, start target, fit considerations. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Specific asks: role, location, schedule, hours, urgency, start target, fit considerations. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1173,11 +1023,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Assigned growth-blocker set with mentor review. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Assigned growth-blocker set with mentor review. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1204,11 +1050,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Assigned relationship touchpoints. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Assigned relationship touchpoints. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1235,11 +1077,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Assigned intake / lead visibility set. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Assigned intake / lead visibility set. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1266,11 +1104,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Assigned capacity set with mentor review. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Assigned capacity set with mentor review. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1297,11 +1131,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "What the Assistant State Director owns and where they need coaching. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "What the Assistant State Director owns and where they need coaching. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1328,11 +1158,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "How VA tasks are assigned, reviewed, and quality-checked. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "How VA tasks are assigned, reviewed, and quality-checked. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1359,11 +1185,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Grow support as volume grows — do not permanently absorb department work. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Grow support as volume grows — do not permanently absorb department work. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1390,11 +1212,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Repeated misses escalate. Unclear ownership gets clarified in writing. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Repeated misses escalate. Unclear ownership gets clarified in writing. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1421,11 +1239,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Family, staff / RBT, BCBA, clinical, scheduling, staffing, auth, intake, recruiting, billing / RCM, local vendor, compliance, leadership. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Family, staff / RBT, BCBA, clinical, scheduling, staffing, auth, intake, recruiting, billing / RCM, local vendor, compliance, leadership. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1452,11 +1266,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Assess state impact and urgency before routing. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Assess state impact and urgency before routing. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1483,11 +1293,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Issue, state impact, attempted actions, owner, requested decision, follow-up date. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Issue, state impact, attempted actions, owner, requested decision, follow-up date. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1514,11 +1320,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Confirm resolution back to departments and leadership; do not leave escalations hanging. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Confirm resolution back to departments and leadership; do not leave escalations hanging. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1545,11 +1347,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Delayed reports, treatment plan QA, family service disruption. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Delayed reports, treatment plan QA, family service disruption. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1576,11 +1374,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Auth expiration, pending auth follow-up, denials. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Auth expiration, pending auth follow-up, denials. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1607,11 +1401,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Coverage gaps, pairing issues, RBT / BCBA availability shifts. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Coverage gaps, pairing issues, RBT / BCBA availability shifts. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1638,11 +1428,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Credentialing lapses, billing errors, denials trend — escalate to the correct owner. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Credentialing lapses, billing errors, denials trend — escalate to the correct owner. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1669,11 +1455,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Key state contacts, escalation paths, local leadership. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Key state contacts, escalation paths, local leadership. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1700,11 +1482,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Payer nuances, state-specific documentation, coverage rules. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Payer nuances, state-specific documentation, coverage rules. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1731,11 +1509,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Local scheduling patterns and required forms. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Local scheduling patterns and required forms. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1762,11 +1536,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Local vendors, community resources, referral partners. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Local vendors, community resources, referral partners. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1793,11 +1563,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Priority items, escalations, staffing capacity, hours serviced trend. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Priority items, escalations, staffing capacity, hours serviced trend. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1824,11 +1590,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Wins, numbers, hours serviced, growth blockers, staffing needs, clinical / auth / scheduling risks, family / staff issues, decisions needed. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Wins, numbers, hours serviced, growth blockers, staffing needs, clinical / auth / scheduling risks, family / staff issues, decisions needed. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1855,11 +1617,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Simple scorecard mindset even when current tools are imperfect. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Simple scorecard mindset even when current tools are imperfect. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1886,11 +1644,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Send / prepare a leadership summary according to today's process. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Send / prepare a leadership summary according to today's process. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1917,11 +1671,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Review assigned state issues / tasks. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Review assigned state issues / tasks. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1948,11 +1698,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Family escalations, growth blockers, hours-serviced risks first. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Family escalations, growth blockers, hours-serviced risks first. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -1979,11 +1725,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Move stuck items with departments — do not take them over. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Move stuck items with departments — do not take them over. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2010,11 +1752,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Wrap the day with a leadership-ready summary of state status. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Wrap the day with a leadership-ready summary of state status. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2041,11 +1779,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Every touch has next step; nothing sits. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Every touch has next step; nothing sits. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2072,11 +1806,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Firm, respectful, structured follow-up. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Firm, respectful, structured follow-up. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2103,11 +1833,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Coach and unblock support structure. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Coach and unblock support structure. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2134,11 +1860,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Escalate urgent family, staff, recruiting / staffing, pipeline, and growth blockers. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Escalate urgent family, staff, recruiting / staffing, pipeline, and growth blockers. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2165,11 +1887,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Issue, context, owner, state impact, next action, follow-up date. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Issue, context, owner, state impact, next action, follow-up date. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2196,11 +1914,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Facts, risks, blockers, decisions needed, next actions. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Facts, risks, blockers, decisions needed, next actions. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2227,11 +1941,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Firm and respectful; no passive-aggressive escalation. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Firm and respectful; no passive-aggressive escalation. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2258,11 +1968,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Professional and within role boundaries. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Professional and within role boundaries. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2289,11 +1995,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Simulated state operations scenario provided by mentor. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Simulated state operations scenario provided by mentor. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2320,11 +2022,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Growth blocker categorization and next actions. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Growth blocker categorization and next actions. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2351,11 +2049,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Handoffs and coaching notes. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Handoffs and coaching notes. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2382,11 +2076,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Escalation note and final leadership summary. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Escalation note and final leadership summary. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2413,11 +2103,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "10–15 questions covering state health, hours serviced, current systems, owner/status/next action/follow-up, State Director vs Assistant State Director vs VA vs Regional State Director, department boundaries, growth coordination, local relationships / referral / BD support, intake visibility, recruiting / staffing capacity visibility, Assistant / VA leadership, state escalation management, state-specific resources, weekly rhythm and scorecard, and executive communication quality. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "10–15 questions covering state health, hours serviced, current systems, owner/status/next action/follow-up, State Director vs Assistant State Director vs VA vs Regional State Director, department boundaries, growth coordination, local relationships / referral / BD support, intake visibility, recruiting / staffing capacity visibility, Assistant / VA leadership, state escalation management, state-specific resources, weekly rhythm and scorecard, and executive communication quality. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2444,11 +2130,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "What can be owned independently vs still reviewed. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "What can be owned independently vs still reviewed. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2475,11 +2157,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Name 2 strengths and 2 coaching areas. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Name 2 strengths and 2 coaching areas. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
@@ -2506,11 +2184,7 @@ export const STATE_DIRECTOR_LESSON_CONTENT: Record<string, LessonContent> = {
     "Concrete targets for the first month of independent ownership. If this slips, hours serviced drops, families feel it, staff burn out, and executives lose confidence in the state.",
     [
       { heading: "Plain-English explanation", body: "Concrete targets for the first month of independent ownership. At Blossom today, the State Director runs the state through CentralReach (clients, auths, scheduling, staffing visibility), Bloom Growth (state scorecard, rocks, issues, L10), Monday.com / state trackers, Viventium for staff status, and Outlook/Teams for regional coordination. If it isn't in CentralReach, the tracker, or the scorecard, it didn't happen." },
-      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.
-2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.
-3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.
-4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.
-5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
+      { heading: "Step-by-step (today's process)", body: "1) Open CentralReach + your state tracker + the Bloom Growth scorecard for your state.\n2) Review today's health: hours serviced trend, caseload, auths, staffing, QA, at-risk families, open issues.\n3) Do the leadership work this lesson covers — decide, coordinate, escalate, or hold a department accountable; do NOT take over their execution.\n4) Log every state issue with owner, status, next action, and follow-up date; promote real risks into the Bloom Growth issues list for L10.\n5) Close the loop with the correct department leader and, when needed, escalate cleanly to Regional / Operations Leadership." },
       { heading: "What good looks like", body: "Any executive can open your state view and instantly see hours serviced trend, staffing capacity, open auths, QA findings, at-risk families, top 3 state issues, and who owns what next — without asking you." },
     ],
     {
