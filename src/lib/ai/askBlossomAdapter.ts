@@ -257,6 +257,7 @@ function sourcesFromChat(items: ChatFnSource[] | undefined): AiSource[] {
     url: s.url,
     snippet: s.snippet,
     similarity: s.similarity,
+    number: typeof s.number === "number" ? s.number : i + 1,
   }));
 }
 
