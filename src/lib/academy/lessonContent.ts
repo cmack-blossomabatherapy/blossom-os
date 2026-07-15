@@ -14,6 +14,7 @@
  */
 
 import { INTAKE_LESSON_CONTENT } from "./intakeLessonsFull";
+import { RECRUITING_LESSON_CONTENT } from "./recruitingLessonsFull";
 
 export interface LessonSection {
   heading: string;
@@ -239,7 +240,7 @@ const CONTENT: Record<string, LessonContent> = {
 
 export function getLessonContent(moduleId: string, lessonId: string): LessonContent | null {
   const key = `${moduleId}::${lessonId}`;
-  return CONTENT[key] ?? INTAKE_LESSON_CONTENT[key] ?? null;
+  return CONTENT[key] ?? INTAKE_LESSON_CONTENT[key] ?? RECRUITING_LESSON_CONTENT[key] ?? null;
 }
 
 /**
