@@ -34,6 +34,13 @@ import { OrgChartNodeCard, type OrgNodeData } from "@/components/org/OrgChartNod
 import { toast } from "sonner";
 import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid, Search, X, ChevronsDownUp } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type DbRow = {
   id: string;
@@ -72,6 +79,21 @@ const ACCENT_LABELS: Record<string, string> = {
   "#F472B6": "Highlight",
   "#F59E0B": "Alert",
 };
+
+// Mirror of tierFromAccent in OrgChartNodeCard — keep in sync.
+type Tier = "group" | "leader" | "member";
+function tierFromAccent(accent: string | null | undefined): Tier {
+  const c = (accent ?? "#22C55E").toLowerCase();
+  if (c.startsWith("#7c3aed") || c.startsWith("#8b5cf6") || c.startsWith("#a78bfa")) return "group";
+  if (c.startsWith("#14b8a6") || c.startsWith("#0ea5a4") || c.startsWith("#2dd4bf") || c.startsWith("#60a5fa")) return "leader";
+  return "member";
+}
+const TIER_META: Record<Tier, { label: string; swatch: string; hint: string }> = {
+  group: { label: "Departments", swatch: "#7C3AED", hint: "Division / team headers" },
+  leader: { label: "Leadership", swatch: "#14B8A6", hint: "Directors, managers, leads" },
+  member: { label: "Coordinators & ICs", swatch: "#22C55E", hint: "Coordinators, individual contributors" },
+};
+const ALL_TIERS: Tier[] = ["group", "leader", "member"];
 
 function rowToNode(row: DbRow, isEditor: boolean): Node<OrgNodeData> {
   return {
@@ -118,6 +140,8 @@ function InnerOrgChart() {
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [activeTiers, setActiveTiers] = useState<Set<Tier>>(new Set(ALL_TIERS));
+  const [activeDept, setActiveDept] = useState<string>("all");
   const { fitView } = useReactFlow();
 
   // Drag session: snapshot of the dragged subtree's positions at drag-start,
@@ -227,17 +251,53 @@ function InnerOrgChart() {
   // Search: highlight matching nodes, dim the rest, and pulse edges.
   const matchedIds = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return null;
+    const tierFiltered = activeTiers.size !== ALL_TIERS.length;
+    const deptFiltered = activeDept !== "all";
+    if (!q && !tierFiltered && !deptFiltered) return null;
     const set = new Set<string>();
     for (const r of rows) {
-      const hay = [r.name, r.title, r.department, r.email]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      if (hay.includes(q)) set.add(r.id);
+      if (tierFiltered && !activeTiers.has(tierFromAccent(r.accent_color))) continue;
+      if (deptFiltered && (r.department ?? "") !== activeDept) continue;
+      if (q) {
+        const hay = [r.name, r.title, r.department, r.email]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) continue;
+      }
+      set.add(r.id);
     }
     return set;
-  }, [query, rows]);
+  }, [query, rows, activeTiers, activeDept]);
+
+  const tierCounts = useMemo(() => {
+    const counts: Record<Tier, number> = { group: 0, leader: 0, member: 0 };
+    for (const r of rows) counts[tierFromAccent(r.accent_color)]++;
+    return counts;
+  }, [rows]);
+
+  const departments = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) if (r.department?.trim()) set.add(r.department.trim());
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+
+  const toggleTier = useCallback((t: Tier) => {
+    setActiveTiers((prev) => {
+      const next = new Set(prev);
+      if (next.has(t) && next.size > 1) next.delete(t);
+      else next.add(t);
+      // If user re-enables all three, treat as no filter.
+      if (next.size === 0) return new Set(ALL_TIERS);
+      return next;
+    });
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setActiveTiers(new Set(ALL_TIERS));
+    setActiveDept("all");
+    setQuery("");
+  }, []);
 
   useEffect(() => {
     setNodes((ns) =>
@@ -498,6 +558,59 @@ function InnerOrgChart() {
               ? "Drag to reposition, connect handles to change reporting lines."
               : "A live view of who reports to whom across Blossom."}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {ALL_TIERS.map((t) => {
+              const meta = TIER_META[t];
+              const active = activeTiers.has(t);
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleTier(t)}
+                  aria-pressed={active}
+                  title={meta.hint}
+                  className={[
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors",
+                    active
+                      ? "border-border/70 bg-card text-foreground shadow-sm"
+                      : "border-border/40 bg-muted/40 text-muted-foreground hover:bg-muted",
+                  ].join(" ")}
+                >
+                  <span
+                    className="size-2.5 rounded-full ring-1 ring-inset ring-white/20"
+                    style={{ background: meta.swatch, opacity: active ? 1 : 0.5 }}
+                  />
+                  <span className="font-medium">{meta.label}</span>
+                  <span className="tabular-nums text-muted-foreground">{tierCounts[t]}</span>
+                </button>
+              );
+            })}
+            {departments.length > 0 && (
+              <Select value={activeDept} onValueChange={setActiveDept}>
+                <SelectTrigger className="h-8 w-[180px] rounded-full border-border/70 bg-card text-xs">
+                  <SelectValue placeholder="All departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All departments</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {(activeTiers.size !== ALL_TIERS.length || activeDept !== "all" || query) && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" />
+                Clear filters
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
