@@ -308,7 +308,7 @@ function InnerOrgChart() {
   // Drag start: snapshot the dragged subtree so we can preserve relative
   // spacing between the parent and every descendant.
   const onNodeDragStart = useCallback(
-    (_e: React.MouseEvent, node: Node<OrgNodeData>) => {
+    (_e: MouseEvent | TouchEvent, node: Node<OrgNodeData>) => {
       if (!isEditor) return;
       const descIds = descendantsOf(node.id);
       const posById = new Map(nodes.map((n) => [n.id, n.position] as const));
@@ -328,7 +328,7 @@ function InnerOrgChart() {
 
   // Drag: apply the same delta to every descendant so the subtree moves as one.
   const onNodeDrag = useCallback(
-    (_e: React.MouseEvent, node: Node<OrgNodeData>) => {
+    (_e: MouseEvent | TouchEvent, node: Node<OrgNodeData>) => {
       const session = dragSessionRef.current;
       if (!isEditor || !session || session.rootId !== node.id) return;
       const dx = node.position.x - session.startRoot.x;
@@ -346,25 +346,25 @@ function InnerOrgChart() {
 
   // Drag stop: persist the root + every descendant that moved with it.
   const onNodeDragStop = useCallback(
-    async (_e: React.MouseEvent, node: Node<OrgNodeData>) => {
+    async (_e: MouseEvent | TouchEvent, node: Node<OrgNodeData>) => {
       const session = dragSessionRef.current;
       dragSessionRef.current = null;
       if (!isEditor) return;
       const dx = node.position.x - (session?.startRoot.x ?? node.position.x);
       const dy = node.position.y - (session?.startRoot.y ?? node.position.y);
-      const updates: Array<Promise<{ error: { message: string } | null }>> = [
-        supabase
+      const updates = [
+        (supabase
           .from("org_chart_nodes")
           .update({ position_x: node.position.x, position_y: node.position.y })
-          .eq("id", node.id),
+          .eq("id", node.id) as unknown as Promise<{ error: { message: string } | null }>),
       ];
       if (session && (dx !== 0 || dy !== 0)) {
         for (const d of session.descendants) {
           updates.push(
-            supabase
+            (supabase
               .from("org_chart_nodes")
               .update({ position_x: d.start.x + dx, position_y: d.start.y + dy })
-              .eq("id", d.id),
+              .eq("id", d.id) as unknown as Promise<{ error: { message: string } | null }>),
           );
         }
       }
