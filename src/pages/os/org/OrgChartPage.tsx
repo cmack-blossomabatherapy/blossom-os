@@ -10,6 +10,8 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  getNodesBounds,
+  getViewportForBounds,
   type Connection,
   type Edge,
   type Node,
@@ -32,7 +34,7 @@ import {
 } from "@/components/ui/sheet";
 import { OrgChartNodeCard, type OrgNodeData } from "@/components/org/OrgChartNodeCard";
 import { toast } from "sonner";
-import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid, Search, X, ChevronsDownUp } from "lucide-react";
+import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid, Search, X, ChevronsDownUp, Download, FileImage, FileText } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import {
   Select,
@@ -41,6 +43,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 
 type DbRow = {
   id: string;
@@ -142,6 +152,7 @@ function InnerOrgChart() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [activeTiers, setActiveTiers] = useState<Set<Tier>>(new Set(ALL_TIERS));
   const [activeDept, setActiveDept] = useState<string>("all");
+  const [exporting, setExporting] = useState<null | "png" | "pdf">(null);
   const { fitView } = useReactFlow();
 
   // Drag session: snapshot of the dragged subtree's positions at drag-start,
@@ -475,6 +486,73 @@ function InnerOrgChart() {
 
   const roots = useMemo(() => rows.filter((r) => !r.parent_id).length, [rows]);
 
+  const exportChart = useCallback(
+    async (format: "png" | "pdf") => {
+      if (nodes.length === 0) {
+        toast.info("Nothing to export yet");
+        return;
+      }
+      const viewportEl = document.querySelector<HTMLElement>(".react-flow__viewport");
+      if (!viewportEl) {
+        toast.error("Could not find chart canvas");
+        return;
+      }
+      setExporting(format);
+      try {
+        const visibleNodes = nodes.filter((n) => !n.hidden);
+        const bounds = getNodesBounds(visibleNodes);
+        const padding = 60;
+        const imgWidth = Math.min(6000, Math.ceil(bounds.width + padding * 2));
+        const imgHeight = Math.min(6000, Math.ceil(bounds.height + padding * 2));
+        const transform = getViewportForBounds(
+          bounds,
+          imgWidth,
+          imgHeight,
+          0.5,
+          2,
+          padding / Math.max(imgWidth, imgHeight),
+        );
+        const bg = getComputedStyle(document.body).backgroundColor || "#ffffff";
+        const dataUrl = await toPng(viewportEl, {
+          backgroundColor: bg,
+          width: imgWidth,
+          height: imgHeight,
+          pixelRatio: 2,
+          style: {
+            width: `${imgWidth}px`,
+            height: `${imgHeight}px`,
+            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})`,
+          },
+        });
+        const stamp = new Date().toISOString().slice(0, 10);
+        if (format === "png") {
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = `blossom-org-chart-${stamp}.png`;
+          a.click();
+          toast.success("Downloaded PNG");
+        } else {
+          const orientation = imgWidth >= imgHeight ? "landscape" : "portrait";
+          const pdf = new jsPDF({
+            orientation,
+            unit: "pt",
+            format: [imgWidth, imgHeight],
+            compress: true,
+          });
+          pdf.addImage(dataUrl, "PNG", 0, 0, imgWidth, imgHeight);
+          pdf.save(`blossom-org-chart-${stamp}.pdf`);
+          toast.success("Downloaded PDF");
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        toast.error("Export failed", { description: message });
+      } finally {
+        setExporting(null);
+      }
+    },
+    [nodes],
+  );
+
   const autoArrange = useCallback(async () => {
     if (!isEditor || rows.length === 0) return;
     // Simple hierarchical layout by parent_id (BFS levels).
@@ -656,6 +734,7 @@ function InnerOrgChart() {
                 <ChevronsDownUp className="size-4" />
                 Expand all
               </Button>
+              <ExportMenu exporting={exporting} onExport={exportChart} disabled={rows.length === 0} />
               <Button
                 size="sm"
                 variant="outline"
@@ -687,6 +766,7 @@ function InnerOrgChart() {
                 <ChevronsDownUp className="size-4" />
                 Expand all
               </Button>
+              <ExportMenu exporting={exporting} onExport={exportChart} disabled={rows.length === 0} />
               <div className="flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground">
                 <Lock className="size-3.5" />
                 View only
@@ -765,6 +845,48 @@ function InnerOrgChart() {
 }
 
 async function importFromEmployees(): Promise<{ imported: number; error?: string }> {
+  return _importFromEmployees();
+}
+
+function ExportMenu({
+  exporting,
+  onExport,
+  disabled,
+}: {
+  exporting: null | "png" | "pdf";
+  onExport: (format: "png" | "pdf") => void;
+  disabled?: boolean;
+}) {
+  const busy = exporting !== null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="rounded-xl"
+          disabled={disabled || busy}
+          title="Export org chart"
+        >
+          <Download className="size-4" />
+          {busy ? (exporting === "pdf" ? "Building PDF…" : "Building PNG…") : "Export"}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onSelect={() => onExport("png")}>
+          <FileImage className="size-4" />
+          Download PNG
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onExport("pdf")}>
+          <FileText className="size-4" />
+          Download PDF
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+async function _importFromEmployees(): Promise<{ imported: number; error?: string }> {
   const { data: emps, error } = await supabase
     .from("employees")
     .select("id,first_name,last_name,preferred_name,email,job_title,status")
