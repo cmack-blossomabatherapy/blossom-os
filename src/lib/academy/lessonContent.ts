@@ -25,6 +25,7 @@ import { CASE_MANAGEMENT_LESSON_CONTENT } from "./caseManagementLessonsFull";
 import { BEHAVIORAL_SUPPORT_LESSON_CONTENT } from "./behavioralSupportLessonsFull";
 import { ASSISTANT_STATE_DIRECTOR_LESSON_CONTENT } from "./assistantStateDirectorLessonsFull";
 import { STATE_DIRECTOR_LESSON_CONTENT } from "./stateDirectorLessonsFull";
+import { MARKETING_BD_LESSON_CONTENT } from "./marketingBdLessonsFull";
 
 export interface LessonSection {
   heading: string;
@@ -264,6 +265,7 @@ export function getLessonContent(moduleId: string, lessonId: string): LessonCont
     BEHAVIORAL_SUPPORT_LESSON_CONTENT[key] ??
     ASSISTANT_STATE_DIRECTOR_LESSON_CONTENT[key] ??
     STATE_DIRECTOR_LESSON_CONTENT[key] ??
+    MARKETING_BD_LESSON_CONTENT[key] ??
     null
   );
 }
