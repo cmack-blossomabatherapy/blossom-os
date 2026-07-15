@@ -445,6 +445,87 @@ export type Database = {
           },
         ]
       }
+      academy_last_position: {
+        Row: {
+          journey_slug: string
+          lesson_id: string | null
+          lesson_title: string | null
+          module_id: string
+          module_title: string | null
+          track_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          journey_slug: string
+          lesson_id?: string | null
+          lesson_title?: string | null
+          module_id: string
+          module_title?: string | null
+          track_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          journey_slug?: string
+          lesson_id?: string | null
+          lesson_title?: string | null
+          module_id?: string
+          module_title?: string | null
+          track_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      academy_lesson_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          journey_slug: string | null
+          last_seen_at: string
+          lesson_id: string
+          module_id: string
+          reflection: string | null
+          started_at: string | null
+          status: string
+          track_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          journey_slug?: string | null
+          last_seen_at?: string
+          lesson_id: string
+          module_id: string
+          reflection?: string | null
+          started_at?: string | null
+          status?: string
+          track_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          journey_slug?: string | null
+          last_seen_at?: string
+          lesson_id?: string
+          module_id?: string
+          reflection?: string | null
+          started_at?: string | null
+          status?: string
+          track_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       academy_module_resources: {
         Row: {
           archived_at: string | null
