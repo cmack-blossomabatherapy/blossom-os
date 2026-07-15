@@ -504,7 +504,11 @@ const OSOutlet = () => (
 // Training Academy) that don't bring their own shell but are reached from
 // role menus that expect the OS sidebar/topbar to remain visible.
 function OSShellPage({ children }: { children: React.ReactNode }) {
-  return <OSShell>{children}</OSShell>;
+  return (
+    <OSRoleProvider>
+      <OSShell>{children}</OSShell>
+    </OSRoleProvider>
+  );
 }
 
 // Canonical Marketing access model. Every /marketing/* route below must be
