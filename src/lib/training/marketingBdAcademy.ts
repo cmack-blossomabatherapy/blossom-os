@@ -354,3 +354,8 @@ export const MARKETING_BD_DAYS: MarketingBdDayModule[] = [
     reflectionPrompt: "How will you apply today's lesson without stepping into Intake's execution?",
   },
 ];
+
+export function getMarketingBdDay(id: string): MarketingBdDayModule | undefined {
+  return MARKETING_BD_DAYS.find((d) => d.id === id);
+}
+
