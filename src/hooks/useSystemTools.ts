@@ -85,6 +85,7 @@ export type SystemToolArea =
   | "issue_tracker"
   | "request_intake"
   | "bcba_productivity_uploads"
+  | "centralreach_uploads"
   | "integrations";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
