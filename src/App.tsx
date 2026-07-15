@@ -800,8 +800,8 @@ const App = () => (
                   <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
                   {/* Live Org Chart — HR + admins can edit; every authenticated
                       teammate can view. Edit gate is enforced inside OrgChartPage. */}
-                  <Route path="/org-chart" element={<LiveOrgChart />} />
-                  <Route path="/org-chart/editor" element={<OrgChartPage />} />
+                  <Route path="/org-chart" element={<OSShellPage><LiveOrgChart /></OSShellPage>} />
+                  <Route path="/org-chart/editor" element={<OSShellPage><OrgChartPage /></OSShellPage>} />
                   {/* Company Home — universal landing for every signed-in user */}
                   <Route path="/home" element={<CompanyHome />} />
                   <Route path="/home/manage" element={<CompanyHomeManage />} />
