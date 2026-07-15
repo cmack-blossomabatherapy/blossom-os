@@ -225,7 +225,7 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground mt-3">
-            Not connected yet? Add <code className="px-1 py-0.5 rounded bg-muted">VIVENTIUM_API_KEY</code> and <code className="px-1 py-0.5 rounded bg-muted">VIVENTIUM_COMPANY_ID</code> in Lovable Cloud secrets. Once connected, hire dates will refresh on every sync.
+            Not connected yet? Add <code className="px-1 py-0.5 rounded bg-muted">VIVENTIUM_USERNAME</code>, <code className="px-1 py-0.5 rounded bg-muted">VIVENTIUM_PASSWORD</code>, <code className="px-1 py-0.5 rounded bg-muted">VIVENTIUM_COMPANY_CODE</code>, and <code className="px-1 py-0.5 rounded bg-muted">VIVENTIUM_DIVISION_CODE</code> in Lovable Cloud secrets. Once connected, hire dates will refresh on every sync.
           </p>
         </div>
       </Section>
