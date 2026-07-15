@@ -21,20 +21,25 @@ function TaskRow({ task, onComplete }: { task: UserTask; onComplete: (id: string
   const overdue = task.due_at && isPast(parseISO(task.due_at));
   const relatedHref = resolveRelatedRecordHref(task);
   const relatedLabel = relatedRecordChipLabel(task);
+  const taskHref = `/tasks?taskId=${encodeURIComponent(task.id)}&activity=1`;
   return (
     <li className="group flex items-start gap-3 rounded-xl p-2 -mx-2 hover:bg-muted/60 transition">
       <button
         type="button"
-        onClick={() => onComplete(task.id)}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onComplete(task.id); }}
         className="mt-0.5 text-muted-foreground hover:text-foreground"
         aria-label="Complete task"
       >
         <Circle className="size-4" />
       </button>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground leading-tight truncate">
+        <Link
+          to={taskHref}
+          className="block text-sm font-medium text-foreground leading-tight truncate hover:text-primary transition"
+          title="Open in Tasks"
+        >
           {task.title}
-        </p>
+        </Link>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
           {task.due_at && (
             <span className={cn("inline-flex items-center gap-1", overdue && "text-rose-500 font-medium")}>
@@ -68,11 +73,18 @@ function TaskRow({ task, onComplete }: { task: UserTask; onComplete: (id: string
   );
 }
 
-function Section({ label, tasks, onComplete }: { label: string; tasks: UserTask[]; onComplete: (id: string) => void }) {
+function Section({ label, tasks, onComplete, filterHref }: { label: string; tasks: UserTask[]; onComplete: (id: string) => void; filterHref?: string }) {
   if (tasks.length === 0) return null;
   return (
     <div>
-      <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</p>
+        {filterHref && (
+          <Link to={filterHref} className="text-[11px] text-muted-foreground hover:text-primary transition inline-flex items-center gap-0.5">
+            View <ArrowRight className="size-3" />
+          </Link>
+        )}
+      </div>
       <ul className="space-y-1">
         {tasks.map((t) => (
           <TaskRow key={t.id} task={t} onComplete={onComplete} />
@@ -123,6 +135,13 @@ export function MyTasksCard() {
             </Badge>
           )}
         </div>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/tasks"
+            className="text-[11px] font-medium text-muted-foreground hover:text-primary transition inline-flex items-center gap-0.5"
+          >
+            View all <ArrowRight className="size-3" />
+          </Link>
         <div className="flex rounded-full border border-border/60 bg-muted/40 p-0.5 text-[11px]">
           <button
             type="button"
@@ -144,6 +163,7 @@ export function MyTasksCard() {
           >
             By me
           </button>
+        </div>
         </div>
       </div>
 
@@ -174,10 +194,10 @@ export function MyTasksCard() {
         </div>
       ) : (
         <div className="space-y-5">
-          <Section label="Overdue" tasks={grouped.overdue} onComplete={handleComplete} />
-          <Section label="Today" tasks={grouped.today} onComplete={handleComplete} />
-          <Section label="This week" tasks={grouped.week} onComplete={handleComplete} />
-          <Section label="Later" tasks={grouped.later} onComplete={handleComplete} />
+          <Section label="Overdue" tasks={grouped.overdue} onComplete={handleComplete} filterHref="/tasks?filter=overdue" />
+          <Section label="Today" tasks={grouped.today} onComplete={handleComplete} filterHref="/tasks?filter=today" />
+          <Section label="This week" tasks={grouped.week} onComplete={handleComplete} filterHref="/tasks?due=7d" />
+          <Section label="Later" tasks={grouped.later} onComplete={handleComplete} filterHref="/tasks?due=30d" />
         </div>
       )}
     </Card>

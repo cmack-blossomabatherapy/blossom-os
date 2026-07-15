@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LeadNameLink, useLeadDrawer } from "@/contexts/LeadDrawerContext";
 import {
   Plus, AlertCircle, CheckCircle2, List, Play,
@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -171,6 +171,50 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
   const [flag, setFlag] = useState<FlagKey>("any");
   const [createOpen, setCreateOpen] = useState(false);
   const [activityTask, setActivityTask] = useState<IntakeTaskRow | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  const consumedDeepLinkRef = useRef(false);
+
+  // Apply deep-link params once on mount (filter, status, owner, due, flag, q).
+  useEffect(() => {
+    if (consumedDeepLinkRef.current) return;
+    const f = searchParams.get("filter");
+    if (f === "all" || f === "today" || f === "overdue" || f === "escalated") setFilter(f);
+    const st = searchParams.get("status");
+    if (st) {
+      const parts = st.split(",").map((s) => s.trim()).filter(Boolean) as StatusKey[];
+      const valid = parts.filter((s) => s === "Open" || s === "In Progress" || s === "Blocked");
+      if (valid.length) setStatuses(valid);
+    }
+    const ow = searchParams.get("owner");
+    if (ow) setOwners(ow.split(",").map((s) => s.trim()).filter(Boolean));
+    const dr = searchParams.get("due");
+    if (dr === "any" || dr === "overdue" || dr === "today" || dr === "7d" || dr === "30d" || dr === "unscheduled") setDueRange(dr);
+    const fl = searchParams.get("flag");
+    if (fl === "any" || fl === "blocked" || fl === "actionable" || fl === "unassigned") setFlag(fl);
+    const q = searchParams.get("q");
+    if (q) setSearch(q);
+    consumedDeepLinkRef.current = true;
+  }, [searchParams]);
+
+  // When a taskId is deep-linked, scroll to and highlight the row, and open
+  // the activity drawer if `?activity=1`.
+  const deepTaskId = searchParams.get("taskId");
+  const deepActivity = searchParams.get("activity") === "1";
+  useEffect(() => {
+    if (!deepTaskId || loading) return;
+    const target = tasks.find((t) => t.id === deepTaskId);
+    if (!target) return;
+    setFocusedTaskId(deepTaskId);
+    if (deepActivity) setActivityTask(target);
+    const el = rowRefs.current[deepTaskId];
+    if (el) {
+      requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "center" }));
+    }
+    const timer = window.setTimeout(() => setFocusedTaskId(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [deepTaskId, deepActivity, loading, tasks]);
 
   const leadById = useMemo(() => {
     const map = new Map<string, Lead>();
@@ -528,7 +572,15 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
                       catch (e) { toast.error(e instanceof Error ? e.message : `Could not ${label.toLowerCase()}`); }
                     };
                     return (
-                     <tr key={r.task.id} className="hover:bg-muted/30 transition-colors">
+                     <tr
+                       key={r.task.id}
+                       id={`task-${r.task.id}`}
+                       ref={(el) => { rowRefs.current[r.task.id] = el; }}
+                       className={cn(
+                         "hover:bg-muted/30 transition-colors",
+                         focusedTaskId === r.task.id && "bg-primary/10 ring-2 ring-primary/50 animate-pulse",
+                       )}
+                     >
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-1.5">
                             <InlineStatusPicker
