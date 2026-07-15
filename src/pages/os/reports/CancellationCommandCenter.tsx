@@ -1026,43 +1026,51 @@ export default function CancellationCommandCenter() {
       {!hasData ? (
         anyUpload ? (
           <section className="mt-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
-            <h2 className="text-lg font-semibold">Upload all reports, then build the dashboard</h2>
+            <h2 className="text-lg font-semibold">Build the Cancellation dashboard</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              All three reports are required so cancellations can be attributed to the right BCBA and lost revenue is calculated accurately.
+              Scheduling is required. Billing (for lost-revenue math) and Authorization (for BCBA attribution) are optional enhancers.
             </p>
             <ul className="mt-4 space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 {hasSchedule ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="h-4 w-4 rounded-full border border-muted-foreground/40" />}
-                <span className={hasSchedule ? "text-foreground" : "text-muted-foreground"}>Scheduling Report {hasSchedule && `· ${scheduleFileName}`}</span>
+                <span className={hasSchedule ? "text-foreground" : "text-muted-foreground"}>
+                  Scheduling Report <span className="text-[11px] font-medium uppercase tracking-wide text-[hsl(345_70%_50%)]">· Required</span>
+                  {hasSchedule && ` · ${scheduleFileName}`}
+                </span>
               </li>
               <li className="flex items-center gap-2">
                 {hasBilling ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="h-4 w-4 rounded-full border border-muted-foreground/40" />}
-                <span className={hasBilling ? "text-foreground" : "text-muted-foreground"}>Billing Report {hasBilling && `· ${billingFileName}`}</span>
+                <span className={hasBilling ? "text-foreground" : "text-muted-foreground"}>
+                  Billing Report <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">· Optional</span>
+                  {hasBilling && ` · ${billingFileName}`}
+                </span>
               </li>
               <li className="flex items-center gap-2">
                 {hasAuths ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="h-4 w-4 rounded-full border border-muted-foreground/40" />}
-                <span className={hasAuths ? "text-foreground" : "text-muted-foreground"}>Authorization Report(s) {hasAuths && `· ${authFileNames.join(", ")}`}</span>
+                <span className={hasAuths ? "text-foreground" : "text-muted-foreground"}>
+                  Authorization Report(s) <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">· Optional</span>
+                  {hasAuths && ` · ${authFileNames.join(", ")}`}
+                </span>
               </li>
             </ul>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button
                 size="sm"
                 className="bg-[hsl(345_70%_50%)] hover:bg-[hsl(345_70%_45%)]"
-                disabled={!allUploaded}
+                disabled={!hasSchedule}
                 onClick={handleBuild}
               >
-                Build Dashboard
+                {allUploaded ? "Build Dashboard" : "Build Dashboard (Scheduling only)"}
               </Button>
-              {allUploaded ? null : (
-                <Button size="sm" variant="ghost" onClick={() => setBuilt(true)} disabled={!hasSchedule}>
-                  Build with what I have
-                </Button>
-              )}
               <Button size="sm" variant="ghost" onClick={resetAll}>Clear uploads</Button>
             </div>
-            {!allUploaded && (
+            {!hasSchedule ? (
               <p className="mt-3 text-[12px] text-muted-foreground">
-                Building without all three reports is supported but will reduce attribution accuracy and revenue precision.
+                Scheduling export is required to build the dashboard. Billing and Authorization are optional and can be added later.
+              </p>
+            ) : !allUploaded && (
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                You can build now with Scheduling only. Add Billing for lost-revenue math and Authorization for BCBA attribution anytime.
               </p>
             )}
           </section>
