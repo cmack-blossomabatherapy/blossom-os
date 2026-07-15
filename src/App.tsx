@@ -881,7 +881,7 @@ const App = () => (
                   <Route path="/reports/hr-employee-compliance" element={<ReportRoleGuard reportId="hr-employee-compliance"><HrEmployeeComplianceDashboard /></ReportRoleGuard>} />
                   <Route path="/reports/hr-employee-onboarding" element={<ReportRoleGuard reportId="hr-employee-onboarding"><HrEmployeeOnboardingCommandCenter /></ReportRoleGuard>} />
                   <Route path="/reports/hr-bcba-productivity" element={<ReportRoleGuard reportId="hr-bcba-productivity"><HrBcbaProductivityDashboard /></ReportRoleGuard>} />
-                 <Route path="/reports/bcba-productivity-report" element={<ReportRoleGuard reportId="bcba-productivity-report"><BcbaProductivityReport /></ReportRoleGuard>} />
+                 <Route path="/reports/bcba-productivity-report" element={<Navigate to="/reports/bcba-productivity-report-v3" replace />} />
                  <Route path="/reports/bcba-productivity-report-v3" element={<ReportRoleGuard reportId="bcba-productivity-report-v3"><BcbaProductivityReportV3 /></ReportRoleGuard>} />
                   <Route path="/reports/cancellation-command-center" element={<ReportRoleGuard reportId="cancellation-command-center"><CancellationCommandCenter /></ReportRoleGuard>} />
                   {/* Approved-Six aliases: Authorization Analysis + Hour-Based Utilization share the CR auth
