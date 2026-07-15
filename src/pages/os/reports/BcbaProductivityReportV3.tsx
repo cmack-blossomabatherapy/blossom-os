@@ -36,6 +36,7 @@ import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import blossomLogo from "@/assets/blossom-logo-color.png";
+import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -973,6 +974,18 @@ export default function BcbaProductivityReportV3() {
             </Button>
           </div>
         </div>
+
+        <CentralReachRequirementsCard
+          exportName="CentralReach Billing / Service export (CSV or XLSX)"
+          requiredColumns={[
+            "DateOfService", "ClientId", "ClientFirstName", "ClientLastName",
+            "ProcedureCode", "TimeWorkedInHours", "ProviderFirstName",
+            "ProviderLastName", "PayorNickname", "LocationCode",
+          ]}
+          filterNote="Same file feeds BCBA Supervision and Parent Training. Admin uploads at System Tools → BCBA Productivity Uploads are auto-loaded — no manual upload needed when the shared dataset is populated."
+          adminUploadsHref="/admin/bcba-productivity-uploads"
+          adminSourceLabel="Auto-loads from Admin Uploads"
+        />
 
         {/* Setup / inferred banners stay above tabs */}
         {setupIncomplete && (

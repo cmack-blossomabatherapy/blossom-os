@@ -704,16 +704,45 @@ export default function QaSupervisionPtDashboard() {
         <ReportAIButton preset="supervision-pt" />
       </div>
 
+      <CentralReachRequirementsCard
+        exportName="CentralReach Billing / Service export (CSV or XLSX)"
+        requiredColumns={[
+          "DateOfService", "ClientFirstName", "ClientLastName",
+          "ProcedureCode (97153, 97155, 97156)",
+          "TimeWorkedInHours", "ProviderFirstName", "ProviderLastName",
+          "PayorName",
+        ]}
+        filterNote="Powers both Parent Training (97156) and BCBA Supervision (97155 ÷ 97153). Uses the shared admin dataset by default — upload a file below only if you want a one-off view."
+        adminUploadsHref="/admin/bcba-productivity-uploads"
+        adminSourceLabel={sharedRowCount != null ? `Admin dataset: ${sharedRowCount.toLocaleString()} rows` : "Auto-loads from Admin Uploads"}
+      />
+
       {/* Upload + month selector */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">
         {!fileName ? (
-          <UploadDropzone
-            inputRef={inputRef}
-            dragOver={dragOver}
-            setDragOver={setDragOver}
-            onFiles={handleFiles}
-            loading={loading}
-          />
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[12.5px] text-muted-foreground">
+                No data loaded. Load the shared admin billing dataset or upload a CentralReach export.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadSharedAdminDataset(false)}
+                disabled={sharedLoading}
+              >
+                <Database className="mr-1.5 h-3.5 w-3.5" />
+                {sharedLoading ? "Loading…" : "Load Admin Dataset"}
+              </Button>
+            </div>
+            <UploadDropzone
+              inputRef={inputRef}
+              dragOver={dragOver}
+              setDragOver={setDragOver}
+              onFiles={handleFiles}
+              loading={loading}
+            />
+          </div>
         ) : (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
