@@ -7,10 +7,13 @@
  * title/summary — every lesson click opens something useful, never a
  * dead card.
  *
- * This first pass seeds the three Intake Week 1 Day 1 "Intake Role
- * Orientation" lessons per the training brief. The shell renders for all
- * other lessons across every journey.
+ * Week 1 Day 1 Intake lessons are defined inline below. The rest of the
+ * Intake journey (76 lessons across 19 days) is authored in
+ * `./intakeLessonsFull.ts` and merged into the CONTENT record below.
+ * The shell renders for any other lesson across every journey.
  */
+
+import { INTAKE_LESSON_CONTENT } from "./intakeLessonsFull";
 
 export interface LessonSection {
   heading: string;
@@ -235,7 +238,8 @@ const CONTENT: Record<string, LessonContent> = {
 };
 
 export function getLessonContent(moduleId: string, lessonId: string): LessonContent | null {
-  return CONTENT[`${moduleId}::${lessonId}`] ?? null;
+  const key = `${moduleId}::${lessonId}`;
+  return CONTENT[key] ?? INTAKE_LESSON_CONTENT[key] ?? null;
 }
 
 /**
