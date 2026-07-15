@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock,
+  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, Download,
   ListChecks, PlayCircle, Sparkles, ShieldCheck, Lightbulb, AlertTriangle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   useLessonRecord, useLessonStatuses, startLesson, completeLesson,
 } from "@/lib/academy/lessonProgress";
 import { getLessonContent, getLessonShell, type LessonContent } from "@/lib/academy/lessonContent";
+import { exportLessonToPdf } from "@/lib/academy/lessonPdfExport";
 import { completeRuntime, useRuntimeRecord, type RuntimeContext } from "@/lib/academy/runtimeStore";
 import { parseAcademyModuleId } from "@/lib/academy/journeyContent";
 import type { RBTPathId } from "@/lib/training/rbtAcademy";
@@ -102,6 +103,10 @@ export default function TrainingLessonRuntime() {
 
   const isCompleted = record.status === "completed";
 
+  const onExportPdf = () => {
+    exportLessonToPdf(path.title, ctx.title, lesson, content);
+  };
+
   return (
     <div className="mx-auto w-full max-w-4xl px-6 py-10 md:px-10">
       {/* Breadcrumbs */}
@@ -135,6 +140,14 @@ export default function TrainingLessonRuntime() {
           {!isCompleted && record.status === "in_progress" && (
             <Badge variant="outline" className="border-sky-300 bg-sky-50 text-[10px] text-sky-700">In progress</Badge>
           )}
+          <button
+            type="button"
+            onClick={onExportPdf}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 h-7 text-[11px] font-medium text-foreground transition hover:bg-muted"
+            title="Download this lesson as a PDF for offline review"
+          >
+            <Download className="h-3 w-3" /> Export PDF
+          </button>
         </div>
         <Progress value={total ? Math.round((completedCount / total) * 100) : 0} className="mt-4 h-1.5" />
         <p className="mt-1 text-[11px] text-muted-foreground">Module progress · {completedCount}/{total} lessons</p>
