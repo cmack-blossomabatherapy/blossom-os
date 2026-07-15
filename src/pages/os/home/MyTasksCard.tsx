@@ -186,11 +186,25 @@ export function MyTasksCard() {
       </div>
 
       {loading && tasks.length === 0 ? (
-        <div className="text-sm text-muted-foreground text-center py-6">Loading…</div>
+        <div className="space-y-2 py-2" aria-label="Loading tasks">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 p-3"
+            >
+              <div className="size-4 rounded-full bg-muted animate-pulse" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+                <div className="h-2.5 w-1/3 rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : openCount === 0 ? (
         <div className="rounded-xl border border-dashed border-border/70 bg-muted/40 p-6 text-center text-sm text-muted-foreground">
           <CheckCircle2 className="mx-auto mb-2 size-5 text-emerald-500" />
-          You're all caught up.
+          <div className="font-medium text-foreground">You're all caught up.</div>
+          <div className="mt-1 text-xs">New tasks assigned to you will appear here.</div>
         </div>
       ) : (
         <div className="space-y-5">
