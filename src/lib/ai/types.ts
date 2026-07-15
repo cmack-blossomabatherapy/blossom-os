@@ -22,6 +22,8 @@ export interface AiSource {
   url?: string;
   snippet?: string;
   similarity?: number;
+  /** Inline citation number that appears as [n] in the assistant message. */
+  number?: number;
 }
 
 export type AiActionKind =
