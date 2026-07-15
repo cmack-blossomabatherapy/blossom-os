@@ -329,6 +329,7 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
     <GrowthPageShell
       eyebrow={isUniversal ? "Work" : "Growth & Admissions"}
       title="Tasks"
+      noShell={noShell}
       description={
         isUniversal
           ? "Your task list — follow-ups, actions, and reminders."
