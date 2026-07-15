@@ -63,6 +63,160 @@ export interface ReportDef {
 }
 
 export const REPORTS: ReportDef[] = [
+  /* ============================================================
+   * Reports Consolidation — Approved Six
+   * ----------------------------------------------------------------
+   * The Reports page surfaces exactly six report cards for every
+   * Blossom OS user. These entries own the canonical id/title/route
+   * for each; visibleReportsForRole() below returns only these six.
+   *
+   * Each report opens a real, working page. Backing data comes from
+   * the Admin / Data Upload flows (BCBA Productivity V3 upload,
+   * Cancellation Command Center upload, CR authorization upload,
+   * CR billing upload for supervision & parent training). Where a
+   * shared page (QA Supervision & Parent Training, QA Auth
+   * Utilization) supports two of the six reports, we pass a ?view
+   * query string so the page can focus the correct lens.
+   * ============================================================ */
+  {
+    id: "bcba-productivity-report-v3",
+    title: "BCBA Productivity Report V3",
+    description:
+      "Single billing upload → BCBA productivity by DOS with permanent Assignment History as source of truth. CR export required: billing/service export with service date, client, provider, procedure code, worked hours, location/state, and BCBA assignment/history source.",
+    category: "clinical",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "Operations",
+    lastUpdated: "On upload",
+    popularity: 99,
+    featured: true,
+    aiInsight:
+      "Historical ownership. No auth uploads. No seeded data. Unassigned rows are visible, not silently dropped.",
+    kpiPreviews: [
+      { label: "Total Hours", value: "Auto", trend: "up" },
+      { label: "97153 Hours", value: "Auto", trend: "up" },
+      { label: "Unassigned", value: "Auto", trend: "down" },
+    ],
+    sparkline: [44, 52, 60, 66, 72, 78, 82, 86, 92],
+    tags: ["BCBA", "Productivity", "V3", "Featured"],
+    drilldownPath: "/reports/bcba-productivity-report-v3",
+  },
+  {
+    id: "cancellation-command-center",
+    title: "Cancellation Command Center",
+    description:
+      "Cancellations, lost hours, lost revenue, BCBA/RBT/client impact and state-level utilization leakage. CR exports required: scheduling cancellations export, billing/service export, and authorization/utilization export (for lost hours/revenue).",
+    category: "scheduling",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "Operations",
+    lastUpdated: "On upload",
+    popularity: 98,
+    featured: true,
+    aiInsight:
+      "Single source of truth for cancellation reporting, lost-hours analysis and revenue leakage.",
+    kpiPreviews: [
+      { label: "Cancel %", value: "Auto", trend: "down" },
+      { label: "Lost hours", value: "Auto", trend: "down" },
+      { label: "Lost $", value: "Auto", trend: "down" },
+    ],
+    sparkline: [60, 56, 58, 50, 48, 44, 42, 38, 36],
+    tags: ["Cancellation", "Lost Revenue", "Scheduling", "Featured"],
+    drilldownPath: "/reports/cancellation-command-center",
+  },
+  {
+    id: "authorization-analysis",
+    title: "Authorization Analysis",
+    description:
+      "Per-client authorization health: authorized vs worked vs pending vs remaining hours by client, auth #, payor, and service code. CR export required: authorization export with client, authorization number, start/end date, payor, service code, authorized hours/units, worked/used hours, pending hours, remaining hours, auth manager/BCBA (if available).",
+    category: "authorizations",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "Auth Team",
+    lastUpdated: "On upload",
+    popularity: 96,
+    featured: true,
+    aiInsight:
+      "Upload one CR authorization export — instantly see per-client authorization risk, remaining hours, and expirations.",
+    kpiPreviews: [
+      { label: "Auths", value: "Auto", trend: "up" },
+      { label: "Remaining hrs", value: "Auto", trend: "up" },
+      { label: "Exp <30d", value: "Auto", trend: "down" },
+    ],
+    sparkline: [40, 46, 52, 58, 62, 68, 72, 76, 80],
+    tags: ["Authorization", "Analysis", "Featured"],
+    drilldownPath: "/reports/qa-auth-utilization?view=analysis",
+  },
+  {
+    id: "authorization-utilization-hour-based",
+    title: "Authorization Utilization — Hour Based",
+    description:
+      "Hour-based utilization vs authorized (and prorated authorized where available) by client, service code/category, location/state and date range. CR export required: authorization utilization export with authorized hours, worked hours, prorated authorized hours (if available), service code/category, client, location/state, date range.",
+    category: "authorizations",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "Auth Team",
+    lastUpdated: "On upload",
+    popularity: 95,
+    featured: true,
+    aiInsight:
+      "Hour-based utilization view — highlights over- and under-utilized authorizations before they impact revenue.",
+    kpiPreviews: [
+      { label: "Avg Util %", value: "Auto", trend: "up" },
+      { label: "Over-util", value: "Auto", trend: "down" },
+      { label: "Under-util", value: "Auto", trend: "down" },
+    ],
+    sparkline: [42, 48, 55, 60, 65, 68, 72, 76, 80],
+    tags: ["Authorization", "Utilization", "Hours", "Featured"],
+    drilldownPath: "/reports/qa-auth-utilization?view=hours",
+  },
+  {
+    id: "parent-training",
+    title: "Parent Training",
+    description:
+      "97156 parent training presence, hours, and gaps by client, provider and payor. CR export required: billing/service export filtered or parseable for 97156, including service date, client, provider, hours, payor, location/state.",
+    category: "qa",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "QA / Compliance",
+    lastUpdated: "On upload",
+    popularity: 94,
+    featured: true,
+    aiInsight:
+      "Upload one CR billing export — instantly see 97156 parent training gaps by client.",
+    kpiPreviews: [
+      { label: "97156 hrs", value: "Auto", trend: "up" },
+      { label: "PT gaps", value: "Auto", trend: "down" },
+      { label: "Coverage %", value: "Auto", trend: "up" },
+    ],
+    sparkline: [40, 48, 52, 60, 58, 64, 70, 74, 78],
+    tags: ["97156", "Parent Training", "Featured"],
+    drilldownPath: "/reports/qa-supervision-pt?view=parent-training",
+  },
+  {
+    id: "bcba-supervision",
+    title: "BCBA Supervision",
+    description:
+      "97153 vs 97155 supervision ratios, below-threshold clients, and BCBA supervision load. CR export required: billing/service export with 97153 and 97155 rows, service date, client, provider/BCBA, hours, payor, location/state.",
+    category: "qa",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "QA / Compliance",
+    lastUpdated: "On upload",
+    popularity: 94,
+    featured: true,
+    aiInsight:
+      "Upload one CR billing export — instantly see supervision % and clients below threshold.",
+    kpiPreviews: [
+      { label: "97153 hrs", value: "Auto", trend: "up" },
+      { label: "97155 hrs", value: "Auto", trend: "up" },
+      { label: "Supervision %", value: "Auto", trend: "up" },
+    ],
+    sparkline: [50, 55, 60, 64, 68, 72, 70, 74],
+    tags: ["97153", "97155", "Supervision", "Featured"],
+    drilldownPath: "/reports/qa-supervision-pt?view=supervision",
+  },
+
   // Leadership
   { id: "exec-overview", title: "Executive Overview", description: "Company-wide KPIs, lead flow, and operating posture.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership"], type: "dashboard", owner: "Leadership", lastUpdated: "2h ago", popularity: 97, featured: true, aiInsight: "Net growth up +11 - fastest weekly gain since Feb.", kpiPreviews: [{ label: "Active Clients", value: "142", delta: "+8", trend: "up" }, { label: "Pipeline", value: "$182k", delta: "+$24k", trend: "up" }, { label: "Conversion", value: "34%", delta: "+4pt", trend: "up" }], sparkline: [22, 28, 26, 35, 41, 48, 52, 60, 58, 67, 72, 78], tags: ["KPI", "Growth"], detailView: "executive" },
   { id: "bcba-performance", title: "BCBA Performance", description: "Live billing, supervision, and revenue health from CMS session data.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership", "state_director", "billing_finance", "qa_team", "clinical_director", "behavioral_support"], type: "dashboard", owner: "Leadership", lastUpdated: "Live", popularity: 99, featured: true, aiInsight: "Drives Hours/Active Client efficiency and revenue leak detection.", kpiPreviews: [{ label: "Live data", value: "CMS", trend: "up" }, { label: "Drill-downs", value: "BCBA/Code", trend: "up" }], sparkline: [40, 48, 52, 58, 60, 65, 68, 72, 78, 82], tags: ["BCBA", "Billing", "Revenue"] },
@@ -168,70 +322,22 @@ export const REPORTS: ReportDef[] = [
 ];
 
 export function visibleReportsForRole(role: OSRole): ReportDef[] {
-  // Reports is a shared experience: the three core CR-upload dashboards
-  // are always surfaced. Pass 2 also surfaces the Authorization
-  // operational-reporting tiles for authorization / leadership roles so
-  // the deferred Pass 1 item ("auth-specific report tiles in /reports")
-  // is fully covered.
-  const SHARED_IDS = ["bcba-productivity-report", "bcba-productivity-report-v3", "cancellation-command-center"];
-  const AUTH_OPERATIONAL_IDS = [
-    "auth-expiration-risk",
-    "auth-workflow-bottleneck",
-    "auth-operational-performance",
-    "auth-denials-rework",
-    "auth-missing-documentation",
-    "auth-payer-requirement-risk",
-    "auth-expiring",
+  // Reports consolidation: the /reports surface intentionally shows the
+  // same six approved report cards to every Blossom OS user. All other
+  // catalog entries remain in REPORTS for cross-linking, drilldowns, and
+  // legacy compatibility but are hidden from the Reports page and gated
+  // out of direct /reports/<id> URLs via ReportRoleGuard.
+  void role;
+  const APPROVED_IDS = [
+    "bcba-productivity-report-v3",
+    "cancellation-command-center",
+    "authorization-analysis",
+    "authorization-utilization-hour-based",
+    "parent-training",
+    "bcba-supervision",
   ];
-  const AUTH_VISIBLE_ROLES: OSRole[] = [
-    "super_admin",
-    "authorization_coordinator",
-    "operations_leadership",
-    "executive_leadership",
-    "state_director",
-    "assistant_state_director",
-    "qa_team",
-  ];
-  const CRED_OPERATIONAL_IDS = [
-    "cred-status",
-    "cred-bcba-coverage",
-    "cred-uncredentialed-bcbas",
-    "cred-expiring",
-    "cred-payer-matrix",
-  ];
-  const CRED_VISIBLE_ROLES: OSRole[] = [
-    "super_admin",
-    "credentialing_team",
-    "credentialing_lead",
-    "operations_leadership",
-    "executive_leadership",
-  ];
-  const ids = new Set<string>(SHARED_IDS);
-  if (AUTH_VISIBLE_ROLES.includes(role)) {
-    for (const id of AUTH_OPERATIONAL_IDS) ids.add(id);
-  }
-  if (CRED_VISIBLE_ROLES.includes(role)) {
-    for (const id of CRED_OPERATIONAL_IDS) ids.add(id);
-  }
-
-  // QA roles (team / director / specialist) share the same QA report surface.
-  // Walk the catalog's per-report `visibleTo` so QA-tagged reports are surfaced
-  // even when the role isn't listed in the operational ID buckets above.
-  const QA_ROLES: OSRole[] = ["qa_team", "qa_director", "qa_specialist"];
-  const isQA = QA_ROLES.includes(role);
-  // Assistant State Director shares the State Director's state-support
-  // report surface — mirror state_director visibility without duplicating
-  // every catalog entry.
-  const mirrorsStateDirector = role === "assistant_state_director";
-  for (const r of REPORTS) {
-    const roles = r.visibleTo as readonly OSRole[];
-    if (roles.includes(role)) ids.add(r.id);
-    if (isQA && roles.includes("qa_team")) ids.add(r.id);
-    if (mirrorsStateDirector && roles.includes("state_director")) ids.add(r.id);
-  }
-
-  return Array.from(ids)
-    .map(id => REPORTS.find(r => r.id === id))
+  return APPROVED_IDS
+    .map((id) => REPORTS.find((r) => r.id === id))
     .filter((r): r is ReportDef => Boolean(r));
 }
 
