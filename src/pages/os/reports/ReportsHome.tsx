@@ -30,6 +30,7 @@ import { useAuthorizationReportMetrics } from "@/hooks/useAuthorizationReportMet
 import { useRbtReportSummaries } from "@/hooks/useRbtReportSummaries";
 import { listRecentReports } from "@/hooks/useSharedSavedViews";
 import { migrateLocalReportsIfNeeded } from "@/lib/os/reportPersistence";
+import { useSavedReportViews } from "@/hooks/useSavedReportViews";
 import { toast } from "sonner";
 
 export default function ReportsHome() {
@@ -99,6 +100,22 @@ export default function ReportsHome() {
 
   const { favorites: favs, toggleFavorite: toggleFav } = useReportFavorites();
   const favReports = favs.map(id => reportsWithLive.find(r => r.id === id)).filter(Boolean) as ReportDef[];
+
+  // Saved dashboard views ("Save view" on any report detail page,
+  // including department dashboards). Shares the executive_saved_views
+  // table with favorites, scoped by scope="report_view".
+  const { views: savedViews, deleteView: deleteSavedView, toggleFavorite: toggleSavedViewFav, refresh: refreshSavedViews } = useSavedReportViews();
+  useEffect(() => {
+    const onChanged = () => { void refreshSavedViews(); };
+    window.addEventListener("os-saved-report-view-changed", onChanged);
+    return () => window.removeEventListener("os-saved-report-view-changed", onChanged);
+  }, [refreshSavedViews]);
+  const savedViewsWithMeta = useMemo(() => {
+    return savedViews.map((v) => {
+      const report = reportsWithLive.find((r) => r.id === v.reportId);
+      return { ...v, report };
+    });
+  }, [savedViews, reportsWithLive]);
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -261,13 +278,59 @@ export default function ReportsHome() {
       </section>
 
       {/* ============== SAVED REPORTS ============== */}
-      {(cancelSaved.length > 0 || savedV3.length > 0) && (
+      {(cancelSaved.length > 0 || savedV3.length > 0 || savedViewsWithMeta.length > 0) && (
         <section className="mt-8">
           <SectionHeader
             title="Saved reports"
             subtitle="Pick up where you left off — your uploaded reports."
           />
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {savedViewsWithMeta.map((sv) => (
+              <article
+                key={sv.id}
+                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition hover:-translate-y-0.5 hover:border-[hsl(215_70%_50%/0.35)] hover:shadow-[0_20px_40px_-25px_hsl(215_60%_50%/0.4)]"
+              >
+                <Link to={sv.path} className="block">
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full bg-[hsl(215_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(215_70%_45%)]"
+                  >
+                    {sv.report?.title ?? "Saved view"}
+                  </Badge>
+                  <h3 className="mt-2 line-clamp-1 text-[14.5px] font-semibold tracking-tight">{sv.name}</h3>
+                  <p className="mt-1 line-clamp-1 text-[11.5px] text-muted-foreground">
+                    {sv.report?.description ?? "Custom dashboard view"}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(sv.savedAt).toLocaleString()}
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-medium text-[hsl(215_70%_45%)] transition group-hover:translate-x-0.5">
+                      Open <ArrowUpRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </Link>
+                <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); void toggleSavedViewFav(sv.id, !sv.isFavorite); }}
+                    className="rounded-full p-1.5 text-muted-foreground/70 hover:bg-amber-500/10 hover:text-amber-500"
+                    aria-label={sv.isFavorite ? "Unfavorite saved view" : "Favorite saved view"}
+                  >
+                    <Star className={cn("h-3.5 w-3.5", sv.isFavorite && "fill-amber-400 text-amber-500")} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sv.name}"?`)) void deleteSavedView(sv.id); }}
+                    className="rounded-full p-1.5 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive"
+                    aria-label="Delete saved view"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </article>
+            ))}
             {savedV3.map(sr => (
               <article
                 key={sr.id}
