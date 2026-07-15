@@ -70,6 +70,7 @@ export default function ReportDetail() {
       };
       if (sdFilters) filters.sdFilters = sdFilters;
       await saveView(name.trim(), filters);
+      window.dispatchEvent(new Event("os-saved-report-view-changed"));
       toast({ title: "View saved", description: "Available from your saved views." });
     } catch (e) {
       toast({ title: "Could not save view", description: "Please try again.", variant: "destructive" });
