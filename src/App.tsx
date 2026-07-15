@@ -888,9 +888,10 @@ const App = () => (
                   <Route path="/reports/catalog" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/landing" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/bcba-performance" element={<ReportRoleGuard reportId="bcba-performance"><OSReportBcbaPerformance /></ReportRoleGuard>} />
-                  <Route path="/reports/qa-supervision-pt" element={<ReportRoleGuard reportId="qa-supervision-pt"><QaSupervisionPtDashboard /></ReportRoleGuard>} />
-                  <Route path="/reports/qa-auth-utilization" element={<ReportRoleGuard reportId="qa-auth-utilization"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
-                  <Route path="/reports/qa-cancellation" element={<ReportRoleGuard reportId="qa-cancellation"><QaCancellationDashboard /></ReportRoleGuard>} />
+                  {/* Legacy QA report routes redirect to the approved-six replacements. */}
+                  <Route path="/reports/qa-supervision-pt" element={<Navigate to="/reports/bcba-supervision" replace />} />
+                  <Route path="/reports/qa-auth-utilization" element={<Navigate to="/reports/authorization-utilization-hour-based" replace />} />
+                  <Route path="/reports/qa-cancellation" element={<Navigate to="/reports/cancellation-command-center" replace />} />
                   <Route path="/reports/hr-payroll-command" element={<ReportRoleGuard reportId="hr-payroll-command"><HrPayrollCommandCenter /></ReportRoleGuard>} />
                   <Route path="/reports/hr-recruiting-pipeline" element={<Navigate to="/reports?report=hr-recruiting-pipeline" replace />} />
                   <Route path="/reports/hr-employee-compliance" element={<ReportRoleGuard reportId="hr-employee-compliance"><HrEmployeeComplianceDashboard /></ReportRoleGuard>} />
