@@ -290,11 +290,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ---- upsert active employees ----
+    // ---- upsert active employees (batched) ----
     let created = 0, updated = 0, matched = 0, skipped = 0, linked = 0;
     const now = new Date().toISOString();
 
-    // Preload profiles email -> user_id map (bounded — same order of magnitude as workforce).
+    // Preload profiles email -> user_id.
     const emailToUserId = new Map<string, string>();
     {
       const { data: profs } = await admin.from("profiles").select("user_id,email").not("email", "is", null);
@@ -303,35 +303,43 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Only sync ACTIVE employees per operator requirement. Terminated/resigned
-    // rows are counted as skipped so numbers stay honest.
+    // Only sync ACTIVE employees.
     const activeOnly = normalized.filter((n) => n.status === "active");
     const nonActiveCount = normalized.length - activeOnly.length;
     skipped += nonActiveCount;
 
-    for (const n of activeOnly) {
-      let existingId: string | null = null;
-      if (n.viventium_employee_id) {
-        const { data } = await admin
-          .from("employees").select("id")
-          .eq("viventium_employee_id", n.viventium_employee_id).maybeSingle();
-        existingId = data?.id ?? null;
+    // Preload existing employees in ONE query per key so we do not run
+    // thousands of sequential selects (which trips the 150s edge timeout).
+    const byVid = new Map<string, string>();
+    const byEmail = new Map<string, string>();
+    const byCode = new Map<string, string>();
+    {
+      const { data: existing } = await admin
+        .from("employees")
+        .select("id,viventium_employee_id,email,employee_code");
+      for (const e of (existing ?? []) as {
+        id: string;
+        viventium_employee_id: string | null;
+        email: string | null;
+        employee_code: string | null;
+      }[]) {
+        if (e.viventium_employee_id) byVid.set(e.viventium_employee_id, e.id);
+        if (e.email) byEmail.set(e.email.toLowerCase(), e.id);
+        if (e.employee_code) byCode.set(e.employee_code, e.id);
       }
-      if (!existingId && n.email) {
-        const { data } = await admin
-          .from("employees").select("id")
-          .ilike("email", n.email).maybeSingle();
-        existingId = data?.id ?? null;
-      }
-      if (!existingId && n.employee_code) {
-        const { data } = await admin
-          .from("employees").select("id")
-          .eq("employee_code", n.employee_code).maybeSingle();
-        existingId = data?.id ?? null;
-      }
+    }
 
+    const updates: { id: string; patch: Record<string, unknown> }[] = [];
+    const inserts: Record<string, unknown>[] = [];
+
+    for (const n of activeOnly) {
       const empType = mapEmploymentType(n.employment_type);
       const linkedUserId = n.email ? emailToUserId.get(n.email) ?? null : null;
+      const existingId =
+        (n.viventium_employee_id && byVid.get(n.viventium_employee_id)) ||
+        (n.email && byEmail.get(n.email)) ||
+        (n.employee_code && byCode.get(n.employee_code)) ||
+        null;
 
       const directoryPatch: Record<string, unknown> = {
         first_name: n.first_name ?? undefined,
@@ -353,20 +361,43 @@ Deno.serve(async (req) => {
 
       if (existingId) {
         matched++;
-        const { error } = await admin.from("employees").update(directoryPatch).eq("id", existingId);
-        if (error) { skipped++; console.error("update failed", error.message); }
-        else { updated++; if (linkedUserId) linked++; }
+        updates.push({ id: existingId, patch: directoryPatch });
+        if (linkedUserId) linked++;
       } else {
-        // Inserts need required NOT NULL fields.
         if (!n.first_name || !n.last_name || !n.job_title) { skipped++; continue; }
-        const { error } = await admin.from("employees").insert({
+        inserts.push({
           ...directoryPatch,
           state: n.state ?? "unknown",
           job_title: n.job_title,
           employee_code: n.employee_code ?? undefined,
         });
-        if (error) { skipped++; console.error("insert failed", error.message); }
-        else { created++; if (linkedUserId) linked++; }
+        if (linkedUserId) linked++;
+      }
+    }
+
+    // Run updates in parallel batches (limited concurrency).
+    const CONCURRENCY = 10;
+    for (let i = 0; i < updates.length; i += CONCURRENCY) {
+      const slice = updates.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        slice.map((u) => admin.from("employees").update(u.patch).eq("id", u.id)),
+      );
+      for (const r of results) {
+        if (r.error) { skipped++; console.error("update failed", r.error.message); }
+        else updated++;
+      }
+    }
+
+    // Bulk insert new rows in chunks.
+    const INSERT_CHUNK = 200;
+    for (let i = 0; i < inserts.length; i += INSERT_CHUNK) {
+      const chunk = inserts.slice(i, i + INSERT_CHUNK);
+      const { error, data } = await admin.from("employees").insert(chunk).select("id");
+      if (error) {
+        skipped += chunk.length;
+        console.error("insert chunk failed", error.message);
+      } else {
+        created += data?.length ?? chunk.length;
       }
     }
 
