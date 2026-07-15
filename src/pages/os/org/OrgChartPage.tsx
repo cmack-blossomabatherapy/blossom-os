@@ -845,6 +845,48 @@ function InnerOrgChart() {
 }
 
 async function importFromEmployees(): Promise<{ imported: number; error?: string }> {
+  return _importFromEmployees();
+}
+
+function ExportMenu({
+  exporting,
+  onExport,
+  disabled,
+}: {
+  exporting: null | "png" | "pdf";
+  onExport: (format: "png" | "pdf") => void;
+  disabled?: boolean;
+}) {
+  const busy = exporting !== null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="rounded-xl"
+          disabled={disabled || busy}
+          title="Export org chart"
+        >
+          <Download className="size-4" />
+          {busy ? (exporting === "pdf" ? "Building PDF…" : "Building PNG…") : "Export"}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onSelect={() => onExport("png")}>
+          <FileImage className="size-4" />
+          Download PNG
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onExport("pdf")}>
+          <FileText className="size-4" />
+          Download PDF
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+async function _importFromEmployees(): Promise<{ imported: number; error?: string }> {
   const { data: emps, error } = await supabase
     .from("employees")
     .select("id,first_name,last_name,preferred_name,email,job_title,status")
