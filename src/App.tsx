@@ -803,6 +803,7 @@ const App = () => (
                   <Route path="/behavioral-support/follow-ups" element={<BehavioralSupportFollowUps />} />
                   <Route path="/behavioral-support/supervision-visibility" element={<BehavioralSupportSupervisionVisibility />} />
                   <Route path="/behavioral-support/evaluations" element={<BehavioralSupportEvaluations />} />
+                  <Route path="/behavioral-support/resources" element={<OSBehavioralSupportResources />} />
                   {/* Case Manager training goes to the shared /academy destination
                       (matches TRAINING_AND_RESOURCES menu). CMTrainingAcademy remains
                       exported for legacy use but is no longer routed as a role page. */}
