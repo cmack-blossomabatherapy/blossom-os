@@ -148,9 +148,12 @@ interface IntakeTasksProps {
    * generic Tasks page used at `/tasks` for every role.
    */
   variant?: "intake" | "universal";
+  /** When true, GrowthPageShell will not wrap in its own OSShell — used when
+   *  the route already provides the Blossom OS shell (see /tasks). */
+  noShell?: boolean;
 }
 
-export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {}) {
+export default function IntakeTasks({ variant = "intake", noShell = false }: IntakeTasksProps = {}) {
   const isUniversal = variant === "universal";
   const { leads: allLeads } = useLeads();
   const { matches } = useIntakeStateFilter();
@@ -326,6 +329,7 @@ export default function IntakeTasks({ variant = "intake" }: IntakeTasksProps = {
     <GrowthPageShell
       eyebrow={isUniversal ? "Work" : "Growth & Admissions"}
       title="Tasks"
+      noShell={noShell}
       description={
         isUniversal
           ? "Your task list — follow-ups, actions, and reminders."

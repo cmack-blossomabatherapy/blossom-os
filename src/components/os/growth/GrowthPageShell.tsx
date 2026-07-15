@@ -44,7 +44,7 @@ export interface PageAction {
 }
 
 export function GrowthPageShell({
-  eyebrow, title, description, actions, headerRight, children,
+  eyebrow, title, description, actions, headerRight, children, noShell = false,
 }: {
   eyebrow: string;
   title: string;
@@ -52,10 +52,13 @@ export function GrowthPageShell({
   actions?: PageAction[];
   headerRight?: ReactNode;
   children: ReactNode;
+  /** When true, render without the outer <OSShell> — the caller already
+   *  provides the Blossom OS shell (sidebar + topbar). Prevents nested
+   *  shells when a route wraps the page in <OSShellPage>. */
+  noShell?: boolean;
 }) {
-  return (
-    <OSShell>
-      <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto space-y-8">
+  const body = (
+    <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto space-y-8">
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">{eyebrow}</div>
@@ -97,9 +100,10 @@ export function GrowthPageShell({
           )}
         </header>
         {children}
-      </div>
-    </OSShell>
+    </div>
   );
+  if (noShell) return body;
+  return <OSShell>{body}</OSShell>;
 }
 
 export function StatCard({
