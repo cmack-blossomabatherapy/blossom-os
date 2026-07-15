@@ -10,6 +10,7 @@ import { OSShell } from "./OSShell";
 import {
   useRBTResources, RBT_RESOURCE_CATEGORIES,
   type RBTResource, type RBTResourceCategoryId, type RBTResourceType,
+  getRBTResourceOpenUrl,
 } from "@/lib/training/rbtResources";
 import {
   useResourcePrefs, toggleBookmark, toggleComplete, markViewed,
@@ -290,6 +291,12 @@ function ResourceCard({
   const Icon = typeIcon(resource.type);
   const url = resource.url;
   const isExternal = !!url && /^https?:\/\//.test(url);
+  const hasStorage = !!resource.storagePath;
+  const openStorage = async () => {
+    onOpen();
+    const signed = await getRBTResourceOpenUrl(resource);
+    if (signed) window.open(signed, "_blank", "noopener,noreferrer");
+  };
   return (
     <div className="group rounded-2xl bg-card border border-border/70 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-border">
       <div className="flex items-start gap-4">
@@ -301,6 +308,12 @@ function ResourceCard({
             <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-muted text-foreground/70">{resource.type}</span>
             {resource.required && (
               <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary">Required</span>
+            )}
+            {resource.needsReview && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-700 dark:text-amber-300">Needs Review</span>
+            )}
+            {resource.planningOnly && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium border border-amber-500/40 text-amber-700 dark:text-amber-300">Not Current SOP</span>
             )}
             {resource.minutes && (
               <span className="text-xs text-muted-foreground">{resource.minutes} min</span>
@@ -342,7 +355,14 @@ function ResourceCard({
         >
           <CheckCircle2 className="size-3.5" /> {completed ? "Completed" : "Mark complete"}
         </button>
-        {url ? (
+        {hasStorage ? (
+          <button
+            onClick={openStorage}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-secondary text-secondary-foreground border border-border/70 text-sm font-medium hover:bg-muted transition"
+          >
+            Open <ExternalLink className="size-3.5" />
+          </button>
+        ) : url ? (
           isExternal ? (
             <a
               href={url}
