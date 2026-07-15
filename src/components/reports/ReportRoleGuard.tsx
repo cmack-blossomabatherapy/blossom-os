@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useOSRoleSafe } from "@/contexts/OSRoleContext";
-import { visibleReportsForRole } from "@/lib/os/reportsCatalog";
+import { visibleReportsForRole, visibleDepartmentDashboardsForRole } from "@/lib/os/reportsCatalog";
 
 interface Props {
   reportId: string;
@@ -20,7 +20,9 @@ export function ReportRoleGuard({ reportId, children }: Props) {
   // Outside the OS shell (e.g. legacy AppLayout routes), fall through — the
   // outer PermissionRoute / route gates are the source of truth.
   if (!ctx) return <>{children}</>;
-  const allowed = visibleReportsForRole(ctx.role).some((r) => r.id === reportId);
+  const allowed =
+    visibleReportsForRole(ctx.role).some((r) => r.id === reportId) ||
+    visibleDepartmentDashboardsForRole(ctx.role).some((r) => r.id === reportId);
   if (!allowed) return <Navigate to="/reports" replace />;
   return <>{children}</>;
 }
