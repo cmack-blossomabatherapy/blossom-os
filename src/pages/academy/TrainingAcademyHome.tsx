@@ -172,6 +172,33 @@ export default function TrainingAcademyHome() {
         <WelcomeToBlossomCard />
       </div>
 
+      {/* ---------- Resume where you left off ---------- */}
+      {lastPos && resumeHref && (
+        <Link
+          to={resumeHref}
+          className="group mt-8 flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-transparent to-transparent p-5 transition-all hover:-translate-y-0.5 hover:border-primary/50"
+        >
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <PlayCircle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Resume where you left off</p>
+              <p className="mt-1 truncate text-[15px] font-semibold tracking-tight">
+                {lastPos.lessonTitle || lastPos.moduleTitle || "Continue your lesson"}
+              </p>
+              <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
+                {lastPos.moduleTitle ? `${lastPos.moduleTitle} · ` : ""}
+                Last viewed {new Date(lastPos.updatedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+              </p>
+            </div>
+          </div>
+          <span className="hidden shrink-0 items-center gap-1 text-[12.5px] font-medium text-primary sm:inline-flex">
+            Resume <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+      )}
+
       {/* ---------- My Training (Continue) — role-scoped, single path ---------- */}
       <Section
         eyebrow="Continue learning"
