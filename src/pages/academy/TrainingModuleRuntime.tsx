@@ -80,6 +80,20 @@ export default function TrainingModuleRuntime() {
   const record = useRuntimeRecord(decodedId, runtimeCtx);
   const tickRef = useRef<number | null>(null);
   const persistRef = useRef<number>(0);
+  const autostart = params.get("autostart") === "1";
+  const autostartedRef = useRef(false);
+
+  // If the learner arrived via "Start day" (or any deep link with ?autostart=1)
+  // and the module hasn't been completed, begin the runtime immediately so the
+  // timer starts ticking without a second click. Guarded so we only fire once
+  // per mount and never overwrite a completed module.
+  useEffect(() => {
+    if (!autostart || autostartedRef.current) return;
+    autostartedRef.current = true;
+    if (record.status === "not_started") {
+      void startRuntime(decodedId, runtimeCtx);
+    }
+  }, [autostart, record.status, decodedId, runtimeCtx]);
 
   useEffect(() => {
     if (record.status !== "in_progress") {

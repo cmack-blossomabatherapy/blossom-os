@@ -50,7 +50,14 @@ export default function TrainingPathDayDetail() {
   const dayPct = day.modules.length === 0 ? 0 : Math.round((completedCount / day.modules.length) * 100);
   const next = firstIncompleteModule(day);
   const runtimeHref = (id: string) => `${journey.runtimeRouteFor(id)}${trackSuffix}`;
-  const startHref = next ? runtimeHref(next.id) : runtimeHref(day.modules[0]?.id ?? "");
+  // Append autostart so the runtime page begins the timer immediately —
+  // preserves any existing querystring (e.g. RBT track).
+  const withAutostart = (href: string) => href + (href.includes("?") ? "&" : "?") + "autostart=1";
+  const startHref = withAutostart(next ? runtimeHref(next.id) : runtimeHref(day.modules[0]?.id ?? ""));
+  // "Continue day" as soon as any module is completed OR already in progress —
+  // so returning to the day after clicking Start on a module never resets the
+  // CTA back to "Start day".
+  const hasStarted = completedCount > 0 || (day.inProgressCount ?? 0) > 0;
 
   // Aggregate resources for this day via the unified resolver
   // (module-hardcoded + RBT seeded + admin attachments).
@@ -109,7 +116,7 @@ export default function TrainingPathDayDetail() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 h-11 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-50"
           >
             <PlayCircle className="h-4 w-4" />
-            {isComplete ? "Day complete" : completedCount > 0 ? "Continue day" : "Start day"}
+            {isComplete ? "Day complete" : hasStarted ? "Continue day" : "Start day"}
             {!isComplete && <ArrowRight className="h-4 w-4" />}
           </button>
           <div className="w-56">
