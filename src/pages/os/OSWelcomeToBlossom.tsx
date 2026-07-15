@@ -141,13 +141,24 @@ export default function OSWelcomeToBlossom() {
   void WELCOME_COMPLETION;
 
   const leadershipRoles = [
-    { role: "Chief Executive Officer", body: "Sets company direction, growth strategy, and organizational standards." },
-    { role: "Director of Operations", body: "Leads operational consistency, department accountability, escalation standards, and state execution." },
-    { role: "Operations Leadership", body: "Supports department performance, cross-state consistency, and state-level issue resolution." },
-    { role: "State Directors", body: "Own state-level operations, health, follow-through, and cross-department coordination." },
-    { role: "Clinical Leadership", body: "Protects clinical quality, supervision, treatment planning, and BCBA/RBT support." },
-    { role: "HR / Recruiting / Training", body: "Supports hiring, onboarding, employee readiness, training, and people operations." },
-    { role: "Billing / Finance / Authorizations", body: "Protects revenue continuity, payer requirements, authorization health, billing accuracy, and reimbursement." },
+    { role: "Chief Executive Officer", body: "Sets company direction, growth strategy, and the standards every department is held to." },
+    { role: "Director of Operations", body: "Leads operational consistency, department accountability, escalation standards, and execution across every state." },
+    { role: "Operations Leadership", body: "Supports department performance, cross-state consistency, and resolves issues that cut across teams." },
+    { role: "State Directors", body: "Own state-level operations, health, follow-through, and coordination between every department inside their state." },
+    { role: "Clinical Leadership (Clinical Director, BCBAs)", body: "Protects clinical quality, supervision, treatment planning, and the day-to-day support of BCBAs and RBTs." },
+    { role: "BCBAs", body: "Own their caseload — assessments, treatment plans, supervision hours, parent training, and progress reports." },
+    { role: "RBTs", body: "Deliver direct 1:1 therapy, run programs written by the BCBA, and document every session." },
+    { role: "Intake Team", body: "Owns the family experience from first inquiry through conversion — inquiries, VOB, insurance decisioning, and hand-off to scheduling." },
+    { role: "Authorizations Team", body: "Protects treatment continuity — initial auths, reauth watchlist, PRs, submissions, and payer follow-up." },
+    { role: "Scheduling", body: "Protects service delivery and utilization — session scheduling, cancellations, coverage, and calendar accuracy." },
+    { role: "Staffing", body: "Matches clients to the right RBT based on skills, location, availability, and family preferences." },
+    { role: "Recruiting", body: "Sources, screens, interviews, and hires BCBAs and RBTs so every state has the capacity it needs." },
+    { role: "HR & People Operations", body: "Owns onboarding, employee lifecycle, PTO, credentials, org chart, and day-to-day people support." },
+    { role: "Training Academy", body: "Owns role-based training journeys, competency, and readiness for every new hire and every ongoing team member." },
+    { role: "QA & Compliance", body: "Reviews session notes, monitors supervision compliance, and closes documentation and authorization gaps." },
+    { role: "Marketing & Business Development", body: "Owns brand, referral sources, campaigns, community partnerships, and the top of the intake funnel." },
+    { role: "Finance / RCM / Billing", body: "Owns revenue continuity — claims, reimbursements, payroll, and financial reporting." },
+    { role: "Systems & Super Admins", body: "Owns integrations, security, access, audit trails, and the health of Blossom OS itself." },
   ];
 
   const flowSteps = WELCOME_BLOSSOM_FLOW;
@@ -165,14 +176,15 @@ export default function OSWelcomeToBlossom() {
   ];
 
   const relationshipMap = [
-    "Intake and leads — to understand how families enter the system.",
-    "Authorizations — to protect treatment continuity and revenue.",
-    "Scheduling — to protect service delivery and utilization.",
-    "Staffing and recruiting — to ensure the state can actually serve the families it accepts.",
-    "Clinical leadership — to ensure quality and supervision stay strong.",
-    "QA and compliance — to prevent documentation and authorization gaps.",
-    "HR and training — to support new hires and role readiness.",
-    "Executive and operations leadership — to remove structural blockers.",
+    "Intake hands families to Authorizations once VOB and insurance decisions are complete.",
+    "Authorizations hands cases to Scheduling and Staffing once hours are approved.",
+    "Staffing and Recruiting work together to make sure every accepted family has a matched RBT.",
+    "Scheduling and Clinical Leadership coordinate BCBA supervision and RBT session coverage.",
+    "BCBAs and RBTs work side by side on the caseload — the BCBA plans and supervises, the RBT delivers.",
+    "QA reviews the work of BCBAs and RBTs and routes gaps back to Clinical Leadership.",
+    "HR, Recruiting, and Training move new hires from offer → onboarding → ready-to-work.",
+    "State Directors coordinate every department inside their state and escalate to Operations Leadership.",
+    "Marketing feeds Intake, Finance protects the whole revenue cycle, and Systems keeps the OS running for everyone.",
   ];
 
   return (
