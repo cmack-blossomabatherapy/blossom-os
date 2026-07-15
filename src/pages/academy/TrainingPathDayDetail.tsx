@@ -51,6 +51,10 @@ export default function TrainingPathDayDetail() {
   const next = firstIncompleteModule(day);
   const runtimeHref = (id: string) => `${journey.runtimeRouteFor(id)}${trackSuffix}`;
   const startHref = next ? runtimeHref(next.id) : runtimeHref(day.modules[0]?.id ?? "");
+  // "Continue day" as soon as any module is completed OR already in progress —
+  // so returning to the day after clicking Start on a module never resets the
+  // CTA back to "Start day".
+  const hasStarted = completedCount > 0 || (day.inProgressCount ?? 0) > 0;
 
   // Aggregate resources for this day via the unified resolver
   // (module-hardcoded + RBT seeded + admin attachments).
