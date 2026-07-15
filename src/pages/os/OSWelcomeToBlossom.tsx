@@ -475,7 +475,7 @@ export default function OSWelcomeToBlossom() {
         {/* MEET THE TEAM */}
         <section id="welcome-meet-the-team" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Building2} eyebrow="Meet the Team" title="Who owns what at Blossom"
-            description="You are not expected to solve everything alone. Blossom works because departments own their lanes and communicate across them." />
+            description="No matter which role you are joining, you are part of one team. Blossom works because every department owns its lane and knows how to hand off cleanly to the next. Use this map to see the whole company at a glance." />
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {leadershipRoles.map((r) => (
               <div key={r.role} className="rounded-2xl border border-border/60 bg-muted/30 p-5">
@@ -485,8 +485,8 @@ export default function OSWelcomeToBlossom() {
             ))}
           </div>
           <div className="mt-6 rounded-2xl border border-border/60 bg-muted/40 p-5">
-            <p className="text-[13.5px] font-semibold text-foreground">State Director relationship map</p>
-            <p className="mt-1 text-[12.5px] text-muted-foreground">As a State Director, you will work most closely with:</p>
+            <p className="text-[13.5px] font-semibold text-foreground">How the departments connect</p>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">Every family and every hire moves through Blossom via these hand-offs. Find your role in the flow — the departments right next to yours are the ones you will work with most.</p>
             <ul className="mt-3 space-y-1.5 text-[13px] leading-relaxed text-muted-foreground">
               {relationshipMap.map((line) => (
                 <li key={line} className="flex gap-2">
@@ -498,15 +498,15 @@ export default function OSWelcomeToBlossom() {
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <GuideBlock icon={Heart} label="Why this matters"
-              body="Knowing who owns what prevents delay. If the wrong person is holding the problem, the problem grows. A strong State Director routes issues quickly and respectfully." />
+              body="Knowing who owns what prevents delay. If the wrong person is holding a problem, the problem grows. Every role at Blossom — clinical, operations, intake, HR, finance, marketing — succeeds by routing questions to the right owner quickly and respectfully." />
             <GuideBlock icon={ListChecks} label="What to do" items={[
-              "Review the leadership and department map.",
-              "Identify your primary mentor.",
-              "Identify the department leaders you will need during week one.",
-              "Schedule or confirm your first check-in.",
+              "Review the leadership and department map above.",
+              "Identify your direct manager and your onboarding buddy or mentor.",
+              "Identify the two or three departments outside your own that you will interact with most.",
+              "Schedule or confirm your first check-in with your manager.",
             ]} />
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
-              body="Write down your mentor, your first three department partners, and one question for each." />
+              body="Write down your manager, one partner in each of the two or three departments you will work with most, and one question for each." />
           </div>
           <ModuleCompleteAction moduleId="welcome-meet-the-team" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
