@@ -99,7 +99,6 @@ import HRAdminAssistantDashboard from "./pages/training/HRAdminAssistantDashboar
 import AuthorizationCoordinatorJourney from "./pages/training/AuthorizationCoordinatorJourney";
 import BCBAJourney from "./pages/training/BCBAJourney";
 import TrackAnalytics from "./pages/hr/TrackAnalytics";
-import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
 import OrgChartManage from "./pages/hr/OrgChartManage";
