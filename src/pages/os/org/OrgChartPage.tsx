@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/sheet";
 import { OrgChartNodeCard, type OrgNodeData } from "@/components/org/OrgChartNodeCard";
 import { toast } from "sonner";
-import { Plus, Save, Trash2, Users, Lock, DownloadCloud } from "lucide-react";
+import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid } from "lucide-react";
+import { OSShell } from "@/pages/os/OSShell";
 
 type DbRow = {
   id: string;
@@ -57,7 +58,19 @@ const EDITOR_ROLES = new Set([
   "hr_lead",
 ]);
 
-const ACCENTS = ["#F472B6", "#60A5FA", "#34D399", "#FBBF24", "#A78BFA", "#F97316"];
+// Palette aligned with the Blossom organizational chart:
+//   Purple = department / division header
+//   Teal   = director / manager / leadership
+//   Green  = coordinator / IC
+const ACCENTS = ["#7C3AED", "#14B8A6", "#22C55E", "#60A5FA", "#F472B6", "#F59E0B"];
+const ACCENT_LABELS: Record<string, string> = {
+  "#7C3AED": "Department",
+  "#14B8A6": "Leadership",
+  "#22C55E": "Coordinator",
+  "#60A5FA": "Support",
+  "#F472B6": "Highlight",
+  "#F59E0B": "Alert",
+};
 
 function rowToNode(row: DbRow, isEditor: boolean): Node<OrgNodeData> {
   return {
@@ -199,8 +212,79 @@ function InnerOrgChart() {
 
   const roots = useMemo(() => rows.filter((r) => !r.parent_id).length, [rows]);
 
+  const autoArrange = useCallback(async () => {
+    if (!isEditor || rows.length === 0) return;
+    // Simple hierarchical layout by parent_id (BFS levels).
+    const byId = new Map(rows.map((r) => [r.id, r] as const));
+    const children = new Map<string | null, DbRow[]>();
+    for (const r of rows) {
+      const key = r.parent_id;
+      if (!children.has(key)) children.set(key, []);
+      children.get(key)!.push(r);
+    }
+    for (const list of children.values()) list.sort((a, b) => a.sort_order - b.sort_order);
+
+    const HORIZONTAL = 240;
+    const VERTICAL = 160;
+    const positions = new Map<string, { x: number; y: number }>();
+
+    // Compute subtree width recursively.
+    const widthCache = new Map<string, number>();
+    const subtreeWidth = (id: string): number => {
+      if (widthCache.has(id)) return widthCache.get(id)!;
+      const kids = children.get(id) ?? [];
+      const w = kids.length === 0 ? 1 : kids.reduce((s, k) => s + subtreeWidth(k.id), 0);
+      widthCache.set(id, w);
+      return w;
+    };
+
+    const place = (id: string, depth: number, xOffset: number) => {
+      const kids = children.get(id) ?? [];
+      const w = subtreeWidth(id);
+      const centerX = xOffset + (w / 2) * HORIZONTAL;
+      positions.set(id, { x: centerX - 100, y: depth * VERTICAL });
+      let cursor = xOffset;
+      for (const k of kids) {
+        const kw = subtreeWidth(k.id);
+        place(k.id, depth + 1, cursor);
+        cursor += kw * HORIZONTAL;
+      }
+    };
+
+    const roots = children.get(null) ?? [];
+    let cursor = 0;
+    for (const r of roots) {
+      place(r.id, 0, cursor);
+      cursor += subtreeWidth(r.id) * HORIZONTAL;
+    }
+
+    // Optimistic UI update
+    setNodes((ns) =>
+      ns.map((n) => {
+        const p = positions.get(n.id);
+        return p ? { ...n, position: p } : n;
+      }),
+    );
+
+    const updates = Array.from(positions.entries()).map(([id, p]) =>
+      supabase
+        .from("org_chart_nodes")
+        .update({ position_x: p.x, position_y: p.y })
+        .eq("id", id),
+    );
+    const results = await Promise.all(updates);
+    const firstError = results.find((r) => r.error);
+    if (firstError?.error) {
+      toast.error("Auto-arrange failed", { description: firstError.error.message });
+      void load();
+    } else {
+      toast.success("Chart arranged");
+    }
+    void byId;
+  }, [isEditor, rows, setNodes, load]);
+
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col gap-4">
+    <div className="flex h-[calc(100vh-10rem)] flex-col gap-4">
       <header className="flex items-start justify-between gap-6">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -220,14 +304,26 @@ function InnerOrgChart() {
             <span>{roots} at top</span>
           </div>
           {isEditor ? (
-            <Button
-              size="sm"
-              className="rounded-xl"
-              onClick={() => setCreating(true)}
-            >
-              <Plus className="size-4" />
-              Add person
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl"
+                onClick={autoArrange}
+                disabled={rows.length === 0}
+              >
+                <LayoutGrid className="size-4" />
+                Auto-arrange
+              </Button>
+              <Button
+                size="sm"
+                className="rounded-xl"
+                onClick={() => setCreating(true)}
+              >
+                <Plus className="size-4" />
+                Add person
+              </Button>
+            </>
           ) : (
             <div className="flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground">
               <Lock className="size-3.5" />
@@ -517,14 +613,23 @@ function PersonSheet({
                   type="button"
                   onClick={() => setForm({ ...form, accent_color: c })}
                   className={[
-                    "size-7 rounded-full ring-offset-2 ring-offset-background transition-all",
-                    form.accent_color === c ? "ring-2 ring-foreground/70" : "ring-0",
+                    "flex items-center gap-2 rounded-full border px-2 py-1 text-[11px] transition-all",
+                    form.accent_color === c
+                      ? "border-foreground/60 bg-muted"
+                      : "border-border/70 hover:bg-muted/60",
                   ].join(" ")}
-                  style={{ background: c }}
-                  aria-label={c}
-                />
+                  aria-label={ACCENT_LABELS[c] ?? c}
+                >
+                  <span className="size-4 rounded-full" style={{ background: c }} />
+                  <span className="text-muted-foreground">
+                    {ACCENT_LABELS[c] ?? c}
+                  </span>
+                </button>
               ))}
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              Purple = department header, teal = leadership, green = coordinator/IC.
+            </p>
           </div>
         </div>
 
@@ -554,10 +659,12 @@ function PersonSheet({
 
 export default function OrgChartPage() {
   return (
-    <div className="mx-auto w-full max-w-7xl px-6 py-6 md:px-10">
-      <ReactFlowProvider>
-        <InnerOrgChart />
-      </ReactFlowProvider>
-    </div>
+    <OSShell>
+      <div className="mx-auto w-full max-w-7xl px-6 py-6 md:px-10">
+        <ReactFlowProvider>
+          <InnerOrgChart />
+        </ReactFlowProvider>
+      </div>
+    </OSShell>
   );
 }
