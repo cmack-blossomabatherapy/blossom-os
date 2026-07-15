@@ -433,6 +433,7 @@ import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
 import OSQAReviewBoard from "./pages/os/OSQAReviewBoard";
 import OSBCBAResources from "./pages/os/OSBCBAResources";
+import OSCaseManagerResources from "./pages/os/OSCaseManagerResources";
 import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSCaseManagement from "./pages/os/OSCaseManagement";
