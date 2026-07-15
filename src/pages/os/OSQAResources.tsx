@@ -619,5 +619,38 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+function VideoGapCard() {
+  return (
+    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-5">
+      <div className="flex items-start gap-3">
+        <div className="grid h-9 w-9 place-items-center rounded-xl bg-amber-500/10 text-amber-600">
+          <PlayCircle className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">Content gap · QA videos</p>
+            <Badge variant="outline" className="rounded-full border-amber-500/40 text-[10px] text-amber-700">
+              {videoGap.folder}
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{videoGap.note}</p>
+          <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
+            {videoGap.slots.map((s) => (
+              <div key={s} className="flex items-center gap-2 rounded-lg border border-dashed border-border/60 bg-card/50 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                <PlayCircle className="h-3 w-3" />
+                <span className="truncate">{s}</span>
+                <Badge variant="secondary" className="ml-auto rounded-full text-[9px]">Planned</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Suppress unused-var lint for TODAY (kept for potential "updated today" copy)
 void TODAY;
+void Users;
+void Target;
+void ExternalLink;
