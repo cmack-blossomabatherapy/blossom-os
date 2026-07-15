@@ -113,7 +113,7 @@ export default function TrainingPathDayDetail() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 h-11 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-50"
           >
             <PlayCircle className="h-4 w-4" />
-            {isComplete ? "Day complete" : completedCount > 0 ? "Continue day" : "Start day"}
+            {isComplete ? "Day complete" : hasStarted ? "Continue day" : "Start day"}
             {!isComplete && <ArrowRight className="h-4 w-4" />}
           </button>
           <div className="w-56">
