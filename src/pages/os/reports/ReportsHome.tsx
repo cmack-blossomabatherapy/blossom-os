@@ -111,10 +111,15 @@ export default function ReportsHome() {
     return () => window.removeEventListener("os-saved-report-view-changed", onChanged);
   }, [refreshSavedViews]);
   const savedViewsWithMeta = useMemo(() => {
-    return savedViews.map((v) => {
-      const report = reportsWithLive.find((r) => r.id === v.reportId);
-      return { ...v, report };
-    });
+    // Pinned (favorite) views always float to the top so users can jump
+    // to their most-used department dashboards first. Within each group
+    // we preserve the hook's most-recent-first order.
+    return savedViews
+      .map((v) => {
+        const report = reportsWithLive.find((r) => r.id === v.reportId);
+        return { ...v, report };
+      })
+      .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }, [savedViews, reportsWithLive]);
 
   const [requestOpen, setRequestOpen] = useState(false);
