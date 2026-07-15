@@ -18,11 +18,12 @@ const corsHeaders = {
 };
 
 const EMBED_MODEL = "openai/text-embedding-3-small";
-const CHAT_MODEL = "google/gemini-3-flash-preview";
+const CHAT_MODEL = "openai/gpt-5.5";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
-const MATCH_COUNT = 8;
+const MATCH_COUNT = 12;
 const CONTEXT_CHAR_BUDGET = 12_000;
 const MAX_TOOL_STEPS = 3;
+const REFUSAL_RE = /no approved.*resource|contact the owning team/i;
 
 const SYSTEM_PROMPT = `You are Blossom AI, the operational copilot for Blossom ABA Therapy staff.
 
@@ -31,8 +32,8 @@ You help every role at Blossom: Executives, State Directors, Intake, Auth, Sched
 HOW TO ANSWER
 - Use the BLOSSOM OS BRIEF (always provided) for general questions about the company, workflows, roles, or how something works.
 - Use the KNOWLEDGE excerpts (Resource Library) when they contain relevant material — cite them by number like [1] or [2].
-- Call operational tools when the user asks about specific records ("my open tasks", "leads in Virginia", "find employee named …"). Tool results are RLS-scoped to the caller — if a row isn't there, the user can't see it.
-- If nothing above answers the question, still respond helpfully with what you do know from the BRIEF, and say what you'd need to answer more precisely. Do NOT flat-refuse.
+- Call operational tools when the user asks about specific records ("my open tasks", "leads in Virginia", "find employee named …", "who is X", "tell me about client Y"). Tool results are RLS-scoped to the caller — if a row isn't there, the user can't see it.
+- If nothing above answers the question, still respond helpfully with what you do know from the BRIEF and general operational knowledge, and say what you'd need to answer more precisely. Do NOT flat-refuse. NEVER say "no approved Blossom resource was found" — that phrase is banned; always try the BRIEF, tools, or ask a clarifying question first.
 
 WHAT YOU CAN'T DO
 - Never invent policies, SOPs, numbers, staff, clients, PHI, or file contents.
@@ -181,6 +182,36 @@ const TOOL_DEFS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "find_person",
+      description: "Look up a person across employees and the company org chart by name, title, department, or state. Use for 'who is X' or 'who owns Y'.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Name, title, department, or role keyword." },
+          limit: { type: "number" },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_resource_library",
+      description: "Keyword search over Resource Library titles and descriptions when semantic retrieval didn't surface the right document.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          limit: { type: "number" },
+        },
+        required: ["query"],
+      },
+    },
+  },
 ];
 
 type SBClient = ReturnType<typeof createClient>;
@@ -263,6 +294,38 @@ async function runTool(
         .gte("end_date", today)
         .lte("end_date", cutoff)
         .order("end_date", { ascending: true })
+        .limit(limit);
+      if (error) return JSON.stringify({ error: error.message });
+      return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
+    }
+
+    if (name === "find_person") {
+      const q = String(args.query ?? "").trim();
+      if (!q) return JSON.stringify({ error: "missing_query" });
+      const like = `%${q}%`;
+      const [emp, org] = await Promise.all([
+        supabase.from("employees")
+          .select("id, first_name, last_name, email, title, department, state, status")
+          .or(`first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},title.ilike.${like},department.ilike.${like}`)
+          .limit(limit),
+        supabase.from("org_chart_nodes")
+          .select("id, name, title, department, state, parent_id")
+          .or(`name.ilike.${like},title.ilike.${like},department.ilike.${like}`)
+          .limit(limit),
+      ]);
+      return JSON.stringify({
+        employees: emp.data ?? [],
+        org_chart: org.data ?? [],
+      });
+    }
+
+    if (name === "search_resource_library") {
+      const q = String(args.query ?? "").trim();
+      if (!q) return JSON.stringify({ error: "missing_query" });
+      const like = `%${q}%`;
+      const { data, error } = await supabase.from("knowledge_documents")
+        .select("id, title, category, description")
+        .or(`title.ilike.${like},description.ilike.${like}`)
         .limit(limit);
       if (error) return JSON.stringify({ error: error.message });
       return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
@@ -452,6 +515,25 @@ Deno.serve(async (req) => {
       // Model kept requesting tools past the cap — ask once more with tools off.
       const { content } = await chatCompletion(messages, LOVABLE_API_KEY);
       finalAnswer = content ?? "I'm having trouble putting together an answer. Try rephrasing.";
+    }
+
+    // Refusal guard: if the model still emitted the banned refusal phrasing,
+    // retry once with an explicit "do not refuse" instruction, then hard-strip
+    // if it slips through again.
+    if (REFUSAL_RE.test(finalAnswer)) {
+      messages.push({
+        role: "system",
+        content:
+          "Your previous answer used a banned refusal phrase. Try again. Answer from the Blossom OS brief, general ABA operations knowledge, or tools. Never say 'no approved Blossom resource was found' — if retrieval was empty, still be helpful, explain what you do know, and ask a clarifying question if needed.",
+      });
+      const { content: retry } = await chatCompletion(messages, LOVABLE_API_KEY, TOOL_DEFS);
+      if (retry && retry.trim()) finalAnswer = retry;
+      if (REFUSAL_RE.test(finalAnswer)) {
+        finalAnswer =
+          "I couldn't find a specific Resource Library document for that, but here's what I can tell you from the Blossom OS operations brief:\n\n" +
+          finalAnswer.replace(REFUSAL_RE, "").trim() +
+          "\n\nWant me to search a different phrasing, look up a specific person/client, or pull a related SOP?";
+      }
     }
 
     auditPreview = finalAnswer;
