@@ -60,6 +60,8 @@ export default function OSAskBlossom() {
 
   // Sidebar UX state — inline rename + search.
   const [convSearch, setConvSearch] = useState("");
+  type ConvFilter = "all" | "pinned" | "today" | "week";
+  const [convFilter, setConvFilter] = useState<ConvFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
