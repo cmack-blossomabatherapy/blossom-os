@@ -33,6 +33,8 @@ export type DirectoryEmployee = TeamMember & {
   departmentId?: string | null;
   /** Live department name (e.g. "Intake"). */
   departmentName?: string | null;
+  /** Live employee status from HR (`active`, `inactive`, `terminated`, ...). */
+  status?: string | null;
 };
 
 interface DirectoryResult {
@@ -88,6 +90,7 @@ interface ViewRow {
   department_slug: string | null;
   department_id: string | null;
   department_name: string | null;
+  status: string | null;
 }
 
 function mapRow(r: ViewRow): DirectoryEmployee {
@@ -117,6 +120,7 @@ function mapRow(r: ViewRow): DirectoryEmployee {
     leadershipLevel: r.leadership_level,
     departmentId: r.department_id,
     departmentName: r.department_name,
+    status: r.status,
   };
 }
 
@@ -130,7 +134,7 @@ export function useEmployeeDirectory(): DirectoryResult {
     const { data, error } = await supabase
       .from("v_employee_directory")
       .select(
-        "id,user_id,employee_code,display_name,preferred_name,first_name,last_name,email,phone,photo_url,image_url,bio,job_title,credential,state,states_supported,leadership_level,leadership_badge,supports_onboarding,featured,manager_id,department_slug,department_id,department_name",
+        "id,user_id,employee_code,display_name,preferred_name,first_name,last_name,email,phone,photo_url,image_url,bio,job_title,credential,state,states_supported,leadership_level,leadership_badge,supports_onboarding,featured,manager_id,department_slug,department_id,department_name,status",
       )
       .order("last_name");
 
