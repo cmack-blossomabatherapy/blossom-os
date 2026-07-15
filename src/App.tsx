@@ -424,6 +424,7 @@ import ResourceLibraryDetail from "./pages/resource-library/ResourceLibraryDetai
 import ResourceLibraryAdminQA from "./pages/resource-library/ResourceLibraryAdminQA";
 import ResourceLibraryIntake from "./pages/resource-library/ResourceLibraryIntake";
 import ResourceLibraryRecruiting from "./pages/resource-library/ResourceLibraryRecruiting";
+import ResourceLibraryAuthorizations from "./pages/resource-library/ResourceLibraryAuthorizations";
 import OSBlossomAIManagement from "./pages/os/OSBlossomAIManagement";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
@@ -913,10 +914,12 @@ const App = () => (
                   <Route path="/resources/intake" element={<Navigate to="/resource-library/intake" replace />} />
                   <Route path="/resource-library/recruiting" element={<ResourceLibraryRecruiting />} />
                   <Route path="/resources/recruiting" element={<Navigate to="/resource-library/recruiting" replace />} />
+                  <Route path="/resource-library/authorizations" element={<ResourceLibraryAuthorizations />} />
+                  <Route path="/resources/authorizations" element={<Navigate to="/resource-library/authorizations" replace />} />
                   <Route path="/resource-library/resource/:id" element={<ResourceLibraryDetail />} />
                   <Route path="/resource-library/admin/qa" element={<ResourceLibraryAdminQA />} />
                   <Route path="/admin/blossom-ai" element={<OSBlossomAIManagement />} />
-                  <Route path="/authorizations/resources" element={<Navigate to="/resource-library" replace />} />
+                  <Route path="/authorizations/resources" element={<Navigate to="/resource-library/authorizations" replace />} />
                   <Route path="/analytics" element={<Navigate to="/reports" replace />} />
                   <Route path="/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />
                   <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
