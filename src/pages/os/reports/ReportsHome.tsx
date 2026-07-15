@@ -12,8 +12,11 @@ import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   visibleReportsForRole, visibleCategoriesForRole,
+  visibleDepartmentDashboardsForRole,
   readRecent, REPORT_CATEGORIES, type ReportDef,
 } from "@/lib/os/reportsCatalog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LayoutDashboard } from "lucide-react";
 import { useReportFavorites } from "@/hooks/useReportFavorites";
 import { OS_ROLES } from "@/lib/os/permissions";
 import { RequestReportDialog } from "@/components/os/reports/RequestReportDialog";
@@ -38,6 +41,23 @@ export default function ReportsHome() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get("category");
   const reports = useMemo(() => visibleReportsForRole(role), [role]);
+  const departmentDashboards = useMemo(
+    () => visibleDepartmentDashboardsForRole(role),
+    [role],
+  );
+  const initialTab = searchParams.get("tab") === "departments" ? "departments" : "reports";
+  const [activeTab, setActiveTab] = useState<"reports" | "departments">(initialTab);
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "departments" || t === "reports") setActiveTab(t);
+  }, [searchParams]);
+  function onTabChange(v: string) {
+    const tab = v === "departments" ? "departments" : "reports";
+    setActiveTab(tab);
+    const next = new URLSearchParams(searchParams);
+    if (tab === "reports") next.delete("tab"); else next.set("tab", tab);
+    setSearchParams(next, { replace: true });
+  }
   const activeCategoryDef = useMemo(
     () => (activeCategory ? REPORT_CATEGORIES.find(c => c.id === activeCategory) : null),
     [activeCategory],
