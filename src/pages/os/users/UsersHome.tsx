@@ -129,6 +129,11 @@ export default function UsersHome() {
     return members.filter((m) => {
       if (state !== "All" && !(m.states ?? []).includes(state)) return false;
       if (dept !== "All" && m.departmentName !== dept && m.department !== dept) return false;
+      if (status !== "All") {
+        const s = (m.status ?? "").toLowerCase();
+        if (status === "Active" && s !== "active") return false;
+        if (status === "Inactive" && s === "active") return false;
+      }
       if (!term) return true;
       return [m.name, m.title, m.email, m.departmentName, ...(m.states ?? [])]
         .some((v) => String(v ?? "").toLowerCase().includes(term));
