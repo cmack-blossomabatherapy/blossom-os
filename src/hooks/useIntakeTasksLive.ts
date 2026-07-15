@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type IntakeTaskRow = {
@@ -40,7 +40,6 @@ export interface CreateIntakeTaskInput {
 export function useIntakeTasksLive() {
   const [tasks, setTasks] = useState<IntakeTaskRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const instanceId = useRef(`intake-tasks-live-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -62,12 +61,13 @@ export function useIntakeTasksLive() {
 
   useEffect(() => {
     let active = true;
+    const channelName = `intake-tasks-live-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const safeRefetch = async () => {
       if (active) await refetch();
     };
     void refetch();
     const channel = supabase
-      .channel(instanceId.current)
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "intake_tasks" }, () => { void safeRefetch(); })
       .subscribe();
     return () => {
