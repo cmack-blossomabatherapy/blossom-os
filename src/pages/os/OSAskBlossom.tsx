@@ -443,20 +443,30 @@ export default function OSAskBlossom() {
           <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
             {/* LEFT: conversations */}
             <aside className="hidden flex-col rounded-2xl border border-border/60 bg-card/90 p-3 backdrop-blur lg:flex lg:max-h-[calc(100vh-240px)]">
+              <div className="mb-3 flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <div className="grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-[hsl(210_85%_60%)] to-[hsl(265_85%_65%)] text-white">
+                    <MessagesSquare className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Chats</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground/70">{convs.length}</span>
+              </div>
               <Button
                 variant="default"
-                className="mb-3 w-full justify-start gap-2 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white hover:opacity-95"
+                size="sm"
+                className="mb-3 h-9 w-full justify-center gap-2 rounded-xl bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
                 onClick={() => { setActiveId(null); setInput(""); }}
               >
-                <Plus className="h-4 w-4" /> New conversation
+                <Plus className="h-4 w-4" /> New chat
               </Button>
-              <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-foreground/[0.06] bg-white/70 px-2.5 py-1.5">
+              <div className="mb-3 flex items-center gap-2 rounded-xl border border-foreground/[0.08] bg-background/70 px-3 py-2 focus-within:border-primary/40 focus-within:bg-background">
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <input
                   value={convSearch}
                   onChange={(e) => setConvSearch(e.target.value)}
-                  placeholder="Search chats"
-                  className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground/70"
+                  placeholder="Search conversations"
+                  className="w-full bg-transparent text-[12px] outline-none placeholder:text-muted-foreground/60"
                 />
                 {convSearch && (
                   <button
