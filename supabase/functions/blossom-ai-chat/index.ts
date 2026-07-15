@@ -135,14 +135,15 @@ const TOOL_DEFS = [
     type: "function",
     function: {
       name: "search_employees",
-      description: "Search employees by name, email, or role. RLS scopes results to what the caller can see.",
+      description: "Search or list employees / office staff. Leave `query` empty to list all active staff (use for prompts like 'list of office staff', 'who works here', 'give me the team directory'). Returns work contact info only: name, work email, work phone, extension, job title, department, state. Never returns personal/HR/payroll data. RLS scopes results to what the caller can see.",
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string" },
-          limit: { type: "number" },
+          query: { type: "string", description: "Optional name / email / title / department substring. Omit to list all active staff." },
+          department: { type: "string", description: "Optional department name filter (e.g. 'Intake', 'Clinic Operations')." },
+          state: { type: "string", description: "Optional US state filter (e.g. 'GA')." },
+          limit: { type: "number", description: "Max rows (default 25, max 200)." },
         },
-        required: ["query"],
       },
     },
   },
