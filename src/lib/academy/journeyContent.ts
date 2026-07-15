@@ -657,6 +657,39 @@ function buildStateDirectorJourney(slug: string, path: TrainingPath): PathJourne
   return journey;
 }
 
+/* ------------------- Marketing / BD source adapter ------------------- */
+
+function synthesizeMarketingBdModule(d: MarketingBdDayModule): AcademyJourneyModule {
+  const minutes = d.lessons.reduce((s, l) => s + l.minutes, 0);
+  return {
+    id: d.id, // already `mbd-w{n}d{n}`
+    title: d.title,
+    description: d.description,
+    type: "Workflow",
+    estimatedMinutes: minutes,
+    required: true,
+    category: "role",
+    department: "marketing",
+    sourceKind: "marketing-bd",
+    sourceModuleId: d.id,
+    resources: [],
+  };
+}
+
+function buildMarketingBdJourney(slug: string, path: TrainingPath): PathJourney {
+  const dayGroups: AcademyJourneyModule[][] = MARKETING_BD_DAYS.map((d) => [synthesizeMarketingBdModule(d)]);
+  const weekGroups = chunk(dayGroups, 5);
+  const dayTitles = MARKETING_BD_DAYS.map((d) => `Day ${d.dayInJourney} · ${d.title}`);
+  const journey = assembleJourney({
+    slug, path, weekGroups, dayTitles, source: "marketing-bd",
+  });
+  journey.weeks = journey.weeks.map((w) => ({
+    ...w,
+    title: MARKETING_BD_WEEKS.find((mw) => mw.weekNumber === w.weekNumber)?.title ?? w.title,
+  }));
+  return journey;
+}
+
 function assembleJourney(opts: {
   slug: string;
   path: TrainingPath;
@@ -800,6 +833,9 @@ export function buildPathJourney(slug: string, opts?: { rbtTrackId?: RBTPathId }
   if (slug === "state-director") {
     return buildStateDirectorJourney(slug, path);
   }
+  if (slug === "marketing-and-business-development") {
+    return buildMarketingBdJourney(slug, path);
+  }
 
   const all = getTrainings();
   const trainings = sourceTrainingsForSlug(slug, all);
@@ -853,5 +889,6 @@ export function parseAcademyModuleId(id: string): {
   if (id.startsWith("behavioral-support::")) return { kind: "behavioral-support", sourceModuleId: id.slice("behavioral-support::".length) };
   if (id.startsWith("assistant-state-director::")) return { kind: "assistant-state-director", sourceModuleId: id.slice("assistant-state-director::".length) };
   if (id.startsWith("state-director::")) return { kind: "state-director", sourceModuleId: id.slice("state-director::".length) };
+  if (id.startsWith("mbd-")) return { kind: "marketing-bd", sourceModuleId: id };
   return { kind: "academyData", sourceModuleId: id };
 }
