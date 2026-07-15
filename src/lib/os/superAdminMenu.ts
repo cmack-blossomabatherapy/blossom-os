@@ -61,7 +61,6 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
     items: [
       { label: "User Management",     to: "/user-management",     icon: Users2 },
       { label: "Role Management",     to: "/role-management",     icon: ShieldCheck },
-      { label: "Employee Directory",  to: "/employee-directory",  icon: UserCheck },
       { label: "Permissions",         to: "/permissions",         icon: ShieldCheck },
       { label: "Device Inventory",    to: "/device-inventory",    icon: Smartphone },
       { label: "Device Requests",     to: "/device-requests",     icon: Smartphone },
