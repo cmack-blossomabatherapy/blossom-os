@@ -9,6 +9,7 @@ import {
   addEdge,
   useEdgesState,
   useNodesState,
+  useReactFlow,
   type Connection,
   type Edge,
   type Node,
@@ -31,7 +32,7 @@ import {
 } from "@/components/ui/sheet";
 import { OrgChartNodeCard, type OrgNodeData } from "@/components/org/OrgChartNodeCard";
 import { toast } from "sonner";
-import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid } from "lucide-react";
+import { Plus, Save, Trash2, Users, Lock, DownloadCloud, LayoutGrid, Search, X } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 
 type DbRow = {
@@ -115,6 +116,8 @@ function InnerOrgChart() {
   const [rows, setRows] = useState<DbRow[]>([]);
   const [editing, setEditing] = useState<DbRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const [query, setQuery] = useState("");
+  const { fitView } = useReactFlow();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -133,6 +136,59 @@ function InnerOrgChart() {
     setEdges(rowsToEdges(list));
     setLoading(false);
   }, [isEditor, setNodes, setEdges]);
+
+  // Search: highlight matching nodes, dim the rest, and pulse edges.
+  const matchedIds = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    const set = new Set<string>();
+    for (const r of rows) {
+      const hay = [r.name, r.title, r.department, r.email]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (hay.includes(q)) set.add(r.id);
+    }
+    return set;
+  }, [query, rows]);
+
+  useEffect(() => {
+    setNodes((ns) =>
+      ns.map((n) => {
+        if (!matchedIds) {
+          return { ...n, className: undefined, style: { ...(n.style ?? {}), opacity: 1 } };
+        }
+        const hit = matchedIds.has(n.id);
+        return {
+          ...n,
+          className: hit
+            ? "ring-4 ring-primary ring-offset-2 ring-offset-background rounded-2xl"
+            : undefined,
+          style: { ...(n.style ?? {}), opacity: hit ? 1 : 0.2, transition: "opacity 150ms" },
+        };
+      }),
+    );
+    setEdges((es) =>
+      es.map((e) => {
+        if (!matchedIds) return { ...e, style: { ...(e.style ?? {}), opacity: 1 } };
+        const active = matchedIds.has(e.source) || matchedIds.has(e.target);
+        return { ...e, style: { ...(e.style ?? {}), opacity: active ? 1 : 0.15 } };
+      }),
+    );
+    if (matchedIds && matchedIds.size > 0) {
+      const ids = Array.from(matchedIds);
+      // Small delay so node state updates before fitView measures.
+      const t = window.setTimeout(() => {
+        fitView({
+          nodes: ids.map((id) => ({ id })),
+          padding: 0.4,
+          duration: 350,
+          maxZoom: 1.2,
+        });
+      }, 60);
+      return () => window.clearTimeout(t);
+    }
+  }, [matchedIds, setNodes, setEdges, fitView]);
 
   useEffect(() => {
     load();
@@ -297,6 +353,30 @@ function InnerOrgChart() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name, title, department…"
+              className="h-9 w-64 rounded-xl pl-8 pr-8"
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setQuery("")}
+                className="absolute right-2 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-3" />
+              </button>
+            )}
+          </div>
+          {matchedIds && (
+            <div className="hidden items-center gap-1 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground md:flex">
+              {matchedIds.size} match{matchedIds.size === 1 ? "" : "es"}
+            </div>
+          )}
           <div className="hidden items-center gap-2 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground md:flex">
             <Users className="size-3.5" />
             <span>{rows.length} people</span>
