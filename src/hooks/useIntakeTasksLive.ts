@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type IntakeTaskRow = {
@@ -40,25 +40,40 @@ export interface CreateIntakeTaskInput {
 export function useIntakeTasksLive() {
   const [tasks, setTasks] = useState<IntakeTaskRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const instanceId = useRef(`intake-tasks-live-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
   const refetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("intake_tasks")
-      .select("*")
-      .order("due_date", { ascending: true, nullsFirst: false })
-      .limit(500);
-    setTasks((data ?? []) as IntakeTaskRow[]);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("intake_tasks")
+        .select("*")
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .limit(500);
+      if (error) throw error;
+      setTasks((data ?? []) as IntakeTaskRow[]);
+    } catch (error) {
+      console.warn("[useIntakeTasksLive] task fetch failed", error);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const safeRefetch = async () => {
+      if (active) await refetch();
+    };
     void refetch();
     const channel = supabase
-      .channel("intake-tasks-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "intake_tasks" }, () => { void refetch(); })
+      .channel(instanceId.current)
+      .on("postgres_changes", { event: "*", schema: "public", table: "intake_tasks" }, () => { void safeRefetch(); })
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
   }, [refetch]);
 
   const complete = useCallback(async (id: string) => {
