@@ -89,12 +89,9 @@ export default function TrainingModuleRuntime() {
   // per mount and never overwrite a completed module.
   useEffect(() => {
     if (!autostart || autostartedRef.current) return;
+    autostartedRef.current = true;
     if (record.status === "not_started") {
-      autostartedRef.current = true;
       void startRuntime(decodedId, runtimeCtx);
-    } else if (record.status !== "not_started") {
-      // Already in_progress or completed — nothing to do, mark handled.
-      autostartedRef.current = true;
     }
   }, [autostart, record.status, decodedId, runtimeCtx]);
 
