@@ -29,6 +29,7 @@ import {
 } from "@/lib/academy/runtimeStore";
 import { getAcademyResourcesForScope } from "@/lib/academy/resourceResolver";
 import { getTrainingPath } from "@/lib/academy/trainingPaths";
+import { useLessonStatuses } from "@/lib/academy/lessonProgress";
 
 /**
  * Unified academy module runtime for /academy/path/:slug/module/:moduleId.
@@ -146,6 +147,9 @@ export default function TrainingModuleRuntime() {
   const elapsedLabel = formatElapsed(record.elapsedSeconds);
   const status = record.status;
 
+  const lessonIds = (ctx.lessons ?? []).map((l) => l.id);
+  const { statuses: lessonStatuses, completedCount: lessonsDone, total: lessonsTotal } = useLessonStatuses(decodedId, lessonIds);
+
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
       <Link to={`/academy/path/${slug}${trackSuffix}`} className="inline-flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground">
@@ -217,20 +221,42 @@ export default function TrainingModuleRuntime() {
           )}
 
           {ctx.lessons && ctx.lessons.length > 0 && (
-            <Card title="Lessons" icon={PlayCircle}>
+            <Card title={`Lessons · ${lessonsDone}/${lessonsTotal} complete`} icon={PlayCircle}>
               <ol className="space-y-2 text-[13px]">
-                {ctx.lessons.map((l, i) => (
-                  <li key={i} className="flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="font-medium">{l.title}</p>
-                      <p className="text-[12px] text-muted-foreground">{l.summary}</p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end text-[11px] text-muted-foreground">
-                      <Badge variant="outline" className="text-[10px]">{l.kind}</Badge>
-                      <span className="mt-1"><Clock className="mr-1 inline h-3 w-3" />{l.minutes}m</span>
-                    </div>
-                  </li>
-                ))}
+                {ctx.lessons.map((l, i) => {
+                  const s = lessonStatuses[l.id] ?? "not_started";
+                  const to = `/academy/path/${slug}/module/${encodeURIComponent(decodedId)}/lesson/${encodeURIComponent(l.id)}${trackSuffix}`;
+                  return (
+                    <li key={l.id}>
+                      <Link
+                        to={to}
+                        className="group flex items-start justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2 transition hover:border-primary/40 hover:bg-muted/40"
+                      >
+                        <div className="flex min-w-0 items-start gap-2.5">
+                          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-border bg-muted text-[10px] font-semibold text-muted-foreground">
+                            {i + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-medium group-hover:text-foreground">{l.title}</p>
+                            <p className="text-[12px] text-muted-foreground">{l.summary}</p>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end text-[11px] text-muted-foreground">
+                          {s === "completed" ? (
+                            <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-[10px] text-emerald-700">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> Completed
+                            </Badge>
+                          ) : s === "in_progress" ? (
+                            <Badge variant="outline" className="border-sky-300 bg-sky-50 text-[10px] text-sky-700">In progress</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">{l.kind}</Badge>
+                          )}
+                          <span className="mt-1"><Clock className="mr-1 inline h-3 w-3" />{l.minutes}m</span>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ol>
             </Card>
           )}
@@ -413,7 +439,7 @@ interface ModuleCtx {
   minutes: number;
   required: boolean;
   objectives?: string[];
-  lessons?: { title: string; summary: string; kind: string; minutes: number }[];
+  lessons?: { id: string; title: string; summary: string; kind: string; minutes: number }[];
   checklist?: string[];
   shadowing?: string[];
   knowledgeCheck?: { q: string; a: string };
@@ -423,6 +449,32 @@ interface ModuleCtx {
   trainerNotes?: string;
   reflectionPrompt?: string;
   signoffRequired?: string;
+}
+
+export type { ModuleCtx };
+
+/**
+ * External entry point for other pages (e.g. the per-lesson runtime) that
+ * need the same resolved ModuleCtx as this page.
+ */
+export function resolveModuleCtxFromDecodedId(decodedId: string): { ctx: ModuleCtx | null; kind: string | null; sourceModuleId: string | null } {
+  const parsed = parseAcademyModuleId(decodedId);
+  let ctx: ModuleCtx | null = null;
+  if (parsed.kind === "rbt") ctx = resolveRbt(parsed.sourceModuleId);
+  else if (parsed.kind === "bcba") ctx = resolveBcba(parsed.sourceModuleId);
+  else if (parsed.kind === "intake") ctx = resolveIntake(parsed.sourceModuleId);
+  else if (parsed.kind === "recruiting") ctx = resolveRecruiting(parsed.sourceModuleId);
+  else if (parsed.kind === "authorizations") ctx = resolveAuthorizations(parsed.sourceModuleId);
+  else if (parsed.kind === "scheduling") ctx = resolveScheduling(parsed.sourceModuleId);
+  else if (parsed.kind === "staffing") ctx = resolveStaffing(parsed.sourceModuleId);
+  else if (parsed.kind === "hr") ctx = resolveHr(parsed.sourceModuleId);
+  else if (parsed.kind === "credentialing") ctx = resolveCredentialing(parsed.sourceModuleId);
+  else if (parsed.kind === "qa") ctx = resolveQa(parsed.sourceModuleId);
+  else if (parsed.kind === "case-manager") ctx = resolveCaseManager(parsed.sourceModuleId);
+  else if (parsed.kind === "behavioral-support") ctx = resolveBehavioralSupport(parsed.sourceModuleId);
+  else if (parsed.kind === "assistant-state-director") ctx = resolveAssistantStateDirector(parsed.sourceModuleId);
+  else if (parsed.kind === "state-director") ctx = resolveStateDirector(parsed.sourceModuleId);
+  return { ctx, kind: parsed.kind ?? null, sourceModuleId: parsed.sourceModuleId ?? null };
 }
 
 function resolveRbt(sourceModuleId: string): ModuleCtx | null {
@@ -444,7 +496,13 @@ function resolveRbt(sourceModuleId: string): ModuleCtx | null {
             `Complete: ${m.title}`,
             `Confirm with your ${path.id === "not_certified" ? "Lead RBT Trainer" : "trainer"} before moving on.`,
           ],
-          lessons: content?.lessons,
+          lessons: content?.lessons?.map((l, i) => ({
+            id: `l${i + 1}`,
+            title: l.title,
+            summary: l.summary,
+            kind: l.kind,
+            minutes: l.minutes,
+          })),
           checklist: content?.checklist ?? branchingChecklist,
           shadowing: content?.shadowing,
           knowledgeCheck: content?.knowledgeCheck,
@@ -468,7 +526,7 @@ function resolveBcba(sourceModuleId: string): ModuleCtx | null {
     minutes: m.lessons.reduce((s, l) => s + l.minutes, 0),
     required: true,
     objectives: m.objectives,
-    lessons: m.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: m.lessons.map((l, i) => ({ id: (l as any).id ?? `l${i + 1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist: m.checklist,
     shadowing: m.shadowing,
     knowledgeCheck: m.knowledgeCheck,
@@ -493,7 +551,7 @@ function resolveIntake(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -522,7 +580,7 @@ function resolveRecruiting(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -551,7 +609,7 @@ function resolveAuthorizations(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -580,7 +638,7 @@ function resolveScheduling(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -609,7 +667,7 @@ function resolveStaffing(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -638,7 +696,7 @@ function resolveHr(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -667,7 +725,7 @@ function resolveCredentialing(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -696,7 +754,7 @@ function resolveQa(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -725,7 +783,7 @@ function resolveCaseManager(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -754,7 +812,7 @@ function resolveBehavioralSupport(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -783,7 +841,7 @@ function resolveAssistantStateDirector(sourceModuleId: string): ModuleCtx | null
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,
@@ -812,7 +870,7 @@ function resolveStateDirector(sourceModuleId: string): ModuleCtx | null {
     minutes,
     required: true,
     objectives: d.objectives,
-    lessons: d.lessons.map((l) => ({ title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
+    lessons: d.lessons.map((l: any, i: number) => ({ id: l.id ?? `l${i+1}`, title: l.title, summary: l.summary, kind: l.kind, minutes: l.minutes })),
     checklist,
     shadowing: d.shadowing,
     knowledgeCheck: d.knowledgeCheck,

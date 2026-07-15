@@ -156,6 +156,7 @@ import TrainingAcademyHome from "./pages/academy/TrainingAcademyHome";
 import TrainingPathDetail from "./pages/academy/TrainingPathDetail";
 import TrainingPathDayDetail from "./pages/academy/TrainingPathDayDetail";
 import TrainingModuleRuntime from "./pages/academy/TrainingModuleRuntime";
+import TrainingLessonRuntime from "./pages/academy/TrainingLessonRuntime";
 import TrackDetail from "./pages/blossom/TrackDetail";
 import Departments from "./pages/blossom/Departments";
 import DepartmentDetail from "./pages/blossom/DepartmentDetail";
@@ -1113,6 +1114,7 @@ const App = () => (
                   <Route path="/academy/path/:slug" element={<OSShellPage><TrainingPathDetail /></OSShellPage>} />
                   <Route path="/academy/path/:slug/day/:dayId" element={<OSShellPage><TrainingPathDayDetail /></OSShellPage>} />
                   <Route path="/academy/path/:slug/module/:moduleId" element={<OSShellPage><TrainingModuleRuntime /></OSShellPage>} />
+                  <Route path="/academy/path/:slug/module/:moduleId/lesson/:lessonId" element={<OSShellPage><TrainingLessonRuntime /></OSShellPage>} />
                   <Route path="/my-learning" element={<OSShellPage><MyLearning /></OSShellPage>} />
                   <Route path="/catalog" element={<OSShellPage><TrainingCatalog /></OSShellPage>} />
                   {/* Integrations pages render inside the OS shell only. They
