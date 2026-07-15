@@ -708,6 +708,7 @@ const App = () => (
                   <Route path="/operations/updates" element={<OpsLeadershipUpdates />} />
                   <Route path="/operations/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/state-director" element={<OSStateDirector />} />
+                  <Route path="/state-director/resources" element={<PermissionRoute allowedRoles={["admin", "state_director", "assistant_state_director", "regional_state_director", "state_va", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "business_development", "intake_lead", "recruiting_lead", "scheduling_lead", "staffing_lead", "clinical_director", "bcba", "case_manager", "qa", "qa_director", "authorization_manager", "training_manager"]}><OSStateDirectorResources /></PermissionRoute>} />
                   <Route path="/intake-coordinator" element={<OSIntakeCoordinator />} />
                   <Route path="/auth-coordinator" element={<OSAuthCoordinator />} />
                   <Route path="/auth-workspace" element={<OSAuthWorkspace />} />
