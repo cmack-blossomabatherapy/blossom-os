@@ -111,10 +111,15 @@ export default function ReportsHome() {
     return () => window.removeEventListener("os-saved-report-view-changed", onChanged);
   }, [refreshSavedViews]);
   const savedViewsWithMeta = useMemo(() => {
-    return savedViews.map((v) => {
-      const report = reportsWithLive.find((r) => r.id === v.reportId);
-      return { ...v, report };
-    });
+    // Pinned (favorite) views always float to the top so users can jump
+    // to their most-used department dashboards first. Within each group
+    // we preserve the hook's most-recent-first order.
+    return savedViews
+      .map((v) => {
+        const report = reportsWithLive.find((r) => r.id === v.reportId);
+        return { ...v, report };
+      })
+      .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }, [savedViews, reportsWithLive]);
 
   const [requestOpen, setRequestOpen] = useState(false);
@@ -288,15 +293,27 @@ export default function ReportsHome() {
             {savedViewsWithMeta.map((sv) => (
               <article
                 key={sv.id}
-                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition hover:-translate-y-0.5 hover:border-[hsl(215_70%_50%/0.35)] hover:shadow-[0_20px_40px_-25px_hsl(215_60%_50%/0.4)]"
+                className={cn(
+                  "group relative overflow-hidden rounded-2xl border bg-card p-4 transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-25px_hsl(215_60%_50%/0.4)]",
+                  sv.isFavorite
+                    ? "border-amber-400/60 ring-1 ring-amber-300/40 hover:border-amber-500/70"
+                    : "border-border/60 hover:border-[hsl(215_70%_50%/0.35)]",
+                )}
               >
                 <Link to={sv.path} className="block">
-                  <Badge
-                    variant="secondary"
-                    className="rounded-full bg-[hsl(215_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(215_70%_45%)]"
-                  >
-                    {sv.report?.title ?? "Saved view"}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full bg-[hsl(215_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(215_70%_45%)]"
+                    >
+                      {sv.report?.title ?? "Saved view"}
+                    </Badge>
+                    {sv.isFavorite && (
+                      <Badge className="rounded-full bg-amber-100 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-700 hover:bg-amber-100">
+                        Pinned
+                      </Badge>
+                    )}
+                  </div>
                   <h3 className="mt-2 line-clamp-1 text-[14.5px] font-semibold tracking-tight">{sv.name}</h3>
                   <p className="mt-1 line-clamp-1 text-[11.5px] text-muted-foreground">
                     {sv.report?.description ?? "Custom dashboard view"}
@@ -311,12 +328,21 @@ export default function ReportsHome() {
                     </span>
                   </div>
                 </Link>
-                <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                <div
+                  className={cn(
+                    "absolute right-2 top-2 flex items-center gap-1 transition",
+                    sv.isFavorite ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                  )}
+                >
                   <button
                     type="button"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); void toggleSavedViewFav(sv.id, !sv.isFavorite); }}
-                    className="rounded-full p-1.5 text-muted-foreground/70 hover:bg-amber-500/10 hover:text-amber-500"
-                    aria-label={sv.isFavorite ? "Unfavorite saved view" : "Favorite saved view"}
+                    className={cn(
+                      "rounded-full p-1.5 hover:bg-amber-500/10 hover:text-amber-500",
+                      sv.isFavorite ? "text-amber-500" : "text-muted-foreground/70",
+                    )}
+                    aria-label={sv.isFavorite ? "Unpin saved view" : "Pin saved view to top"}
+                    title={sv.isFavorite ? "Unpin from top" : "Pin to top"}
                   >
                     <Star className={cn("h-3.5 w-3.5", sv.isFavorite && "fill-amber-400 text-amber-500")} />
                   </button>
