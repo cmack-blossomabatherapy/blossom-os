@@ -400,7 +400,34 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
       </section>
 
       {openTotal === 0 ? (
-        <ReadyForDataNotice message={loading ? "Loading tasks…" : "No open intake tasks. Tasks created from leads will appear here."} />
+        loading ? (
+          <div className="rounded-2xl border border-border/70 bg-card overflow-hidden" aria-label="Loading tasks">
+            <div className="divide-y divide-border/60">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3">
+                  <div className="h-6 w-24 rounded-full bg-muted animate-pulse" />
+                  <div className="h-3 flex-1 max-w-[40%] rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-24 rounded bg-muted animate-pulse hidden md:block" />
+                  <div className="h-3 w-16 rounded bg-muted animate-pulse hidden md:block" />
+                  <div className="h-7 w-40 rounded-lg bg-muted animate-pulse ml-auto" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-10 text-center">
+            <ListTodo className="mx-auto h-6 w-6 text-muted-foreground/70" />
+            <div className="mt-3 text-sm font-medium text-foreground">You're all caught up.</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              No open tasks right now. Create one, or tasks generated from leads will appear here.
+            </p>
+            <div className="mt-4">
+              <Button size="sm" onClick={() => setCreateOpen(true)} className="h-8 rounded-xl">
+                <Plus className="h-3.5 w-3.5 mr-1" /> New task
+              </Button>
+            </div>
+          </div>
+        )
       ) : (
         <section className="space-y-3">
           <div className="flex flex-col gap-2 p-2 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm">
@@ -561,7 +588,20 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {visible.length === 0 ? (
-                    <tr><td colSpan={7} className="px-3 py-8 text-center text-xs text-muted-foreground">No tasks match the current filters.</td></tr>
+                    <tr>
+                      <td colSpan={7} className="px-3 py-10 text-center">
+                        <div className="text-sm font-medium text-foreground">No tasks match these filters</div>
+                        <div className="mt-1 text-xs text-muted-foreground">Try clearing filters or broadening your search.</div>
+                        {(activeFilterCount > 0 || search) && (
+                          <button
+                            onClick={() => { clearAdvanced(); setSearch(""); setFilter("all"); }}
+                            className="mt-3 inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border border-border/70 hover:bg-muted"
+                          >
+                            <X className="h-3 w-3" /> Clear filters
+                          </button>
+                        )}
+                      </td>
+                    </tr>
                   ) : visible.map((r) => {
                     const c = classify(r);
                     const leadName = r.lead?.childName ?? "Lead";
