@@ -1009,20 +1009,25 @@ function groupConversations(list: AiConversation[]) {
 }
 
 function ConversationList({
-  convs, activeId, search, onSelect, ...actions
+  convs, activeId, search, filter = "all", onSelect, ...actions
 }: ConvActions & {
   convs: AiConversation[];
   activeId: string | null;
   search: string;
+  filter?: "all" | "pinned" | "today" | "week";
   onSelect: (id: string) => void;
 }) {
   const q = search.trim().toLowerCase();
-  const filtered = q
-    ? convs.filter((c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.messages.some((m) => m.content.toLowerCase().includes(q)),
-      )
-    : convs;
+  const startOfToday = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
+  const sevenAgo = Date.now() - 7 * 86400000;
+  const filtered = convs.filter((c) => {
+    if (filter === "pinned" && !c.pinned) return false;
+    if (filter === "today" && new Date(c.updatedAt).getTime() < startOfToday) return false;
+    if (filter === "week" && new Date(c.updatedAt).getTime() < sevenAgo) return false;
+    if (!q) return true;
+    return c.title.toLowerCase().includes(q) ||
+      c.messages.some((m) => m.content.toLowerCase().includes(q));
+  });
 
   if (convs.length === 0) {
     return (
