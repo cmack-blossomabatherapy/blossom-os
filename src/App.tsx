@@ -425,6 +425,7 @@ import ResourceLibraryAdminQA from "./pages/resource-library/ResourceLibraryAdmi
 import ResourceLibraryIntake from "./pages/resource-library/ResourceLibraryIntake";
 import ResourceLibraryRecruiting from "./pages/resource-library/ResourceLibraryRecruiting";
 import ResourceLibraryAuthorizations from "./pages/resource-library/ResourceLibraryAuthorizations";
+import ResourceLibraryScheduling from "./pages/resource-library/ResourceLibraryScheduling";
 import OSBlossomAIManagement from "./pages/os/OSBlossomAIManagement";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSAuthHandoff from "./pages/os/OSAuthHandoff";
