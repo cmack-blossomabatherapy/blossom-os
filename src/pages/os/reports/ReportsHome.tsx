@@ -302,6 +302,25 @@ export default function ReportsHome() {
         </div>
       </section>
 
+      {/* ============== TAB SWITCHER ============== */}
+      <Tabs value={activeTab} onValueChange={onTabChange} className="mt-6">
+        <TabsList className="rounded-full bg-white/60 p-1 backdrop-blur">
+          <TabsTrigger value="reports" className="rounded-full px-4 text-[12.5px]">
+            Reports
+            <Badge variant="secondary" className="ml-2 rounded-full bg-secondary/70 text-[10px]">
+              {reports.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="departments" className="rounded-full px-4 text-[12.5px]">
+            Department Dashboards
+            <Badge variant="secondary" className="ml-2 rounded-full bg-secondary/70 text-[10px]">
+              {departmentDashboards.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="reports" className="mt-0 focus-visible:outline-none">
+
       {/* ============== SAVED REPORTS ============== */}
       {(cancelSaved.length > 0 || savedV3.length > 0 || savedViewsWithMeta.length > 0) && (
         <section className="mt-8">
