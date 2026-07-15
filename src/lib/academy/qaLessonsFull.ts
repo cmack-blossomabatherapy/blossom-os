@@ -1,6 +1,6 @@
 /**
  * Full lesson content for the QA Department onboarding journey.
- * Keyed by `qa::qa-w{n}d{n}::w{n}d{n}-l{n}` and merged into
+ * Keyed by `qa-w{n}d{n}::w{n}d{n}-l{n}` and merged into
  * lessonContent.ts. Trained on today's Blossom QA process
  * (CentralReach note/plan review, payer compliance, findings tracker,
  * clinician coaching, clean handoffs to Clinical, Scheduling, Auth, Billing).
@@ -19,7 +19,7 @@ function mk(
 
 export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
   // ===== Week 1 Day 1 · QA Role Orientation =====
-  "qa::qa-w1d1::w1d1-l1": mk(
+  "qa-w1d1::w1d1-l1": mk(
     "What QA owns today — apply it inside today's QA workflow.",
     "Review of clinical reports and treatment plans, documentation standards, missing-item follow-up, corrections, compliance/audits, trend reporting, escalation. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -42,7 +42,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d1::w1d1-l2": mk(
+  "qa-w1d1::w1d1-l2": mk(
     "What QA does not own — apply it inside today's QA workflow.",
     "Not clinical judgment, not writing the treatment plan for the BCBA, not authorizations, not intake, not scheduling, not payroll. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -65,7 +65,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d1::w1d1-l3": mk(
+  "qa-w1d1::w1d1-l3": mk(
     "Current QA lifecycle — apply it inside today's QA workflow.",
     "Item enters queue → review → missing/correction items documented → owner set → follow-up → corrections reviewed → escalated when needed → final status updated. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -88,7 +88,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d1::w1d1-l4": mk(
+  "qa-w1d1::w1d1-l4": mk(
     "Confidentiality and clinical sensitivity — apply it inside today's QA workflow.",
     "Clinical QA content is sensitive; share on a need-to-know basis and stay respectful in every note. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -112,7 +112,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 1 Day 2 · Current QA Systems Tour — CentralReach, QA Trackers, NoteGuard/Amerigroup, Outlook, Teams =====
-  "qa::qa-w1d2::w1d2-l1": mk(
+  "qa-w1d2::w1d2-l1": mk(
     "CentralReach basics for QA — apply it inside today's QA workflow.",
     "Where clinical notes, reports, and client documentation may be reviewed. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -135,7 +135,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d2::w1d2-l2": mk(
+  "qa-w1d2::w1d2-l2": mk(
     "Current QA tracker / Monday tracker basics — apply it inside today's QA workflow.",
     "Client, BCBA, RBT, state, document type, due date, status, missing items, correction owner, follow-up, reviewer, notes. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -158,7 +158,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d2::w1d2-l3": mk(
+  "qa-w1d2::w1d2-l3": mk(
     "NoteGuard awareness — apply it inside today's QA workflow.",
     "Assigned workflow (e.g. Anje Grobler) — not universal to every QA task. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -181,7 +181,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d2::w1d2-l4": mk(
+  "qa-w1d2::w1d2-l4": mk(
     "Amerigroup review awareness — apply it inside today's QA workflow.",
     "Assigned daily note review workflow. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -204,7 +204,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d2::w1d2-l5": mk(
+  "qa-w1d2::w1d2-l5": mk(
     "Outlook / Teams communication basics — apply it inside today's QA workflow.",
     "Professional QA correction and escalation communication norms. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -228,7 +228,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 1 Day 3 · Documentation Standards Basics =====
-  "qa::qa-w1d3::w1d3-l1": mk(
+  "qa-w1d3::w1d3-l1": mk(
     "Documentation standards purpose — apply it inside today's QA workflow.",
     "Why standards protect clinical quality and downstream operations. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -251,7 +251,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d3::w1d3-l2": mk(
+  "qa-w1d3::w1d3-l2": mk(
     "Common documentation categories — apply it inside today's QA workflow.",
     "Notes, reports, treatment plans, forms, signatures/dates, payer-specific items. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -274,7 +274,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d3::w1d3-l3": mk(
+  "qa-w1d3::w1d3-l3": mk(
     "Missing item identification — apply it inside today's QA workflow.",
     "Read against the current QA checklist or standard. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -297,7 +297,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d3::w1d3-l4": mk(
+  "qa-w1d3::w1d3-l4": mk(
     "Correction note quality — apply it inside today's QA workflow.",
     "What is wrong/missing, who owns it, what to fix, follow-up date. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -321,7 +321,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 1 Day 4 · Treatment Plan QA Basics =====
-  "qa::qa-w1d4::w1d4-l1": mk(
+  "qa-w1d4::w1d4-l1": mk(
     "Treatment plan QA purpose — apply it inside today's QA workflow.",
     "Why treatment plan QA protects clinical quality and auth readiness. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -344,7 +344,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d4::w1d4-l2": mk(
+  "qa-w1d4::w1d4-l2": mk(
     "Common treatment plan review points — apply it inside today's QA workflow.",
     "Required sections, standards, signatures/dates, payer/state requirements. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -367,7 +367,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d4::w1d4-l3": mk(
+  "qa-w1d4::w1d4-l3": mk(
     "BCBA correction workflow — apply it inside today's QA workflow.",
     "Route correction requests without rewriting clinical content. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -390,7 +390,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d4::w1d4-l4": mk(
+  "qa-w1d4::w1d4-l4": mk(
     "Auth readiness impact — apply it inside today's QA workflow.",
     "How treatment plan QA affects authorizations and service delivery. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -414,7 +414,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 1 Day 5 · Week 1 Review + First Manager Check-In =====
-  "qa::qa-w1d5::w1d5-l1": mk(
+  "qa-w1d5::w1d5-l1": mk(
     "Week 1 knowledge review — apply it inside today's QA workflow.",
     "5–7 questions covering QA ownership, documentation standards, treatment plan QA, and current systems. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -437,7 +437,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d5::w1d5-l2": mk(
+  "qa-w1d5::w1d5-l2": mk(
     "QA role boundary check — apply it inside today's QA workflow.",
     "QA vs Clinical vs Auth vs Compliance vs State Ops. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -460,7 +460,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d5::w1d5-l3": mk(
+  "qa-w1d5::w1d5-l3": mk(
     "QA item walkthrough — apply it inside today's QA workflow.",
     "Walk 3 items end-to-end with mentor. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -483,7 +483,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w1d5::w1d5-l4": mk(
+  "qa-w1d5::w1d5-l4": mk(
     "Mentor feedback — apply it inside today's QA workflow.",
     "Strengths and coaching areas for Week 2. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -507,7 +507,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 2 Day 1 · Clinical Report QA Review =====
-  "qa::qa-w2d1::w2d1-l1": mk(
+  "qa-w2d1::w2d1-l1": mk(
     "Clinical report QA purpose — apply it inside today's QA workflow.",
     "Quality + timeliness protect clients and downstream operations. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -530,7 +530,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d1::w2d1-l2": mk(
+  "qa-w2d1::w2d1-l2": mk(
     "Report review checklist — apply it inside today's QA workflow.",
     "Use the current QA checklist consistently. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -553,7 +553,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d1::w2d1-l3": mk(
+  "qa-w2d1::w2d1-l3": mk(
     "Report timeline awareness — apply it inside today's QA workflow.",
     "Late reports cascade into auth and clinical delays. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -576,7 +576,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d1::w2d1-l4": mk(
+  "qa-w2d1::w2d1-l4": mk(
     "Correction request workflow — apply it inside today's QA workflow.",
     "Route to correct owner with clear next action. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -600,7 +600,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 2 Day 2 · Documentation Missing Item Follow-Up =====
-  "qa::qa-w2d2::w2d2-l1": mk(
+  "qa-w2d2::w2d2-l1": mk(
     "Missing item types — apply it inside today's QA workflow.",
     "Notes, signatures, dates, forms, payer-specific items, attestations. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -623,7 +623,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d2::w2d2-l2": mk(
+  "qa-w2d2::w2d2-l2": mk(
     "Owner identification — apply it inside today's QA workflow.",
     "Who owns each type of missing item. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -646,7 +646,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d2::w2d2-l3": mk(
+  "qa-w2d2::w2d2-l3": mk(
     "Follow-up cadence — apply it inside today's QA workflow.",
     "How often to follow up based on urgency and impact. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -669,7 +669,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d2::w2d2-l4": mk(
+  "qa-w2d2::w2d2-l4": mk(
     "Escalation for delay — apply it inside today's QA workflow.",
     "When and how to escalate overdue or high-impact items. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -693,7 +693,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 2 Day 3 · Corrections Current Operations =====
-  "qa::qa-w2d3::w2d3-l1": mk(
+  "qa-w2d3::w2d3-l1": mk(
     "Correction request standards — apply it inside today's QA workflow.",
     "Specific, respectful, actionable. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -716,7 +716,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d3::w2d3-l2": mk(
+  "qa-w2d3::w2d3-l2": mk(
     "Correction owner and due date — apply it inside today's QA workflow.",
     "Every correction has an owner and a date. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -739,7 +739,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d3::w2d3-l3": mk(
+  "qa-w2d3::w2d3-l3": mk(
     "Correction review — apply it inside today's QA workflow.",
     "Verify against original ask. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -762,7 +762,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d3::w2d3-l4": mk(
+  "qa-w2d3::w2d3-l4": mk(
     "Closing or reopening the item — apply it inside today's QA workflow.",
     "Close only when complete; document what remains otherwise. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -786,7 +786,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 2 Day 4 · Fax and External Document Chase =====
-  "qa::qa-w2d4::w2d4-l1": mk(
+  "qa-w2d4::w2d4-l1": mk(
     "External document types — apply it inside today's QA workflow.",
     "Payer, provider, family, external evaluator, prior records. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -809,7 +809,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d4::w2d4-l2": mk(
+  "qa-w2d4::w2d4-l2": mk(
     "Fax / external follow-up process — apply it inside today's QA workflow.",
     "Where and how to send follow-up. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -832,7 +832,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d4::w2d4-l3": mk(
+  "qa-w2d4::w2d4-l3": mk(
     "Documentation of attempts — apply it inside today's QA workflow.",
     "Exact times, contacts, outcomes. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -855,7 +855,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d4::w2d4-l4": mk(
+  "qa-w2d4::w2d4-l4": mk(
     "Escalation when documents do not arrive — apply it inside today's QA workflow.",
     "When to escalate to manager/leadership. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -879,7 +879,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 2 Day 5 · Week 2 Supervised Execution Review =====
-  "qa::qa-w2d5::w2d5-l1": mk(
+  "qa-w2d5::w2d5-l1": mk(
     "Clinical report review — apply it inside today's QA workflow.",
     "Move report reviews forward accurately. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -902,7 +902,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d5::w2d5-l2": mk(
+  "qa-w2d5::w2d5-l2": mk(
     "Missing item follow-up — apply it inside today's QA workflow.",
     "Draft and route missing-item requests. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -925,7 +925,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d5::w2d5-l3": mk(
+  "qa-w2d5::w2d5-l3": mk(
     "Correction review — apply it inside today's QA workflow.",
     "Verify against original correction ask. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -948,7 +948,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w2d5::w2d5-l4": mk(
+  "qa-w2d5::w2d5-l4": mk(
     "External document follow-up — apply it inside today's QA workflow.",
     "Mentor reviews written attempts and escalations. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -972,7 +972,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 3 Day 1 · Compliance Reviews =====
-  "qa::qa-w3d1::w3d1-l1": mk(
+  "qa-w3d1::w3d1-l1": mk(
     "Compliance review purpose — apply it inside today's QA workflow.",
     "Protecting clients, the company, and clinical trust. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -995,7 +995,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d1::w3d1-l2": mk(
+  "qa-w3d1::w3d1-l2": mk(
     "Review criteria awareness — apply it inside today's QA workflow.",
     "What today's standard looks like. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1018,7 +1018,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d1::w3d1-l3": mk(
+  "qa-w3d1::w3d1-l3": mk(
     "Findings documentation — apply it inside today's QA workflow.",
     "Factual, dated, specific — no exaggeration. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1041,7 +1041,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d1::w3d1-l4": mk(
+  "qa-w3d1::w3d1-l4": mk(
     "Escalation and follow-up — apply it inside today's QA workflow.",
     "Route to QA Director / Clinical leadership when needed. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1065,7 +1065,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 3 Day 2 · Audits Current Operations =====
-  "qa::qa-w3d2::w3d2-l1": mk(
+  "qa-w3d2::w3d2-l1": mk(
     "Audit purpose — apply it inside today's QA workflow.",
     "Audits protect quality across many items at once. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1088,7 +1088,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d2::w3d2-l2": mk(
+  "qa-w3d2::w3d2-l2": mk(
     "Audit sample / scope awareness — apply it inside today's QA workflow.",
     "Know what's in and out of scope. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1111,7 +1111,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d2::w3d2-l3": mk(
+  "qa-w3d2::w3d2-l3": mk(
     "Audit findings — apply it inside today's QA workflow.",
     "Specific, dated, categorized. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1134,7 +1134,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d2::w3d2-l4": mk(
+  "qa-w3d2::w3d2-l4": mk(
     "Correction and trend follow-up — apply it inside today's QA workflow.",
     "Individual corrections + trend visibility. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1158,7 +1158,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 3 Day 3 · NoteGuard / Amerigroup Review Awareness =====
-  "qa::qa-w3d3::w3d3-l1": mk(
+  "qa-w3d3::w3d3-l1": mk(
     "NoteGuard review awareness — apply it inside today's QA workflow.",
     "Purpose and scope of the assigned workflow. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1181,7 +1181,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d3::w3d3-l2": mk(
+  "qa-w3d3::w3d3-l2": mk(
     "Amerigroup daily note review awareness — apply it inside today's QA workflow.",
     "Payer-specific review process. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1204,7 +1204,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d3::w3d3-l3": mk(
+  "qa-w3d3::w3d3-l3": mk(
     "Issue documentation — apply it inside today's QA workflow.",
     "Consistent, factual, dated. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1227,7 +1227,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d3::w3d3-l4": mk(
+  "qa-w3d3::w3d3-l4": mk(
     "Escalation and follow-up — apply it inside today's QA workflow.",
     "Route serious/repeat issues to QA Director / Clinical leadership. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1251,7 +1251,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 3 Day 4 · New RBT Check-Ins and QA/Compliance Support =====
-  "qa::qa-w3d4::w3d4-l1": mk(
+  "qa-w3d4::w3d4-l1": mk(
     "New RBT check-in purpose — apply it inside today's QA workflow.",
     "Early support prevents downstream quality issues. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1274,7 +1274,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d4::w3d4-l2": mk(
+  "qa-w3d4::w3d4-l2": mk(
     "What QA looks for — apply it inside today's QA workflow.",
     "Early documentation habits, expectations, questions, support needs. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1297,7 +1297,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d4::w3d4-l3": mk(
+  "qa-w3d4::w3d4-l3": mk(
     "Documentation of check-in — apply it inside today's QA workflow.",
     "Specific, respectful, dated. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1320,7 +1320,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d4::w3d4-l4": mk(
+  "qa-w3d4::w3d4-l4": mk(
     "Escalation to Training/Clinical/HR — apply it inside today's QA workflow.",
     "Route non-QA concerns to correct owner. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1344,7 +1344,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 3 Day 5 · QA Escalation and Trend Reporting =====
-  "qa::qa-w3d5::w3d5-l1": mk(
+  "qa-w3d5::w3d5-l1": mk(
     "Escalation criteria — apply it inside today's QA workflow.",
     "Repeated issues, delayed reports, missing critical items, compliance concerns, safety/clinical risk, auth blockers. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1367,7 +1367,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d5::w3d5-l2": mk(
+  "qa-w3d5::w3d5-l2": mk(
     "Trend identification — apply it inside today's QA workflow.",
     "Spot recurring patterns across items and owners. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1390,7 +1390,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d5::w3d5-l3": mk(
+  "qa-w3d5::w3d5-l3": mk(
     "QA trend reporting — apply it inside today's QA workflow.",
     "Impact + examples + requested decision + follow-up. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1413,7 +1413,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w3d5::w3d5-l4": mk(
+  "qa-w3d5::w3d5-l4": mk(
     "End-of-day QA queue cleanup — apply it inside today's QA workflow.",
     "Every item has owner/status/next action/follow-up date. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1437,7 +1437,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 4 Day 1 · Controlled QA Queue Ownership — Part 1 =====
-  "qa::qa-w4d1::w4d1-l1": mk(
+  "qa-w4d1::w4d1-l1": mk(
     "Morning QA queue review — apply it inside today's QA workflow.",
     "Set the day's priorities. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1460,7 +1460,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d1::w4d1-l2": mk(
+  "qa-w4d1::w4d1-l2": mk(
     "Prioritizing QA work — apply it inside today's QA workflow.",
     "Reports, treatment plans, urgent auth blockers, compliance, missing items, overdue. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1483,7 +1483,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d1::w4d1-l3": mk(
+  "qa-w4d1::w4d1-l3": mk(
     "Updating current trackers — apply it inside today's QA workflow.",
     "Keep systems accurate as you work. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1506,7 +1506,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d1::w4d1-l4": mk(
+  "qa-w4d1::w4d1-l4": mk(
     "End-of-day cleanup — apply it inside today's QA workflow.",
     "Nothing left silently pending. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1530,7 +1530,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 4 Day 2 · Controlled QA Queue Ownership — Part 2 =====
-  "qa::qa-w4d2::w4d2-l1": mk(
+  "qa-w4d2::w4d2-l1": mk(
     "Follow-up discipline — apply it inside today's QA workflow.",
     "Follow-up dates land, don't drift. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1553,7 +1553,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d2::w4d2-l2": mk(
+  "qa-w4d2::w4d2-l2": mk(
     "Correction quality — apply it inside today's QA workflow.",
     "Specific, respectful, actionable. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1576,7 +1576,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d2::w4d2-l3": mk(
+  "qa-w4d2::w4d2-l3": mk(
     "Documentation accuracy — apply it inside today's QA workflow.",
     "Notes reflect exactly what was reviewed and found. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1599,7 +1599,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d2::w4d2-l4": mk(
+  "qa-w4d2::w4d2-l4": mk(
     "Escalation notes — apply it inside today's QA workflow.",
     "Facts, impact, requested next step. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1623,7 +1623,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 4 Day 3 · QA Communication Quality Day =====
-  "qa::qa-w4d3::w4d3-l1": mk(
+  "qa-w4d3::w4d3-l1": mk(
     "Clear QA notes — apply it inside today's QA workflow.",
     "What was reviewed, what's missing/corrected, owner, impact, follow-up. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1646,7 +1646,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d3::w4d3-l2": mk(
+  "qa-w4d3::w4d3-l2": mk(
     "Correction request tone — apply it inside today's QA workflow.",
     "Respectful, specific, dated. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1669,7 +1669,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d3::w4d3-l3": mk(
+  "qa-w4d3::w4d3-l3": mk(
     "Clinical escalation quality — apply it inside today's QA workflow.",
     "Route clinical decisions to Clinical leadership / BCBA owner. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1692,7 +1692,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d3::w4d3-l4": mk(
+  "qa-w4d3::w4d3-l4": mk(
     "Trend / leadership update quality — apply it inside today's QA workflow.",
     "Impact + examples + requested decision. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1716,7 +1716,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 4 Day 4 · End-to-End QA Simulation =====
-  "qa::qa-w4d4::w4d4-l1": mk(
+  "qa-w4d4::w4d4-l1": mk(
     "QA intake simulation — apply it inside today's QA workflow.",
     "Take an item into the QA queue cleanly. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1739,7 +1739,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d4::w4d4-l2": mk(
+  "qa-w4d4::w4d4-l2": mk(
     "Treatment plan / report review simulation — apply it inside today's QA workflow.",
     "Apply the checklist end-to-end. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1762,7 +1762,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d4::w4d4-l3": mk(
+  "qa-w4d4::w4d4-l3": mk(
     "Missing item / correction simulation — apply it inside today's QA workflow.",
     "Route and follow up cleanly. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1785,7 +1785,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d4::w4d4-l4": mk(
+  "qa-w4d4::w4d4-l4": mk(
     "Compliance / audit scenario simulation — apply it inside today's QA workflow.",
     "Document findings factually. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1808,7 +1808,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d4::w4d4-l5": mk(
+  "qa-w4d4::w4d4-l5": mk(
     "Escalation / closure simulation — apply it inside today's QA workflow.",
     "Escalate or close with the correct trail. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1832,7 +1832,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
     },
   ),
   // ===== Week 4 Day 5 · Graduation, Readiness Review, and Next 30 Days =====
-  "qa::qa-w4d5::w4d5-l1": mk(
+  "qa-w4d5::w4d5-l1": mk(
     "Final knowledge review — apply it inside today's QA workflow.",
     "10–15 questions covering the full journey. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1855,7 +1855,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d5::w4d5-l2": mk(
+  "qa-w4d5::w4d5-l2": mk(
     "Readiness conversation — apply it inside today's QA workflow.",
     "What can be owned independently vs still reviewed. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1878,7 +1878,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d5::w4d5-l3": mk(
+  "qa-w4d5::w4d5-l3": mk(
     "Strengths and coaching areas — apply it inside today's QA workflow.",
     "Name 2 strengths and 2 coaching areas. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
@@ -1901,7 +1901,7 @@ export const QA_LESSON_CONTENT: Record<string, LessonContent> = {
       checklist: ["I reviewed the note against plan, auth, and payer requirements.", "I logged a specific finding with severity, owner, remediation, and due date.", "I coached the clinician and handed off/escalated cleanly."],
     },
   ),
-  "qa::qa-w4d5::w4d5-l4": mk(
+  "qa-w4d5::w4d5-l4": mk(
     "Next 30-day growth plan — apply it inside today's QA workflow.",
     "Concrete targets for the first month of independent work. If this step slips, notes get denied, audits fail, families lose services, and revenue is clawed back.",
     [
