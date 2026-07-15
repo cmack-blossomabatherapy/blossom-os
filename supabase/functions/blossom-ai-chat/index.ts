@@ -256,13 +256,35 @@ async function runTool(
 
     if (name === "search_employees") {
       const q = String(args.query ?? "").trim();
-      const like = `%${q}%`;
-      const { data, error } = await supabase.from("employees")
-        .select("id, first_name, last_name, email, state, status")
-        .or(`first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like}`)
-        .limit(limit);
+      const empLimit = Math.min(Math.max(1, Number(args.limit) || 25), 200);
+      let query = supabase.from("employees")
+        .select("id, first_name, last_name, preferred_name, email, phone, extension, job_title, state, status, hr_departments(name)")
+        .eq("status", "active")
+        .order("last_name", { ascending: true })
+        .limit(empLimit);
+      if (q) {
+        const like = `%${q}%`;
+        query = query.or(
+          `first_name.ilike.${like},last_name.ilike.${like},preferred_name.ilike.${like},email.ilike.${like},job_title.ilike.${like}`
+        );
+      }
+      if (args.department) {
+        query = query.eq("hr_departments.name", String(args.department));
+      }
+      if (args.state) query = query.eq("state", String(args.state));
+      const { data, error } = await query;
       if (error) return JSON.stringify({ error: error.message });
-      return JSON.stringify({ count: data?.length ?? 0, results: data ?? [] });
+      const results = (data ?? []).map((r: Record<string, unknown>) => ({
+        id: r.id,
+        name: [r.preferred_name || r.first_name, r.last_name].filter(Boolean).join(" "),
+        email: r.email,
+        phone: r.phone,
+        extension: r.extension,
+        title: r.job_title,
+        department: (r.hr_departments as { name?: string } | null)?.name ?? null,
+        state: r.state,
+      }));
+      return JSON.stringify({ count: results.length, results });
     }
 
     if (name === "list_my_tasks") {
