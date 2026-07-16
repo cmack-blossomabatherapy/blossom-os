@@ -29,17 +29,17 @@ export interface AssigneeOption {
 
 const ACTIVE_STATUSES = ["active", "pending_start"] as const;
 
-async function fetchAssignees(): Promise<AssigneeOption[]> {
-  const { data, error } = await supabase
-    .from("employees")
-    .select("id,first_name,last_name,email,job_title,state,user_id,status")
-    .in("status", [...ACTIVE_STATUSES]);
+async function fetchAssignees(search?: string): Promise<AssigneeOption[]> {
+  const { data, error } = await supabase.rpc("search_assignable_employees" as never, {
+    search: search?.trim() || null,
+    max_rows: 100,
+  } as never);
   if (error) throw error;
-  return (data ?? [])
+  return ((data as any[] | null) ?? [])
     .map((e: any) => ({
       id: e.id,
       name:
-        `${e.first_name ?? ""} ${e.last_name ?? ""}`.trim() ||
+        (e.name ?? "").trim() ||
         (e.email ?? "Unknown"),
       email: e.email ?? null,
       jobTitle: e.job_title ?? null,
@@ -67,17 +67,20 @@ export function AssigneePicker({
   const [open, setOpen] = useState(false);
   const [people, setPeople] = useState<AssigneeOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (!open || people.length > 0) return;
+    if (!open) return;
     let cancelled = false;
     setLoading(true);
-    fetchAssignees()
+    const t = window.setTimeout(() => {
+      fetchAssignees(query)
       .then((rows) => { if (!cancelled) setPeople(rows); })
       .catch(() => { /* silent */ })
       .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [open, people.length]);
+    }, 150);
+    return () => { cancelled = true; window.clearTimeout(t); };
+  }, [open, query]);
 
   const selected = useMemo(
     () => people.find((p) => p.name === value),
@@ -111,8 +114,8 @@ export function AssigneePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[320px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search by name, email, title…" />
+        <Command shouldFilter={false}>
+          <CommandInput value={query} onValueChange={setQuery} placeholder="Search by name, email, title…" />
           <CommandList>
             {loading && (
               <div className="flex items-center gap-2 px-3 py-6 text-xs text-muted-foreground">

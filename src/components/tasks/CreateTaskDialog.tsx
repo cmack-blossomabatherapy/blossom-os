@@ -49,8 +49,8 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, defaultCli
   const { create } = useIntakeTasksLive();
   const { leads } = useLeads();
   const { clients } = useClients();
-  const { displayName } = useAuth();
-  const selfName = (displayName ?? "").trim();
+  const { displayName, user } = useAuth();
+  const selfName = (displayName || user?.user_metadata?.full_name || user?.email || "").trim();
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -102,7 +102,7 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, defaultCli
       const input: CreateIntakeTaskInput = {
         title: title.trim(),
         task_type: taskType,
-        owner: owner || null,
+        owner: (owner || selfName) || null,
         due_date: due || null,
         notes: notes || null,
         subtasks: subtasks
