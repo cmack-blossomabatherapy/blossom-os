@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/command";
 import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 import { useLeads } from "@/contexts/LeadsContext";
+import { useClients } from "@/contexts/ClientsContext";
 import { useIntakeTasksLive, type CreateIntakeTaskInput } from "@/hooks/useIntakeTasksLive";
 import { cn } from "@/lib/utils";
 
@@ -39,12 +40,14 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   defaultLeadId?: string;
+  defaultClientId?: string;
   onCreated?: () => void;
 }
 
-export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, onCreated }: Props) {
+export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, defaultClientId, onCreated }: Props) {
   const { create } = useIntakeTasksLive();
   const { leads } = useLeads();
+  const { clients } = useClients();
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -54,14 +57,18 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, onCreated 
     return d.toISOString().slice(0, 10);
   });
   const [taskType, setTaskType] = useState<string>("task");
-  const [kind, setKind] = useState<RelatedKind>(defaultLeadId ? "lead" : "none");
+  const [kind, setKind] = useState<RelatedKind>(
+    defaultLeadId ? "lead" : defaultClientId ? "client" : "none",
+  );
   const [leadId, setLeadId] = useState<string>(defaultLeadId ?? "");
+  const [clientId, setClientId] = useState<string>(defaultClientId ?? "");
   const [relatedLabel, setRelatedLabel] = useState<string>("");
   const [relatedIdText, setRelatedIdText] = useState<string>("");
   const [relatedUrl, setRelatedUrl] = useState<string>("");
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [saving, setSaving] = useState(false);
   const [leadPickerOpen, setLeadPickerOpen] = useState(false);
+  const [clientPickerOpen, setClientPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -69,15 +76,20 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, onCreated 
     setTaskType("task");
     const d = new Date(); d.setDate(d.getDate() + 1);
     setDue(d.toISOString().slice(0, 10));
-    setKind(defaultLeadId ? "lead" : "none");
+    setKind(defaultLeadId ? "lead" : defaultClientId ? "client" : "none");
     setLeadId(defaultLeadId ?? "");
+    setClientId(defaultClientId ?? "");
     setRelatedLabel(""); setRelatedIdText(""); setRelatedUrl("");
     setSubtasks([]);
-  }, [open, defaultLeadId]);
+  }, [open, defaultLeadId, defaultClientId]);
 
   const selectedLead = useMemo(
     () => leads.find((l) => l.id === leadId) ?? null,
     [leads, leadId],
+  );
+  const selectedClient = useMemo(
+    () => clients.find((c) => c.id === clientId) ?? null,
+    [clients, clientId],
   );
 
   const save = async () => {
@@ -100,6 +112,13 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, onCreated 
         input.related_record_id = leadId;
         input.related_record_label = selectedLead?.childName ?? "Lead";
         input.related_url = `/leads?view=pipeline&lead=${encodeURIComponent(leadId)}`;
+      } else if (kind === "client" && clientId) {
+        input.related_record_type = "client";
+        input.related_record_id = clientId;
+        input.related_record_label = selectedClient
+          ? `${selectedClient.childName}${selectedClient.parentName ? ` · ${selectedClient.parentName}` : ""}`
+          : "Client";
+        input.related_url = `/os/clients?client=${encodeURIComponent(clientId)}`;
       } else if (kind !== "none") {
         input.related_record_type = kind;
         input.related_record_id = relatedIdText.trim() || null;
