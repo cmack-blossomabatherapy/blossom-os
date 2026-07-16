@@ -197,7 +197,12 @@ export function useIntakeTasksLive() {
    */
   const updateFields = useCallback(async (
     id: string,
-    patch: Partial<Pick<IntakeTaskRow, "title" | "owner" | "due_date" | "task_type">>,
+    patch: Partial<Pick<IntakeTaskRow,
+      | "title" | "owner" | "due_date" | "task_type"
+      | "lead_id"
+      | "related_record_type" | "related_record_id"
+      | "related_record_label" | "related_url"
+    >>,
   ) => {
     let prev: IntakeTaskRow | undefined;
     setTasks((cur) => cur.map((t) => {
