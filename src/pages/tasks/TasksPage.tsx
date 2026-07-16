@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   AlertCircle, CalendarClock, CheckCircle2, Flame,
-  Inbox, ListTodo, Plus, Search,
+  Inbox, ListTodo, Plus, Search, Link2, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils";
 import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLive";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { TaskActivityDrawer } from "@/components/tasks/TaskActivityDrawer";
+import { relatedRecordChipLabel, resolveRelatedRecordHref } from "@/lib/tasks/relatedRecord";
+import { Link } from "react-router-dom";
+import { useLeads } from "@/contexts/LeadsContext";
 
 /**
  * Universal Tasks page mounted at `/tasks` for every role.
@@ -46,6 +49,7 @@ function classify(row: IntakeTaskRow): "overdue" | "today" | "upcoming" {
 
 function TasksInner() {
   const { tasks, loading, setStatus, complete } = useIntakeTasksLive();
+  const { leads } = useLeads();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -201,6 +205,13 @@ function TasksInner() {
             {visible.map((t) => {
               const meta = STATUS_META[t.status];
               const c = classify(t);
+              let chipLabel = relatedRecordChipLabel(t);
+              let chipHref = resolveRelatedRecordHref(t);
+              if (!chipLabel && t.lead_id) {
+                const l = leads.find((x) => x.id === t.lead_id);
+                chipLabel = `Lead${l?.childName ? ` · ${l.childName}` : ""}`;
+                chipHref = `/leads?view=pipeline&lead=${encodeURIComponent(t.lead_id)}`;
+              }
               return (
                 <div
                   key={t.id}
@@ -248,6 +259,25 @@ function TasksInner() {
                         </span>
                       )}
                       {c === "overdue" && <Flame className="h-3 w-3 text-rose-500" />}
+                      {chipLabel && (
+                        chipHref ? (
+                          <Link
+                            to={chipHref}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background px-1.5 py-0.5 text-[10px] font-medium text-foreground/80 hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition max-w-[220px]"
+                            title={`Open ${chipLabel}`}
+                          >
+                            <Link2 className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{chipLabel}</span>
+                            <ArrowRight className="h-3 w-3 shrink-0 opacity-60" />
+                          </Link>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted px-1.5 py-0.5 text-[10px]">
+                            <Link2 className="h-3 w-3" />
+                            <span className="truncate max-w-[180px]">{chipLabel}</span>
+                          </span>
+                        )
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
