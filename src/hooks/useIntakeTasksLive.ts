@@ -191,5 +191,64 @@ export function useIntakeTasksLive() {
     return parent;
   }, []);
 
-  return { tasks, loading, refetch, complete, snooze, reassign, markStarted, setStatus, create };
+  /**
+   * Update editable task fields (title, owner, due_date, task_type) without
+   * writing a status/activity line. Optimistic; rolls back on failure.
+   */
+  const updateFields = useCallback(async (
+    id: string,
+    patch: Partial<Pick<IntakeTaskRow, "title" | "owner" | "due_date" | "task_type">>,
+  ) => {
+    let prev: IntakeTaskRow | undefined;
+    setTasks((cur) => cur.map((t) => {
+      if (t.id !== id) return t;
+      prev = t;
+      return { ...t, ...patch };
+    }));
+    const { error } = await supabase.from("intake_tasks").update(patch as never).eq("id", id);
+    if (error) {
+      if (prev) setTasks((cur) => cur.map((t) => t.id === id ? prev! : t));
+      throw error;
+    }
+  }, []);
+
+  /**
+   * Append a freeform note to a task. Notes are stored inline in `notes` as:
+   *   [<ISO>] Note (by <author>): <body>
+   * so they coexist with status-change lines and can be parsed back out.
+   */
+  const addNote = useCallback(async (
+    task: IntakeTaskRow,
+    body: string,
+    author?: string | null,
+  ) => {
+    const trimmed = body.trim();
+    if (!trimmed) return;
+    const stamp = new Date().toISOString();
+    const who = (author ?? "").trim() || task.owner || "Unknown";
+    const entry = `[${stamp}] Note (by ${who}): ${trimmed}`;
+    const prev = (task.notes ?? "").trim();
+    const nextNotes = prev ? `${prev}\n${entry}` : entry;
+    setTasks((cur) => cur.map((t) => t.id === task.id ? { ...t, notes: nextNotes } : t));
+    const { error } = await supabase
+      .from("intake_tasks")
+      .update({ notes: nextNotes } as never)
+      .eq("id", task.id);
+    if (error) {
+      setTasks((cur) => cur.map((t) => t.id === task.id ? { ...t, notes: task.notes } : t));
+      throw error;
+    }
+    if (task.lead_id) {
+      await supabase.from("intake_communications").insert({
+        lead_id: task.lead_id,
+        communication_type: "note",
+        direction: "internal",
+        subject: `Task note`,
+        preview: `${task.title} — ${trimmed}`,
+        logged_by_name: who,
+      } as never).then(({ error: e }) => { if (e) console.warn("note log failed", e); });
+    }
+  }, []);
+
+  return { tasks, loading, refetch, complete, snooze, reassign, markStarted, setStatus, create, updateFields, addNote };
 }
