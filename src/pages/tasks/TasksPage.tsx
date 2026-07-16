@@ -28,11 +28,11 @@ import { TaskActivityDrawer } from "@/components/tasks/TaskActivityDrawer";
 type FilterKey = "all" | "today" | "overdue";
 type StatusKey = IntakeTaskRow["status"];
 
-const STATUS_META: Record<StatusKey, { label: string; dot: string; text: string; bg: string; border: string; Icon: React.ComponentType<{ className?: string }> }> = {
-  "Open":        { label: "Not started", dot: "bg-slate-400",  text: "text-slate-700 dark:text-slate-200",   bg: "bg-slate-500/10",  border: "border-slate-500/30",  Icon: Circle },
-  "In Progress": { label: "In progress", dot: "bg-sky-500",    text: "text-sky-700 dark:text-sky-200",       bg: "bg-sky-500/10",    border: "border-sky-500/30",    Icon: Loader2 },
-  "Blocked":     { label: "Blocked",     dot: "bg-rose-500",   text: "text-rose-700 dark:text-rose-200",     bg: "bg-rose-500/10",   border: "border-rose-500/30",   Icon: Ban },
-  "Completed":   { label: "Done",        dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-200", bg: "bg-emerald-500/10", border: "border-emerald-500/30", Icon: CheckCircle2 },
+const STATUS_META: Record<StatusKey, { label: string; dot: string; text: string; bg: string; border: string }> = {
+  "Open":        { label: "Not started", dot: "bg-slate-400",   text: "text-slate-700 dark:text-slate-200",     bg: "bg-slate-500/10",   border: "border-slate-500/20" },
+  "In Progress": { label: "In progress", dot: "bg-sky-500",     text: "text-sky-700 dark:text-sky-200",         bg: "bg-sky-500/10",     border: "border-sky-500/20" },
+  "Blocked":     { label: "Blocked",     dot: "bg-rose-500",    text: "text-rose-700 dark:text-rose-200",       bg: "bg-rose-500/10",    border: "border-rose-500/20" },
+  "Completed":   { label: "Done",        dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-200", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
 };
 
 function classify(row: IntakeTaskRow): "overdue" | "today" | "upcoming" {
@@ -200,22 +200,19 @@ function TasksInner() {
           <div className="divide-y divide-border/60">
             {visible.map((t) => {
               const meta = STATUS_META[t.status];
-              const Icon = meta.Icon;
               const c = classify(t);
               return (
-                <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+                <div key={t.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors">
                   <Select value={t.status} onValueChange={(v) => onStatusChange(t, v as StatusKey)}>
                     <SelectTrigger
                       aria-label="Change task status"
                       className={cn(
-                        "h-7 w-auto min-w-[124px] px-2.5 py-0 text-[11px] font-medium rounded-full border justify-center gap-1.5 shadow-none hover:opacity-90 transition [&>svg:last-child]:hidden",
+                        "h-6 w-auto shrink-0 px-2.5 py-0 text-[11px] font-medium rounded-full border justify-start gap-1.5 shadow-none hover:opacity-80 transition [&>svg:last-child]:hidden focus:ring-0 focus:ring-offset-0",
                         meta.bg, meta.text, meta.border,
                       )}
                     >
-                      <span className="inline-flex items-center gap-1.5 leading-none">
-                        <Icon className={cn("h-3 w-3 shrink-0", t.status === "In Progress" && "animate-spin")} />
-                        <SelectValue>{meta.label}</SelectValue>
-                      </span>
+                      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", meta.dot)} />
+                      <SelectValue>{meta.label}</SelectValue>
                     </SelectTrigger>
                     <SelectContent align="start" className="min-w-[168px]">
                       {(Object.keys(STATUS_META) as StatusKey[]).map((s) => {
@@ -244,12 +241,12 @@ function TasksInner() {
                       {c === "overdue" && <Flame className="h-3 w-3 text-rose-500" />}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setActivityTask(t)}>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button size="sm" variant="ghost" className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground" onClick={() => setActivityTask(t)}>
                       Activity
                     </Button>
-                    <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => complete(t.id).catch((e) => toast.error(e instanceof Error ? e.message : "Could not complete"))}>
-                      Complete
+                    <Button size="sm" variant="ghost" className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground" onClick={() => complete(t.id).catch((e) => toast.error(e instanceof Error ? e.message : "Could not complete"))}>
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Complete
                     </Button>
                   </div>
                 </div>
