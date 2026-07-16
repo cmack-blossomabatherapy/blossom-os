@@ -202,7 +202,15 @@ function TasksInner() {
               const meta = STATUS_META[t.status];
               const c = classify(t);
               return (
-                <div key={t.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors">
+                <div
+                  key={t.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActivityTask(t)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActivityTask(t); } }}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer focus:outline-none focus:bg-muted/40"
+                >
+                  <div onClick={(e) => e.stopPropagation()}>
                   <Select value={t.status} onValueChange={(v) => onStatusChange(t, v as StatusKey)}>
                     <SelectTrigger
                       aria-label="Change task status"
@@ -228,6 +236,7 @@ function TasksInner() {
                       })}
                     </SelectContent>
                   </Select>
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium text-foreground truncate">{t.title}</div>
                     <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
@@ -242,10 +251,12 @@ function TasksInner() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button size="sm" variant="ghost" className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground" onClick={() => setActivityTask(t)}>
-                      Activity
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground" onClick={() => complete(t.id).catch((e) => toast.error(e instanceof Error ? e.message : "Could not complete"))}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={(e) => { e.stopPropagation(); complete(t.id).catch((err) => toast.error(err instanceof Error ? err.message : "Could not complete")); }}
+                    >
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Complete
                     </Button>
                   </div>
