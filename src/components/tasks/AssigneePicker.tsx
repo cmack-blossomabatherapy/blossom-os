@@ -27,8 +27,6 @@ export interface AssigneeOption {
   userId: string | null;
 }
 
-const ACTIVE_STATUSES = ["active", "pending_start"] as const;
-
 async function fetchAssignees(search?: string): Promise<AssigneeOption[]> {
   const { data, error } = await supabase.rpc("search_assignable_employees" as never, {
     search: search?.trim() || null,
