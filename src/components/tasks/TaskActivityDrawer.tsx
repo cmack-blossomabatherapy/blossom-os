@@ -8,7 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLive";
 import { useAuth } from "@/contexts/AuthContext";
-import { Activity, MessageSquare, Clock, ArrowRight, Loader2, User2, Inbox, StickyNote, Send } from "lucide-react";
+import { useLeads } from "@/contexts/LeadsContext";
+import { useClients } from "@/contexts/ClientsContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Link2, X, Activity, MessageSquare, Clock, ArrowRight, Loader2, User2, Inbox, StickyNote, Send } from "lucide-react";
+import { relatedRecordChipLabel, resolveRelatedRecordHref } from "@/lib/tasks/relatedRecord";
+import { Link as RouterLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -96,6 +102,8 @@ const STATUS_OPTIONS: IntakeTaskRow["status"][] = ["Open", "In Progress", "Block
 export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerProps) {
   const { setStatus, updateFields, addNote, tasks } = useIntakeTasksLive();
   const { user, displayName } = useAuth();
+  const { leads } = useLeads();
+  const { clients } = useClients();
   const authorName = (displayName as string) || user?.email || "You";
 
   // Prefer the live version of the task from the shared hook, so edits
@@ -120,6 +128,9 @@ export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerP
   const [saving, setSaving] = useState(false);
   const [noteBody, setNoteBody] = useState("");
   const [postingNote, setPostingNote] = useState(false);
+  const [linkKind, setLinkKind] = useState<"lead" | "client">("lead");
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkSaving, setLinkSaving] = useState(false);
 
   useEffect(() => {
     if (!live) return;
@@ -193,6 +204,81 @@ export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerP
       toast.error(e instanceof Error ? e.message : "Could not add note");
     } finally {
       setPostingNote(false);
+    }
+  };
+
+  // Resolve linked chip — prefer explicit related_record_*; fall back to lead_id.
+  const linkedChip = useMemo(() => {
+    if (!live) return null;
+    if (live.related_record_type && (live.related_record_label || live.related_record_id)) {
+      let label = live.related_record_label;
+      if (!label && live.related_record_type === "lead" && live.related_record_id) {
+        const l = leads.find((x) => x.id === live.related_record_id);
+        label = l?.childName ?? null;
+      }
+      if (!label && live.related_record_type === "client" && live.related_record_id) {
+        const c = clients.find((x) => x.id === live.related_record_id);
+        label = c?.childName ?? null;
+      }
+      return {
+        label: relatedRecordChipLabel({ ...live, related_record_label: label }) ?? "Linked",
+        href: resolveRelatedRecordHref(live),
+      };
+    }
+    if (live.lead_id) {
+      const l = leads.find((x) => x.id === live.lead_id);
+      return {
+        label: `Lead${l?.childName ? ` · ${l.childName}` : ""}`,
+        href: `/leads?view=pipeline&lead=${encodeURIComponent(live.lead_id)}`,
+      };
+    }
+    return null;
+  }, [live, leads, clients]);
+
+  const applyLink = async (
+    kind: "lead" | "client",
+    id: string,
+    label: string,
+  ) => {
+    if (!live) return;
+    setLinkSaving(true);
+    try {
+      const patch = {
+        lead_id: kind === "lead" ? id : null,
+        related_record_type: kind,
+        related_record_id: id,
+        related_record_label: label,
+        related_url:
+          kind === "lead"
+            ? `/leads?view=pipeline&lead=${encodeURIComponent(id)}`
+            : `/os/clients?client=${encodeURIComponent(id)}`,
+      } as const;
+      await updateFields(live.id, patch);
+      toast.success(`Linked to ${label}`);
+      setLinkOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not link");
+    } finally {
+      setLinkSaving(false);
+    }
+  };
+
+  const clearLink = async () => {
+    if (!live) return;
+    setLinkSaving(true);
+    try {
+      await updateFields(live.id, {
+        lead_id: null,
+        related_record_type: null,
+        related_record_id: null,
+        related_record_label: null,
+        related_url: null,
+      });
+      toast.success("Link removed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not unlink");
+    } finally {
+      setLinkSaving(false);
     }
   };
 
@@ -282,6 +368,110 @@ export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerP
                     </Button>
                   </div>
                 )}
+              </div>
+
+              {/* Linked record */}
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
+                  <Link2 className="h-3 w-3" /> Linked to
+                </div>
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  {linkedChip ? (
+                    linkedChip.href ? (
+                      <RouterLink
+                        to={linkedChip.href}
+                        onClick={() => onOpenChange(false)}
+                        className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition truncate max-w-[200px]"
+                        title={`Open ${linkedChip.label}`}
+                      >
+                        <span className="truncate">{linkedChip.label}</span>
+                        <ArrowRight className="h-3 w-3 shrink-0 opacity-60" />
+                      </RouterLink>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted px-2 py-0.5 text-[11px] text-muted-foreground truncate max-w-[200px]">
+                        {linkedChip.label}
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground">Not linked</span>
+                  )}
+                  <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+                    <PopoverTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" disabled={linkSaving}>
+                        {linkedChip ? "Change" : "Link"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[320px] p-0" align="end">
+                      <div className="flex items-center gap-1 border-b border-border/60 p-2">
+                        <button
+                          type="button"
+                          onClick={() => setLinkKind("lead")}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1 text-xs font-medium transition",
+                            linkKind === "lead" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >Lead</button>
+                        <button
+                          type="button"
+                          onClick={() => setLinkKind("client")}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1 text-xs font-medium transition",
+                            linkKind === "client" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >Client</button>
+                      </div>
+                      <Command>
+                        <CommandInput placeholder={`Search ${linkKind === "lead" ? "leads" : "clients"}…`} />
+                        <CommandList>
+                          <CommandEmpty>No matches.</CommandEmpty>
+                          <CommandGroup heading={linkKind === "lead" ? `Leads (${leads.length})` : `Clients (${clients.length})`}>
+                            {linkKind === "lead"
+                              ? leads.slice(0, 200).map((l) => (
+                                  <CommandItem
+                                    key={l.id}
+                                    value={`${l.childName} ${l.parentName ?? ""} ${l.state ?? ""}`}
+                                    onSelect={() => void applyLink("lead", l.id, l.childName ?? "Lead")}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="text-sm">{l.childName}</span>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {l.parentName}{l.state ? ` · ${l.state}` : ""}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))
+                              : clients.slice(0, 200).map((c) => (
+                                  <CommandItem
+                                    key={c.id}
+                                    value={`${c.childName} ${c.parentName ?? ""} ${c.state ?? ""}`}
+                                    onSelect={() => void applyLink("client", c.id, `${c.childName}${c.parentName ? ` · ${c.parentName}` : ""}`)}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="text-sm">{c.childName}</span>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {c.parentName}{c.state ? ` · ${c.state}` : ""}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {linkedChip && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      onClick={() => void clearLink()}
+                      disabled={linkSaving}
+                      title="Remove link"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 

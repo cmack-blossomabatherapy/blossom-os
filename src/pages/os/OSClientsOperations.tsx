@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { Client } from "@/data/clients";
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 
 /* ─────────── helpers ─────────── */
 
@@ -713,6 +714,7 @@ function AskBlossomClientsRail({ clients, onOpen }: { clients: Client[]; onOpen:
 function ClientDrawer({ clientId, onClose }: { clientId: string; onClose: () => void }) {
   const { getClient } = useClients();
   const c = getClient(clientId);
+  const [taskOpen, setTaskOpen] = useState(false);
   if (!c) return null;
   const blockers = getBlockers(c);
   const health = getHealthStatus(c);
@@ -743,6 +745,7 @@ function ClientDrawer({ clientId, onClose }: { clientId: string; onClose: () => 
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" asChild><Link to="/scheduling"><CalendarIcon className="mr-1.5 h-3.5 w-3.5" /> Scheduling</Link></Button>
             <Button size="sm" variant="outline" asChild><Link to="/authorizations"><ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Auth</Link></Button>
+            <Button size="sm" variant="outline" onClick={() => setTaskOpen(true)}><ListTodo className="mr-1.5 h-3.5 w-3.5" /> Add Task</Button>
             <Button size="sm" variant="outline" onClick={() => toast("Message BCBA")}><MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message BCBA</Button>
             <Button size="sm" variant="outline" onClick={() => toast("Note added")}><StickyNote className="mr-1.5 h-3.5 w-3.5" /> Note</Button>
             <Button size="sm" variant="outline" onClick={() => toast("Escalated")}><AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Escalate</Button>
@@ -824,6 +827,12 @@ function ClientDrawer({ clientId, onClose }: { clientId: string; onClose: () => 
           </Section>
         </div>
       </aside>
+      <CreateTaskDialog
+        open={taskOpen}
+        onOpenChange={setTaskOpen}
+        defaultClientId={clientId}
+        onCreated={() => toast.success("Task created for " + c.childName)}
+      />
     </div>
   );
 }
