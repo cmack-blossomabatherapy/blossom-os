@@ -57,23 +57,28 @@ export function useUserTasks(scope: TaskScope = "assigned_to_me") {
       // the current user has no display name, fall back to any open task
       // owned by nobody so a newly-created task still appears on Home.
       if (scope !== "assigned_to_me") return primary;
+      // Only pull intake tasks explicitly owned by the current user. Never
+      // surface unassigned tasks or partial name matches — that let one user
+      // see and complete tasks belonging to teammates with similar names.
+      const name = (displayName || "").trim();
+      if (!name) return primary;
       const { data: intake, error: iErr } = await supabase
         .from("intake_tasks")
         .select("id,title,notes,owner,due_date,status,related_record_type,related_record_id,related_record_label,related_url,created_at,updated_at,lead_id")
         .neq("status", "Completed")
+        .ilike("owner", name)
         .order("due_date", { ascending: true, nullsFirst: false })
         .limit(200);
       if (iErr) {
         console.warn("[useUserTasks] intake_tasks fetch failed", iErr);
         return primary;
       }
-      const name = (displayName || user?.email?.split("@")[0] || "").trim().toLowerCase();
+      const target = name.toLowerCase();
       const adapted: UserTask[] = (intake ?? [])
         .filter((r: any) => {
           const o = (r.owner ?? "").trim().toLowerCase();
-          if (!o) return true; // unassigned — surface for everyone
-          if (!name) return false;
-          return o === name || o.includes(name) || name.includes(o);
+          // Belt-and-suspenders — require an exact case-insensitive match.
+          return !!o && o === target;
         })
         .map((r: any) => ({
           id: r.id,
