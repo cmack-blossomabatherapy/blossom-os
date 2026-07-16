@@ -2,8 +2,8 @@ import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  AlertCircle, CalendarClock, CheckCircle2, Circle, Flame,
-  Inbox, ListTodo, Loader2, Plus, Search, Ban,
+  AlertCircle, CalendarClock, CheckCircle2, Flame,
+  Inbox, ListTodo, Plus, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
