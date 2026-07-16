@@ -260,7 +260,45 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, defaultCli
                 </div>
               )}
 
-              {kind !== "none" && kind !== "lead" && (
+              {kind === "client" && (
+                <div className="md:col-span-2">
+                  <Popover open={clientPickerOpen} onOpenChange={setClientPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start font-normal", !selectedClient && "text-muted-foreground")}>
+                        {selectedClient
+                          ? `${selectedClient.childName}${selectedClient.parentName ? ` · ${selectedClient.parentName}` : ""}`
+                          : "Search clients (patients)…"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[360px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search by child, parent, state…" />
+                        <CommandList>
+                          <CommandEmpty>No matching clients.</CommandEmpty>
+                          <CommandGroup heading={`Clients (${clients.length})`}>
+                            {clients.slice(0, 200).map((c) => (
+                              <CommandItem
+                                key={c.id}
+                                value={`${c.childName} ${c.parentName ?? ""} ${c.state ?? ""}`}
+                                onSelect={() => { setClientId(c.id); setClientPickerOpen(false); }}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="text-sm">{c.childName}</span>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {c.parentName}{c.state ? ` · ${c.state}` : ""}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+
+              {kind !== "none" && kind !== "lead" && kind !== "client" && (
                 <>
                   <Input
                     placeholder="Record label"
