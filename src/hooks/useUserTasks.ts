@@ -60,25 +60,30 @@ export function useUserTasks(scope: TaskScope = "assigned_to_me") {
       // Only pull intake tasks explicitly owned by the current user. Never
       // surface unassigned tasks or partial name matches — that let one user
       // see and complete tasks belonging to teammates with similar names.
-      const name = (displayName || "").trim();
-      if (!name) return primary;
+      const aliases = Array.from(new Set([
+        displayName,
+        user?.user_metadata?.full_name,
+        user?.email,
+      ].map((v) => (v ?? "").trim()).filter(Boolean)));
+      if (aliases.length === 0) return primary;
+      const ownerFilter = aliases.map((a) => `owner.ilike.${a.replace(/[,()]/g, "")}`).join(",");
       const { data: intake, error: iErr } = await supabase
         .from("intake_tasks")
         .select("id,title,notes,owner,due_date,status,related_record_type,related_record_id,related_record_label,related_url,created_at,updated_at,lead_id")
         .neq("status", "Completed")
-        .ilike("owner", name)
+        .or(ownerFilter)
         .order("due_date", { ascending: true, nullsFirst: false })
         .limit(200);
       if (iErr) {
         console.warn("[useUserTasks] intake_tasks fetch failed", iErr);
         return primary;
       }
-      const target = name.toLowerCase();
+      const targets = new Set(aliases.map((a) => a.toLowerCase()));
       const adapted: UserTask[] = (intake ?? [])
         .filter((r: any) => {
           const o = (r.owner ?? "").trim().toLowerCase();
           // Belt-and-suspenders — require an exact case-insensitive match.
-          return !!o && o === target;
+          return !!o && targets.has(o);
         })
         .map((r: any) => ({
           id: r.id,
