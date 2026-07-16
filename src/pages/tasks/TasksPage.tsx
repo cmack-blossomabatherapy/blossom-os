@@ -207,10 +207,13 @@ function TasksInner() {
                   <Select value={t.status} onValueChange={(v) => onStatusChange(t, v as StatusKey)}>
                     <SelectTrigger
                       aria-label="Change task status"
-                      className={cn("h-7 w-[132px] px-2 py-0 text-[11px] font-medium rounded-full gap-1.5 border", meta.bg, meta.text, meta.border)}
+                      className={cn(
+                        "h-7 w-auto min-w-[124px] px-2.5 py-0 text-[11px] font-medium rounded-full border justify-center gap-1.5 shadow-none hover:opacity-90 transition [&>svg:last-child]:hidden",
+                        meta.bg, meta.text, meta.border,
+                      )}
                     >
-                      <span className="inline-flex items-center gap-1.5">
-                        <Icon className={cn("h-3 w-3", t.status === "In Progress" && "animate-spin")} />
+                      <span className="inline-flex items-center gap-1.5 leading-none">
+                        <Icon className={cn("h-3 w-3 shrink-0", t.status === "In Progress" && "animate-spin")} />
                         <SelectValue>{meta.label}</SelectValue>
                       </span>
                     </SelectTrigger>
