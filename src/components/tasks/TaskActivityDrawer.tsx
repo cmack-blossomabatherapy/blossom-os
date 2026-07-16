@@ -369,6 +369,110 @@ export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerP
                   </div>
                 )}
               </div>
+
+              {/* Linked record */}
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
+                  <Link2 className="h-3 w-3" /> Linked to
+                </div>
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  {linkedChip ? (
+                    linkedChip.href ? (
+                      <RouterLink
+                        to={linkedChip.href}
+                        onClick={() => onOpenChange(false)}
+                        className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition truncate max-w-[200px]"
+                        title={`Open ${linkedChip.label}`}
+                      >
+                        <span className="truncate">{linkedChip.label}</span>
+                        <ArrowRight className="h-3 w-3 shrink-0 opacity-60" />
+                      </RouterLink>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted px-2 py-0.5 text-[11px] text-muted-foreground truncate max-w-[200px]">
+                        {linkedChip.label}
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground">Not linked</span>
+                  )}
+                  <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+                    <PopoverTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" disabled={linkSaving}>
+                        {linkedChip ? "Change" : "Link"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[320px] p-0" align="end">
+                      <div className="flex items-center gap-1 border-b border-border/60 p-2">
+                        <button
+                          type="button"
+                          onClick={() => setLinkKind("lead")}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1 text-xs font-medium transition",
+                            linkKind === "lead" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >Lead</button>
+                        <button
+                          type="button"
+                          onClick={() => setLinkKind("client")}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1 text-xs font-medium transition",
+                            linkKind === "client" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted",
+                          )}
+                        >Client</button>
+                      </div>
+                      <Command>
+                        <CommandInput placeholder={`Search ${linkKind === "lead" ? "leads" : "clients"}…`} />
+                        <CommandList>
+                          <CommandEmpty>No matches.</CommandEmpty>
+                          <CommandGroup heading={linkKind === "lead" ? `Leads (${leads.length})` : `Clients (${clients.length})`}>
+                            {linkKind === "lead"
+                              ? leads.slice(0, 200).map((l) => (
+                                  <CommandItem
+                                    key={l.id}
+                                    value={`${l.childName} ${l.parentName ?? ""} ${l.state ?? ""}`}
+                                    onSelect={() => void applyLink("lead", l.id, l.childName ?? "Lead")}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="text-sm">{l.childName}</span>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {l.parentName}{l.state ? ` · ${l.state}` : ""}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))
+                              : clients.slice(0, 200).map((c) => (
+                                  <CommandItem
+                                    key={c.id}
+                                    value={`${c.childName} ${c.parentName ?? ""} ${c.state ?? ""}`}
+                                    onSelect={() => void applyLink("client", c.id, `${c.childName}${c.parentName ? ` · ${c.parentName}` : ""}`)}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="text-sm">{c.childName}</span>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {c.parentName}{c.state ? ` · ${c.state}` : ""}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {linkedChip && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      onClick={() => void clearLink()}
+                      disabled={linkSaving}
+                      title="Remove link"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Notes */}
