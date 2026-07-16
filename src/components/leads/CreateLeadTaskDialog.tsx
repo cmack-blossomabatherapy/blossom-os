@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { IntakeCoordinatorPicker } from "@/components/leads/IntakeCoordinatorPicker";
+import { AssigneePicker } from "@/components/tasks/AssigneePicker";
+import { useAuth } from "@/contexts/AuthContext";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -28,9 +29,11 @@ interface Props {
 }
 
 export function CreateLeadTaskDialog({ open, onOpenChange, leadId, leadName, defaultOwner, mode = "task", onSaved }: Props) {
+  const { displayName, user } = useAuth();
+  const selfName = (displayName || user?.user_metadata?.full_name || user?.email || "").trim();
   const [kind, setKind] = useState<"task" | "follow_up">(mode);
   const [title, setTitle] = useState("");
-  const [owner, setOwner] = useState<string>(defaultOwner ?? "");
+  const [owner, setOwner] = useState<string>(defaultOwner || selfName);
   const [due, setDue] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() + (mode === "follow_up" ? 2 : 1));
@@ -43,13 +46,13 @@ export function CreateLeadTaskDialog({ open, onOpenChange, leadId, leadName, def
     if (open) {
       setKind(mode);
       setTitle("");
-      setOwner(defaultOwner ?? "");
+      setOwner(defaultOwner || selfName);
       const d = new Date();
       d.setDate(d.getDate() + (mode === "follow_up" ? 2 : 1));
       setDue(d.toISOString().slice(0, 10));
       setNotes("");
     }
-  }, [open, mode, defaultOwner]);
+  }, [open, mode, defaultOwner, selfName]);
 
   const save = async () => {
     if (!title.trim()) {
@@ -66,7 +69,7 @@ export function CreateLeadTaskDialog({ open, onOpenChange, leadId, leadName, def
         lead_id: leadId,
         task_type: kind === "follow_up" ? "follow_up" : "task",
         title: title.trim(),
-        owner: owner || null,
+        owner: (owner || selfName) || null,
         due_date: due || null,
         notes: notes.trim() || null,
         status: "Open",
@@ -78,8 +81,8 @@ export function CreateLeadTaskDialog({ open, onOpenChange, leadId, leadName, def
         communication_type: "note",
         direction: "internal",
         subject: kind === "follow_up" ? "Follow-up scheduled" : "Task created",
-        preview: `${title.trim()}${owner ? ` — assigned to ${owner}` : ""}${due ? ` (due ${due})` : ""}`,
-        logged_by_name: owner || "Intake",
+        preview: `${title.trim()}${(owner || selfName) ? ` — assigned to ${owner || selfName}` : ""}${due ? ` (due ${due})` : ""}`,
+        logged_by_name: owner || selfName || "Intake",
       } as never);
       toast.success(kind === "follow_up" ? "Follow-up scheduled" : "Task created");
       onOpenChange(false);
@@ -126,7 +129,7 @@ export function CreateLeadTaskDialog({ open, onOpenChange, leadId, leadName, def
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Assign to</label>
-              <IntakeCoordinatorPicker value={owner} onChange={(name) => setOwner(name)} placeholder="Unassigned" />
+              <AssigneePicker value={owner} onChange={(name) => setOwner(name)} placeholder="Assign to…" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Due date</label>

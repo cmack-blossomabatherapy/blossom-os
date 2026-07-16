@@ -21823,6 +21823,17 @@ export type Database = {
           warning_offset_hours: number
         }[]
       }
+      search_assignable_employees: {
+        Args: { max_rows?: number; search?: string }
+        Returns: {
+          email: string
+          id: string
+          job_title: string
+          name: string
+          state: string
+          user_id: string
+        }[]
+      }
       search_eval_reviewers: {
         Args: { p_query: string; p_token: string }
         Returns: Json

@@ -15,6 +15,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Link2, X, Activity, MessageSquare, Clock, ArrowRight, Loader2, User2, Inbox, StickyNote, Send } from "lucide-react";
 import { relatedRecordChipLabel, resolveRelatedRecordHref } from "@/lib/tasks/relatedRecord";
 import { Link as RouterLink } from "react-router-dom";
+import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -328,11 +329,12 @@ export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerP
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Owner</label>
-                  <Input
+                  <AssigneePicker
                     value={draft.owner ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, owner: e.target.value }))}
-                    placeholder="Unassigned"
-                    className="h-8 text-xs"
+                    onChange={(name) => setDraft((d) => ({ ...d, owner: name }))}
+                    placeholder="Assign to…"
+                    triggerSize="sm"
+                    className="h-8 w-full text-xs"
                   />
                 </div>
                 <div className="space-y-1">

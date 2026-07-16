@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { mondayRowToLead, type MondayLeadRow } from "@/lib/leads/mondayMapper";
 import { intakeLeadRowToLead, type IntakeLeadRow } from "@/lib/leads/intakeLeadMapper";
 import { canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
+import { useAuth } from "@/contexts/AuthContext";
 
 /** Columns selected from public.intake_leads — must include every extended field
  *  read by IntakeLeadRow / intakeLeadRowToLead so the round-trip is lossless. */
@@ -359,6 +360,8 @@ const withIntakeAutomation = (lead: Lead, patch: Partial<Lead>): Lead => {
 };
 
 export function LeadsProvider({ children }: { children: ReactNode }) {
+  const { displayName, user } = useAuth();
+  const currentOwnerName = (displayName || user?.user_metadata?.full_name || user?.email || "").trim();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -555,7 +558,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       supabase.from("intake_tasks").insert({
         lead_id: row.id,
         title: "Contact Lead",
-        owner: input.assignedIntakeCoordinator ?? null,
+        owner: input.assignedIntakeCoordinator || currentOwnerName || null,
         due_date: input.nextTaskDue ?? today,
         workflow_step: "New Lead",
       } as never),
@@ -587,7 +590,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
 
     setLeads((prev) => [lead, ...prev]);
     return lead;
-  }, []);
+  }, [currentOwnerName]);
 
   const updateLead = useCallback((id: string, patch: Partial<Lead>) => {
     setLeads((prev) => prev.map((l) => (l.id === id ? withIntakeAutomation(l, patch) : l)));
