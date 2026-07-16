@@ -1,20 +1,41 @@
-## Problem
-In the Task Activity drawer, the "Status Changes" and "Related Communications" sections feel cramped and messy — the orange "Note - internal" pill overflows its card and collides with the section heading, the timeline dots don't align with their rows, and everything runs together without breathing room.
+## Goal
+Make each task row fully clickable to open a redesigned side panel that combines activity tracking with in-place editing and a dedicated notes thread — while preserving today's realtime activity log exactly as it works.
 
-## Fix (visual only, no logic changes)
-Rework `src/components/tasks/TaskActivityDrawer.tsx`:
+## UX
 
-1. **Header/meta block** — promote to a soft glass card with a status chip (colored dot + label) on the right instead of a plain "Current status:" line. Owner shows an avatar-initial circle. Timestamps use muted icons in a two-column layout.
+- Clicking anywhere on a task row (except the status pill or Complete button) opens the side panel. The "Activity" button goes away — the whole row becomes the affordance.
+- The panel becomes a real workspace with three stacked sections in one scrolling column:
+  1. **Header + editable details** — title (click to edit), status pill, owner, due date, task type. Save/Cancel appear only when a field is dirty.
+  2. **Notes** — a thread of freeform notes the user can add. Each note shows author + timestamp. Newest first. Notes are additive; the activity log continues to auto-record status changes.
+  3. **Activity timeline** — the existing status-change timeline and related communications, unchanged in behavior.
 
-2. **Status timeline** — replace the thin left rail with proper spacing: 14px indent, larger dots aligned to the transition row baseline, "from → to" rendered as two subtle pills with an arrow between, and the timestamp on its own muted line. Add a card wrapper so the timeline sits in a container instead of floating.
+## Data model
 
-3. **Related communications** — fix the badge overflow. Move the type badge inline with the timestamp inside the card (never outside it), shrink to a rounded chip with a leading dot, and constrain long labels ("Note · internal" instead of "Note - internal" with a proper middle dot). Add `mt-3` between the heading and the first card so nothing hugs the header line.
-
-4. **Consistent rhythm** — bump section spacing from `space-y-6` to `space-y-5`, standardize card padding to `p-4`, unify border color to `border-border/50`, and give each section header a small leading icon (Activity, MessageSquare) for scannability.
-
-5. **Empty states** — soften the dashed-border boxes to a centered icon + one-line message inside a `bg-muted/20` card.
-
-No data model, hook, or fetch behavior changes — this is purely the drawer's presentation layer.
+- `intake_tasks.notes` already stores everything as a single text blob (activity lines + freeform). Keep that column, keep the existing status-change writer untouched, and layer notes on top by tagging user notes with a stable prefix so they can be parsed back out cleanly:
+  - `[<ISO>] Note (by <author>): <body>`
+- Existing status lines (`[<ISO>] Status: X → Y (by Z)`) keep flowing through the current parser — no migration needed.
+- Editable fields (title, owner, due_date, task_type, status) update `intake_tasks` directly. Status changes still route through `setStatus` so the activity log stays intact.
 
 ## Files
-- `src/components/tasks/TaskActivityDrawer.tsx` — restructure JSX and Tailwind classes for the header meta, timeline, communications list, and empty states.
+
+- `src/hooks/useIntakeTasksLive.ts`
+  - Add `updateFields(id, patch: { title?; owner?; due_date?; task_type? })` — plain optimistic UPDATE, no activity line (edits to metadata are shown in `updated_at` only, matching current behavior for reassign/snooze).
+  - Add `addNote(task, body, author)` — appends `[iso] Note (by author): body` to `notes` and mirrors to `intake_communications` when a `lead_id` exists, same pattern as `setStatus`.
+
+- `src/components/tasks/TaskActivityDrawer.tsx` → rename to `TaskDetailDrawer.tsx` (re-export the old name for back-compat).
+  - New top section: editable `Title` (inline text), `Status` pill (reuses `setStatus`), `Owner`, `Due date`, `Task type` — using existing `Input`, `Select`, and a date input. Dirty tracking + Save/Cancel row.
+  - New middle section: **Notes** — textarea + "Add note" button; list of parsed notes below (parsed from `notes` blob using the new `Note` prefix). Empty state: "No notes yet."
+  - Bottom section: existing Activity timeline + Related communications, unchanged.
+  - Parser (`parseNotes`) extended to also recognize the `Note (by …):` lines and return them as a separate `userNotes` array alongside `events` and `other`.
+
+- `src/pages/tasks/TasksPage.tsx`
+  - Wrap each row in a `<button>`/clickable container that calls `setActivityTask(t)`.
+  - Stop-propagation on the status `Select` and the `Complete` button so they don't trigger the drawer.
+  - Remove the standalone "Activity" button (row click replaces it).
+  - Update the drawer import to `TaskDetailDrawer` (or keep the alias).
+
+## Out of scope
+
+- No schema changes, no new tables, no RLS edits.
+- No changes to `intake_communications` structure.
+- Subtasks and record links stay read-only in this pass (they can be surfaced in the drawer but not editable yet).
