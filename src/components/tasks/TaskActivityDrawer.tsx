@@ -8,7 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLive";
 import { useAuth } from "@/contexts/AuthContext";
-import { Activity, MessageSquare, Clock, ArrowRight, Loader2, User2, Inbox, StickyNote, Send } from "lucide-react";
+import { useLeads } from "@/contexts/LeadsContext";
+import { useClients } from "@/contexts/ClientsContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Link2, X, Activity, MessageSquare, Clock, ArrowRight, Loader2, User2, Inbox, StickyNote, Send } from "lucide-react";
+import { relatedRecordChipLabel, resolveRelatedRecordHref } from "@/lib/tasks/relatedRecord";
+import { Link as RouterLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -96,6 +102,8 @@ const STATUS_OPTIONS: IntakeTaskRow["status"][] = ["Open", "In Progress", "Block
 export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerProps) {
   const { setStatus, updateFields, addNote, tasks } = useIntakeTasksLive();
   const { user, displayName } = useAuth();
+  const { leads } = useLeads();
+  const { clients } = useClients();
   const authorName = (displayName as string) || user?.email || "You";
 
   // Prefer the live version of the task from the shared hook, so edits
@@ -120,6 +128,9 @@ export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerP
   const [saving, setSaving] = useState(false);
   const [noteBody, setNoteBody] = useState("");
   const [postingNote, setPostingNote] = useState(false);
+  const [linkKind, setLinkKind] = useState<"lead" | "client">("lead");
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkSaving, setLinkSaving] = useState(false);
 
   useEffect(() => {
     if (!live) return;
@@ -193,6 +204,81 @@ export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerP
       toast.error(e instanceof Error ? e.message : "Could not add note");
     } finally {
       setPostingNote(false);
+    }
+  };
+
+  // Resolve linked chip — prefer explicit related_record_*; fall back to lead_id.
+  const linkedChip = useMemo(() => {
+    if (!live) return null;
+    if (live.related_record_type && (live.related_record_label || live.related_record_id)) {
+      let label = live.related_record_label;
+      if (!label && live.related_record_type === "lead" && live.related_record_id) {
+        const l = leads.find((x) => x.id === live.related_record_id);
+        label = l?.childName ?? null;
+      }
+      if (!label && live.related_record_type === "client" && live.related_record_id) {
+        const c = clients.find((x) => x.id === live.related_record_id);
+        label = c?.childName ?? null;
+      }
+      return {
+        label: relatedRecordChipLabel({ ...live, related_record_label: label }) ?? "Linked",
+        href: resolveRelatedRecordHref(live),
+      };
+    }
+    if (live.lead_id) {
+      const l = leads.find((x) => x.id === live.lead_id);
+      return {
+        label: `Lead${l?.childName ? ` · ${l.childName}` : ""}`,
+        href: `/leads?view=pipeline&lead=${encodeURIComponent(live.lead_id)}`,
+      };
+    }
+    return null;
+  }, [live, leads, clients]);
+
+  const applyLink = async (
+    kind: "lead" | "client",
+    id: string,
+    label: string,
+  ) => {
+    if (!live) return;
+    setLinkSaving(true);
+    try {
+      const patch = {
+        lead_id: kind === "lead" ? id : null,
+        related_record_type: kind,
+        related_record_id: id,
+        related_record_label: label,
+        related_url:
+          kind === "lead"
+            ? `/leads?view=pipeline&lead=${encodeURIComponent(id)}`
+            : `/os/clients?client=${encodeURIComponent(id)}`,
+      } as const;
+      await updateFields(live.id, patch);
+      toast.success(`Linked to ${label}`);
+      setLinkOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not link");
+    } finally {
+      setLinkSaving(false);
+    }
+  };
+
+  const clearLink = async () => {
+    if (!live) return;
+    setLinkSaving(true);
+    try {
+      await updateFields(live.id, {
+        lead_id: null,
+        related_record_type: null,
+        related_record_id: null,
+        related_record_label: null,
+        related_url: null,
+      });
+      toast.success("Link removed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not unlink");
+    } finally {
+      setLinkSaving(false);
     }
   };
 
