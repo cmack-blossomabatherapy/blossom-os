@@ -157,7 +157,8 @@ export function useUserTasks(scope: TaskScope = "assigned_to_me") {
 
   const updateTask = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<UserTask> }) => {
-      const { error } = await supabase.from("user_tasks").update(patch).eq("id", id);
+      const { source: _s, ...clean } = patch;
+      const { error } = await supabase.from("user_tasks").update(clean as never).eq("id", id);
       if (error) throw error;
     },
     onSuccess: invalidate,
