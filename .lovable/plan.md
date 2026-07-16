@@ -1,24 +1,20 @@
-## Goal
-Restore the 9 department KPI dashboards to `/reports` behind a dedicated tab, without disturbing the six approved report cards.
+## Problem
+In the Task Activity drawer, the "Status Changes" and "Related Communications" sections feel cramped and messy — the orange "Note - internal" pill overflows its card and collides with the section heading, the timeline dots don't align with their rows, and everything runs together without breathing room.
 
-## Why they went missing
-The dashboards themselves still exist and render (`DEPARTMENT_DASHBOARDS` → `ResolvedDepartmentDashboard` via `ReportDetail`, exposed by `visibleDepartmentDashboardsForRole`). During the "Reports cleanup pass" you asked me to strip them from the Reports home listing so `/reports` showed only the six approved cards. They stayed reachable by URL but nothing linked to them. This plan re-surfaces them.
+## Fix (visual only, no logic changes)
+Rework `src/components/tasks/TaskActivityDrawer.tsx`:
 
-## Changes
+1. **Header/meta block** — promote to a soft glass card with a status chip (colored dot + label) on the right instead of a plain "Current status:" line. Owner shows an avatar-initial circle. Timestamps use muted icons in a two-column layout.
 
-### `src/pages/os/reports/ReportsHome.tsx`
-- Add a top-of-page tab switcher (shadcn `Tabs`): **Reports** (default) and **Department Dashboards**.
-- **Reports tab**: renders today's page unchanged — the six approved reports, Saved views, Recents.
-- **Department Dashboards tab**: renders a card grid of `visibleDepartmentDashboardsForRole(role)` (already role-scoped: Super Admin/Executive see all; State Director sees all except HR; department teams see their own). Each card links to `/reports/<id>` (already routed to `ReportDetail`, which resolves department IDs via `getDepartmentDashboard`).
-- Preserve the existing page chrome (header, breadcrumbs, search).
-- Cards match the visual language of the six report cards (same `Card` component, KPI count chip, "Open dashboard" affordance).
-- Empty state: "No department dashboards available for your role." when the list is empty.
+2. **Status timeline** — replace the thin left rail with proper spacing: 14px indent, larger dots aligned to the transition row baseline, "from → to" rendered as two subtle pills with an arrow between, and the timestamp on its own muted line. Add a card wrapper so the timeline sits in a container instead of floating.
 
-### No other files
-- `reportsCatalog.ts`, `departmentDashboards.ts`, `ReportDetail.tsx`, and `ResolvedDepartmentDashboard.tsx` stay as-is.
-- No DB, no route, no permission changes.
+3. **Related communications** — fix the badge overflow. Move the type badge inline with the timestamp inside the card (never outside it), shrink to a rounded chip with a leading dot, and constrain long labels ("Note · internal" instead of "Note - internal" with a proper middle dot). Add `mt-3` between the heading and the first card so nothing hugs the header line.
 
-## Verification
-- `/reports` default tab still shows exactly the six cards.
-- Switching to "Department Dashboards" shows the role-scoped list; clicking a card opens the working dashboard at `/reports/<id>`.
-- Type check clean.
+4. **Consistent rhythm** — bump section spacing from `space-y-6` to `space-y-5`, standardize card padding to `p-4`, unify border color to `border-border/50`, and give each section header a small leading icon (Activity, MessageSquare) for scannability.
+
+5. **Empty states** — soften the dashed-border boxes to a centered icon + one-line message inside a `bg-muted/20` card.
+
+No data model, hook, or fetch behavior changes — this is purely the drawer's presentation layer.
+
+## Files
+- `src/components/tasks/TaskActivityDrawer.tsx` — restructure JSX and Tailwind classes for the header meta, timeline, communications list, and empty states.
