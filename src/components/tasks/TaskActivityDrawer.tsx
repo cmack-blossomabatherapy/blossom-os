@@ -332,7 +332,7 @@ export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerP
                   <AssigneePicker
                     value={draft.owner ?? ""}
                     onChange={(name) => setDraft((d) => ({ ...d, owner: name }))}
-                    placeholder="Unassigned"
+                    placeholder="Assign to…"
                     triggerSize="sm"
                     className="h-8 w-full text-xs"
                   />
