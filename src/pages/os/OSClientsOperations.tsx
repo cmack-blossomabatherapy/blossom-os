@@ -827,6 +827,12 @@ function ClientDrawer({ clientId, onClose }: { clientId: string; onClose: () => 
           </Section>
         </div>
       </aside>
+      <CreateTaskDialog
+        open={taskOpen}
+        onOpenChange={setTaskOpen}
+        defaultClientId={clientId}
+        onCreated={() => toast.success("Task created for " + c.childName)}
+      />
     </div>
   );
 }
