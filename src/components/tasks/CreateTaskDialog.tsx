@@ -21,6 +21,7 @@ import { AssigneePicker } from "@/components/tasks/AssigneePicker";
 import { useLeads } from "@/contexts/LeadsContext";
 import { useClients } from "@/contexts/ClientsContext";
 import { useIntakeTasksLive, type CreateIntakeTaskInput } from "@/hooks/useIntakeTasksLive";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 type RelatedKind = "none" | "lead" | "client" | "employee" | "authorization" | "other";
@@ -48,10 +49,12 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, defaultCli
   const { create } = useIntakeTasksLive();
   const { leads } = useLeads();
   const { clients } = useClients();
+  const { displayName } = useAuth();
+  const selfName = (displayName ?? "").trim();
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
-  const [owner, setOwner] = useState("");
+  const [owner, setOwner] = useState<string>(selfName);
   const [due, setDue] = useState<string>(() => {
     const d = new Date(); d.setDate(d.getDate() + 1);
     return d.toISOString().slice(0, 10);
@@ -72,7 +75,7 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, defaultCli
 
   useEffect(() => {
     if (!open) return;
-    setTitle(""); setNotes(""); setOwner("");
+    setTitle(""); setNotes(""); setOwner(selfName);
     setTaskType("task");
     const d = new Date(); d.setDate(d.getDate() + 1);
     setDue(d.toISOString().slice(0, 10));
@@ -81,7 +84,7 @@ export function CreateTaskDialog({ open, onOpenChange, defaultLeadId, defaultCli
     setClientId(defaultClientId ?? "");
     setRelatedLabel(""); setRelatedIdText(""); setRelatedUrl("");
     setSubtasks([]);
-  }, [open, defaultLeadId, defaultClientId]);
+  }, [open, defaultLeadId, defaultClientId, selfName]);
 
   const selectedLead = useMemo(
     () => leads.find((l) => l.id === leadId) ?? null,
