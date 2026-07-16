@@ -340,11 +340,11 @@ async function runTool(
       const like = `%${q}%`;
       const [emp, org] = await Promise.all([
         supabase.from("employees")
-          .select("id, first_name, last_name, email, title, department, state, status")
-          .or(`first_name.ilike.${like},last_name.ilike.${like},email.ilike.${like},title.ilike.${like},department.ilike.${like}`)
+          .select("id, first_name, last_name, preferred_name, email, job_title, department_id, state, status")
+          .or(`first_name.ilike.${like},last_name.ilike.${like},preferred_name.ilike.${like},email.ilike.${like},job_title.ilike.${like}`)
           .limit(limit),
         supabase.from("org_chart_nodes")
-          .select("id, name, title, department, state, parent_id")
+          .select("id, name, title, department, email, parent_id")
           .or(`name.ilike.${like},title.ilike.${like},department.ilike.${like}`)
           .limit(limit),
       ]);
