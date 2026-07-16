@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import type { IntakeTaskRow } from "@/hooks/useIntakeTasksLive";
-import { Activity, MessageSquare, Clock, ArrowRight, Loader2, User2, Inbox } from "lucide-react";
+import { useIntakeTasksLive, type IntakeTaskRow } from "@/hooks/useIntakeTasksLive";
+import { useAuth } from "@/contexts/AuthContext";
+import { Activity, MessageSquare, Clock, ArrowRight, Loader2, User2, Inbox, StickyNote, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type CommRow = {
   id: string;
@@ -17,6 +23,7 @@ type CommRow = {
 };
 
 type StatusEvent = { at: string | null; from?: string; to?: string; by?: string; raw: string };
+type UserNote = { at: string | null; by?: string; body: string; raw: string };
 
 /**
  * Parse status transition lines from `intake_tasks.notes`.
@@ -24,23 +31,31 @@ type StatusEvent = { at: string | null; from?: string; to?: string; by?: string;
  *   [2026-07-14T12:34:56.000Z] Status: Open → In Progress (by Ava Chen)
  * Falls back to a raw line entry if the pattern doesn't match.
  */
-function parseNotes(notes: string | null): { events: StatusEvent[]; other: string[] } {
-  if (!notes) return { events: [], other: [] };
+function parseNotes(notes: string | null): { events: StatusEvent[]; userNotes: UserNote[]; other: string[] } {
+  if (!notes) return { events: [], userNotes: [], other: [] };
   const events: StatusEvent[] = [];
+  const userNotes: UserNote[] = [];
   const other: string[] = [];
-  const re = /^\s*\[([^\]]+)\]\s*Status:\s*([^→\-]+?)\s*(?:→|->)\s*([^()]+?)(?:\s*\(by\s+([^)]+)\))?\s*$/i;
+  const statusRe = /^\s*\[([^\]]+)\]\s*Status:\s*([^→\-]+?)\s*(?:→|->)\s*([^()]+?)(?:\s*\(by\s+([^)]+)\))?\s*$/i;
+  const noteRe = /^\s*\[([^\]]+)\]\s*Note(?:\s*\(by\s+([^)]+)\))?\s*:\s*(.+)$/i;
   for (const line of notes.split(/\r?\n/)) {
     const t = line.trim();
     if (!t) continue;
-    const m = t.match(re);
-    if (m) {
-      events.push({ at: m[1], from: m[2].trim(), to: m[3].trim(), by: m[4]?.trim(), raw: t });
-    } else {
-      other.push(t);
+    const sm = t.match(statusRe);
+    if (sm) {
+      events.push({ at: sm[1], from: sm[2].trim(), to: sm[3].trim(), by: sm[4]?.trim(), raw: t });
+      continue;
     }
+    const nm = t.match(noteRe);
+    if (nm) {
+      userNotes.push({ at: nm[1], by: nm[2]?.trim(), body: nm[3].trim(), raw: t });
+      continue;
+    }
+    other.push(t);
   }
   events.sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""));
-  return { events, other };
+  userNotes.sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""));
+  return { events, userNotes, other };
 }
 
 function formatWhen(iso: string | null | undefined) {
@@ -70,26 +85,67 @@ function initials(name: string | null | undefined) {
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "—";
 }
 
-export interface TaskActivityDrawerProps {
+export interface TaskDetailDrawerProps {
   task: IntakeTaskRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function TaskActivityDrawer({ task, open, onOpenChange }: TaskActivityDrawerProps) {
+const STATUS_OPTIONS: IntakeTaskRow["status"][] = ["Open", "In Progress", "Blocked", "Completed"];
+
+export function TaskDetailDrawer({ task, open, onOpenChange }: TaskDetailDrawerProps) {
+  const { setStatus, updateFields, addNote, tasks } = useIntakeTasksLive();
+  const { user, displayName } = useAuth();
+  const authorName = (displayName as string) || user?.email || "You";
+
+  // Prefer the live version of the task from the shared hook, so edits
+  // and notes reflect immediately after mutations.
+  const live = useMemo(
+    () => (task ? tasks.find((t) => t.id === task.id) ?? task : null),
+    [task, tasks],
+  );
+
   const [comms, setComms] = useState<CommRow[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { events, other } = useMemo(() => parseNotes(task?.notes ?? null), [task?.notes]);
+  const { events, userNotes, other } = useMemo(() => parseNotes(live?.notes ?? null), [live?.notes]);
+
+  // Editable draft state
+  const [draft, setDraft] = useState({
+    title: live?.title ?? "",
+    owner: live?.owner ?? "",
+    due_date: live?.due_date ?? "",
+    task_type: live?.task_type ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [noteBody, setNoteBody] = useState("");
+  const [postingNote, setPostingNote] = useState(false);
 
   useEffect(() => {
-    if (!open || !task?.lead_id) { setComms([]); return; }
+    if (!live) return;
+    setDraft({
+      title: live.title ?? "",
+      owner: live.owner ?? "",
+      due_date: live.due_date ?? "",
+      task_type: live.task_type ?? "",
+    });
+  }, [live?.id]); // reset when switching tasks
+
+  const dirty = live && (
+    draft.title !== (live.title ?? "") ||
+    (draft.owner ?? "") !== (live.owner ?? "") ||
+    (draft.due_date ?? "") !== (live.due_date ?? "") ||
+    (draft.task_type ?? "") !== (live.task_type ?? "")
+  );
+
+  useEffect(() => {
+    if (!open || !live?.lead_id) { setComms([]); return; }
     let cancelled = false;
     setLoading(true);
     void supabase
       .from("intake_communications")
       .select("id, communication_type, direction, subject, preview, logged_by_name, created_at")
-      .eq("lead_id", task.lead_id)
+      .eq("lead_id", live.lead_id)
       .order("created_at", { ascending: false })
       .limit(25)
       .then(({ data }) => {
@@ -98,7 +154,47 @@ export function TaskActivityDrawer({ task, open, onOpenChange }: TaskActivityDra
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [open, task?.lead_id]);
+  }, [open, live?.lead_id, live?.notes]);
+
+  const onSave = async () => {
+    if (!live || !dirty) return;
+    setSaving(true);
+    try {
+      await updateFields(live.id, {
+        title: draft.title.trim() || live.title,
+        owner: draft.owner.trim() || null,
+        due_date: draft.due_date || null,
+        task_type: draft.task_type.trim() || live.task_type,
+      });
+      toast.success("Task updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onStatus = async (next: IntakeTaskRow["status"]) => {
+    if (!live) return;
+    try {
+      await setStatus(live, next, { actor: authorName });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update status");
+    }
+  };
+
+  const onAddNote = async () => {
+    if (!live || !noteBody.trim()) return;
+    setPostingNote(true);
+    try {
+      await addNote(live, noteBody, authorName);
+      setNoteBody("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not add note");
+    } finally {
+      setPostingNote(false);
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -108,37 +204,124 @@ export function TaskActivityDrawer({ task, open, onOpenChange }: TaskActivityDra
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
               <Activity className="h-3.5 w-3.5" />
             </span>
-            Task activity
+            Task detail
           </SheetTitle>
           <SheetDescription className="line-clamp-2">
-            {task?.title ?? "Recent status changes and related communications"}
+            Edit, add notes, and follow the activity trail.
           </SheetDescription>
         </SheetHeader>
 
-        {task && (
+        {live && (
           <div className="mt-4 space-y-5 text-sm">
-            {/* Meta */}
-            <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur p-4 shadow-sm">
+            {/* Editable header */}
+            <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur p-4 shadow-sm space-y-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold shrink-0">
-                    {initials(task.owner)}
+                    {initials(draft.owner)}
                   </span>
-                  <div className="min-w-0">
-                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Owner</div>
-                    <div className="text-sm font-medium text-foreground truncate">{task.owner || "Unassigned"}</div>
-                  </div>
+                  <Input
+                    value={draft.title}
+                    onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                    placeholder="Task title"
+                    className="h-9 text-sm font-medium bg-transparent border-transparent hover:border-border focus:border-border px-2"
+                  />
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs font-medium text-foreground shrink-0">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  {task.status}
-                </span>
+                <Select value={live.status} onValueChange={(v) => onStatus(v as IntakeTaskRow["status"])}>
+                  <SelectTrigger className="h-8 w-[140px] text-xs rounded-full shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Created {formatWhen(task.created_at)}</div>
-                <div className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Updated {formatWhen(task.updated_at)}</div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Owner</label>
+                  <Input
+                    value={draft.owner ?? ""}
+                    onChange={(e) => setDraft((d) => ({ ...d, owner: e.target.value }))}
+                    placeholder="Unassigned"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Due</label>
+                  <Input
+                    type="date"
+                    value={draft.due_date ? String(draft.due_date).slice(0, 10) : ""}
+                    onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Type</label>
+                  <Input
+                    value={draft.task_type ?? ""}
+                    onChange={(e) => setDraft((d) => ({ ...d, task_type: e.target.value }))}
+                    placeholder="task"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+                <div className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Updated {formatWhen(live.updated_at)}</div>
+                {dirty && (
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setDraft({
+                      title: live.title ?? "", owner: live.owner ?? "",
+                      due_date: live.due_date ?? "", task_type: live.task_type ?? "",
+                    })}>Cancel</Button>
+                    <Button size="sm" className="h-7 px-3 text-xs" onClick={onSave} disabled={saving}>
+                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Notes */}
+            <section>
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <StickyNote className="h-3 w-3" /> Notes
+              </div>
+              <div className="rounded-2xl border border-border/50 bg-card/60 p-3 space-y-3">
+                <div className="space-y-2">
+                  <Textarea
+                    value={noteBody}
+                    onChange={(e) => setNoteBody(e.target.value)}
+                    placeholder="Add a note…"
+                    rows={2}
+                    className="text-xs resize-none"
+                  />
+                  <div className="flex justify-end">
+                    <Button size="sm" className="h-7 px-3 text-xs" onClick={onAddNote} disabled={postingNote || !noteBody.trim()}>
+                      {postingNote ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="h-3 w-3 mr-1" /> Add note</>}
+                    </Button>
+                  </div>
+                </div>
+                {userNotes.length === 0 ? (
+                  <div className="text-[11px] text-muted-foreground text-center py-2">No notes yet.</div>
+                ) : (
+                  <ul className="space-y-2">
+                    {userNotes.map((n, i) => (
+                      <li key={i} className="rounded-xl border border-border/50 bg-background/60 p-3">
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
+                          <span className="inline-flex items-center gap-1"><User2 className="h-3 w-3" /> {n.by || "Unknown"}</span>
+                          <span>{formatWhen(n.at)}</span>
+                        </div>
+                        <div className="text-xs text-foreground whitespace-pre-wrap">{n.body}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
 
             {/* Status timeline */}
             <section>
@@ -170,10 +353,10 @@ export function TaskActivityDrawer({ task, open, onOpenChange }: TaskActivityDra
               )}
             </section>
 
-            {/* Freeform notes */}
+            {/* Legacy freeform lines that don't match either format */}
             {other.length > 0 && (
               <section>
-                <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notes</div>
+                <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Other</div>
                 <ul className="space-y-1.5 text-xs text-foreground">
                   {other.map((n, i) => (
                     <li key={i} className="rounded-lg border border-border/50 bg-card px-3 py-2">{n}</li>
@@ -187,7 +370,7 @@ export function TaskActivityDrawer({ task, open, onOpenChange }: TaskActivityDra
               <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 <MessageSquare className="h-3 w-3" /> Related communications
               </div>
-              {!task.lead_id ? (
+              {!live.lead_id ? (
                 <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
                   <Inbox className="h-3.5 w-3.5" /> This task isn't linked to a lead.
                 </div>
@@ -238,3 +421,7 @@ export function TaskActivityDrawer({ task, open, onOpenChange }: TaskActivityDra
     </Sheet>
   );
 }
+
+// Back-compat alias for existing imports.
+export const TaskActivityDrawer = TaskDetailDrawer;
+export type TaskActivityDrawerProps = TaskDetailDrawerProps;
