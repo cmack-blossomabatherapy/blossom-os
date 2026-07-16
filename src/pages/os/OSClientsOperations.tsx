@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { Client } from "@/data/clients";
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 
 /* ─────────── helpers ─────────── */
 
