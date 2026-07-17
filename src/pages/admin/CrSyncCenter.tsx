@@ -448,7 +448,7 @@ function FreshnessTab() {
   useEffect(() => { load(); }, []);
 
   const updateCfg = async (typeKey: string, field: string, value: number) => {
-    const { error } = await supabase.from("cr_freshness_config").update({ [field]: value }).eq("type_key", typeKey as CrSyncTypeKey);
+    const { error } = await supabase.from("cr_freshness_config").update({ [field]: value } as never).eq("type_key", typeKey as CrSyncTypeKey);
     if (error) return toast.error(error.message);
     const { data: user } = await supabase.auth.getUser();
     await supabase.from("cr_sync_audit").insert({ actor_id: user?.user?.id ?? null, action: "config_changed", detail: { type_key: typeKey, [field]: value } as never });
