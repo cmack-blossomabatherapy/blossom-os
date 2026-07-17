@@ -1184,6 +1184,11 @@ const App = () => (
                       <OSShellPage><RbtFirstCaseConsole /></OSShellPage>
                     </PermissionRoute>
                   } />
+                  <Route path="/training/rbt/journey" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
+                      <OSShellPage><RbtJourneyConsole /></OSShellPage>
+                    </PermissionRoute>
+                  } />
                   {/* Mobile-first RBT app */}
                   <Route
                     path="/rbt/app"
@@ -1201,6 +1206,8 @@ const App = () => (
                     <Route path="schedule" element={<RbtSchedule />} />
                     <Route path="first-case" element={<RbtFirstCase />} />
                     <Route path="first-case/checkin" element={<FirstSessionCheckin />} />
+                    <Route path="journey" element={<RbtJourney />} />
+                    <Route path="journey/:instanceId" element={<RbtJourneyCheckpoint />} />
                     <Route path="learn" element={<RbtLearn />} />
                     <Route path="program" element={<RbtProgramPage />} />
                     <Route path="passport" element={<RbtPassportPage />} />

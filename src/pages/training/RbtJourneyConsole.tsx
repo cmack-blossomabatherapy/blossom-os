@@ -112,8 +112,8 @@ export default function RbtJourneyConsole() {
     const { error } = await supabase.from("rbt_journey_outreach" as any).insert({
       instance_id: id, actor_id: user?.id, channel, note, outcome: "reached",
     });
-    if (error) return toast.error(error.message);
-    toast.success("Outreach logged");
+    if (error) toast.error(error.message);
+    else toast.success("Outreach logged");
   };
 
   if (loading) return <div className="p-6">Loading…</div>;
