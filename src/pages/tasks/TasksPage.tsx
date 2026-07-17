@@ -315,7 +315,7 @@ function TasksInner() {
       <TaskActivityDrawer
         task={activityTask}
         open={!!activityTask}
-        onOpenChange={(o) => { if (!o) setActivityTask(null); }}
+        onOpenChange={(o) => { if (!o) closeActivity(); }}
       />
     </div>
   );
