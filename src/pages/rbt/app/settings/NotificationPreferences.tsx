@@ -16,6 +16,7 @@ export default function NotificationPreferences() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [prefs, setPrefs] = useState<Record<string, Pref>>({});
   const [quiet, setQuiet] = useState<{ start: string; end: string }>({ start: "", end: "" });
+  const [masterPaused, setMasterPaused] = useState(false);
 
   const load = async () => {
     if (!user) return;
@@ -29,8 +30,20 @@ export default function NotificationPreferences() {
     setPrefs(map);
     const first = (p.data as any[])?.find(x => x.quiet_hours_start);
     if (first) setQuiet({ start: first.quiet_hours_start, end: first.quiet_hours_end });
+    const master = (p.data as any[])?.find(x => x.event_key === "__all__" && x.channel === "__all__");
+    setMasterPaused(master ? master.enabled === false : false);
   };
   useEffect(() => { load(); }, [user?.id]);
+
+  const toggleMasterPause = async (pause: boolean) => {
+    if (!user) return;
+    const { error } = await supabase.from("rbt_notification_preferences").upsert({
+      user_id: user.id, event_key: "__all__", channel: "__all__", enabled: !pause,
+    }, { onConflict: "user_id,event_key,channel" });
+    if (error) { toast.error(error.message); return; }
+    setMasterPaused(pause);
+    toast.success(pause ? "All non-required notifications paused" : "Notifications resumed");
+  };
 
   const toggle = async (rule: Rule, channel: string, enabled: boolean) => {
     if (!user || rule.required) return;
@@ -62,6 +75,20 @@ export default function NotificationPreferences() {
         <h1 className="text-2xl font-semibold tracking-tight">Notification preferences</h1>
         <p className="text-sm text-muted-foreground">Turn off nonrequired notifications. Compliance and safety alerts always stay on.</p>
       </header>
+
+      <Card>
+        <CardHeader><CardTitle className="text-sm">Pause all notifications</CardTitle></CardHeader>
+        <CardContent className="flex items-center justify-between gap-3">
+          <div className="text-xs text-muted-foreground">
+            Pauses every non-required alert across in-app, email, SMS, and leadership routing. Safety and compliance alerts still deliver.
+          </div>
+          <Switch
+            checked={masterPaused}
+            onCheckedChange={toggleMasterPause}
+            aria-label="Pause all notifications"
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-sm">Quiet hours</CardTitle></CardHeader>
