@@ -8,8 +8,10 @@ import { FirstCaseHomeCard } from "./firstcase/FirstCaseHomeCard";
 import { JourneyHomeCard } from "./journey/JourneyHomeCard";
 import RbtProgram from "./training/RbtProgram";
 import RbtSkillPassport from "./training/RbtSkillPassport";
+import ActiveHome from "./active/ActiveHome";
+import ActiveSchedule from "./active/ActiveSchedule";
 import { Link } from "react-router-dom";
-import { GraduationCap, Award, ArrowRight } from "lucide-react";
+import { GraduationCap, Award, ArrowRight, Users, Clock, ShieldCheck, BadgeCheck } from "lucide-react";
 import {
   GreetingCard, NextBestActionCard, TodaysScheduleCard, JourneyProgressCard,
   TrainingProgressCard, SupervisionCard, CredentialAlertCard, RecognitionCard,
@@ -68,6 +70,15 @@ export function RbtHome() {
     return <PreboardingHomeCards />;
   }
 
+  // Established / Active RBTs get the Active experience.
+  const ACTIVE_STAGES = new Set([
+    "active_rbt", "established_rbt", "advanced_rbt_candidate",
+    "lead_rbt", "trainer_rbt",
+  ]);
+  if (context.lifecycleStage && ACTIVE_STAGES.has(context.lifecycleStage)) {
+    return <ActiveHome />;
+  }
+
   if (cards.length === 0) return (
     <CardFrame title="You're all caught up" state="empty" emptyLabel="Nothing needs your attention right now." />
   );
@@ -87,60 +98,7 @@ export function RbtHome() {
 
 // ---------------------------------------------------------------- SCHEDULE
 export function RbtSchedule() {
-  const { user } = useAuth();
-  const [rows, setRows] = useState<any[] | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  useEffect(() => {
-    if (!user) return;
-    const start = new Date(); start.setHours(0,0,0,0);
-    const end = new Date(start); end.setDate(start.getDate() + 14);
-    supabase.from("rbt_shift_events" as any)
-      .select("id,scheduled_start,scheduled_end,client_initials,location")
-      .eq("employee_id", user.id)
-      .gte("scheduled_start", start.toISOString())
-      .lt("scheduled_start", end.toISOString())
-      .order("scheduled_start")
-      .then(({ data, error }) => { if (error) setErr(error.message); setRows((data as any) ?? []); });
-  }, [user?.id]);
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, any[]>();
-    (rows ?? []).forEach((r) => {
-      const k = new Date(r.scheduled_start).toDateString();
-      map.set(k, [...(map.get(k) ?? []), r]);
-    });
-    return Array.from(map.entries());
-  }, [rows]);
-
-  const state = err ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
-  return (
-    <div className="space-y-3">
-      <CardFrame title="Next 14 days" state={state}
-        emptyLabel="No sessions are currently scheduled."
-        errorLabel="Schedule is temporarily unavailable.">
-        <div className="space-y-5">
-          {grouped.map(([day, list]) => (
-            <div key={day}>
-              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
-                {new Date(day).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
-              </p>
-              <ul className="divide-y divide-border/70">
-                {list.map((r: any) => (
-                  <li key={r.id} className="py-2.5 flex items-center gap-3">
-                    <span className="text-sm font-medium tabular-nums w-20">
-                      {new Date(r.scheduled_start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                    </span>
-                    <span className="text-sm flex-1 truncate">{r.client_initials ?? "Client"}</span>
-                    {r.location && <span className="text-xs text-muted-foreground truncate">{r.location}</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </CardFrame>
-    </div>
-  );
+  return <ActiveSchedule />;
 }
 
 // ---------------------------------------------------------------- LEARN
@@ -295,6 +253,24 @@ export function RbtMe() {
           ))}
         </ul>
       </CardFrame>
+
+      <div className="grid gap-3 grid-cols-2">
+        {[
+          { to: "/rbt/app/clients",     icon: Users,       label: "My Clients" },
+          { to: "/rbt/app/hours",       icon: Clock,       label: "Hours" },
+          { to: "/rbt/app/supervision", icon: ShieldCheck, label: "Supervision" },
+          { to: "/rbt/app/credentials", icon: BadgeCheck,  label: "Credentials" },
+          { to: "/rbt/app/performance", icon: Award,       label: "Performance" },
+          { to: "/rbt/app/learn",       icon: GraduationCap, label: "Training" },
+        ].map(({ to, icon: Icon, label }) => (
+          <Link key={to} to={to}
+            className="rounded-2xl border border-border/70 bg-card p-4 hover:bg-muted/50 transition flex items-center gap-3 min-h-16">
+            <span className="rounded-xl bg-muted p-2 text-foreground/80"><Icon className="h-4 w-4" strokeWidth={1.75} /></span>
+            <span className="text-sm font-medium flex-1">{label}</span>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
