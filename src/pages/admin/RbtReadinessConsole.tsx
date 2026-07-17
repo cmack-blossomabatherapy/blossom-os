@@ -170,7 +170,7 @@ function EmployeeDetail({ employeeId, onBack }: { employeeId: string; onBack: ()
     const { error } = await supabase.from("rbt_readiness_gate_state" as any)
       .update({ ...patch, approved_at: patch.status === "approved" ? new Date().toISOString() : row.state.approved_at })
       .eq("id", row.state.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Updated");
     void reload();
   }
