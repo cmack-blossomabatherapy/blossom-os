@@ -5,8 +5,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ExternalLink, Upload, CheckCircle2, MessageSquare, History } from "lucide-react";
-import type { PreboardingRow, PreboardingComment, PreboardingAudit, PreboardingStatus } from "./types";
+import type { PreboardingComment, PreboardingAudit, PreboardingStatus } from "./types";
 import { STATUS_META, isDone } from "./types";
+import type { PreboardingRow } from "./usePreboarding";
 
 interface Props {
   row: PreboardingRow | null;
