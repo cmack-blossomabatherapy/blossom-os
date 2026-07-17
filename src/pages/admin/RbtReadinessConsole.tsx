@@ -166,7 +166,7 @@ function EmployeeDetail({ employeeId, onBack }: { employeeId: string; onBack: ()
     })();
   }, [employeeId, selected]);
 
-  async function updateGate(row: ReadinessRow, patch: any) {
+  async function updateGate(row: ReadinessRow, patch: any): Promise<void> {
     const { error } = await supabase.from("rbt_readiness_gate_state" as any)
       .update({ ...patch, approved_at: patch.status === "approved" ? new Date().toISOString() : row.state.approved_at })
       .eq("id", row.state.id);
