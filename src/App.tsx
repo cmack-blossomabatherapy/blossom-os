@@ -228,7 +228,7 @@ import RbtSupportConsole from "./pages/admin/RbtSupportConsole";
 import CrSyncCenter from "./pages/admin/CrSyncCenter";
 import RbtNotificationEngine from "./pages/admin/RbtNotificationEngine";
 import NotificationInbox from "./pages/NotificationInbox";
-import NotificationPreferences from "./pages/rbt/app/settings/NotificationPreferences";
+import RbtNotificationPreferences from "./pages/rbt/app/settings/NotificationPreferences";
 import RbtPreboarding from "./pages/rbt/app/preboarding/RbtPreboarding";
 import RbtReadiness from "./pages/rbt/app/readiness/RbtReadiness";
 import RbtStaffing from "./pages/rbt/app/readiness/RbtStaffing";
@@ -1222,7 +1222,7 @@ const App = () => (
                   } />
                   <Route path="/admin/rbt/notifications" element={<AdminRoute><OSShellPage><RbtNotificationEngine /></OSShellPage></AdminRoute>} />
                   <Route path="/inbox" element={<OSShellPage><NotificationInbox /></OSShellPage>} />
-                  <Route path="/rbt/app/settings/notifications" element={<NotificationPreferences />} />
+                  <Route path="/rbt/app/settings/notifications" element={<RbtNotificationPreferences />} />
                   <Route path="/training/rbt/evaluate" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
                       <OSShellPage><RbtEvaluatorConsole /></OSShellPage>
