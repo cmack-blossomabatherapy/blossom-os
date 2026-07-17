@@ -1,7 +1,7 @@
 import { Link, Navigate } from "react-router-dom";
 import {
   Activity, GraduationCap, UserCheck, ShieldAlert, CalendarClock,
-  Users, Sparkles, LifeBuoy, RefreshCw, ArrowRight, Compass,
+  Users, Sparkles, LifeBuoy, RefreshCw, ArrowRight, Compass, Bell,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessAdminHub } from "@/lib/adminAccess";
@@ -41,6 +41,7 @@ const centers = [
     items: [
       { to: "/admin/rbt-support", title: "Support Operations Dashboard", desc: "Support tickets, urgent routing, resolution SLAs, satisfaction.", icon: LifeBuoy },
       { to: "/admin/centralreach-sync", title: "CentralReach Sync Dashboard", desc: "Import history, freshness, mapping templates and rollback.", icon: RefreshCw },
+      { to: "/admin/rbt/notifications", title: "Notification & Automation Engine", desc: "Rules, channels, pause/resume, failed deliveries, and audit.", icon: Bell },
     ],
   },
 ];
