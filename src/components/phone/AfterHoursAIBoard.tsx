@@ -169,14 +169,42 @@ export function AfterHoursAIBoard() {
   }, [load]);
 
   // Deep-link: open a specific call via ?call=<id> (used by email CTA).
+  //
+  // Also honors filter deep-links used by notifications:
+  //   ?dept=intake|scheduling|hr|state_director|urgent
+  //   ?range=today|7d|30d|all
+  //   ?view=all|open|urgent|unverified|today|resolved
+  //
+  // If ?call is set but the call falls outside the current range, we widen
+  // the range to "all" so the drawer can actually surface it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const dept = params.get("dept");
+    if (dept && ["intake", "scheduling", "hr", "state_director", "urgent"].includes(dept)) {
+      setDeptFilter(dept);
+    }
+    const range = params.get("range");
+    if (range && ["today", "7d", "30d", "all"].includes(range)) setRangeFilter(range);
+    const view = params.get("view");
+    if (
+      view &&
+      ["all", "open", "urgent", "unverified", "today", "resolved"].includes(view)
+    ) {
+      setQuickView(view as typeof quickView);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!calls.length) return;
     const params = new URLSearchParams(window.location.search);
     const target = params.get("call");
     if (!target) return;
     const match = calls.find((c) => c.id === target || c.retell_call_id === target);
-    if (match) setSelected(match);
-  }, [calls]);
+    if (!match) return;
+    if (!inRange(match, rangeFilter)) setRangeFilter("all");
+    setSelected(match);
+  }, [calls, rangeFilter]);
 
   const isUrgent = (c: Call) => !!c.emergency_flag || (c.urgency_level ?? "").toLowerCase() === "high";
   const isOpen = (c: Call) => !["resolved", "no_action"].includes(c.follow_up_status ?? "new");
