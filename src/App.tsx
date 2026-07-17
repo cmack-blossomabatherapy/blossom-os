@@ -212,6 +212,8 @@ import Graduation from "./pages/onboarding/Graduation";
 import HelpPage from "./pages/Help";
 import JourneyEditor from "./pages/admin/JourneyEditor";
 import RbtLifecycle from "./pages/admin/RbtLifecycle";
+import RbtAppShell from "./pages/rbt/app/shell";
+import { RbtHome, RbtSchedule, RbtLearn, RbtSupport, RbtMe } from "./pages/rbt/app/pages";
 import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
