@@ -11,7 +11,7 @@ import RbtSkillPassport from "./training/RbtSkillPassport";
 import ActiveHome from "./active/ActiveHome";
 import ActiveSchedule from "./active/ActiveSchedule";
 import { Link } from "react-router-dom";
-import { GraduationCap, Award, ArrowRight, Users, Clock, ShieldCheck, BadgeCheck } from "lucide-react";
+import { GraduationCap, Award, ArrowRight, Users, Clock, ShieldCheck, BadgeCheck, Sparkles } from "lucide-react";
 import {
   GreetingCard, NextBestActionCard, TodaysScheduleCard, JourneyProgressCard,
   TrainingProgressCard, SupervisionCard, CredentialAlertCard, RecognitionCard,
@@ -262,6 +262,7 @@ export function RbtMe() {
           { to: "/rbt/app/credentials", icon: BadgeCheck,  label: "Credentials" },
           { to: "/rbt/app/performance", icon: Award,       label: "Performance" },
           { to: "/rbt/app/learn",       icon: GraduationCap, label: "Training" },
+          { to: "/rbt/app/growth",      icon: Sparkles,    label: "My Growth" },
         ].map(({ to, icon: Icon, label }) => (
           <Link key={to} to={to}
             className="rounded-2xl border border-border/70 bg-card p-4 hover:bg-muted/50 transition flex items-center gap-3 min-h-16">
