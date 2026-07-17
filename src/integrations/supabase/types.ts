@@ -15473,6 +15473,119 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_dashboard_card_engagement: {
+        Row: {
+          card_id: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_dashboard_card_engagement_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_dashboard_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_dashboard_cards: {
+        Row: {
+          body: string | null
+          card_type: string
+          color: string | null
+          config: Json
+          created_at: string
+          created_by: string | null
+          cta_label: string | null
+          cta_link: string | null
+          ends_at: string | null
+          icon: string | null
+          id: string
+          is_enabled: boolean
+          lifecycle_stages: string[]
+          priority: number
+          required_action: Json | null
+          starts_at: string | null
+          subtitle: string | null
+          target_clinics: string[]
+          target_roles: string[]
+          target_states: string[]
+          target_user_ids: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          card_type: string
+          color?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_link?: string | null
+          ends_at?: string | null
+          icon?: string | null
+          id?: string
+          is_enabled?: boolean
+          lifecycle_stages?: string[]
+          priority?: number
+          required_action?: Json | null
+          starts_at?: string | null
+          subtitle?: string | null
+          target_clinics?: string[]
+          target_roles?: string[]
+          target_states?: string[]
+          target_user_ids?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          card_type?: string
+          color?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_link?: string | null
+          ends_at?: string | null
+          icon?: string | null
+          id?: string
+          is_enabled?: boolean
+          lifecycle_stages?: string[]
+          priority?: number
+          required_action?: Json | null
+          starts_at?: string | null
+          subtitle?: string | null
+          target_clinics?: string[]
+          target_roles?: string[]
+          target_states?: string[]
+          target_user_ids?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_data_sync_status: {
         Row: {
           last_attempt_at: string | null
