@@ -16611,6 +16611,569 @@ export type Database = {
           },
         ]
       }
+      rbt_journey_audit: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event: string
+          id: string
+          instance_id: string
+          payload: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event: string
+          id?: string
+          instance_id: string
+          payload?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event?: string
+          id?: string
+          instance_id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_journey_audit_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_journey_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_journey_checkpoints: {
+        Row: {
+          created_at: string
+          default_owner_role: string | null
+          due_within_days: number
+          is_active: boolean
+          is_celebration: boolean
+          key: string
+          label: string
+          offset_days: number
+          order_index: number
+          questionnaire_topics: string[]
+          supportive_intro: string | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_owner_role?: string | null
+          due_within_days?: number
+          is_active?: boolean
+          is_celebration?: boolean
+          key: string
+          label: string
+          offset_days?: number
+          order_index?: number
+          questionnaire_topics?: string[]
+          supportive_intro?: string | null
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_owner_role?: string | null
+          due_within_days?: number
+          is_active?: boolean
+          is_celebration?: boolean
+          key?: string
+          label?: string
+          offset_days?: number
+          order_index?: number
+          questionnaire_topics?: string[]
+          supportive_intro?: string | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_journey_instances: {
+        Row: {
+          checkpoint_key: string
+          completed_at: string | null
+          created_at: string
+          due_date: string
+          employee_id: string
+          first_case_id: string | null
+          followup_action: string | null
+          followup_due_date: string | null
+          id: string
+          opened_at: string | null
+          owner_employee_id: string | null
+          owner_role: string | null
+          resolution_note: string | null
+          resolution_status: string
+          resolved_at: string | null
+          resolved_by: string | null
+          risk_level: string
+          risk_score: number
+          scheduled_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          checkpoint_key: string
+          completed_at?: string | null
+          created_at?: string
+          due_date: string
+          employee_id: string
+          first_case_id?: string | null
+          followup_action?: string | null
+          followup_due_date?: string | null
+          id?: string
+          opened_at?: string | null
+          owner_employee_id?: string | null
+          owner_role?: string | null
+          resolution_note?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level?: string
+          risk_score?: number
+          scheduled_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          checkpoint_key?: string
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string
+          employee_id?: string
+          first_case_id?: string | null
+          followup_action?: string | null
+          followup_due_date?: string | null
+          id?: string
+          opened_at?: string | null
+          owner_employee_id?: string | null
+          owner_role?: string | null
+          resolution_note?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level?: string
+          risk_score?: number
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_journey_instances_checkpoint_key_fkey"
+            columns: ["checkpoint_key"]
+            isOneToOne: false
+            referencedRelation: "rbt_journey_checkpoints"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_first_case_id_fkey"
+            columns: ["first_case_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_first_case"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_owner_employee_id_fkey"
+            columns: ["owner_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_owner_employee_id_fkey"
+            columns: ["owner_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_owner_employee_id_fkey"
+            columns: ["owner_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_owner_employee_id_fkey"
+            columns: ["owner_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_instances_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_journey_internal_reviews: {
+        Row: {
+          assigned_refresher: boolean
+          development_goal: string | null
+          fellowship_mentioned: boolean
+          growth_plan: string | null
+          id: string
+          instance_id: string
+          notes: string | null
+          performance_summary: string | null
+          refresher_topic: string | null
+          reviewer_id: string
+          reviewer_role: string | null
+          risk_recommendation: string | null
+          strengths: string | null
+          submitted_at: string
+        }
+        Insert: {
+          assigned_refresher?: boolean
+          development_goal?: string | null
+          fellowship_mentioned?: boolean
+          growth_plan?: string | null
+          id?: string
+          instance_id: string
+          notes?: string | null
+          performance_summary?: string | null
+          refresher_topic?: string | null
+          reviewer_id: string
+          reviewer_role?: string | null
+          risk_recommendation?: string | null
+          strengths?: string | null
+          submitted_at?: string
+        }
+        Update: {
+          assigned_refresher?: boolean
+          development_goal?: string | null
+          fellowship_mentioned?: boolean
+          growth_plan?: string | null
+          id?: string
+          instance_id?: string
+          notes?: string | null
+          performance_summary?: string | null
+          refresher_topic?: string | null
+          reviewer_id?: string
+          reviewer_role?: string | null
+          risk_recommendation?: string | null
+          strengths?: string | null
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_journey_internal_reviews_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_journey_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_internal_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_internal_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_internal_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_internal_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_journey_outreach: {
+        Row: {
+          actor_id: string
+          channel: string | null
+          id: string
+          instance_id: string
+          note: string | null
+          occurred_at: string
+          outcome: string | null
+        }
+        Insert: {
+          actor_id: string
+          channel?: string | null
+          id?: string
+          instance_id: string
+          note?: string | null
+          occurred_at?: string
+          outcome?: string | null
+        }
+        Update: {
+          actor_id?: string
+          channel?: string | null
+          id?: string
+          instance_id?: string
+          note?: string | null
+          occurred_at?: string
+          outcome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_journey_outreach_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_outreach_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_outreach_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_outreach_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_outreach_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_journey_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_journey_responses: {
+        Row: {
+          career_interest: string[]
+          employee_id: string
+          family_barrier_note: string | null
+          free_text: string | null
+          id: string
+          instance_id: string
+          payroll_concern_note: string | null
+          reflection: string | null
+          safety_concern: boolean
+          safety_concern_note: string | null
+          submitted_at: string
+          topic_scores: Json
+          training_need_note: string | null
+        }
+        Insert: {
+          career_interest?: string[]
+          employee_id: string
+          family_barrier_note?: string | null
+          free_text?: string | null
+          id?: string
+          instance_id: string
+          payroll_concern_note?: string | null
+          reflection?: string | null
+          safety_concern?: boolean
+          safety_concern_note?: string | null
+          submitted_at?: string
+          topic_scores?: Json
+          training_need_note?: string | null
+        }
+        Update: {
+          career_interest?: string[]
+          employee_id?: string
+          family_barrier_note?: string | null
+          free_text?: string | null
+          id?: string
+          instance_id?: string
+          payroll_concern_note?: string | null
+          reflection?: string | null
+          safety_concern?: boolean
+          safety_concern_note?: string | null
+          submitted_at?: string
+          topic_scores?: Json
+          training_need_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_journey_responses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_responses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_responses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_responses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_responses_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: true
+            referencedRelation: "rbt_journey_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_journey_risk_signals: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          instance_id: string
+          note: string | null
+          severity: string
+          signal_key: string
+          source: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          instance_id: string
+          note?: string | null
+          severity?: string
+          signal_key: string
+          source?: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          instance_id?: string
+          note?: string | null
+          severity?: string
+          signal_key?: string
+          source?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_journey_risk_signals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_risk_signals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_risk_signals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_risk_signals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_journey_risk_signals_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_journey_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rbt_lifecycle_events: {
         Row: {
           actor_id: string | null
@@ -24393,6 +24956,10 @@ export type Database = {
       owns_stage: {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
+      }
+      rbt_journey_generate: {
+        Args: { _first_case_id: string }
+        Returns: undefined
       }
       recalc_course_progress: {
         Args: { _course_id: string; _user_id: string }

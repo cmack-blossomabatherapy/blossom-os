@@ -220,6 +220,9 @@ import RbtStaffing from "./pages/rbt/app/readiness/RbtStaffing";
 import RbtFirstCase from "./pages/rbt/app/firstcase/RbtFirstCase";
 import FirstSessionCheckin from "./pages/rbt/app/firstcase/FirstSessionCheckin";
 import RbtFirstCaseConsole from "./pages/training/RbtFirstCaseConsole";
+import RbtJourney from "./pages/rbt/app/journey/RbtJourney";
+import RbtJourneyCheckpoint from "./pages/rbt/app/journey/RbtJourneyCheckpoint";
+import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
 import RbtReadinessConsole from "./pages/admin/RbtReadinessConsole";
 import RbtPreboardingConsole from "./pages/admin/RbtPreboardingConsole";
 import RbtTrainingConsole from "./pages/admin/RbtTrainingConsole";
@@ -1184,6 +1187,11 @@ const App = () => (
                       <OSShellPage><RbtFirstCaseConsole /></OSShellPage>
                     </PermissionRoute>
                   } />
+                  <Route path="/training/rbt/journey" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
+                      <OSShellPage><RbtJourneyConsole /></OSShellPage>
+                    </PermissionRoute>
+                  } />
                   {/* Mobile-first RBT app */}
                   <Route
                     path="/rbt/app"
@@ -1201,6 +1209,8 @@ const App = () => (
                     <Route path="schedule" element={<RbtSchedule />} />
                     <Route path="first-case" element={<RbtFirstCase />} />
                     <Route path="first-case/checkin" element={<FirstSessionCheckin />} />
+                    <Route path="journey" element={<RbtJourney />} />
+                    <Route path="journey/:instanceId" element={<RbtJourneyCheckpoint />} />
                     <Route path="learn" element={<RbtLearn />} />
                     <Route path="program" element={<RbtProgramPage />} />
                     <Route path="passport" element={<RbtPassportPage />} />
