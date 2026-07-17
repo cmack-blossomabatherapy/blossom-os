@@ -238,7 +238,7 @@ export async function commitPreview(
     const { data, error } = await supabase.rpc("cr_upsert_external_record", {
       _type_key: typeKey,
       _external_id: r.external_id,
-      _payload: r.payload,
+      _payload: r.payload as unknown as never,
       _run_id: runId,
     });
     if (error) { failed++; }
