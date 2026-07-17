@@ -21831,6 +21831,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      notify_after_hours_call_fanout: {
+        Args: {
+          p_call_id: string
+          p_caller_name: string
+          p_department: string
+          p_reason: string
+          p_state: string
+          p_urgent: boolean
+        }
+        Returns: number
+      }
       owns_stage: {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
