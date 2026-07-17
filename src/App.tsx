@@ -211,6 +211,7 @@ import WeeksFourFive from "./pages/onboarding/WeeksFourFive";
 import Graduation from "./pages/onboarding/Graduation";
 import HelpPage from "./pages/Help";
 import JourneyEditor from "./pages/admin/JourneyEditor";
+import RbtLifecycle from "./pages/admin/RbtLifecycle";
 import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
@@ -1145,6 +1146,7 @@ const App = () => (
                   <Route path="/admin/identity" element={<AdminRoute><IdentityDashboard /></AdminRoute>} />
                   <Route path="/admin/automated-emails" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
                   <Route path="/admin/ctm" element={<AdminRoute><CTMAdmin /></AdminRoute>} />
+                  <Route path="/admin/rbt-lifecycle" element={<AdminRoute><RbtLifecycle /></AdminRoute>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
