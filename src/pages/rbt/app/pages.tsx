@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CardFrame } from "./CardFrame";
 import { useDashboardCards, logCardEngagement, type DashboardCard } from "./useDashboardCards";
 import { PreboardingHomeCards, isPreboardingStage } from "./preboarding/PreboardingHomeCards";
+import { FirstCaseHomeCard } from "./firstcase/FirstCaseHomeCard";
 import RbtProgram from "./training/RbtProgram";
 import RbtSkillPassport from "./training/RbtSkillPassport";
 import { Link } from "react-router-dom";
@@ -72,6 +73,7 @@ export function RbtHome() {
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
+      <div className="md:col-span-2"><FirstCaseHomeCard /></div>
       {cards.map((c) => (
         <div key={c.id} className={c.card_type === "greeting" || c.card_type === "next_best_action" ? "md:col-span-2" : ""}>
           {renderCard(c, stageMessage)}
