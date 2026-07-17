@@ -2,6 +2,7 @@
 // If RETELL_WEBHOOK_SECRET is set, requests are HMAC-SHA256 verified.
 // If not set, requests are accepted and stored with verification_status='unverified'.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { classifyAfterHoursCall } from '../_shared/classifyAfterHoursCall.ts'
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,13 +40,7 @@ function pickAnalysis(call: any) {
 }
 
 function classifyDepartment(reason: string, custom: any): string {
-  const r = (reason ?? '').toLowerCase()
-  const urg = (custom?.urgency_level ?? '').toString().toLowerCase()
-  if (custom?.emergency_flag === true || urg === 'high' || r.includes('emergency')) return 'urgent'
-  if (r.includes('complaint') || r.includes('escalat') || r.includes('manager') || r.includes('director') || r.includes('supervisor')) return 'state_director'
-  if (r.includes('schedul') || r.includes('cancel') || r.includes('reschedule') || r.includes('appointment')) return 'scheduling'
-  if (r.includes('staff') || r.includes('hr') || r.includes('employee') || r.includes('payroll') || r.includes('job')) return 'hr'
-  return 'intake'
+  return classifyAfterHoursCall(reason, custom)
 }
 
 Deno.serve(async (req) => {
