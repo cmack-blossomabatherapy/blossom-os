@@ -4,6 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CardFrame } from "./CardFrame";
 import { useDashboardCards, logCardEngagement, type DashboardCard } from "./useDashboardCards";
 import { PreboardingHomeCards, isPreboardingStage } from "./preboarding/PreboardingHomeCards";
+import RbtProgram from "./training/RbtProgram";
+import RbtSkillPassport from "./training/RbtSkillPassport";
+import { Link } from "react-router-dom";
+import { GraduationCap, Award, ArrowRight } from "lucide-react";
 import {
   GreetingCard, NextBestActionCard, TodaysScheduleCard, JourneyProgressCard,
   TrainingProgressCard, SupervisionCard, CredentialAlertCard, RecognitionCard,
@@ -151,6 +155,25 @@ export function RbtLearn() {
   }, [user?.id]);
   const state = err ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
   return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link to="/rbt/app/program" className="rounded-2xl border border-border/70 bg-card p-4 hover:bg-muted/50 transition flex items-center gap-3">
+          <span className="rounded-xl bg-primary/10 p-2.5 text-primary"><GraduationCap className="h-5 w-5" strokeWidth={1.75} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">My Program</p>
+            <p className="text-xs text-muted-foreground">Your training roadmap</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        </Link>
+        <Link to="/rbt/app/passport" className="rounded-2xl border border-border/70 bg-card p-4 hover:bg-muted/50 transition flex items-center gap-3">
+          <span className="rounded-xl bg-primary/10 p-2.5 text-primary"><Award className="h-5 w-5" strokeWidth={1.75} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Skill Passport</p>
+            <p className="text-xs text-muted-foreground">Skills, evaluations & feedback</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        </Link>
+      </div>
     <CardFrame title="Your learning" state={state}
       emptyLabel="Your next training will appear here when assigned.">
       <ul className="divide-y divide-border/70">
@@ -167,8 +190,13 @@ export function RbtLearn() {
         ))}
       </ul>
     </CardFrame>
+    </div>
   );
 }
+
+// ---------------------------------------------------------------- PROGRAM / PASSPORT (nested Learn pages)
+export function RbtProgramPage()   { return <RbtProgram />; }
+export function RbtPassportPage()  { return <RbtSkillPassport />; }
 
 // ---------------------------------------------------------------- SUPPORT
 export function RbtSupport() {

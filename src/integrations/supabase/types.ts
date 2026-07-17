@@ -16216,6 +16216,94 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_pathway_assignments: {
+        Row: {
+          active: boolean
+          assigned_at: string
+          assigned_by: string | null
+          assignment_source: string
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          pathway_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_source?: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          pathway_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_source?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          pathway_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_pathway_assignments_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_pathway_eligibility_rules: {
+        Row: {
+          created_at: string
+          criteria: Json
+          id: string
+          is_active: boolean
+          name: string
+          pathway_id: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          pathway_id: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          pathway_id?: string
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_pathway_eligibility_rules_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rbt_pathway_progress: {
         Row: {
           completed_at: string | null
@@ -16265,8 +16353,14 @@ export type Database = {
       }
       rbt_pathway_steps: {
         Row: {
+          blocks_readiness_gate: string | null
+          capabilities: Json
+          certificate_key: string | null
+          component_type: string | null
           created_at: string
+          delivery_mode: string | null
           description: string | null
+          estimated_days: number | null
           gate_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
           id: string
           key: string
@@ -16277,10 +16371,17 @@ export type Database = {
           required: boolean
           title: string
           updated_at: string
+          week_number: number | null
         }
         Insert: {
+          blocks_readiness_gate?: string | null
+          capabilities?: Json
+          certificate_key?: string | null
+          component_type?: string | null
           created_at?: string
+          delivery_mode?: string | null
           description?: string | null
+          estimated_days?: number | null
           gate_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
           id?: string
           key: string
@@ -16291,10 +16392,17 @@ export type Database = {
           required?: boolean
           title: string
           updated_at?: string
+          week_number?: number | null
         }
         Update: {
+          blocks_readiness_gate?: string | null
+          capabilities?: Json
+          certificate_key?: string | null
+          component_type?: string | null
           created_at?: string
+          delivery_mode?: string | null
           description?: string | null
+          estimated_days?: number | null
           gate_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
           id?: string
           key?: string
@@ -16305,6 +16413,7 @@ export type Database = {
           required?: boolean
           title?: string
           updated_at?: string
+          week_number?: number | null
         }
         Relationships: [
           {
@@ -16835,6 +16944,68 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_remediation_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          completed_at: string | null
+          created_at: string
+          due_at: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          pathway_step_id: string | null
+          reason: string | null
+          resource_url: string | null
+          skill_key: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          pathway_step_id?: string | null
+          reason?: string | null
+          resource_url?: string | null
+          skill_key?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          pathway_step_id?: string | null
+          reason?: string | null
+          resource_url?: string | null
+          skill_key?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_remediation_assignments_pathway_step_id_fkey"
+            columns: ["pathway_step_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_pathway_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rbt_resource_prefs: {
         Row: {
           bookmarked: boolean
@@ -17300,6 +17471,140 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_skill_definitions: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_skill_evaluations: {
+        Row: {
+          attachment_url: string | null
+          context: string | null
+          created_at: string
+          employee_acknowledged_at: string | null
+          employee_acknowledgment_note: string | null
+          employee_id: string
+          evaluated_at: string
+          evaluator_id: string
+          evaluator_role: string | null
+          follow_up_action: string | null
+          id: string
+          notes: string | null
+          rating: string
+          related_pathway_step_id: string | null
+          related_training_id: string | null
+          skill_key: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          context?: string | null
+          created_at?: string
+          employee_acknowledged_at?: string | null
+          employee_acknowledgment_note?: string | null
+          employee_id: string
+          evaluated_at?: string
+          evaluator_id: string
+          evaluator_role?: string | null
+          follow_up_action?: string | null
+          id?: string
+          notes?: string | null
+          rating: string
+          related_pathway_step_id?: string | null
+          related_training_id?: string | null
+          skill_key: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_url?: string | null
+          context?: string | null
+          created_at?: string
+          employee_acknowledged_at?: string | null
+          employee_acknowledgment_note?: string | null
+          employee_id?: string
+          evaluated_at?: string
+          evaluator_id?: string
+          evaluator_role?: string | null
+          follow_up_action?: string | null
+          id?: string
+          notes?: string | null
+          rating?: string
+          related_pathway_step_id?: string | null
+          related_training_id?: string | null
+          skill_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_skill_evaluations_related_pathway_step_id_fkey"
+            columns: ["related_pathway_step_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_pathway_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_skill_status: {
+        Row: {
+          employee_id: string
+          id: string
+          last_evaluation_id: string | null
+          last_evaluator_id: string | null
+          last_updated_at: string
+          skill_key: string
+          state: string
+        }
+        Insert: {
+          employee_id: string
+          id?: string
+          last_evaluation_id?: string | null
+          last_evaluator_id?: string | null
+          last_updated_at?: string
+          skill_key: string
+          state?: string
+        }
+        Update: {
+          employee_id?: string
+          id?: string
+          last_evaluation_id?: string | null
+          last_evaluator_id?: string | null
+          last_updated_at?: string
+          skill_key?: string
+          state?: string
+        }
+        Relationships: []
+      }
       rbt_staffing_events: {
         Row: {
           actor_id: string | null
@@ -17516,6 +17821,48 @@ export type Database = {
           id?: string
           notes?: string | null
           stage_key?: string
+        }
+        Relationships: []
+      }
+      rbt_training_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          details: Json | null
+          employee_id: string
+          entity_id: string | null
+          entity_type: string
+          from_value: string | null
+          id: string
+          to_value: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          details?: Json | null
+          employee_id: string
+          entity_id?: string | null
+          entity_type: string
+          from_value?: string | null
+          id?: string
+          to_value?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          details?: Json | null
+          employee_id?: string
+          entity_id?: string | null
+          entity_type?: string
+          from_value?: string | null
+          id?: string
+          to_value?: string | null
         }
         Relationships: []
       }
