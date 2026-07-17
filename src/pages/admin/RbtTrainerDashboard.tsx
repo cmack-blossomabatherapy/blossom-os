@@ -30,6 +30,7 @@ export default function RbtTrainerDashboard() {
   const [selected, setSelected] = useState<string>("");
   const [rows, setRows] = useState<TraineeRow[] | null>(null);
   const [refreshedAt, setRefreshedAt] = useState<Date>(new Date());
+  const [q, setQ] = useState("");
 
   useEffect(() => { (async () => {
     const { data } = await supabase.from("employees" as any)
@@ -118,7 +119,7 @@ export default function RbtTrainerDashboard() {
           </SelectContent>
         </Select>
       }
-      search={{ value: "", onChange: () => {}, placeholder: "" }}
+      search={{ value: q, onChange: setQ, placeholder: "Search trainee name…" }}
     >
       <div className="max-h-[70vh] overflow-auto">
         <table className="w-full text-sm">
@@ -139,7 +140,7 @@ export default function RbtTrainerDashboard() {
             {rows !== null && rows.length === 0 && (
               <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No trainees assigned to this trainer. You're clear.</td></tr>
             )}
-            {(rows ?? []).map((r) => (
+            {(rows ?? []).filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase())).map((r) => (
               <tr key={r.trainee_id} className="border-b transition-colors hover:bg-muted/40">
                 <td className="px-4 py-3 font-medium">{r.name}</td>
                 <td className="px-3 py-3 text-xs">{fmt(r.first_session_at)}</td>
@@ -150,7 +151,7 @@ export default function RbtTrainerDashboard() {
                 <td className="px-3 py-3 text-xs">{r.in_remediation ? <span className="text-red-600">Yes</span> : "—"}</td>
                 <td className="px-3 py-3">
                   <Button asChild size="sm" variant="ghost">
-                    <Link to={r.role_link}><ExternalLink className="h-3.5 w-3.5" /></Link>
+                    <Link to={r.role_link} aria-label={`Open ${r.name} profile`}><ExternalLink className="h-3.5 w-3.5" /></Link>
                   </Button>
                 </td>
               </tr>
