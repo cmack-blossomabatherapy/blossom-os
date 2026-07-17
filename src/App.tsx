@@ -1179,6 +1179,11 @@ const App = () => (
                       <OSShellPage><RbtEvaluatorConsole /></OSShellPage>
                     </PermissionRoute>
                   } />
+                  <Route path="/training/rbt/first-case" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
+                      <OSShellPage><RbtFirstCaseConsole /></OSShellPage>
+                    </PermissionRoute>
+                  } />
                   {/* Mobile-first RBT app */}
                   <Route
                     path="/rbt/app"
