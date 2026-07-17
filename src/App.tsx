@@ -1229,6 +1229,8 @@ const App = () => (
                     <Route path="supervision" element={<RbtSupervisionPage />} />
                     <Route path="credentials" element={<RbtCredentialsPage />} />
                     <Route path="performance" element={<RbtPerformancePage />} />
+                    <Route path="growth" element={<RbtMyGrowth />} />
+                    <Route path="growth/fellowship" element={<RbtFellowshipExplorer />} />
                   </Route>
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
