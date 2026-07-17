@@ -44,14 +44,13 @@ Deno.serve(async (req) => {
     if (recipient) {
       await supabase.from('user_notifications').insert({
         user_id: recipient,
+        kind: 'preboarding',
         title: overdue ? `Overdue: ${label}` : `Due soon: ${label}`,
         body: overdue
           ? 'This preboarding step is past due. Please complete it as soon as possible.'
           : 'This preboarding step is due within 24 hours.',
         link: item.owner_role === 'rbt' ? '/rbt/app/preboarding' : `/admin/rbt-preboarding`,
-        category: 'preboarding',
-        entity_type: 'rbt_preboarding_item',
-        entity_id: item.id,
+        dedupe_key: `preboarding:${item.id}:${overdue ? 'overdue' : 'soon'}:${now.toISOString().slice(0,10)}`,
       });
       notified++;
     }
