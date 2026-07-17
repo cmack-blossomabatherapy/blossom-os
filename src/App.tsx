@@ -1149,6 +1149,22 @@ const App = () => (
                   <Route path="/admin/automated-emails" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
                   <Route path="/admin/ctm" element={<AdminRoute><CTMAdmin /></AdminRoute>} />
                   <Route path="/admin/rbt-lifecycle" element={<AdminRoute><RbtLifecycle /></AdminRoute>} />
+                  {/* Mobile-first RBT app */}
+                  <Route
+                    path="/rbt/app"
+                    element={
+                      <PermissionRoute allowedRoles={["admin","hr","training_admin","rbt","registered_behavior_technician"]}>
+                        <RbtAppShell />
+                      </PermissionRoute>
+                    }
+                  >
+                    <Route index element={<Navigate to="home" replace />} />
+                    <Route path="home" element={<RbtHome />} />
+                    <Route path="schedule" element={<RbtSchedule />} />
+                    <Route path="learn" element={<RbtLearn />} />
+                    <Route path="support" element={<RbtSupport />} />
+                    <Route path="me" element={<RbtMe />} />
+                  </Route>
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
