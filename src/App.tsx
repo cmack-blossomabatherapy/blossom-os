@@ -1185,6 +1185,11 @@ const App = () => (
                       <OSShellPage><RbtTrainingConsole /></OSShellPage>
                     </PermissionRoute>
                   } />
+                  <Route path="/admin/rbt-growth" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","training_admin","hr","hr_admin","hr_lead","operations_leadership","executive"]}>
+                      <OSShellPage><RbtGrowthConsole /></OSShellPage>
+                    </PermissionRoute>
+                  } />
                   <Route path="/training/rbt/evaluate" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
                       <OSShellPage><RbtEvaluatorConsole /></OSShellPage>
