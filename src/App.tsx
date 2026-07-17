@@ -222,6 +222,11 @@ import FirstSessionCheckin from "./pages/rbt/app/firstcase/FirstSessionCheckin";
 import RbtFirstCaseConsole from "./pages/training/RbtFirstCaseConsole";
 import RbtJourney from "./pages/rbt/app/journey/RbtJourney";
 import RbtJourneyCheckpoint from "./pages/rbt/app/journey/RbtJourneyCheckpoint";
+import MyClients from "./pages/rbt/app/active/MyClients";
+import RbtHours from "./pages/rbt/app/active/Hours";
+import RbtSupervisionPage from "./pages/rbt/app/active/Supervision";
+import RbtCredentialsPage from "./pages/rbt/app/active/Credentials";
+import RbtPerformancePage from "./pages/rbt/app/active/Performance";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
 import RbtReadinessConsole from "./pages/admin/RbtReadinessConsole";
 import RbtPreboardingConsole from "./pages/admin/RbtPreboardingConsole";
@@ -1216,6 +1221,11 @@ const App = () => (
                     <Route path="passport" element={<RbtPassportPage />} />
                     <Route path="support" element={<RbtSupport />} />
                     <Route path="me" element={<RbtMe />} />
+                    <Route path="clients" element={<MyClients />} />
+                    <Route path="hours" element={<RbtHours />} />
+                    <Route path="supervision" element={<RbtSupervisionPage />} />
+                    <Route path="credentials" element={<RbtCredentialsPage />} />
+                    <Route path="performance" element={<RbtPerformancePage />} />
                   </Route>
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
