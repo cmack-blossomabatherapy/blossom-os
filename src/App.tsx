@@ -220,6 +220,7 @@ import SupportUrgent from "./pages/rbt/app/support/SupportUrgent";
 import SupportTeam from "./pages/rbt/app/support/SupportTeam";
 import SupportTicketDetail from "./pages/rbt/app/support/SupportTicketDetail";
 import RbtSupportConsole from "./pages/admin/RbtSupportConsole";
+import CrSyncCenter from "./pages/admin/CrSyncCenter";
 import RbtPreboarding from "./pages/rbt/app/preboarding/RbtPreboarding";
 import RbtReadiness from "./pages/rbt/app/readiness/RbtReadiness";
 import RbtStaffing from "./pages/rbt/app/readiness/RbtStaffing";
@@ -1199,6 +1200,11 @@ const App = () => (
                   <Route path="/admin/rbt-support" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","hr","hr_admin","hr_lead","training_admin","operations_leadership"]}>
                       <OSShellPage><RbtSupportConsole /></OSShellPage>
+                    </PermissionRoute>
+                  } />
+                  <Route path="/admin/centralreach-sync" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","operations_leadership"]}>
+                      <OSShellPage><CrSyncCenter /></OSShellPage>
                     </PermissionRoute>
                   } />
                   <Route path="/training/rbt/evaluate" element={
