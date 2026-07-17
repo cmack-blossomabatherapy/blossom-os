@@ -219,6 +219,8 @@ import RbtReadiness from "./pages/rbt/app/readiness/RbtReadiness";
 import RbtStaffing from "./pages/rbt/app/readiness/RbtStaffing";
 import RbtReadinessConsole from "./pages/admin/RbtReadinessConsole";
 import RbtPreboardingConsole from "./pages/admin/RbtPreboardingConsole";
+import RbtTrainingConsole from "./pages/admin/RbtTrainingConsole";
+import RbtEvaluatorConsole from "./pages/training/RbtEvaluatorConsole";
 import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
@@ -1162,6 +1164,16 @@ const App = () => (
                   <Route path="/admin/rbt-readiness" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","hr","hr_admin","hr_lead","recruiting_lead","recruiting_coordinator","recruiting_assistant","training_admin","scheduling_lead","scheduling_coordinator","operations_leadership","state_director"]}>
                       <RbtReadinessConsole />
+                    </PermissionRoute>
+                  } />
+                  <Route path="/admin/rbt-training" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","training_admin","hr","hr_admin","hr_lead","operations_leadership"]}>
+                      <OSShellPage><RbtTrainingConsole /></OSShellPage>
+                    </PermissionRoute>
+                  } />
+                  <Route path="/training/rbt/evaluate" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
+                      <OSShellPage><RbtEvaluatorConsole /></OSShellPage>
                     </PermissionRoute>
                   } />
                   {/* Mobile-first RBT app */}
