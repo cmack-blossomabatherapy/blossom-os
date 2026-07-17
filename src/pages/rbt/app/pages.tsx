@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CardFrame } from "./CardFrame";
 import { useDashboardCards, logCardEngagement, type DashboardCard } from "./useDashboardCards";
+import { PreboardingHomeCards, isPreboardingStage } from "./preboarding/PreboardingHomeCards";
 import {
   GreetingCard, NextBestActionCard, TodaysScheduleCard, JourneyProgressCard,
   TrainingProgressCard, SupervisionCard, CredentialAlertCard, RecognitionCard,
@@ -56,6 +57,10 @@ export function RbtHome() {
   if (error) return (
     <CardFrame title="Home" state="error" errorLabel="We could not load your home right now. Try again shortly." />
   );
+
+  if (isPreboardingStage(context.lifecycleStage)) {
+    return <PreboardingHomeCards />;
+  }
 
   if (cards.length === 0) return (
     <CardFrame title="You're all caught up" state="empty" emptyLabel="Nothing needs your attention right now." />
