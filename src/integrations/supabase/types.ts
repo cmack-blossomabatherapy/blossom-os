@@ -16202,6 +16202,220 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_preboarding_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json | null
+          from_status: string | null
+          id: string
+          item_id: string
+          to_status: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          from_status?: string | null
+          id?: string
+          item_id: string
+          to_status?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json | null
+          from_status?: string | null
+          id?: string
+          item_id?: string
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_preboarding_audit_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_preboarding_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_preboarding_comments: {
+        Row: {
+          author_id: string
+          author_role: string | null
+          body: string
+          created_at: string
+          id: string
+          item_id: string
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          author_role?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          item_id: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          author_role?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_preboarding_comments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_preboarding_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_preboarding_items: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          assigned_to: string | null
+          created_at: string
+          due_at: string | null
+          employee_id: string
+          file_name: string | null
+          file_path: string | null
+          id: string
+          last_reminded_at: string | null
+          metadata: Json
+          owner_role: string
+          requirement_key: string
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          due_at?: string | null
+          employee_id: string
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          last_reminded_at?: string | null
+          metadata?: Json
+          owner_role?: string
+          requirement_key: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          due_at?: string | null
+          employee_id?: string
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          last_reminded_at?: string | null
+          metadata?: Json
+          owner_role?: string
+          requirement_key?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_preboarding_requirements: {
+        Row: {
+          advances_gate_key: string | null
+          applies_to_stages: string[]
+          applies_to_states: string[] | null
+          category: string
+          created_at: string
+          default_due_offset_days: number | null
+          description: string | null
+          employee_instructions: string | null
+          external_action_label: string | null
+          external_action_url: string | null
+          external_system: string | null
+          id: string
+          internal_instructions: string | null
+          is_active: boolean
+          is_required: boolean
+          key: string
+          label: string
+          owner_role: string
+          requires_approval: boolean
+          requires_file: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          advances_gate_key?: string | null
+          applies_to_stages?: string[]
+          applies_to_states?: string[] | null
+          category?: string
+          created_at?: string
+          default_due_offset_days?: number | null
+          description?: string | null
+          employee_instructions?: string | null
+          external_action_label?: string | null
+          external_action_url?: string | null
+          external_system?: string | null
+          id?: string
+          internal_instructions?: string | null
+          is_active?: boolean
+          is_required?: boolean
+          key: string
+          label: string
+          owner_role?: string
+          requires_approval?: boolean
+          requires_file?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          advances_gate_key?: string | null
+          applies_to_stages?: string[]
+          applies_to_states?: string[] | null
+          category?: string
+          created_at?: string
+          default_due_offset_days?: number | null
+          description?: string | null
+          employee_instructions?: string | null
+          external_action_label?: string | null
+          external_action_url?: string | null
+          external_system?: string | null
+          id?: string
+          internal_instructions?: string | null
+          is_active?: boolean
+          is_required?: boolean
+          key?: string
+          label?: string
+          owner_role?: string
+          requires_approval?: boolean
+          requires_file?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_readiness_records: {
         Row: {
           bcba: string | null
@@ -22394,6 +22608,10 @@ export type Database = {
         Args: { _perm: string; _user_id: string }
         Returns: boolean
       }
+      has_preboarding_internal_access: {
+        Args: { _uid: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -22418,6 +22636,10 @@ export type Database = {
         Returns: boolean
       }
       hr_user_role_slugs: { Args: { _user: string }; Returns: string[] }
+      initialize_rbt_preboarding: {
+        Args: { _employee_id: string }
+        Returns: number
+      }
       is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
       is_access_request_reviewer: {
         Args: { _user_id: string }
