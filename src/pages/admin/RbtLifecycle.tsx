@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { OSShellPage } from "@/pages/os/OSShellPage";
+import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,7 +61,7 @@ export default function RbtLifecycle() {
   const stageByKey = useMemo(() => Object.fromEntries(stages.map((s) => [s.key, s])), [stages]);
 
   return (
-    <OSShellPage>
+    <OSShell>
       <div className="mx-auto max-w-7xl p-6 space-y-6">
         <header className="flex items-start justify-between">
           <div>
@@ -174,7 +174,7 @@ export default function RbtLifecycle() {
           onDone={load}
         />
       )}
-    </OSShellPage>
+    </OSShell>
   );
 }
 
