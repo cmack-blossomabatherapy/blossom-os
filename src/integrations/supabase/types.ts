@@ -15624,32 +15624,65 @@ export type Database = {
         Row: {
           actor_id: string | null
           employee_id: string
-          from_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          from_stage: string | null
           id: string
           occurred_at: string
           reason: string | null
           source: string
-          to_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          to_stage: string
         }
         Insert: {
           actor_id?: string | null
           employee_id: string
-          from_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          from_stage?: string | null
           id?: string
           occurred_at?: string
           reason?: string | null
           source?: string
-          to_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          to_stage: string
         }
         Update: {
           actor_id?: string | null
           employee_id?: string
-          from_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          from_stage?: string | null
           id?: string
           occurred_at?: string
           reason?: string | null
           source?: string
-          to_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          to_stage?: string
+        }
+        Relationships: []
+      }
+      rbt_lifecycle_gate_completions: {
+        Row: {
+          completed_at: string
+          completed_by: string | null
+          employee_id: string
+          evidence: Json | null
+          gate_key: string
+          id: string
+          notes: string | null
+          stage_key: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by?: string | null
+          employee_id: string
+          evidence?: Json | null
+          gate_key: string
+          id?: string
+          notes?: string | null
+          stage_key: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string | null
+          employee_id?: string
+          evidence?: Json | null
+          gate_key?: string
+          id?: string
+          notes?: string | null
+          stage_key?: string
         }
         Relationships: []
       }
@@ -15657,31 +15690,97 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
-          from_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          from_stage: string | null
           id: string
           is_active: boolean
           predicate_json: Json
-          to_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          to_stage: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
-          from_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          from_stage?: string | null
           id?: string
           is_active?: boolean
           predicate_json?: Json
-          to_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          to_stage: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
-          from_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          from_stage?: string | null
           id?: string
           is_active?: boolean
           predicate_json?: Json
-          to_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          to_stage?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_lifecycle_stages: {
+        Row: {
+          allowed_next_keys: string[]
+          automatic_actions: Json
+          color: string | null
+          created_at: string
+          dashboard_cards: Json
+          description: string | null
+          employee_message: string | null
+          is_active: boolean
+          is_terminal: boolean
+          key: string
+          menu_features: string[]
+          name: string
+          notification_templates: Json
+          required_approver_role: string | null
+          required_gates: Json
+          sort_order: number
+          task_assignments: Json
+          training_assignments: Json
+          updated_at: string
+        }
+        Insert: {
+          allowed_next_keys?: string[]
+          automatic_actions?: Json
+          color?: string | null
+          created_at?: string
+          dashboard_cards?: Json
+          description?: string | null
+          employee_message?: string | null
+          is_active?: boolean
+          is_terminal?: boolean
+          key: string
+          menu_features?: string[]
+          name: string
+          notification_templates?: Json
+          required_approver_role?: string | null
+          required_gates?: Json
+          sort_order?: number
+          task_assignments?: Json
+          training_assignments?: Json
+          updated_at?: string
+        }
+        Update: {
+          allowed_next_keys?: string[]
+          automatic_actions?: Json
+          color?: string | null
+          created_at?: string
+          dashboard_cards?: Json
+          description?: string | null
+          employee_message?: string | null
+          is_active?: boolean
+          is_terminal?: boolean
+          key?: string
+          menu_features?: string[]
+          name?: string
+          notification_templates?: Json
+          required_approver_role?: string | null
+          required_gates?: Json
+          sort_order?: number
+          task_assignments?: Json
+          training_assignments?: Json
           updated_at?: string
         }
         Relationships: []
@@ -15692,7 +15791,7 @@ export type Database = {
           employee_id: string
           entered_at: string
           pathway_id: string | null
-          stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          stage: string
           updated_at: string
           updated_by: string | null
         }
@@ -15701,7 +15800,7 @@ export type Database = {
           employee_id: string
           entered_at?: string
           pathway_id?: string | null
-          stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          stage?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -15710,7 +15809,7 @@ export type Database = {
           employee_id?: string
           entered_at?: string
           pathway_id?: string | null
-          stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          stage?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -15721,6 +15820,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rbt_pathways"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_lifecycle_state_stage_fk"
+            columns: ["stage"]
+            isOneToOne: false
+            referencedRelation: "rbt_lifecycle_stages"
+            referencedColumns: ["key"]
           },
         ]
       }
@@ -16645,6 +16751,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rbt_synthetic_test_profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          notes: string | null
+          stage_key: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          notes?: string | null
+          stage_key: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          notes?: string | null
+          stage_key?: string
+        }
+        Relationships: []
       }
       recruiting_activity_events: {
         Row: {
@@ -21884,6 +22014,16 @@ export type Database = {
           target_user: string
         }
         Returns: undefined
+      }
+      advance_rbt_lifecycle: {
+        Args: {
+          _employee_id: string
+          _override?: boolean
+          _reason?: string
+          _source?: string
+          _to_stage: string
+        }
+        Returns: Json
       }
       alerts_can_read: { Args: { _user_id: string }; Returns: boolean }
       app_role_for_department: {
