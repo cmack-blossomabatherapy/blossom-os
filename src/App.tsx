@@ -227,6 +227,9 @@ import RbtHours from "./pages/rbt/app/active/Hours";
 import RbtSupervisionPage from "./pages/rbt/app/active/Supervision";
 import RbtCredentialsPage from "./pages/rbt/app/active/Credentials";
 import RbtPerformancePage from "./pages/rbt/app/active/Performance";
+import RbtMyGrowth from "./pages/rbt/app/growth/RbtMyGrowth";
+import RbtFellowshipExplorer from "./pages/rbt/app/growth/RbtFellowshipExplorer";
+import RbtGrowthConsole from "./pages/admin/RbtGrowthConsole";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
 import RbtReadinessConsole from "./pages/admin/RbtReadinessConsole";
 import RbtPreboardingConsole from "./pages/admin/RbtPreboardingConsole";
@@ -1182,6 +1185,11 @@ const App = () => (
                       <OSShellPage><RbtTrainingConsole /></OSShellPage>
                     </PermissionRoute>
                   } />
+                  <Route path="/admin/rbt-growth" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","training_admin","hr","hr_admin","hr_lead","operations_leadership","executive"]}>
+                      <OSShellPage><RbtGrowthConsole /></OSShellPage>
+                    </PermissionRoute>
+                  } />
                   <Route path="/training/rbt/evaluate" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
                       <OSShellPage><RbtEvaluatorConsole /></OSShellPage>
@@ -1226,6 +1234,8 @@ const App = () => (
                     <Route path="supervision" element={<RbtSupervisionPage />} />
                     <Route path="credentials" element={<RbtCredentialsPage />} />
                     <Route path="performance" element={<RbtPerformancePage />} />
+                    <Route path="growth" element={<RbtMyGrowth />} />
+                    <Route path="growth/fellowship" element={<RbtFellowshipExplorer />} />
                   </Route>
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}

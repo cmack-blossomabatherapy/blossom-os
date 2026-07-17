@@ -15328,23 +15328,180 @@ export type Database = {
           employee_id: string
           interested_in_fellowship: boolean
           interested_in_lead: boolean
+          mentor_request_notes: string | null
+          mentor_requested: boolean
           notes: string | null
+          open_to_internal_opportunities: boolean
+          primary_interest: string | null
+          secondary_interests: string[]
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           created_at?: string
           employee_id: string
           interested_in_fellowship?: boolean
           interested_in_lead?: boolean
+          mentor_request_notes?: string | null
+          mentor_requested?: boolean
           notes?: string | null
+          open_to_internal_opportunities?: boolean
+          primary_interest?: string | null
+          secondary_interests?: string[]
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           created_at?: string
           employee_id?: string
           interested_in_fellowship?: boolean
           interested_in_lead?: boolean
+          mentor_request_notes?: string | null
+          mentor_requested?: boolean
           notes?: string | null
+          open_to_internal_opportunities?: boolean
+          primary_interest?: string | null
+          secondary_interests?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      rbt_career_stage_evaluations: {
+        Row: {
+          created_at: string
+          employee_id: string
+          evaluated_at: string | null
+          evaluated_by: string | null
+          evidence: string | null
+          id: string
+          notes: string | null
+          requirement_key: string
+          stage_key: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          evaluated_at?: string | null
+          evaluated_by?: string | null
+          evidence?: string | null
+          id?: string
+          notes?: string | null
+          requirement_key: string
+          stage_key: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          evaluated_at?: string | null
+          evaluated_by?: string | null
+          evidence?: string | null
+          id?: string
+          notes?: string | null
+          requirement_key?: string
+          stage_key?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_career_stage_evaluations_stage_key_fkey"
+            columns: ["stage_key"]
+            isOneToOne: false
+            referencedRelation: "rbt_career_stages"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      rbt_career_stage_requirements: {
+        Row: {
+          active: boolean
+          category: string
+          config: Json
+          created_at: string
+          description: string | null
+          id: string
+          label: string
+          order_index: number
+          requirement_key: string
+          stage_key: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          label: string
+          order_index?: number
+          requirement_key: string
+          stage_key: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          label?: string
+          order_index?: number
+          requirement_key?: string
+          stage_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_career_stage_requirements_stage_key_fkey"
+            columns: ["stage_key"]
+            isOneToOne: false
+            referencedRelation: "rbt_career_stages"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      rbt_career_stages: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          employee_summary: string | null
+          is_fellowship: boolean
+          key: string
+          name: string
+          order_index: number
+          requires_application: boolean
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          employee_summary?: string | null
+          is_fellowship?: boolean
+          key: string
+          name: string
+          order_index?: number
+          requires_application?: boolean
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          employee_summary?: string | null
+          is_fellowship?: boolean
+          key?: string
+          name?: string
+          order_index?: number
+          requires_application?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -15768,6 +15925,220 @@ export type Database = {
           source?: string
           stale_after_hours?: number
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_development_plans: {
+        Row: {
+          created_at: string
+          employee_id: string
+          focus_areas: Json
+          id: string
+          last_reviewed_at: string | null
+          next_steps: Json
+          owner_id: string | null
+          status: string
+          summary: string | null
+          target_stage_key: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          focus_areas?: Json
+          id?: string
+          last_reviewed_at?: string | null
+          next_steps?: Json
+          owner_id?: string | null
+          status?: string
+          summary?: string | null
+          target_stage_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          focus_areas?: Json
+          id?: string
+          last_reviewed_at?: string | null
+          next_steps?: Json
+          owner_id?: string | null
+          status?: string
+          summary?: string | null
+          target_stage_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_development_plans_target_stage_key_fkey"
+            columns: ["target_stage_key"]
+            isOneToOne: false
+            referencedRelation: "rbt_career_stages"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      rbt_fellowship_applications: {
+        Row: {
+          application_data: Json
+          cohort_label: string | null
+          created_at: string
+          decision: string | null
+          decision_at: string | null
+          decision_by: string | null
+          decision_notes: string | null
+          employee_id: string
+          id: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          application_data?: Json
+          cohort_label?: string | null
+          created_at?: string
+          decision?: string | null
+          decision_at?: string | null
+          decision_by?: string | null
+          decision_notes?: string | null
+          employee_id: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          application_data?: Json
+          cohort_label?: string | null
+          created_at?: string
+          decision?: string | null
+          decision_at?: string | null
+          decision_by?: string | null
+          decision_notes?: string | null
+          employee_id?: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_fellowship_content: {
+        Row: {
+          body: string | null
+          created_at: string
+          order_index: number
+          published: boolean
+          published_at: string | null
+          published_by: string | null
+          section_key: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          order_index?: number
+          published?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          section_key: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          order_index?: number
+          published?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          section_key?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      rbt_fellowship_participants: {
+        Row: {
+          cohort_label: string | null
+          created_at: string
+          employee_id: string
+          entered_at: string
+          notes: string | null
+          stage_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cohort_label?: string | null
+          created_at?: string
+          employee_id: string
+          entered_at?: string
+          notes?: string | null
+          stage_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cohort_label?: string | null
+          created_at?: string
+          employee_id?: string
+          entered_at?: string
+          notes?: string | null
+          stage_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_fellowship_participants_stage_key_fkey"
+            columns: ["stage_key"]
+            isOneToOne: false
+            referencedRelation: "rbt_fellowship_stages"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      rbt_fellowship_stages: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          employee_visible: boolean
+          key: string
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          description?: string | null
+          employee_visible?: boolean
+          key: string
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          employee_visible?: boolean
+          key?: string
+          name?: string
+          order_index?: number
           updated_at?: string
         }
         Relationships: []
@@ -16548,6 +16919,39 @@ export type Database = {
           },
         ]
       }
+      rbt_growth_audit: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          employee_id: string | null
+          entity_id: string | null
+          entity_table: string | null
+          event_type: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          employee_id?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          employee_id?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       rbt_help_requests: {
         Row: {
           category: string
@@ -16757,6 +17161,45 @@ export type Database = {
           period_start?: string
           scheduled_hours?: number
           source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_internal_opportunity_interest: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          message: string | null
+          opportunity_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          message?: string | null
+          opportunity_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          message?: string | null
+          opportunity_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -17533,6 +17976,51 @@ export type Database = {
             referencedColumns: ["key"]
           },
         ]
+      }
+      rbt_mentor_requests: {
+        Row: {
+          admin_notes: string | null
+          assigned_mentor_id: string | null
+          closed_at: string | null
+          created_at: string
+          employee_id: string
+          focus_area: string | null
+          id: string
+          message: string | null
+          preferred_mentor: string | null
+          requested_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_mentor_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          employee_id: string
+          focus_area?: string | null
+          id?: string
+          message?: string | null
+          preferred_mentor?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_mentor_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          employee_id?: string
+          focus_area?: string | null
+          id?: string
+          message?: string | null
+          preferred_mentor?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       rbt_messages: {
         Row: {
