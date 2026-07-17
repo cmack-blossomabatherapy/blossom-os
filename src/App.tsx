@@ -215,6 +215,9 @@ import RbtLifecycle from "./pages/admin/RbtLifecycle";
 import RbtAppShell from "./pages/rbt/app/shell";
 import { RbtHome, RbtSchedule, RbtLearn, RbtSupport, RbtMe } from "./pages/rbt/app/pages";
 import RbtPreboarding from "./pages/rbt/app/preboarding/RbtPreboarding";
+import RbtReadiness from "./pages/rbt/app/readiness/RbtReadiness";
+import RbtStaffing from "./pages/rbt/app/readiness/RbtStaffing";
+import RbtReadinessConsole from "./pages/admin/RbtReadinessConsole";
 import RbtPreboardingConsole from "./pages/admin/RbtPreboardingConsole";
 import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
@@ -1156,6 +1159,11 @@ const App = () => (
                       <RbtPreboardingConsole />
                     </PermissionRoute>
                   } />
+                  <Route path="/admin/rbt-readiness" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","hr","hr_admin","hr_lead","recruiting_lead","recruiting_coordinator","recruiting_assistant","training_admin","scheduling_lead","scheduling_coordinator","operations_leadership","state_director"]}>
+                      <RbtReadinessConsole />
+                    </PermissionRoute>
+                  } />
                   {/* Mobile-first RBT app */}
                   <Route
                     path="/rbt/app"
@@ -1168,6 +1176,8 @@ const App = () => (
                     <Route index element={<Navigate to="home" replace />} />
                     <Route path="home" element={<RbtHome />} />
                     <Route path="preboarding" element={<RbtPreboarding />} />
+                    <Route path="readiness" element={<RbtReadiness />} />
+                    <Route path="staffing" element={<RbtStaffing />} />
                     <Route path="schedule" element={<RbtSchedule />} />
                     <Route path="learn" element={<RbtLearn />} />
                     <Route path="support" element={<RbtSupport />} />
