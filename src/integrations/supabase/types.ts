@@ -5116,6 +5116,339 @@ export type Database = {
         }
         Relationships: []
       }
+      cr_external_records: {
+        Row: {
+          external_id: string
+          first_run_id: string | null
+          first_seen_at: string
+          id: string
+          is_committed: boolean
+          last_run_id: string | null
+          last_seen_at: string
+          payload: Json
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+          version: number
+        }
+        Insert: {
+          external_id: string
+          first_run_id?: string | null
+          first_seen_at?: string
+          id?: string
+          is_committed?: boolean
+          last_run_id?: string | null
+          last_seen_at?: string
+          payload: Json
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+          version?: number
+        }
+        Update: {
+          external_id?: string
+          first_run_id?: string | null
+          first_seen_at?: string
+          id?: string
+          is_committed?: boolean
+          last_run_id?: string | null
+          last_seen_at?: string
+          payload?: Json
+          type_key?: Database["public"]["Enums"]["cr_sync_type_key"]
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_external_records_first_run_id_fkey"
+            columns: ["first_run_id"]
+            isOneToOne: false
+            referencedRelation: "cr_sync_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_external_records_last_run_id_fkey"
+            columns: ["last_run_id"]
+            isOneToOne: false
+            referencedRelation: "cr_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_freshness_config: {
+        Row: {
+          aging_minutes: number
+          critical_minutes: number
+          current_minutes: number
+          stale_minutes: number
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at: string
+        }
+        Insert: {
+          aging_minutes?: number
+          critical_minutes?: number
+          current_minutes?: number
+          stale_minutes?: number
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at?: string
+        }
+        Update: {
+          aging_minutes?: number
+          critical_minutes?: number
+          current_minutes?: number
+          stale_minutes?: number
+          type_key?: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_sync_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          detail: Json
+          id: string
+          run_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          run_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_sync_audit_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cr_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_sync_run_errors: {
+        Row: {
+          created_at: string
+          error_code: string
+          error_message: string
+          external_id: string | null
+          field: string | null
+          id: string
+          raw_row: Json | null
+          row_number: number
+          run_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_code: string
+          error_message: string
+          external_id?: string | null
+          field?: string | null
+          id?: string
+          raw_row?: Json | null
+          row_number: number
+          run_id: string
+        }
+        Update: {
+          created_at?: string
+          error_code?: string
+          error_message?: string
+          external_id?: string | null
+          field?: string | null
+          id?: string
+          raw_row?: Json | null
+          row_number?: number
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_sync_run_errors_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cr_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_sync_runs: {
+        Row: {
+          committed_at: string | null
+          created_at: string
+          detected_headers: string[]
+          error_report_path: string | null
+          file_name: string
+          file_sha256: string
+          file_size_bytes: number | null
+          id: string
+          notes: string | null
+          preview: Json | null
+          rolled_back_at: string | null
+          rolled_back_by: string | null
+          row_count_total: number
+          rows_added: number
+          rows_rejected: number
+          rows_unchanged: number
+          rows_updated: number
+          status: Database["public"]["Enums"]["cr_run_status"]
+          storage_bucket: string | null
+          storage_path: string | null
+          template_id: string | null
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          committed_at?: string | null
+          created_at?: string
+          detected_headers?: string[]
+          error_report_path?: string | null
+          file_name: string
+          file_sha256: string
+          file_size_bytes?: number | null
+          id?: string
+          notes?: string | null
+          preview?: Json | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          row_count_total?: number
+          rows_added?: number
+          rows_rejected?: number
+          rows_unchanged?: number
+          rows_updated?: number
+          status?: Database["public"]["Enums"]["cr_run_status"]
+          storage_bucket?: string | null
+          storage_path?: string | null
+          template_id?: string | null
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          committed_at?: string | null
+          created_at?: string
+          detected_headers?: string[]
+          error_report_path?: string | null
+          file_name?: string
+          file_sha256?: string
+          file_size_bytes?: number | null
+          id?: string
+          notes?: string | null
+          preview?: Json | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          row_count_total?: number
+          rows_added?: number
+          rows_rejected?: number
+          rows_unchanged?: number
+          rows_updated?: number
+          status?: Database["public"]["Enums"]["cr_run_status"]
+          storage_bucket?: string | null
+          storage_path?: string | null
+          template_id?: string | null
+          type_key?: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_sync_runs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "cr_sync_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_sync_templates: {
+        Row: {
+          active: boolean
+          column_map: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          field_types: Json
+          id: string
+          is_default: boolean
+          name: string
+          recognition_headers: string[]
+          required_fields: string[]
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          column_map?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          field_types?: Json
+          id?: string
+          is_default?: boolean
+          name: string
+          recognition_headers?: string[]
+          required_fields?: string[]
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          column_map?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          field_types?: Json
+          id?: string
+          is_default?: boolean
+          name?: string
+          recognition_headers?: string[]
+          required_fields?: string[]
+          type_key?: Database["public"]["Enums"]["cr_sync_type_key"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_sync_types: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          external_id_field: string
+          id: string
+          key: Database["public"]["Enums"]["cr_sync_type_key"]
+          label: string
+          required_fields: string[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          external_id_field: string
+          id?: string
+          key: Database["public"]["Enums"]["cr_sync_type_key"]
+          label: string
+          required_fields?: string[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          external_id_field?: string
+          id?: string
+          key?: Database["public"]["Enums"]["cr_sync_type_key"]
+          label?: string
+          required_fields?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       credentialing_activity: {
         Row: {
           activity_type: string
@@ -25856,6 +26189,27 @@ export type Database = {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }
         Returns: number
       }
+      cr_rollback_run: { Args: { _run_id: string }; Returns: Json }
+      cr_sync_freshness: {
+        Args: never
+        Returns: {
+          age_minutes: number
+          last_attempt: string
+          last_row_count: number
+          last_success: string
+          level: Database["public"]["Enums"]["cr_freshness_level"]
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+        }[]
+      }
+      cr_upsert_external_record: {
+        Args: {
+          _external_id: string
+          _payload: Json
+          _run_id: string
+          _type_key: Database["public"]["Enums"]["cr_sync_type_key"]
+        }
+        Returns: string
+      }
       create_task_due_reminders: { Args: never; Returns: number }
       current_user_state: { Args: never; Returns: string }
       derive_state_from_labels: { Args: { labels: string }; Returns: string }
@@ -26453,6 +26807,23 @@ export type Database = {
         | "Utilization"
         | "Reauth"
       contact_visibility: "public" | "internal" | "leadership"
+      cr_freshness_level: "current" | "aging" | "stale" | "critical" | "no_data"
+      cr_run_status:
+        | "uploaded"
+        | "validating"
+        | "previewed"
+        | "committing"
+        | "committed"
+        | "partial"
+        | "rejected"
+        | "rolled_back"
+        | "failed"
+      cr_sync_type_key:
+        | "employees"
+        | "clients"
+        | "schedule"
+        | "timesheets"
+        | "authorizations"
       directory_onboarding_status:
         | "not_started"
         | "welcome"
@@ -27224,6 +27595,25 @@ export const Constants = {
         "Reauth",
       ],
       contact_visibility: ["public", "internal", "leadership"],
+      cr_freshness_level: ["current", "aging", "stale", "critical", "no_data"],
+      cr_run_status: [
+        "uploaded",
+        "validating",
+        "previewed",
+        "committing",
+        "committed",
+        "partial",
+        "rejected",
+        "rolled_back",
+        "failed",
+      ],
+      cr_sync_type_key: [
+        "employees",
+        "clients",
+        "schedule",
+        "timesheets",
+        "authorizations",
+      ],
       directory_onboarding_status: [
         "not_started",
         "welcome",
