@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import OSShellPage from "@/components/os/OSShellPage";
+import { OSShell } from "@/pages/os/OSShell";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,14 +32,16 @@ export default function RbtPreboardingConsole() {
       const ids = (states ?? []).map((s: any) => s.employee_id);
       if (ids.length === 0) return setEmployees([]);
 
-      const [{ data: emps }, { data: items }] = await Promise.all([
+      const [empsRes, itemsRes] = await Promise.all([
         supabase.from("employees" as any).select("id,full_name,email").in("id", ids),
         supabase.from("rbt_preboarding_items" as any).select("employee_id,status,due_at").in("employee_id", ids),
       ]);
+      const emps = (empsRes.data as any[]) ?? [];
+      const items = (itemsRes.data as any[]) ?? [];
       const now = new Date();
       const map = new Map<string, EmployeeRow>();
       (states ?? []).forEach((s: any) => {
-        const e = (emps ?? []).find((x: any) => x.id === s.employee_id);
+        const e = emps.find((x: any) => x.id === s.employee_id);
         map.set(s.employee_id, {
           employee_id: s.employee_id,
           full_name: e?.full_name ?? null,
@@ -48,7 +50,7 @@ export default function RbtPreboardingConsole() {
           total: 0, complete: 0, overdue: 0,
         });
       });
-      (items ?? []).forEach((i: any) => {
+      items.forEach((i: any) => {
         const row = map.get(i.employee_id);
         if (!row) return;
         row.total += 1;
@@ -67,7 +69,12 @@ export default function RbtPreboardingConsole() {
   }, [employees, query]);
 
   return (
-    <OSShellPage title="RBT Preboarding" description="Track new-hire preboarding across HR, Recruiting, and Training.">
+    <OSShell>
+      <div className="mx-auto max-w-6xl px-6 md:px-10 py-8 space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-semibold tracking-tight">RBT Preboarding</h1>
+        <p className="text-sm text-muted-foreground">Track new-hire preboarding across HR, Recruiting, and Training.</p>
+      </header>
       <Tabs defaultValue="employees">
         <TabsList>
           <TabsTrigger value="employees"><Users className="h-4 w-4 mr-1.5" />Employees</TabsTrigger>
@@ -115,7 +122,8 @@ export default function RbtPreboardingConsole() {
           <RequirementsAdmin />
         </TabsContent>
       </Tabs>
-    </OSShellPage>
+      </div>
+    </OSShell>
   );
 }
 
