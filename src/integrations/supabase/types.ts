@@ -15575,6 +15575,60 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_credentials: {
+        Row: {
+          created_at: string
+          credential_type: string
+          document_url: string | null
+          employee_id: string
+          expires_on: string | null
+          id: string
+          identifier: string | null
+          issued_on: string | null
+          label: string
+          last_verified_at: string | null
+          notes: string | null
+          source: string | null
+          state_code: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credential_type: string
+          document_url?: string | null
+          employee_id: string
+          expires_on?: string | null
+          id?: string
+          identifier?: string | null
+          issued_on?: string | null
+          label: string
+          last_verified_at?: string | null
+          notes?: string | null
+          source?: string | null
+          state_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credential_type?: string
+          document_url?: string | null
+          employee_id?: string
+          expires_on?: string | null
+          id?: string
+          identifier?: string | null
+          issued_on?: string | null
+          label?: string
+          last_verified_at?: string | null
+          notes?: string | null
+          source?: string | null
+          state_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_dashboard_card_engagement: {
         Row: {
           card_id: string
@@ -16610,6 +16664,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rbt_hours_issues: {
+        Row: {
+          created_at: string
+          description: string
+          employee_id: string
+          expected_hours: number | null
+          id: string
+          issue_type: string
+          period_end: string | null
+          period_start: string | null
+          reported_hours: number | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          employee_id: string
+          expected_hours?: number | null
+          id?: string
+          issue_type: string
+          period_end?: string | null
+          period_start?: string | null
+          reported_hours?: number | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          employee_id?: string
+          expected_hours?: number | null
+          id?: string
+          issue_type?: string
+          period_end?: string | null
+          period_start?: string | null
+          reported_hours?: number | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_hours_snapshots: {
+        Row: {
+          cancelled_hours: number
+          completed_hours: number
+          created_at: string
+          employee_id: string
+          id: string
+          imported_hours: number
+          last_import_at: string | null
+          period_end: string
+          period_start: string
+          scheduled_hours: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled_hours?: number
+          completed_hours?: number
+          created_at?: string
+          employee_id: string
+          id?: string
+          imported_hours?: number
+          last_import_at?: string | null
+          period_end: string
+          period_start: string
+          scheduled_hours?: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled_hours?: number
+          completed_hours?: number
+          created_at?: string
+          employee_id?: string
+          id?: string
+          imported_hours?: number
+          last_import_at?: string | null
+          period_end?: string
+          period_start?: string
+          scheduled_hours?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       rbt_journey_audit: {
         Row: {
@@ -17797,6 +17947,51 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_performance_notes: {
+        Row: {
+          author_id: string | null
+          category: string
+          created_at: string
+          detail: string | null
+          employee_id: string
+          id: string
+          is_active: boolean
+          source: string | null
+          source_date: string | null
+          source_reference: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          category: string
+          created_at?: string
+          detail?: string | null
+          employee_id: string
+          id?: string
+          is_active?: boolean
+          source?: string | null
+          source_date?: string | null
+          source_reference?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          category?: string
+          created_at?: string
+          detail?: string | null
+          employee_id?: string
+          id?: string
+          is_active?: boolean
+          source?: string | null
+          source_date?: string | null
+          source_reference?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_preboarding_audit: {
         Row: {
           action: string
@@ -18714,6 +18909,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rbt_shift_discrepancies: {
+        Row: {
+          created_at: string
+          description: string
+          discrepancy_type: string
+          employee_id: string
+          id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          session_date: string | null
+          session_id: string | null
+          shift_event_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          discrepancy_type: string
+          employee_id: string
+          id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_date?: string | null
+          session_id?: string | null
+          shift_event_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          discrepancy_type?: string
+          employee_id?: string
+          id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_date?: string | null
+          session_id?: string | null
+          shift_event_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       rbt_shift_events: {
         Row: {
