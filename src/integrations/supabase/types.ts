@@ -16954,63 +16954,154 @@ export type Database = {
       }
       rbt_help_requests: {
         Row: {
+          assigned_bcba_id: string | null
+          attachment_name: string | null
+          attachment_url: string | null
           category: string
           centralreach_reference: string | null
           centralreach_sync_status: string
           created_at: string
           description: string
+          due_at: string | null
+          emergency_acknowledged: boolean
+          escalated_at: string | null
+          escalation_level: number
           first_response_at: string | null
           id: string
+          is_urgent_safety: boolean
           preferred_contact_method: string | null
           rbt_employee_id: string
           related_client_id: string | null
           related_session_id: string | null
+          resolution_notes: string | null
           resolved_at: string | null
+          routed_at: string | null
           routed_to_employee_id: string | null
           routed_to_role: string | null
+          routing_rule_id: string | null
+          satisfaction_at: string | null
+          satisfaction_comment: string | null
+          satisfaction_rating: number | null
+          service_setting: string | null
+          sla_breached_at: string | null
+          sla_minutes: number | null
+          state: string | null
           status: string
+          subcategory: string | null
+          subject: string | null
+          ticket_number: string | null
           updated_at: string
           urgency: string
         }
         Insert: {
+          assigned_bcba_id?: string | null
+          attachment_name?: string | null
+          attachment_url?: string | null
           category: string
           centralreach_reference?: string | null
           centralreach_sync_status?: string
           created_at?: string
           description: string
+          due_at?: string | null
+          emergency_acknowledged?: boolean
+          escalated_at?: string | null
+          escalation_level?: number
           first_response_at?: string | null
           id?: string
+          is_urgent_safety?: boolean
           preferred_contact_method?: string | null
           rbt_employee_id: string
           related_client_id?: string | null
           related_session_id?: string | null
+          resolution_notes?: string | null
           resolved_at?: string | null
+          routed_at?: string | null
           routed_to_employee_id?: string | null
           routed_to_role?: string | null
+          routing_rule_id?: string | null
+          satisfaction_at?: string | null
+          satisfaction_comment?: string | null
+          satisfaction_rating?: number | null
+          service_setting?: string | null
+          sla_breached_at?: string | null
+          sla_minutes?: number | null
+          state?: string | null
           status?: string
+          subcategory?: string | null
+          subject?: string | null
+          ticket_number?: string | null
           updated_at?: string
           urgency?: string
         }
         Update: {
+          assigned_bcba_id?: string | null
+          attachment_name?: string | null
+          attachment_url?: string | null
           category?: string
           centralreach_reference?: string | null
           centralreach_sync_status?: string
           created_at?: string
           description?: string
+          due_at?: string | null
+          emergency_acknowledged?: boolean
+          escalated_at?: string | null
+          escalation_level?: number
           first_response_at?: string | null
           id?: string
+          is_urgent_safety?: boolean
           preferred_contact_method?: string | null
           rbt_employee_id?: string
           related_client_id?: string | null
           related_session_id?: string | null
+          resolution_notes?: string | null
           resolved_at?: string | null
+          routed_at?: string | null
           routed_to_employee_id?: string | null
           routed_to_role?: string | null
+          routing_rule_id?: string | null
+          satisfaction_at?: string | null
+          satisfaction_comment?: string | null
+          satisfaction_rating?: number | null
+          service_setting?: string | null
+          sla_breached_at?: string | null
+          sla_minutes?: number | null
+          state?: string | null
           status?: string
+          subcategory?: string | null
+          subject?: string | null
+          ticket_number?: string | null
           updated_at?: string
           urgency?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rbt_help_requests_assigned_bcba_id_fkey"
+            columns: ["assigned_bcba_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_help_requests_assigned_bcba_id_fkey"
+            columns: ["assigned_bcba_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_help_requests_assigned_bcba_id_fkey"
+            columns: ["assigned_bcba_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_help_requests_assigned_bcba_id_fkey"
+            columns: ["assigned_bcba_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rbt_help_requests_rbt_employee_id_fkey"
             columns: ["rbt_employee_id"]
@@ -19866,6 +19957,351 @@ export type Database = {
             columns: ["rbt_employee_id"]
             isOneToOne: false
             referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_support_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          detail: Json
+          id: string
+          ticket_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          ticket_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_support_audit_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_help_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_support_categories: {
+        Row: {
+          active: boolean
+          ai_advice_restricted: boolean
+          allow_client_link: boolean
+          created_at: string
+          default_sla_minutes: number
+          default_urgency: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_urgent_safety: boolean
+          key: string
+          label: string
+          order_index: number
+          subcategories: string[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          ai_advice_restricted?: boolean
+          allow_client_link?: boolean
+          created_at?: string
+          default_sla_minutes?: number
+          default_urgency?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_urgent_safety?: boolean
+          key: string
+          label: string
+          order_index?: number
+          subcategories?: string[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          ai_advice_restricted?: boolean
+          allow_client_link?: boolean
+          created_at?: string
+          default_sla_minutes?: number
+          default_urgency?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_urgent_safety?: boolean
+          key?: string
+          label?: string
+          order_index?: number
+          subcategories?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_support_routing_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          escalate_after_minutes: number | null
+          id: string
+          match_category: string | null
+          match_escalation_min: number | null
+          match_has_bcba: boolean | null
+          match_has_client: boolean | null
+          match_service_setting: string | null
+          match_state: string | null
+          match_subcategory: string | null
+          match_time_of_day: string | null
+          match_urgency: string | null
+          name: string
+          notify_role: string[] | null
+          priority: number
+          route_to_assigned_bcba: boolean
+          route_to_employee_id: string | null
+          route_to_rbt_support_rep: boolean
+          route_to_role: string | null
+          sla_minutes_override: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          escalate_after_minutes?: number | null
+          id?: string
+          match_category?: string | null
+          match_escalation_min?: number | null
+          match_has_bcba?: boolean | null
+          match_has_client?: boolean | null
+          match_service_setting?: string | null
+          match_state?: string | null
+          match_subcategory?: string | null
+          match_time_of_day?: string | null
+          match_urgency?: string | null
+          name: string
+          notify_role?: string[] | null
+          priority?: number
+          route_to_assigned_bcba?: boolean
+          route_to_employee_id?: string | null
+          route_to_rbt_support_rep?: boolean
+          route_to_role?: string | null
+          sla_minutes_override?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          escalate_after_minutes?: number | null
+          id?: string
+          match_category?: string | null
+          match_escalation_min?: number | null
+          match_has_bcba?: boolean | null
+          match_has_client?: boolean | null
+          match_service_setting?: string | null
+          match_state?: string | null
+          match_subcategory?: string | null
+          match_time_of_day?: string | null
+          match_urgency?: string | null
+          name?: string
+          notify_role?: string[] | null
+          priority?: number
+          route_to_assigned_bcba?: boolean
+          route_to_employee_id?: string | null
+          route_to_rbt_support_rep?: boolean
+          route_to_role?: string | null
+          sla_minutes_override?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_support_routing_rules_route_to_employee_id_fkey"
+            columns: ["route_to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_support_routing_rules_route_to_employee_id_fkey"
+            columns: ["route_to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_support_routing_rules_route_to_employee_id_fkey"
+            columns: ["route_to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_support_routing_rules_route_to_employee_id_fkey"
+            columns: ["route_to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_support_team_contacts: {
+        Row: {
+          active: boolean
+          contact_email: string | null
+          contact_employee_id: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          role_key: string
+          scope: string
+          scope_employee_id: string | null
+          scope_state: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          contact_email?: string | null
+          contact_employee_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          role_key: string
+          scope?: string
+          scope_employee_id?: string | null
+          scope_state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          contact_email?: string | null
+          contact_employee_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          role_key?: string
+          scope?: string
+          scope_employee_id?: string | null
+          scope_state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_support_team_contacts_contact_employee_id_fkey"
+            columns: ["contact_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_support_team_contacts_contact_employee_id_fkey"
+            columns: ["contact_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_support_team_contacts_contact_employee_id_fkey"
+            columns: ["contact_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_support_team_contacts_contact_employee_id_fkey"
+            columns: ["contact_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_support_team_contacts_scope_employee_id_fkey"
+            columns: ["scope_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_support_team_contacts_scope_employee_id_fkey"
+            columns: ["scope_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_support_team_contacts_scope_employee_id_fkey"
+            columns: ["scope_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_support_team_contacts_scope_employee_id_fkey"
+            columns: ["scope_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_support_ticket_updates: {
+        Row: {
+          author_id: string | null
+          body: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          ticket_id: string
+          to_status: string | null
+          update_type: string
+          visible_to_employee: boolean
+        }
+        Insert: {
+          author_id?: string | null
+          body?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          ticket_id: string
+          to_status?: string | null
+          update_type?: string
+          visible_to_employee?: boolean
+        }
+        Update: {
+          author_id?: string | null
+          body?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          ticket_id?: string
+          to_status?: string | null
+          update_type?: string
+          visible_to_employee?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_support_ticket_updates_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_help_requests"
             referencedColumns: ["id"]
           },
         ]
