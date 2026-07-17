@@ -213,7 +213,7 @@ import HelpPage from "./pages/Help";
 import JourneyEditor from "./pages/admin/JourneyEditor";
 import RbtLifecycle from "./pages/admin/RbtLifecycle";
 import RbtAppShell from "./pages/rbt/app/shell";
-import { RbtHome, RbtSchedule, RbtLearn, RbtSupport, RbtMe } from "./pages/rbt/app/pages";
+import { RbtHome, RbtSchedule, RbtLearn, RbtSupport, RbtMe, RbtProgramPage, RbtPassportPage } from "./pages/rbt/app/pages";
 import RbtPreboarding from "./pages/rbt/app/preboarding/RbtPreboarding";
 import RbtReadiness from "./pages/rbt/app/readiness/RbtReadiness";
 import RbtStaffing from "./pages/rbt/app/readiness/RbtStaffing";
@@ -1180,6 +1180,8 @@ const App = () => (
                     <Route path="staffing" element={<RbtStaffing />} />
                     <Route path="schedule" element={<RbtSchedule />} />
                     <Route path="learn" element={<RbtLearn />} />
+                    <Route path="program" element={<RbtProgramPage />} />
+                    <Route path="passport" element={<RbtPassportPage />} />
                     <Route path="support" element={<RbtSupport />} />
                     <Route path="me" element={<RbtMe />} />
                   </Route>
