@@ -15220,6 +15220,33 @@ export type Database = {
           },
         ]
       }
+      rbt_career_interests: {
+        Row: {
+          created_at: string
+          employee_id: string
+          interested_in_fellowship: boolean
+          interested_in_lead: boolean
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          interested_in_fellowship?: boolean
+          interested_in_lead?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          interested_in_fellowship?: boolean
+          interested_in_lead?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_client_assignments: {
         Row: {
           assigned_bcba_id: string | null
@@ -15446,6 +15473,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_data_sync_status: {
+        Row: {
+          last_attempt_at: string | null
+          last_success_at: string | null
+          message: string | null
+          source: string
+          stale_after_hours: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          last_attempt_at?: string | null
+          last_success_at?: string | null
+          message?: string | null
+          source: string
+          stale_after_hours?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          last_attempt_at?: string | null
+          last_success_at?: string | null
+          message?: string | null
+          source?: string
+          stale_after_hours?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_help_requests: {
         Row: {
           category: string
@@ -15559,6 +15616,110 @@ export type Database = {
             columns: ["routed_to_employee_id"]
             isOneToOne: false
             referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_lifecycle_events: {
+        Row: {
+          actor_id: string | null
+          employee_id: string
+          from_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id: string
+          occurred_at: string
+          reason: string | null
+          source: string
+          to_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+        }
+        Insert: {
+          actor_id?: string | null
+          employee_id: string
+          from_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id?: string
+          occurred_at?: string
+          reason?: string | null
+          source?: string
+          to_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+        }
+        Update: {
+          actor_id?: string | null
+          employee_id?: string
+          from_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id?: string
+          occurred_at?: string
+          reason?: string | null
+          source?: string
+          to_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+        }
+        Relationships: []
+      }
+      rbt_lifecycle_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          from_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id: string
+          is_active: boolean
+          predicate_json: Json
+          to_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          from_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id?: string
+          is_active?: boolean
+          predicate_json?: Json
+          to_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          from_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id?: string
+          is_active?: boolean
+          predicate_json?: Json
+          to_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rbt_lifecycle_state: {
+        Row: {
+          created_at: string
+          employee_id: string
+          entered_at: string
+          pathway_id: string | null
+          stage: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          entered_at?: string
+          pathway_id?: string | null
+          stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          entered_at?: string
+          pathway_id?: string | null
+          stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_lifecycle_state_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_pathways"
             referencedColumns: ["id"]
           },
         ]
@@ -15688,6 +15849,139 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rbt_pathway_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          employee_id: string
+          evidence_url: string | null
+          id: string
+          notes: string | null
+          pathway_step_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          employee_id: string
+          evidence_url?: string | null
+          id?: string
+          notes?: string | null
+          pathway_step_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          employee_id?: string
+          evidence_url?: string | null
+          id?: string
+          notes?: string | null
+          pathway_step_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_pathway_progress_pathway_step_id_fkey"
+            columns: ["pathway_step_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_pathway_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_pathway_steps: {
+        Row: {
+          created_at: string
+          description: string | null
+          gate_stage: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id: string
+          key: string
+          kind: string
+          order_index: number
+          pathway_id: string
+          ref_id: string | null
+          required: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          gate_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id?: string
+          key: string
+          kind?: string
+          order_index?: number
+          pathway_id: string
+          ref_id?: string | null
+          required?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          gate_stage?: Database["public"]["Enums"]["rbt_lifecycle_stage"] | null
+          id?: string
+          key?: string
+          kind?: string
+          order_index?: number
+          pathway_id?: string
+          ref_id?: string | null
+          required?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_pathway_steps_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_pathways: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       rbt_readiness_records: {
         Row: {
@@ -16142,6 +16436,101 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rbt_shift_events: {
+        Row: {
+          batch_id: string | null
+          bcba_first_name: string | null
+          bcba_last_initial: string | null
+          client_external_id: string | null
+          client_initials: string | null
+          created_at: string
+          employee_id: string | null
+          ends_at: string
+          external_id: string
+          id: string
+          location_type: string | null
+          raw: Json | null
+          service_code: string | null
+          source: string
+          starts_at: string
+          status: string
+        }
+        Insert: {
+          batch_id?: string | null
+          bcba_first_name?: string | null
+          bcba_last_initial?: string | null
+          client_external_id?: string | null
+          client_initials?: string | null
+          created_at?: string
+          employee_id?: string | null
+          ends_at: string
+          external_id: string
+          id?: string
+          location_type?: string | null
+          raw?: Json | null
+          service_code?: string | null
+          source: string
+          starts_at: string
+          status?: string
+        }
+        Update: {
+          batch_id?: string | null
+          bcba_first_name?: string | null
+          bcba_last_initial?: string | null
+          client_external_id?: string | null
+          client_initials?: string | null
+          created_at?: string
+          employee_id?: string | null
+          ends_at?: string
+          external_id?: string
+          id?: string
+          location_type?: string | null
+          raw?: Json | null
+          service_code?: string | null
+          source?: string
+          starts_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_shift_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_shift_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbt_shift_import_batches: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          id: string
+          imported_by: string | null
+          row_count: number
+          source: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          imported_by?: string | null
+          row_count?: number
+          source: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          imported_by?: string | null
+          row_count?: number
+          source?: string
+          status?: string
+        }
+        Relationships: []
       }
       rbt_supervision: {
         Row: {
@@ -21245,6 +21634,77 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_assigned_clients_min_v: {
+        Row: {
+          assigned_bcba_id: string | null
+          authorized_service_codes: string[] | null
+          client_id: string | null
+          client_initials: string | null
+          clinic: string | null
+          employee_id: string | null
+          start_date: string | null
+          state: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_client_assignments_assigned_bcba_id_fkey"
+            columns: ["assigned_bcba_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_client_assignments_assigned_bcba_id_fkey"
+            columns: ["assigned_bcba_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_client_assignments_assigned_bcba_id_fkey"
+            columns: ["assigned_bcba_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_client_assignments_assigned_bcba_id_fkey"
+            columns: ["assigned_bcba_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_client_assignments_rbt_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_client_assignments_rbt_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "rbt_client_assignments_rbt_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbt_client_assignments_rbt_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_bcbas_real: {
         Row: {
           avg_weekly_hours: number | null
@@ -22448,6 +22908,25 @@ export type Database = {
         | "Ready for Submission"
         | "Submitted to Auth"
       qa_status: "Not Started" | "In Review" | "Complete"
+      rbt_lifecycle_stage:
+        | "offer_accepted"
+        | "preboarding"
+        | "training"
+        | "certification_in_progress"
+        | "ready_for_staffing"
+        | "first_case_pending"
+        | "first_case_active"
+        | "first_30_days"
+        | "active"
+        | "established"
+        | "advanced_candidate"
+        | "lead"
+        | "trainer_floater_lead"
+        | "fellowship_applicant"
+        | "fellowship_participant"
+        | "bcba_transition"
+        | "leave_inactive"
+        | "offboarding"
       reauth_cycle_status:
         | "Not Started"
         | "BCBA Notified"
@@ -23229,6 +23708,26 @@ export const Constants = {
         "Submitted to Auth",
       ],
       qa_status: ["Not Started", "In Review", "Complete"],
+      rbt_lifecycle_stage: [
+        "offer_accepted",
+        "preboarding",
+        "training",
+        "certification_in_progress",
+        "ready_for_staffing",
+        "first_case_pending",
+        "first_case_active",
+        "first_30_days",
+        "active",
+        "established",
+        "advanced_candidate",
+        "lead",
+        "trainer_floater_lead",
+        "fellowship_applicant",
+        "fellowship_participant",
+        "bcba_transition",
+        "leave_inactive",
+        "offboarding",
+      ],
       reauth_cycle_status: [
         "Not Started",
         "BCBA Notified",
