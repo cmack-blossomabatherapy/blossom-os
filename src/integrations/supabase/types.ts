@@ -15220,6 +15220,108 @@ export type Database = {
           },
         ]
       }
+      rbt_availability_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          employee_id: string
+          id: string
+          snapshot: Json
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          employee_id: string
+          id?: string
+          snapshot: Json
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          employee_id?: string
+          id?: string
+          snapshot?: Json
+        }
+        Relationships: []
+      }
+      rbt_availability_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          details: Json
+          employee_id: string
+          ends_on: string
+          id: string
+          reason: string | null
+          starts_on: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          employee_id: string
+          ends_on: string
+          id?: string
+          reason?: string | null
+          starts_on: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          employee_id?: string
+          ends_on?: string
+          id?: string
+          reason?: string | null
+          starts_on?: string
+        }
+        Relationships: []
+      }
+      rbt_availability_profile: {
+        Row: {
+          clinic_available: boolean
+          days: Json
+          employee_id: string
+          home_available: boolean
+          max_weekly_hours: number | null
+          notes: string | null
+          preferred_settings: Json
+          school_available: boolean
+          time_windows: Json
+          travel_radius_miles: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          clinic_available?: boolean
+          days?: Json
+          employee_id: string
+          home_available?: boolean
+          max_weekly_hours?: number | null
+          notes?: string | null
+          preferred_settings?: Json
+          school_available?: boolean
+          time_windows?: Json
+          travel_radius_miles?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          clinic_available?: boolean
+          days?: Json
+          employee_id?: string
+          home_available?: boolean
+          max_weekly_hours?: number | null
+          notes?: string | null
+          preferred_settings?: Json
+          school_available?: boolean
+          time_windows?: Json
+          travel_radius_miles?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       rbt_career_interests: {
         Row: {
           created_at: string
@@ -16069,6 +16171,51 @@ export type Database = {
           },
         ]
       }
+      rbt_outreach_tasks: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_at: string | null
+          employee_id: string
+          id: string
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          employee_id: string
+          id?: string
+          status?: string
+          task_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_at?: string | null
+          employee_id?: string
+          id?: string
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_pathway_progress: {
         Row: {
           completed_at: string | null
@@ -16416,6 +16563,158 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_readiness_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          employee_id: string
+          event_type: string
+          from_value: string | null
+          gate_key: string | null
+          id: string
+          note: string | null
+          to_value: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          employee_id: string
+          event_type: string
+          from_value?: string | null
+          gate_key?: string | null
+          id?: string
+          note?: string | null
+          to_value?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          employee_id?: string
+          event_type?: string
+          from_value?: string | null
+          gate_key?: string | null
+          id?: string
+          note?: string | null
+          to_value?: string | null
+        }
+        Relationships: []
+      }
+      rbt_readiness_gate_state: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          assigned_to: string | null
+          blocker_note: string | null
+          created_at: string
+          due_at: string | null
+          employee_id: string
+          gate_key: string
+          id: string
+          last_progress_at: string | null
+          metadata: Json
+          risk_flag: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_to?: string | null
+          blocker_note?: string | null
+          created_at?: string
+          due_at?: string | null
+          employee_id: string
+          gate_key: string
+          id?: string
+          last_progress_at?: string | null
+          metadata?: Json
+          risk_flag?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_to?: string | null
+          blocker_note?: string | null
+          created_at?: string
+          due_at?: string | null
+          employee_id?: string
+          gate_key?: string
+          id?: string
+          last_progress_at?: string | null
+          metadata?: Json
+          risk_flag?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_readiness_gate_state_gate_key_fkey"
+            columns: ["gate_key"]
+            isOneToOne: false
+            referencedRelation: "rbt_readiness_gates"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      rbt_readiness_gates: {
+        Row: {
+          advances_stage_key: string | null
+          approver_role: string | null
+          created_at: string
+          description: string | null
+          due_offset_days: number | null
+          employee_instructions: string | null
+          id: string
+          internal_instructions: string | null
+          is_active: boolean
+          key: string
+          label: string
+          owner_role: string
+          requires_approval: boolean
+          risk_after_days: number | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          advances_stage_key?: string | null
+          approver_role?: string | null
+          created_at?: string
+          description?: string | null
+          due_offset_days?: number | null
+          employee_instructions?: string | null
+          id?: string
+          internal_instructions?: string | null
+          is_active?: boolean
+          key: string
+          label: string
+          owner_role: string
+          requires_approval?: boolean
+          risk_after_days?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          advances_stage_key?: string | null
+          approver_role?: string | null
+          created_at?: string
+          description?: string | null
+          due_offset_days?: number | null
+          employee_instructions?: string | null
+          id?: string
+          internal_instructions?: string | null
+          is_active?: boolean
+          key?: string
+          label?: string
+          owner_role?: string
+          requires_approval?: boolean
+          risk_after_days?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_readiness_records: {
         Row: {
           bcba: string | null
@@ -16497,6 +16796,42 @@ export type Database = {
           training_admin?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      rbt_readiness_support_requests: {
+        Row: {
+          assigned_to: string | null
+          body: string | null
+          created_at: string
+          employee_id: string
+          gate_key: string | null
+          id: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          body?: string | null
+          created_at?: string
+          employee_id: string
+          gate_key?: string | null
+          id?: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          body?: string | null
+          created_at?: string
+          employee_id?: string
+          gate_key?: string | null
+          id?: string
+          status?: string
+          subject?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -16965,6 +17300,87 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_staffing_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          employee_id: string
+          event_type: string
+          from_status: string | null
+          id: string
+          metadata: Json
+          note: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          employee_id: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          employee_id?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          to_status?: string | null
+        }
+        Relationships: []
+      }
+      rbt_staffing_status: {
+        Row: {
+          assigned_coordinator: string | null
+          became_ready_at: string | null
+          case_confirmed_at: string | null
+          case_start_date: string | null
+          employee_id: string
+          last_activity_at: string | null
+          notes: string | null
+          potential_case_ref: string | null
+          potential_case_summary: string | null
+          schedule_details: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_coordinator?: string | null
+          became_ready_at?: string | null
+          case_confirmed_at?: string | null
+          case_start_date?: string | null
+          employee_id: string
+          last_activity_at?: string | null
+          notes?: string | null
+          potential_case_ref?: string | null
+          potential_case_summary?: string | null
+          schedule_details?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_coordinator?: string | null
+          became_ready_at?: string | null
+          case_confirmed_at?: string | null
+          case_start_date?: string | null
+          employee_id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          potential_case_ref?: string | null
+          potential_case_summary?: string | null
+          schedule_details?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rbt_supervision: {
         Row: {
           acknowledged_by_rbt_at: string | null
@@ -17102,6 +17518,80 @@ export type Database = {
           stage_key?: string
         }
         Relationships: []
+      }
+      rbt_unstaffed_alert_rules: {
+        Row: {
+          audience_roles: string[]
+          created_at: string
+          days: number
+          id: string
+          is_active: boolean
+          message: string
+          severity: string
+        }
+        Insert: {
+          audience_roles?: string[]
+          created_at?: string
+          days: number
+          id?: string
+          is_active?: boolean
+          message: string
+          severity?: string
+        }
+        Update: {
+          audience_roles?: string[]
+          created_at?: string
+          days?: number
+          id?: string
+          is_active?: boolean
+          message?: string
+          severity?: string
+        }
+        Relationships: []
+      }
+      rbt_unstaffed_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          employee_id: string
+          id: string
+          message: string
+          resolved_at: string | null
+          rule_id: string | null
+          severity: string
+          triggered_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          employee_id: string
+          id?: string
+          message: string
+          resolved_at?: string | null
+          rule_id?: string | null
+          severity: string
+          triggered_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          employee_id?: string
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          rule_id?: string | null
+          severity?: string
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_unstaffed_alerts_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_unstaffed_alert_rules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recruiting_activity_events: {
         Row: {
