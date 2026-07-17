@@ -66,7 +66,9 @@ function TasksInner() {
     const taskId = searchParams.get("taskId");
     if (taskId && !loading) {
       const t = tasks.find((x) => x.id === taskId);
-      if (t && searchParams.get("activity") === "1") setActivityTask(t);
+      // Any deep link with `taskId` opens the task drawer — notifications
+      // (assignment, due today, due tomorrow) all rely on this behavior.
+      if (t) setActivityTask(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
@@ -95,6 +97,18 @@ function TasksInner() {
     const p = new URLSearchParams(searchParams);
     if (next === "all") p.delete("filter"); else p.set("filter", next);
     setSearchParams(p, { replace: true });
+  };
+
+  // Clear the drawer deep-link params when the drawer closes so a browser
+  // back navigation doesn't immediately re-open it.
+  const closeActivity = () => {
+    setActivityTask(null);
+    const p = new URLSearchParams(searchParams);
+    if (p.has("taskId") || p.has("activity")) {
+      p.delete("taskId");
+      p.delete("activity");
+      setSearchParams(p, { replace: true });
+    }
   };
 
   const tiles = [
