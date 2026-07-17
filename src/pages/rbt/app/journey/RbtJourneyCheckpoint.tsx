@@ -77,9 +77,12 @@ export default function RbtJourneyCheckpoint() {
       free_text: freeText || null,
     });
     if (careers.length) {
-      // best-effort persistence to career interests table (append)
-      const rows = careers.map((c) => ({ employee_id: instance.employee_id, interest: c }));
-      await supabase.from("rbt_career_interests" as any).upsert(rows, { onConflict: "employee_id,interest" } as any);
+      await supabase.from("rbt_career_interests" as any).upsert({
+        employee_id: instance.employee_id,
+        interested_in_lead: careers.includes("lead_rbt"),
+        interested_in_fellowship: careers.includes("bcba_pathway"),
+        notes: careers.join(", "),
+      } as any, { onConflict: "employee_id" } as any);
     }
     setSaving(false);
     if (error) return toast.error(error.message || "Could not submit");
