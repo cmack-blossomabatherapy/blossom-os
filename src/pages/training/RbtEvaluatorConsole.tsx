@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { OSShellPage } from "@/pages/os/OSShellPage";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,11 @@ export default function RbtEvaluatorConsole() {
   }, [rbts, q]);
 
   return (
-    <OSShellPage title="RBT Evaluator Console" subtitle="Record skill evaluations, complete steps, assign remediation.">
+    <div className="p-6 space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">RBT Evaluator Console</h1>
+        <p className="text-sm text-muted-foreground">Record skill evaluations, complete steps, assign remediation.</p>
+      </div>
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <aside className="rounded-2xl border border-border/70 bg-card p-3">
           <Input placeholder="Search RBTs…" value={q} onChange={(e) => setQ(e.target.value)} className="mb-2" />
@@ -58,7 +61,7 @@ export default function RbtEvaluatorConsole() {
           )}
         </section>
       </div>
-    </OSShellPage>
+    </div>
   );
 }
 
