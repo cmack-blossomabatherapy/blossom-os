@@ -1,5 +1,6 @@
 // Manual sync of historical Retell calls using the Retell REST API.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { classifyAfterHoursCall } from '../_shared/classifyAfterHoursCall.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,12 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RETELL_API_KEY = Deno.env.get('RETELL_API_KEY') ?? ''
 const DEFAULT_AGENT_ID = Deno.env.get('RETELL_AGENT_ID') ?? ''
-const MAX_CALLS_PER_SYNC = Number(Deno.env.get('RETELL_MAX_CALLS_PER_SYNC') ?? '50')
+// Safety cap so a single sync run can't run away. Well above expected volumes.
+const MAX_CALLS_PER_SYNC = Number(Deno.env.get('RETELL_MAX_CALLS_PER_SYNC') ?? '5000')
+const PAGE_SIZE = Number(Deno.env.get('RETELL_PAGE_SIZE') ?? '500')
+const UPSERT_BATCH = 200
+// Backfill floor — Retell rollout started 2026-06-18.
+const DEFAULT_SINCE_ISO = '2026-06-18T00:00:00Z'
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -33,6 +39,8 @@ function pickAnalysis(call: any) {
 
 function callToRow(call: any) {
   const { summary, sentiment, outcome, custom } = pickAnalysis(call)
+  const reason = custom?.reason_for_call ?? null
+  const department = classifyAfterHoursCall(reason, { ...custom, call_summary: summary })
   return {
     retell_call_id: call?.call_id,
     agent_id: call?.agent_id ?? DEFAULT_AGENT_ID ?? null,
@@ -45,13 +53,16 @@ function callToRow(call: any) {
     child_age: custom?.child_age ?? null,
     insurance_provider: custom?.insurance_provider ?? null,
     insurance_type: custom?.insurance_type ?? null,
-    reason_for_call: custom?.reason_for_call ?? null,
+    reason_for_call: reason,
     call_summary: summary,
     urgency_level: custom?.urgency_level ?? null,
     sentiment,
+    caller_emotion: custom?.caller_emotion ?? null,
     call_outcome: outcome,
     needs_intake_follow_up: custom?.needs_intake_follow_up ?? true,
     emergency_flag: custom?.emergency_flag ?? false,
+    department_to_notify: department,
+    handling_instructions: custom?.handling_instructions ?? null,
     recording_url: call?.recording_url ?? null,
     transcript: call?.transcript ?? null,
     transcript_object: call?.transcript_object ?? null,
@@ -75,21 +86,41 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
 
-  // Parse optional body — allows callers to override agent filter or limit
-  // without redeploying. Falls back to env / defaults.
+  // Parse optional body — allows callers to override agent filter, cap, or
+  // backfill floor without redeploying.
   let bodyAgentId: string | undefined
-  let bodyLimit: number | undefined
+  let bodyCap: number | undefined
+  let bodySince: string | undefined
   try {
     const body = await req.clone().json().catch(() => null) as any
     if (body && typeof body === 'object') {
       if (typeof body.agent_id === 'string' && body.agent_id) bodyAgentId = body.agent_id
-      if (typeof body.limit === 'number' && body.limit > 0) bodyLimit = body.limit
+      if (typeof body.limit === 'number' && body.limit > 0) bodyCap = body.limit
+      if (typeof body.since === 'string' && body.since) bodySince = body.since
     }
   } catch (_) {
     /* ignore */
   }
   const agentFilter = bodyAgentId ?? DEFAULT_AGENT_ID
-  const limit = bodyLimit ?? MAX_CALLS_PER_SYNC
+  const cap = bodyCap ?? MAX_CALLS_PER_SYNC
+
+  // Default `since` = most recent call already stored, else the backfill floor.
+  let sinceIso = bodySince ?? DEFAULT_SINCE_ISO
+  if (!bodySince) {
+    const { data: latest } = await supabase
+      .from('phone_ai_calls')
+      .select('call_started_at')
+      .not('call_started_at', 'is', null)
+      .order('call_started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (latest?.call_started_at) {
+      // Re-fetch 24h of overlap so recently-updated calls get re-classified.
+      const t = new Date(latest.call_started_at).getTime() - 24 * 3600 * 1000
+      sinceIso = new Date(Math.max(t, Date.parse(DEFAULT_SINCE_ISO))).toISOString()
+    }
+  }
+  const sinceMs = Date.parse(sinceIso)
 
   // Open a sync run for observability.
   const { data: runRow } = await supabase
@@ -99,7 +130,7 @@ Deno.serve(async (req) => {
       run_type: 'manual',
       direction: 'inbound',
       status: 'running',
-      metadata: { agent_filter: agentFilter || null, limit },
+      metadata: { agent_filter: agentFilter || null, cap, since: sinceIso },
     })
     .select('id')
     .single()
@@ -107,7 +138,7 @@ Deno.serve(async (req) => {
 
   const finishRun = async (
     status: 'success' | 'partial' | 'failed',
-    counts: { received?: number; created?: number; failed?: number },
+    counts: { received?: number; created?: number; updated?: number; failed?: number },
     error?: string,
   ) => {
     if (!runId) return
@@ -118,6 +149,7 @@ Deno.serve(async (req) => {
         completed_at: new Date().toISOString(),
         records_received: counts.received ?? 0,
         records_created: counts.created ?? 0,
+        records_updated: counts.updated ?? 0,
         records_failed: counts.failed ?? 0,
         error_message: error ?? null,
       })
@@ -127,73 +159,121 @@ Deno.serve(async (req) => {
   try {
     const filter_criteria: Record<string, unknown> = {}
     if (agentFilter) filter_criteria.agent_id = [agentFilter]
-    const res = await fetch('https://api.retellai.com/v2/list-calls', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RETELL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        filter_criteria,
-        limit,
-        sort_order: 'descending',
-      }),
-    })
 
-    if (!res.ok) {
-      const txt = await res.text()
-      console.error('[retell-sync] api error', res.status, txt)
-      await finishRun('failed', {}, `Retell API ${res.status}: ${txt.slice(0, 500)}`)
-      return json({ error: `Retell API error ${res.status}` }, 502)
-    }
-
-    const data = await res.json()
-    const calls: any[] = Array.isArray(data) ? data : (data?.calls ?? data?.data ?? [])
-    const rows = calls.filter((c) => c?.call_id).map(callToRow)
-    if (rows.length === 0) {
-      await finishRun('success', { received: 0, created: 0 })
-      return json({ ok: true, fetched: 0, inserted: 0, skippedExisting: 0, runId })
-    }
-
-    const ids = rows.map((row) => row.retell_call_id)
-    const { data: existing, error: existingError } = await supabase
-      .from('phone_ai_calls')
-      .select('retell_call_id')
-      .in('retell_call_id', ids)
-
-    if (existingError) {
-      console.error('[retell-sync] existing lookup error', existingError)
-      await finishRun('failed', { received: rows.length }, existingError.message)
-      return json({ error: existingError.message }, 500)
-    }
-
-    const existingIds = new Set((existing ?? []).map((row: any) => row.retell_call_id))
-    const missingRows = rows.filter((row) => !existingIds.has(row.retell_call_id))
+    // ---- Paginate through Retell list-calls ----
+    let paginationKey: string | undefined
+    let fetched = 0
     let inserted = 0
+    let updated = 0
     let failed = 0
+    let pages = 0
+    let oldest: string | null = null
+    let newest: string | null = null
+    let stop = false
 
-    for (const row of missingRows) {
-      const { error } = await supabase
-        .from('phone_ai_calls')
-        .upsert(row, { onConflict: 'retell_call_id', ignoreDuplicates: true })
-      if (error) {
-        console.error('[retell-sync] insert error', row.retell_call_id, error)
-        failed += 1
-        continue
+    while (!stop && fetched < cap) {
+      const remaining = cap - fetched
+      const pageLimit = Math.min(PAGE_SIZE, remaining)
+      const requestBody: Record<string, unknown> = {
+        filter_criteria,
+        limit: pageLimit,
+        sort_order: 'descending',
       }
-      inserted += 1
+      if (paginationKey) requestBody.pagination_key = paginationKey
+
+      const res = await fetch('https://api.retellai.com/v2/list-calls', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RETELL_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('[retell-sync] api error', res.status, txt)
+        await finishRun('failed', { received: fetched, created: inserted, updated, failed }, `Retell API ${res.status}: ${txt.slice(0, 500)}`)
+        return json({ error: `Retell API error ${res.status}` }, 502)
+      }
+
+      const data = await res.json()
+      const calls: any[] = Array.isArray(data) ? data : (data?.calls ?? data?.data ?? [])
+      pages += 1
+
+      if (calls.length === 0) break
+
+      // Filter to sinceMs and map to rows.
+      const pageRows: ReturnType<typeof callToRow>[] = []
+      for (const c of calls) {
+        if (!c?.call_id) continue
+        const startMs = c?.start_timestamp ? Number(c.start_timestamp) : NaN
+        if (Number.isFinite(startMs)) {
+          const iso = new Date(startMs).toISOString()
+          if (!oldest || iso < oldest) oldest = iso
+          if (!newest || iso > newest) newest = iso
+          if (startMs < sinceMs) {
+            // Sorted descending — once we're older than `since`, stop after this batch.
+            stop = true
+            continue
+          }
+        }
+        pageRows.push(callToRow(c))
+      }
+      fetched += pageRows.length
+
+      // Batch upsert
+      for (let i = 0; i < pageRows.length; i += UPSERT_BATCH) {
+        const batch = pageRows.slice(i, i + UPSERT_BATCH)
+        const ids = batch.map((r) => r.retell_call_id)
+        const { data: existing } = await supabase
+          .from('phone_ai_calls')
+          .select('retell_call_id')
+          .in('retell_call_id', ids)
+        const existingSet = new Set((existing ?? []).map((r: any) => r.retell_call_id))
+
+        const { error } = await supabase
+          .from('phone_ai_calls')
+          .upsert(batch, { onConflict: 'retell_call_id' })
+        if (error) {
+          console.error('[retell-sync] upsert error', error)
+          failed += batch.length
+          continue
+        }
+        for (const r of batch) {
+          if (existingSet.has(r.retell_call_id)) updated += 1
+          else inserted += 1
+        }
+      }
+
+      // Next page
+      const nextKey =
+        (data?.pagination_key as string | undefined) ??
+        (data?.next_pagination_key as string | undefined) ??
+        (data?.paginationKey as string | undefined)
+      if (!nextKey || calls.length < pageLimit) {
+        break
+      }
+      paginationKey = nextKey
     }
 
     const result = {
       ok: true,
-      fetched: rows.length,
+      fetched,
       inserted,
-      skippedExisting: rows.length - missingRows.length,
+      updated,
+      failed,
+      pages,
+      oldest,
+      newest,
+      since: sinceIso,
+      cap,
       runId,
     }
     await finishRun(failed > 0 ? 'partial' : 'success', {
-      received: rows.length,
+      received: fetched,
       created: inserted,
+      updated,
       failed,
     })
     console.log('[retell-sync] done', result)
