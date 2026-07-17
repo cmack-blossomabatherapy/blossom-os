@@ -3,7 +3,7 @@ import {
   Activity, GraduationCap, UserCheck, ShieldAlert, CalendarClock,
   Users, Sparkles, LifeBuoy, RefreshCw, ArrowRight, Compass,
 } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { canAccessAdminHub } from "@/lib/adminAccess";
 
 const centers = [
