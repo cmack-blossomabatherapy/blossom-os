@@ -30,6 +30,7 @@ export default function RbtTrainerDashboard() {
   const [selected, setSelected] = useState<string>("");
   const [rows, setRows] = useState<TraineeRow[] | null>(null);
   const [refreshedAt, setRefreshedAt] = useState<Date>(new Date());
+  const [q, setQ] = useState("");
 
   useEffect(() => { (async () => {
     const { data } = await supabase.from("employees" as any)
@@ -118,7 +119,7 @@ export default function RbtTrainerDashboard() {
           </SelectContent>
         </Select>
       }
-      search={{ value: "", onChange: () => {}, placeholder: "" }}
+      search={{ value: q, onChange: setQ, placeholder: "Search trainee name…" }}
     >
       <div className="max-h-[70vh] overflow-auto">
         <table className="w-full text-sm">
