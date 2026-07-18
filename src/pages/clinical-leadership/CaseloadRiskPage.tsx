@@ -19,18 +19,18 @@ export default function CaseloadRiskPage() {
       const sb = supabase as any;
       const [prsRes, utsRes, ptsRes] = await Promise.all([
         sb.from("bcba_progress_reports")
-          .select("id, client_identifier, state, assigned_bcba_id, assigned_bcba_name, risk_status, status, due_date, updated_at")
-          .in("risk_status", ["delayed", "at_risk", "critical"]).limit(500),
+          .select("id, client_identifier, state, assigned_bcba_id, assigned_bcba_name, current_risk, report_status, progress_report_due_date, updated_at")
+          .limit(500),
         sb.from("bcba_service_utilization")
-          .select("id, client_identifier, state, assigned_bcba_id, assigned_bcba_name, utilization_pct, cancelled_hours_total, on_hold, updated_at")
+          .select("id, client_identifier, state, assigned_bcba_id, assigned_bcba_name, delivered_hours, authorized_hours, cancelled_hours, underutilization_risk, staffing_gap_hours, updated_at")
           .limit(500),
         sb.from("bcba_parent_training_records")
           .select("id, client_identifier, state, assigned_bcba_id, assigned_bcba_name, status, barrier, updated_at")
-          .in("status", ["behind", "at_risk", "missed"]).limit(500),
+          .limit(500),
       ]);
-      setPr((prsRes.data ?? []) as any[]);
+      setPr(((prsRes.data ?? []) as any[]).filter((r) => ["delayed", "at_risk", "critical"].includes(String(r.current_risk).toLowerCase())));
       setUtl((utsRes.data ?? []) as any[]);
-      setPt((ptsRes.data ?? []) as any[]);
+      setPt(((ptsRes.data ?? []) as any[]).filter((r) => ["behind", "at_risk", "missed", "on_hold"].includes(String(r.status).toLowerCase())));
       setFreshness((prsRes.data?.[0] as any)?.updated_at ?? null);
     })();
   }, []);
@@ -40,27 +40,29 @@ export default function CaseloadRiskPage() {
 
   const prEx = useMemo(() => pr.filter((r) => matchesFilters(r, filters)).map<ExceptionRow>((r) => ({
     id: `pr-${r.id}`,
-    title: `${r.client_identifier} · Progress report ${r.risk_status}`,
-    subtitle: `Status: ${r.status}${r.due_date ? " · due " + new Date(r.due_date).toLocaleDateString() : ""}`,
+    title: `${r.client_identifier} · Progress report ${r.current_risk}`,
+    subtitle: `Report: ${r.report_status}${r.progress_report_due_date ? " · due " + new Date(r.progress_report_due_date).toLocaleDateString() : ""}`,
     owner: r.assigned_bcba_name,
     ownerId: r.assigned_bcba_id,
-    severity: r.risk_status === "critical" ? "critical" : r.risk_status === "at_risk" ? "high" : "medium",
-    dueDate: r.due_date,
+    severity: r.current_risk === "critical" ? "critical" : r.current_risk === "at_risk" ? "high" : "medium",
+    dueDate: r.progress_report_due_date,
     sourceLabel: "progress reports",
     sourceDate: r.updated_at,
     detailPath: `/bcba/progress-reports?report=${r.id}`,
   })), [pr, filters]);
 
   const utlEx = useMemo(() => utl.filter((r) => matchesFilters(r, filters)).map<ExceptionRow>((r) => {
-    const under = (r.utilization_pct ?? 100) < 70;
-    const cancelled = (r.cancelled_hours_total ?? 0) >= 4;
-    if (!under && !cancelled && !r.on_hold) return null as any;
+    const pct = r.authorized_hours ? Math.round(100 * (r.delivered_hours ?? 0) / r.authorized_hours) : 100;
+    const under = pct < 70;
+    const cancelled = (r.cancelled_hours ?? 0) >= 4;
+    const risky = ["at_risk", "high", "critical"].includes(String(r.underutilization_risk).toLowerCase());
+    if (!under && !cancelled && !risky) return null as any;
     return {
       id: `utl-${r.id}`,
-      title: `${r.client_identifier} · ${r.on_hold ? "On hold" : under ? `Under-utilizing (${r.utilization_pct}%)` : `${r.cancelled_hours_total}h cancelled`}`,
+      title: `${r.client_identifier} · ${under ? `Under-utilizing (${pct}%)` : cancelled ? `${r.cancelled_hours}h cancelled` : `Risk: ${r.underutilization_risk}`}`,
       owner: r.assigned_bcba_name,
       ownerId: r.assigned_bcba_id,
-      severity: r.on_hold ? "critical" : under ? "high" : "medium",
+      severity: risky ? "critical" : under ? "high" : "medium",
       sourceLabel: "utilization",
       sourceDate: r.updated_at,
       detailPath: `/bcba/parent-training`,
@@ -85,9 +87,9 @@ export default function CaseloadRiskPage() {
     { label: "Progress report risks", value: prEx.length, tone: prEx.length ? ("warn" as const) : undefined },
     { label: "Utilization risks", value: utlEx.length, tone: utlEx.length ? ("warn" as const) : undefined },
     { label: "Parent training risks", value: ptEx.length, tone: ptEx.length ? ("warn" as const) : undefined },
-    { label: "On-hold cases", value: utl.filter((r) => matchesFilters(r, filters) && r.on_hold).length },
-    { label: "Cancelled hours ≥4", value: utl.filter((r) => matchesFilters(r, filters) && (r.cancelled_hours_total ?? 0) >= 4).length },
-  ]), [prEx, utlEx, ptEx, utl, filters]);
+    { label: "On-hold PT cases", value: pt.filter((r) => matchesFilters(r, filters) && String(r.status).toLowerCase() === "on_hold").length },
+    { label: "Cancelled hours ≥4", value: utl.filter((r) => matchesFilters(r, filters) && (r.cancelled_hours ?? 0) >= 4).length },
+  ]), [prEx, utlEx, ptEx, utl, pt, filters]);
 
   return (
     <CommandCenterShell
