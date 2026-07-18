@@ -132,7 +132,7 @@ export function useUpdateReviewStatus(fellowId: string | null) {
       const patch: Record<string, any> = { status };
       if (status === "completed") patch.completed_at = new Date().toISOString();
       if (outcome_summary !== undefined) patch.outcome_summary = outcome_summary;
-      const { error } = await supabase.from("bcba_fellowship_reviews").update(patch).eq("id", id);
+      const { error } = await supabase.from("bcba_fellowship_reviews").update(patch as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
