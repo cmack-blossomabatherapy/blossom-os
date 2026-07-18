@@ -8,6 +8,7 @@ import {
 import { BcbaCardFrame } from "./shared/CardFrame";
 import { BcbaCard } from "./shared/cards";
 import { useBcbaDashboardCards } from "./shared/useDashboardCards";
+import BcbaHomePage from "./home/BcbaHomePage";
 
 /* -------------------------------------------------------------------------- */
 /*  Shared page chrome                                                        */
@@ -55,8 +56,6 @@ function PageContainer({ children }: { children: React.ReactNode }) {
 /* -------------------------------------------------------------------------- */
 /*  Home — dashboard cards                                                    */
 /* -------------------------------------------------------------------------- */
-
-import BcbaHomePage from "./home/BcbaHomePage";
 
 export function BcbaHome() {
   return <BcbaHomePage />;
