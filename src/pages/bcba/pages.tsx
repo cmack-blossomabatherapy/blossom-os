@@ -8,6 +8,7 @@ import {
 import { BcbaCardFrame } from "./shared/CardFrame";
 import { BcbaCard } from "./shared/cards";
 import { useBcbaDashboardCards } from "./shared/useDashboardCards";
+import BcbaHomePage from "./home/BcbaHomePage";
 
 /* -------------------------------------------------------------------------- */
 /*  Shared page chrome                                                        */
@@ -57,67 +58,20 @@ function PageContainer({ children }: { children: React.ReactNode }) {
 /* -------------------------------------------------------------------------- */
 
 export function BcbaHome() {
+  return <BcbaHomePage />;
+}
+
+function _LegacyBcbaHome() {
   const { cards, loading, error } = useBcbaDashboardCards();
   const isMobile = useIsMobile();
-
-  const heading = (
-    <PageHeader
-      title="Good to see you"
-      subtitle="Your caseload, RBTs, and clinical work — organized."
-    />
-  );
-
-  if (loading) {
-    return (
-      <PageContainer>
-        {heading}
-        <div className={isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"}>
-          {[0, 1, 2, 3].map((i) => (
-            <BcbaCardFrame key={i} title="Loading…" state="loading" />
-          ))}
-        </div>
-      </PageContainer>
-    );
-  }
-
-  if (error) {
-    return (
-      <PageContainer>
-        {heading}
-        <BcbaCardFrame
-          title="We couldn't load your dashboard"
-          state="error"
-          errorLabel={error}
-        />
-      </PageContainer>
-    );
-  }
-
-  if (cards.length === 0) {
-    return (
-      <PageContainer>
-        {heading}
-        <BcbaCardFrame
-          title="Nothing to show yet"
-          state="empty"
-          emptyLabel="Your Blossom admin will enable dashboard cards for you shortly."
-        />
-      </PageContainer>
-    );
-  }
-
+  const heading = <PageHeader title="Good to see you" />;
+  if (loading) return <PageContainer>{heading}<BcbaCardFrame title="Loading…" state="loading" /></PageContainer>;
+  if (error)   return <PageContainer>{heading}<BcbaCardFrame title="Error" state="error" errorLabel={error} /></PageContainer>;
+  if (cards.length === 0) return <PageContainer>{heading}<BcbaCardFrame title="Nothing yet" state="empty" /></PageContainer>;
   return (
-    <PageContainer>
-      {heading}
-      <div
-        className={
-          isMobile
-            ? "grid grid-cols-1 gap-4"
-            : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
-        }
-      >
-        {cards.map((c) => (
-          <BcbaCard key={c.id} card={c} />
+    <PageContainer>{heading}
+      <div className={isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"}>
+        {cards.map((c) => (<BcbaCard key={c.id} card={c} />
         ))}
       </div>
     </PageContainer>
