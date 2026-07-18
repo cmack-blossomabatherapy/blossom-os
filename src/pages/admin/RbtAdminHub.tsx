@@ -13,6 +13,7 @@ const centers = [
       { to: "/admin/rbt/journey", title: "RBT Journey Command Center", desc: "One row per RBT: lifecycle, readiness, staffing, first session, 30/60/90, risk, next action.", icon: Compass },
       { to: "/admin/rbt-lifecycle", title: "Lifecycle Configuration", desc: "Configure stages, gates and lifecycle rules.", icon: Activity },
       { to: "/admin/rbt-preboarding", title: "Preboarding Console", desc: "Track preboarding items and requirement completion.", icon: UserCheck },
+      { to: "/admin/bcba-lifecycle", title: "BCBA Lifecycle Engine", desc: "Configure BCBA stages, gates, approvers, and test cohort.", icon: Activity },
     ],
   },
   {
