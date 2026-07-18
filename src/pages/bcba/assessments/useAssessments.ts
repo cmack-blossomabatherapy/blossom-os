@@ -181,17 +181,20 @@ export function useAddQaFeedback() {
         .select("assigned_bcba_id, client_identifier")
         .eq("id", input.assessment_id)
         .maybeSingle();
-      if (a?.assigned_bcba_id) {
+      if (a?.assigned_bcba_id && userData?.user?.id) {
         const { data: task } = await supabase
           .from("user_tasks")
           .insert({
             title: `QA correction: ${input.correction_category} — ${a.client_identifier}`,
             description: input.comment,
             assignee_id: a.assigned_bcba_id,
-            created_by: userData?.user?.id ?? null,
-            status: "open",
+            assigned_by_id: userData.user.id,
             priority: "high",
-            due_date: input.due_date ?? null,
+            due_at: input.due_date ? new Date(input.due_date).toISOString() : null,
+            related_record_type: "bcba_assessment",
+            related_record_id: input.assessment_id,
+            related_record_label: a.client_identifier,
+            related_url: `/bcba/assessments?id=${input.assessment_id}`,
           })
           .select("id")
           .maybeSingle();
