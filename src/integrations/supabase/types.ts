@@ -4179,6 +4179,7 @@ export type Database = {
       bcba_productivity_upload_batches: {
         Row: {
           appended_row_count: number
+          cr_run_id: string | null
           created_at: string
           duplicate_row_count: number
           file_hash: string | null
@@ -4199,6 +4200,7 @@ export type Database = {
         }
         Insert: {
           appended_row_count?: number
+          cr_run_id?: string | null
           created_at?: string
           duplicate_row_count?: number
           file_hash?: string | null
@@ -4219,6 +4221,7 @@ export type Database = {
         }
         Update: {
           appended_row_count?: number
+          cr_run_id?: string | null
           created_at?: string
           duplicate_row_count?: number
           file_hash?: string | null
@@ -4237,7 +4240,15 @@ export type Database = {
           uploaded_by?: string | null
           uploaded_by_email?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bcba_productivity_upload_batches_cr_run_id_fkey"
+            columns: ["cr_run_id"]
+            isOneToOne: false
+            referencedRelation: "cr_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bcba_progress_report_activity: {
         Row: {
@@ -7696,6 +7707,71 @@ export type Database = {
         }
         Relationships: []
       }
+      cr_data_quality_exceptions: {
+        Row: {
+          category: string
+          comment: string | null
+          created_at: string
+          details: Json
+          external_id: string | null
+          id: string
+          message: string
+          owner_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          row_number: number | null
+          run_id: string | null
+          severity: string
+          status: string
+          type_key: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          comment?: string | null
+          created_at?: string
+          details?: Json
+          external_id?: string | null
+          id?: string
+          message: string
+          owner_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          row_number?: number | null
+          run_id?: string | null
+          severity?: string
+          status?: string
+          type_key: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          comment?: string | null
+          created_at?: string
+          details?: Json
+          external_id?: string | null
+          id?: string
+          message?: string
+          owner_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          row_number?: number | null
+          run_id?: string | null
+          severity?: string
+          status?: string
+          type_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_data_quality_exceptions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cr_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cr_external_records: {
         Row: {
           external_id: string
@@ -8026,6 +8102,30 @@ export type Database = {
           label?: string
           required_fields?: string[]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_upload_permissions: {
+        Row: {
+          capability: string
+          created_at: string
+          granted_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          capability: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          capability?: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -25881,6 +25981,7 @@ export type Database = {
       }
       shared_report_datasets: {
         Row: {
+          cr_run_id: string | null
           file_name: string
           file_size: number | null
           id: string
@@ -25893,6 +25994,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          cr_run_id?: string | null
           file_name: string
           file_size?: number | null
           id?: string
@@ -25905,6 +26007,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          cr_run_id?: string | null
           file_name?: string
           file_size?: number | null
           id?: string
@@ -25916,7 +26019,15 @@ export type Database = {
           uploaded_at?: string
           uploaded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shared_report_datasets_cr_run_id_fkey"
+            columns: ["cr_run_id"]
+            isOneToOne: false
+            referencedRelation: "cr_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shared_report_recents: {
         Row: {
