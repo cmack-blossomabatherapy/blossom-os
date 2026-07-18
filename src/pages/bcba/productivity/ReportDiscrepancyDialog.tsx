@@ -29,8 +29,8 @@ export default function ReportDiscrepancyDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  snapshotId: string;
-  bcbaId: string;
+  snapshotId?: string;
+  bcbaId?: string;
   initialMetric?: string;
   discrepancyId?: string;
 }) {
@@ -43,6 +43,10 @@ export default function ReportDiscrepancyDialog({
   const submit = useReportDiscrepancy();
 
   const onSubmit = async () => {
+    if (!snapshotId || !bcbaId) {
+      toast.error("Cannot submit — no snapshot in context.");
+      return;
+    }
     try {
       const row: any = await submit.mutateAsync({
         snapshot_id: snapshotId,

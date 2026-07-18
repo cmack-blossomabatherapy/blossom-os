@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertTriangle, Flag, Info, Activity, Users, TrendingUp, ShieldAlert, Sparkles } from "lucide-react";
+import { AlertTriangle, Flag, Info, Activity, Users, TrendingUp, ShieldAlert, Sparkles, ListChecks } from "lucide-react";
 import {
   useMyProductivitySnapshot, useMyCapacitySnapshot,
   useAllProductivity, useAllCapacity,
@@ -23,6 +23,7 @@ import {
 import ReportDiscrepancyDialog from "./ReportDiscrepancyDialog";
 import MetricDrilldownDialog from "./MetricDrilldownDialog";
 import ScenarioPlannerDialog from "./ScenarioPlannerDialog";
+import DiscrepanciesPanel from "./DiscrepanciesPanel";
 
 function MetricLabel({ metricKey, children }: { metricKey: string; children: React.ReactNode }) {
   const def = findDefinition(metricKey);
@@ -513,6 +514,7 @@ export default function ProductivityPage() {
         <TabsList>
           <TabsTrigger value="productivity"><Activity className="h-3.5 w-3.5 mr-1.5" /> My productivity</TabsTrigger>
           <TabsTrigger value="capacity"><TrendingUp className="h-3.5 w-3.5 mr-1.5" /> My capacity</TabsTrigger>
+          <TabsTrigger value="discrepancies"><ListChecks className="h-3.5 w-3.5 mr-1.5" /> Discrepancies</TabsTrigger>
           {canLead && <TabsTrigger value="leadership"><Users className="h-3.5 w-3.5 mr-1.5" /> Leadership</TabsTrigger>}
         </TabsList>
 
@@ -530,6 +532,10 @@ export default function ProductivityPage() {
           ) : (
             <MyCapacity snapshot={capacity.data ?? null} />
           )}
+        </TabsContent>
+
+        <TabsContent value="discrepancies" className="mt-4">
+          <DiscrepanciesPanel bcbaId={uid} scope={canLead ? "all" : "mine"} />
         </TabsContent>
 
         {canLead && (

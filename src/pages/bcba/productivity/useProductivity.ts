@@ -161,6 +161,32 @@ export function useDiscrepancy(discrepancyId?: string | null) {
   });
 }
 
+/**
+ * List discrepancies visible to the caller. RLS scopes to the owning BCBA
+ * plus admin/clinical/QA reviewer roles automatically. Optionally scope to a
+ * single BCBA (used for the "mine" view).
+ */
+export function useDiscrepancies(opts?: { bcbaId?: string | null; limit?: number }) {
+  const bcbaId = opts?.bcbaId ?? null;
+  const limit = opts?.limit ?? 200;
+  return useQuery({
+    queryKey: ["bcba-disc", "list", bcbaId ?? "all", limit],
+    queryFn: async () => {
+      let q = supabase
+        .from("bcba_productivity_discrepancies")
+        .select(
+          "id, snapshot_id, bcba_id, metric_key, impacted_metric_keys, source_timestamps, status, detail, reported_value, expected_value, created_at, updated_at",
+        )
+        .order("updated_at", { ascending: false })
+        .limit(limit);
+      if (bcbaId) q = q.eq("bcba_id", bcbaId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as unknown as DiscrepancyRow[];
+    },
+  });
+}
+
 // ---- Discrepancy detail: events, attachments, resolve ----
 
 export interface DiscrepancyEvent {
