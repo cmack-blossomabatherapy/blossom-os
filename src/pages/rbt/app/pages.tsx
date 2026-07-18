@@ -18,6 +18,36 @@ import {
   GrowthCard, SupportShortcutCard, AnnouncementCard, CrDataStatusCard,
 } from "./cards";
 
+function WelcomeBanner({ userId }: { userId: string }) {
+  const key = `rbt-app-welcome-dismissed-${userId}`;
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    try { return typeof window !== "undefined" && window.localStorage.getItem(key) === "1"; }
+    catch { return true; }
+  });
+  if (dismissed) return null;
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <Sparkles className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">Welcome to the new Blossom RBT app</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Your schedule, training, supervision, growth, and support — all in one place.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => { try { window.localStorage.setItem(key, "1"); } catch {} setDismissed(true); }}
+          className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+          aria-label="Dismiss welcome message"
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function renderCard(card: DashboardCard, stageMessage?: string) {
   switch (card.card_type) {
     case "greeting":               return <GreetingCard card={card} />;
@@ -85,6 +115,7 @@ export function RbtHome() {
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
+      {user && <div className="md:col-span-2"><WelcomeBanner userId={user.id} /></div>}
       <div className="md:col-span-2"><FirstCaseHomeCard /></div>
       <div className="md:col-span-2"><JourneyHomeCard /></div>
       {cards.map((c) => (
