@@ -212,6 +212,7 @@ import Graduation from "./pages/onboarding/Graduation";
 import HelpPage from "./pages/Help";
 import JourneyEditor from "./pages/admin/JourneyEditor";
 import RbtLifecycle from "./pages/admin/RbtLifecycle";
+import BcbaLifecycle from "./pages/admin/BcbaLifecycle";
 import RbtAdminHub from "./pages/admin/RbtAdminHub";
 import RbtJourneyCommandCenter from "./pages/admin/RbtJourneyCommandCenter";
 import RbtTrainerDashboard from "./pages/admin/RbtTrainerDashboard";
@@ -1194,6 +1195,7 @@ const App = () => (
                   <Route path="/admin/automated-emails" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
                   <Route path="/admin/ctm" element={<AdminRoute><CTMAdmin /></AdminRoute>} />
                   <Route path="/admin/rbt-lifecycle" element={<AdminRoute><RbtLifecycle /></AdminRoute>} />
+                  <Route path="/admin/bcba-lifecycle" element={<AdminRoute><BcbaLifecycle /></AdminRoute>} />
                   <Route path="/admin/rbt" element={<AdminRoute><OSShellPage><RbtAdminHub /></OSShellPage></AdminRoute>} />
                   <Route path="/admin/rbt/journey" element={<AdminRoute><OSShellPage><RbtJourneyCommandCenter /></OSShellPage></AdminRoute>} />
                   <Route path="/admin/rbt/trainers" element={<AdminRoute><OSShellPage><RbtTrainerDashboard /></OSShellPage></AdminRoute>} />

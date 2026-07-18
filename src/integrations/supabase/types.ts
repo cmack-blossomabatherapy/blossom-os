@@ -2279,6 +2279,218 @@ export type Database = {
         }
         Relationships: []
       }
+      bcba_lifecycle_events: {
+        Row: {
+          actor_id: string | null
+          employee_id: string
+          from_stage: string | null
+          id: string
+          occurred_at: string
+          reason: string | null
+          source: string
+          to_stage: string
+        }
+        Insert: {
+          actor_id?: string | null
+          employee_id: string
+          from_stage?: string | null
+          id?: string
+          occurred_at?: string
+          reason?: string | null
+          source?: string
+          to_stage: string
+        }
+        Update: {
+          actor_id?: string | null
+          employee_id?: string
+          from_stage?: string | null
+          id?: string
+          occurred_at?: string
+          reason?: string | null
+          source?: string
+          to_stage?: string
+        }
+        Relationships: []
+      }
+      bcba_lifecycle_gate_completions: {
+        Row: {
+          completed_at: string
+          completed_by: string | null
+          employee_id: string
+          evidence: Json | null
+          gate_key: string
+          id: string
+          notes: string | null
+          stage_key: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by?: string | null
+          employee_id: string
+          evidence?: Json | null
+          gate_key: string
+          id?: string
+          notes?: string | null
+          stage_key: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string | null
+          employee_id?: string
+          evidence?: Json | null
+          gate_key?: string
+          id?: string
+          notes?: string | null
+          stage_key?: string
+        }
+        Relationships: []
+      }
+      bcba_lifecycle_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          from_stage: string | null
+          id: string
+          is_active: boolean
+          predicate_json: Json
+          to_stage: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          from_stage?: string | null
+          id?: string
+          is_active?: boolean
+          predicate_json?: Json
+          to_stage: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          from_stage?: string | null
+          id?: string
+          is_active?: boolean
+          predicate_json?: Json
+          to_stage?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bcba_lifecycle_stages: {
+        Row: {
+          access_rules: Json
+          allowed_next_keys: string[]
+          automatic_actions: Json
+          checkin_schedule: Json
+          color: string | null
+          created_at: string
+          dashboard_cards: Json
+          description: string | null
+          employee_message: string | null
+          is_active: boolean
+          is_terminal: boolean
+          key: string
+          leadership_visibility: Json
+          menu_features: string[]
+          name: string
+          notification_templates: Json
+          required_approver_role: string | null
+          required_gates: Json
+          sort_order: number
+          task_assignments: Json
+          training_assignments: Json
+          updated_at: string
+        }
+        Insert: {
+          access_rules?: Json
+          allowed_next_keys?: string[]
+          automatic_actions?: Json
+          checkin_schedule?: Json
+          color?: string | null
+          created_at?: string
+          dashboard_cards?: Json
+          description?: string | null
+          employee_message?: string | null
+          is_active?: boolean
+          is_terminal?: boolean
+          key: string
+          leadership_visibility?: Json
+          menu_features?: string[]
+          name: string
+          notification_templates?: Json
+          required_approver_role?: string | null
+          required_gates?: Json
+          sort_order?: number
+          task_assignments?: Json
+          training_assignments?: Json
+          updated_at?: string
+        }
+        Update: {
+          access_rules?: Json
+          allowed_next_keys?: string[]
+          automatic_actions?: Json
+          checkin_schedule?: Json
+          color?: string | null
+          created_at?: string
+          dashboard_cards?: Json
+          description?: string | null
+          employee_message?: string | null
+          is_active?: boolean
+          is_terminal?: boolean
+          key?: string
+          leadership_visibility?: Json
+          menu_features?: string[]
+          name?: string
+          notification_templates?: Json
+          required_approver_role?: string | null
+          required_gates?: Json
+          sort_order?: number
+          task_assignments?: Json
+          training_assignments?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bcba_lifecycle_state: {
+        Row: {
+          created_at: string
+          employee_id: string
+          entered_at: string
+          pathway_id: string | null
+          stage: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          entered_at?: string
+          pathway_id?: string | null
+          stage?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          entered_at?: string
+          pathway_id?: string | null
+          stage?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_lifecycle_state_stage_fkey"
+            columns: ["stage"]
+            isOneToOne: false
+            referencedRelation: "bcba_lifecycle_stages"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       bcba_parent_training_logs: {
         Row: {
           barriers: string | null
@@ -2550,6 +2762,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      bcba_synthetic_test_profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          notes: string | null
+          stage_key: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          notes?: string | null
+          stage_key: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          notes?: string | null
+          stage_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_synthetic_test_profiles_stage_key_fkey"
+            columns: ["stage_key"]
+            isOneToOne: false
+            referencedRelation: "bcba_lifecycle_stages"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       bcba_treatment_plan_items: {
         Row: {
@@ -26245,6 +26489,16 @@ export type Database = {
           target_user: string
         }
         Returns: undefined
+      }
+      advance_bcba_lifecycle: {
+        Args: {
+          _employee_id: string
+          _override?: boolean
+          _reason?: string
+          _source?: string
+          _to_stage: string
+        }
+        Returns: Json
       }
       advance_rbt_lifecycle: {
         Args: {
