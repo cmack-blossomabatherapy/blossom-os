@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { TopBar } from "./TopBar";
 import { useLocation } from "react-router-dom";
 import { ForcePasswordChange } from "@/components/auth/ForcePasswordChange";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { OnboardingGate } from "@/components/auth/OnboardingGate";
+import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 
 const pageTitles: Record<string, string> = {
   "/": "Home",
@@ -46,12 +48,23 @@ export function AppLayout() {
   const mainRef = useRef<HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuFloating, setMobileMenuFloating] = useState(false);
+  const { user, loading } = useAuth();
+  const osRole = useOSRoleSafe();
 
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, left: 0 });
     window.scrollTo({ top: 0, left: 0 });
     setMobileMenuFloating(false);
   }, [location.pathname]);
+
+  // RBTs live inside /rbt/app/* — never leave them stranded on the generic
+  // home/root routes where they'd see the non-RBT menu and layout.
+  const isRbtRoot =
+    !loading &&
+    user &&
+    osRole?.role === "rbt" &&
+    (location.pathname === "/" || location.pathname === "/home");
+  if (isRbtRoot) return <Navigate to="/rbt/app/home" replace />;
 
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background md:h-screen md:overflow-hidden md:flex-row">
