@@ -110,12 +110,12 @@ export function BcbaMyRbts() {
 
 export function BcbaClinicalWork() {
   const tiles: Array<{ label: string; to: string; icon: React.ReactNode }> = [
-    { label: "Assessments",     to: "/bcba/clinical",  icon: <ClipboardList className="h-4 w-4" strokeWidth={1.75} /> },
-    { label: "Progress reports",to: "/bcba/clinical",  icon: <FileText className="h-4 w-4" strokeWidth={1.75} /> },
-    { label: "Reassessments",   to: "/bcba/clinical",  icon: <FileText className="h-4 w-4" strokeWidth={1.75} /> },
-    { label: "QA corrections",  to: "/bcba/clinical",  icon: <ShieldCheck className="h-4 w-4" strokeWidth={1.75} /> },
-    { label: "Parent training", to: "/bcba/clinical",  icon: <HeartHandshake className="h-4 w-4" strokeWidth={1.75} /> },
-    { label: "Authorizations",  to: "/bcba/clinical",  icon: <ShieldCheck className="h-4 w-4" strokeWidth={1.75} /> },
+    { label: "Assessments",      to: "/bcba/assessments",      icon: <ClipboardList className="h-4 w-4" strokeWidth={1.75} /> },
+    { label: "Progress reports", to: "/bcba/progress-reports", icon: <FileText className="h-4 w-4" strokeWidth={1.75} /> },
+    { label: "Supervision",      to: "/bcba/supervision",      icon: <ShieldCheck className="h-4 w-4" strokeWidth={1.75} /> },
+    { label: "Parent training",  to: "/bcba/parent-training",  icon: <HeartHandshake className="h-4 w-4" strokeWidth={1.75} /> },
+    { label: "Productivity",     to: "/bcba/productivity",     icon: <Activity className="h-4 w-4" strokeWidth={1.75} /> },
+    { label: "Fellowship",       to: "/bcba/fellowship",       icon: <BadgeCheck className="h-4 w-4" strokeWidth={1.75} /> },
   ];
   return (
     <PageContainer>
@@ -140,12 +140,6 @@ export function BcbaClinicalWork() {
             </div>
           </Link>
         ))}
-      </div>
-      <div className="mt-6">
-        <ComingSoonCard
-          title="Detailed pipelines"
-          message="Assessment, report, QA, and parent-training pipelines will appear here as data becomes available."
-        />
       </div>
     </PageContainer>
   );
@@ -186,7 +180,7 @@ export function BcbaSupport() {
         subtitle="Reach the right team without knowing the org chart."
         action={
           <Link
-            to="/rbt/app/support/new"
+            to="/bcba/support-center"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-90"
           >
             New request
@@ -248,7 +242,7 @@ export function BcbaMe() {
           emptyLabel="Notification preferences will appear here."
           action={
             <Link
-              to="/rbt/app/settings/notifications"
+              to="/bcba/settings/notifications"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-90"
             >
               Open preferences
