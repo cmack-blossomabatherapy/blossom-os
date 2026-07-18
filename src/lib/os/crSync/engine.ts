@@ -1,7 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import { parseAnyFile } from "@/lib/os/dashboardEngine/excelParser";
 
-export type CrSyncTypeKey = "employees" | "clients" | "schedule" | "timesheets" | "authorizations";
+export type CrSyncTypeKey =
+  | "employees"
+  | "clients"
+  | "assignments"
+  | "schedule"
+  | "timesheets"
+  | "authorizations"
+  | "documentation"
+  | "dashboard_audit";
 
 export interface CrTemplate {
   id: string;
