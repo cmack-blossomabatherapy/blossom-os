@@ -252,6 +252,8 @@ import {
 } from "./pages/bcba/pages";
 import BcbaOnboardingPage from "./pages/bcba/onboarding/BcbaOnboardingPage";
 import BcbaOnboardingConsole from "./pages/admin/BcbaOnboardingConsole";
+import BcbaSupervisionCenter from "./pages/bcba/supervision/SupervisionCenterPage";
+import BcbaSupervisionConfigPage from "./pages/admin/BcbaSupervisionConfigPage";
 import RbtGrowthConsole from "./pages/admin/RbtGrowthConsole";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
 import RbtReadinessConsole from "./pages/admin/RbtReadinessConsole";
@@ -1311,12 +1313,21 @@ const App = () => (
                     <Route path="support"  element={<BcbaSupport />} />
                     <Route path="me"       element={<BcbaMe />} />
                     <Route path="onboarding" element={<BcbaOnboardingPage />} />
+                    <Route path="supervision" element={<BcbaSupervisionCenter />} />
                   </Route>
                   <Route
                     path="/admin/bcba-onboarding"
                     element={
                       <PermissionRoute allowedRoles={["admin","super_admin","hr","hr_admin","clinical_director","operations_leadership"]}>
                         <OSShellPage><BcbaOnboardingConsole /></OSShellPage>
+                      </PermissionRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/bcba-supervision-config"
+                    element={
+                      <PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership"]}>
+                        <OSShellPage><BcbaSupervisionConfigPage /></OSShellPage>
                       </PermissionRoute>
                     }
                   />
