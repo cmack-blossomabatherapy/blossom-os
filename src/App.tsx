@@ -259,6 +259,7 @@ import BcbaParentTrainingPage from "./pages/bcba/parent-training/ParentTrainingP
 import BcbaProductivityPage from "./pages/bcba/productivity/ProductivityPage";
 import BcbaSupportPageV2 from "./pages/bcba/support/SupportPage";
 import BcbaAcademyPage from "./pages/bcba/academy/AcademyPage";
+import BcbaFellowshipPage from "./pages/bcba/fellowship/FellowshipPage";
 import BcbaSupervisionConfigPage from "./pages/admin/BcbaSupervisionConfigPage";
 import RbtGrowthConsole from "./pages/admin/RbtGrowthConsole";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
@@ -1326,6 +1327,7 @@ const App = () => (
                     <Route path="progress-reports" element={<BcbaProgressReportsPage />} />
                     <Route path="parent-training" element={<BcbaParentTrainingPage />} />
                     <Route path="productivity" element={<BcbaProductivityPage />} />
+                    <Route path="fellowship" element={<BcbaFellowshipPage />} />
                   </Route>
                   <Route
                     path="/admin/bcba-onboarding"
