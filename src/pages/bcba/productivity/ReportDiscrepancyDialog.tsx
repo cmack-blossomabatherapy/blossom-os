@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Paperclip, CheckCircle2, RefreshCw, Download, Trash2, MessageSquare, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { METRIC_DEFINITIONS } from "./pipeline";
+import { METRIC_DEFINITIONS, findDefinition } from "./pipeline";
 import {
   useReportDiscrepancy,
   useDiscrepancyEvents,
@@ -19,6 +19,7 @@ import {
   useUploadDiscrepancyEvidence,
   useDeleteDiscrepancyAttachment,
   getDiscrepancyEvidenceUrl,
+  useDiscrepancy,
   type DiscrepancyEvent,
   type DiscrepancyAttachment,
 } from "./useProductivity";
@@ -34,6 +35,7 @@ export default function ReportDiscrepancyDialog({
   discrepancyId?: string;
 }) {
   const [metric, setMetric] = useState(initialMetric ?? METRIC_DEFINITIONS[0].key);
+  const [alsoImpacted, setAlsoImpacted] = useState<string[]>([]);
   const [reported, setReported] = useState("");
   const [expected, setExpected] = useState("");
   const [detail, setDetail] = useState("");
@@ -49,11 +51,12 @@ export default function ReportDiscrepancyDialog({
         reported_value: reported || undefined,
         expected_value: expected || undefined,
         detail: detail || undefined,
+        impacted_metric_keys: alsoImpacted,
       });
       toast.success("Discrepancy reported — a task was created for review.");
       // Transition to detail view so the user can attach evidence right away.
       if (row?.id) setActiveId(row.id as string);
-      setReported(""); setExpected(""); setDetail("");
+      setReported(""); setExpected(""); setDetail(""); setAlsoImpacted([]);
     } catch (e: any) {
       toast.error(e?.message ?? "Could not submit discrepancy.");
     }
@@ -93,6 +96,37 @@ export default function ReportDiscrepancyDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              Also impacted metrics
+              <span className="text-[11px] font-normal text-muted-foreground">
+                (linked to the same snapshot timestamps)
+              </span>
+            </Label>
+            <div className="flex flex-wrap gap-1.5 pt-1.5">
+              {METRIC_DEFINITIONS.filter((m) => m.key !== metric).map((m) => {
+                const on = alsoImpacted.includes(m.key);
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() =>
+                      setAlsoImpacted((cur) =>
+                        on ? cur.filter((k) => k !== m.key) : [...cur, m.key],
+                      )
+                    }
+                    className={`text-[11px] rounded-full border px-2 py-0.5 transition ${
+                      on
+                        ? "bg-primary/10 border-primary/40 text-primary"
+                        : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
