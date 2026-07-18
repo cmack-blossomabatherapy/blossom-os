@@ -80,26 +80,6 @@ function _LegacyBcbaHome() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Placeholder pages — each ships with a clear empty state + real navigation */
-/* -------------------------------------------------------------------------- */
-
-function ComingSoonCard({
-  title,
-  message,
-}: {
-  title: string;
-  message: string;
-}) {
-  return (
-    <BcbaCardFrame
-      title={title}
-      state="empty"
-      emptyLabel={message}
-    />
-  );
-}
-
 export function BcbaCaseload() {
   return <CaseloadPage />;
 }
