@@ -226,7 +226,6 @@ import SupportUrgent from "./pages/rbt/app/support/SupportUrgent";
 import SupportTeam from "./pages/rbt/app/support/SupportTeam";
 import SupportTicketDetail from "./pages/rbt/app/support/SupportTicketDetail";
 import RbtSupportConsole from "./pages/admin/RbtSupportConsole";
-import CrSyncCenter from "./pages/admin/CrSyncCenter";
 import RbtNotificationEngine from "./pages/admin/RbtNotificationEngine";
 import NotificationInbox from "./pages/NotificationInbox";
 import RbtNotificationPreferences from "./pages/rbt/app/settings/NotificationPreferences";
@@ -480,7 +479,7 @@ import EscalationCenterPage from "./pages/os/work-queue/EscalationCenter";
 import {
   WorkflowInventoryPage, RequestIntakePage, IssueTrackerPage,
 } from "./pages/os/system-tools/SystemToolsPages";
-import CentralReachUploads from "./pages/os/system/CentralReachUploads";
+import CentralReachHub from "./pages/os/system/CentralReachHub";
 import AuditLogPage from "./pages/os/system-tools/AuditLogPage";
 import EmailCommandCenter from "./pages/os/system/EmailCommandCenter";
 import BlossomOSHome from "./pages/os/home/BlossomOSHome";
@@ -1105,10 +1104,12 @@ const App = () => (
                   <Route path="/system/workflow-inventory" element={<AdminRoute><WorkflowInventoryPage /></AdminRoute>} />
                   <Route path="/system/request-intake" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><RequestIntakePage /></PermissionRoute>} />
                   <Route path="/system/issue-tracker" element={<AdminRoute><IssueTrackerPage /></AdminRoute>} />
-                  <Route path="/system/centralreach-uploads" element={<AdminRoute><CentralReachUploads /></AdminRoute>} />
-                  <Route path="/system/bcba-productivity-uploads" element={<Navigate to="/system/centralreach-uploads" replace />} />
-                  <Route path="/system/authorization-uploads" element={<Navigate to="/system/centralreach-uploads" replace />} />
-                  <Route path="/system/cancellation-uploads" element={<Navigate to="/system/centralreach-uploads" replace />} />
+                  {/* CentralReach Data Hub — unified entry point for every CentralReach import */}
+                  <Route path="/system/centralreach" element={<AdminRoute><CentralReachHub /></AdminRoute>} />
+                  <Route path="/system/centralreach-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
+                  <Route path="/system/bcba-productivity-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
+                  <Route path="/system/authorization-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
+                  <Route path="/system/cancellation-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
                   {/* Legacy redirects for old QA report cards → canonical approved routes */}
                   <Route path="/reports/qa-supervision" element={<Navigate to="/reports/bcba-supervision" replace />} />
                   <Route path="/reports/qa-parent-training" element={<Navigate to="/reports/parent-training" replace />} />
@@ -1177,7 +1178,7 @@ const App = () => (
                        future passes. --- */}
                   <Route path="/intake/missing-information"  element={<MissingInformation />} />
                   <Route path="/intake/parent-communication" element={<ParentCommunication />} />
-                  <Route path="/intake/cr-packet-prep"       element={<CentralReachPacketPrep />} />
+                  <Route path="/intake/cr-packet-prep"       element={<PermissionRoute allowedRoles={["admin","super_admin","intake","intake_coordinator","intake_lead","intake_team","operations_leadership"]}><CentralReachPacketPrep /></PermissionRoute>} />
                   <Route path="/ops/expiring-authorizations" element={<OSShellPage><ExpiringAuthorizations /></OSShellPage>} />
                   <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />
                   <Route path="/ops/payer-requirements"      element={<OSShellPage><PayerRequirements /></OSShellPage>} />
@@ -1253,11 +1254,7 @@ const App = () => (
                       <OSShellPage><RbtSupportConsole /></OSShellPage>
                     </PermissionRoute>
                   } />
-                  <Route path="/admin/centralreach-sync" element={
-                    <PermissionRoute allowedRoles={["admin","super_admin","operations_leadership"]}>
-                      <OSShellPage><CrSyncCenter /></OSShellPage>
-                    </PermissionRoute>
-                  } />
+                  <Route path="/admin/centralreach-sync" element={<Navigate to="/system/centralreach?tab=workforce-clinical" replace />} />
                   <Route path="/admin/rbt/notifications" element={<AdminRoute><OSShellPage><RbtNotificationEngine /></OSShellPage></AdminRoute>} />
                   <Route path="/admin/bcba/notifications" element={<AdminRoute><OSShellPage><BcbaNotificationEngine /></OSShellPage></AdminRoute>} />
                   <Route path="/inbox" element={<OSShellPage><NotificationInbox /></OSShellPage>} />
