@@ -16,21 +16,22 @@ export default function CaseloadRiskPage() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: prs }, { data: uts }, { data: pts }] = await Promise.all([
-        supabase.from("bcba_progress_reports")
+      const sb = supabase as any;
+      const [prsRes, utsRes, ptsRes] = await Promise.all([
+        sb.from("bcba_progress_reports")
           .select("id, client_identifier, state, assigned_bcba_id, assigned_bcba_name, risk_status, status, due_date, updated_at")
           .in("risk_status", ["delayed", "at_risk", "critical"]).limit(500),
-        supabase.from("bcba_service_utilization")
+        sb.from("bcba_service_utilization")
           .select("id, client_identifier, state, assigned_bcba_id, assigned_bcba_name, utilization_pct, cancelled_hours_total, on_hold, updated_at")
           .limit(500),
-        supabase.from("bcba_parent_training_records")
+        sb.from("bcba_parent_training_records")
           .select("id, client_identifier, state, assigned_bcba_id, assigned_bcba_name, status, barrier, updated_at")
           .in("status", ["behind", "at_risk", "missed"]).limit(500),
       ]);
-      setPr(prs ?? []);
-      setUtl(uts ?? []);
-      setPt(pts ?? []);
-      setFreshness((prs?.[0] as any)?.updated_at ?? null);
+      setPr((prsRes.data ?? []) as any[]);
+      setUtl((utsRes.data ?? []) as any[]);
+      setPt((ptsRes.data ?? []) as any[]);
+      setFreshness((prsRes.data?.[0] as any)?.updated_at ?? null);
     })();
   }, []);
 
