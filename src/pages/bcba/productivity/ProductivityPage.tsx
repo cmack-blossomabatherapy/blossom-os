@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertTriangle, Flag, Info, Activity, Users, TrendingUp, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Flag, Info, Activity, Users, TrendingUp, ShieldAlert, Sparkles } from "lucide-react";
 import {
   useMyProductivitySnapshot, useMyCapacitySnapshot,
   useAllProductivity, useAllCapacity,
@@ -22,6 +22,7 @@ import {
 } from "./pipeline";
 import ReportDiscrepancyDialog from "./ReportDiscrepancyDialog";
 import MetricDrilldownDialog from "./MetricDrilldownDialog";
+import ScenarioPlannerDialog from "./ScenarioPlannerDialog";
 
 function MetricLabel({ metricKey, children }: { metricKey: string; children: React.ReactNode }) {
   const def = findDefinition(metricKey);
@@ -265,6 +266,7 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
 function MyCapacity({ snapshot }: { snapshot: CapacitySnapshot | null }) {
   const [drillMetric, setDrillMetric] = useState<string | null>(null);
   const openDrill = (k: string) => setDrillMetric(k);
+  const [scenarioOpen, setScenarioOpen] = useState(false);
   if (!snapshot) {
     return (
       <Card><CardContent className="p-8 text-center text-muted-foreground">
@@ -281,7 +283,12 @@ function MyCapacity({ snapshot }: { snapshot: CapacitySnapshot | null }) {
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" /> Capacity view
             </CardTitle>
-            <CapacityBadge status={snapshot.capacity_status} />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setScenarioOpen(true)}>
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Plan a scenario
+              </Button>
+              <CapacityBadge status={snapshot.capacity_status} />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -331,6 +338,12 @@ function MyCapacity({ snapshot }: { snapshot: CapacitySnapshot | null }) {
         metricKey={drillMetric}
         snapshot={snapshot}
         kind="capacity"
+      />
+
+      <ScenarioPlannerDialog
+        open={scenarioOpen}
+        onOpenChange={setScenarioOpen}
+        snapshot={snapshot}
       />
     </div>
   );
