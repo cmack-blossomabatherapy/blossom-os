@@ -196,22 +196,22 @@ export default function Auth() {
         </aside>
 
         {/* Form panel */}
-        <main className="relative flex min-h-screen w-full items-center justify-center p-6 sm:p-10">
-          <div className="w-full max-w-[460px] rounded-3xl border border-slate-200/80 bg-white p-8 shadow-2xl shadow-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-10">
+        <main className="relative flex min-h-screen w-full items-start justify-center p-4 py-6 sm:items-center sm:p-10">
+          <div className="w-full max-w-[460px] rounded-2xl border border-slate-200/80 bg-white p-5 shadow-lg shadow-slate-300/30 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:rounded-3xl sm:p-10 sm:shadow-2xl">
             {/* mobile logo inside card */}
-            <div className="mb-8 flex justify-center lg:hidden">
+            <div className="mb-6 flex justify-center lg:hidden">
               <img
                 src={logoColor}
                 alt="Blossom ABA Therapy"
                 className="h-12 w-auto object-contain"
               />
             </div>
-          <header className="mb-8 text-center sm:text-left">
+          <header className="mb-6 text-center sm:mb-8 sm:text-left">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               {isWelcome ? "Activate your account" : "Please enter your details"}
             </span>
             <h1
-              className="mt-2 text-4xl font-semibold tracking-tight text-[#0c2340]"
+              className="mt-2 text-3xl font-semibold tracking-tight text-[#0c2340] sm:text-4xl"
               style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
             >
               {isWelcome ? "Welcome to Blossom" : "Welcome back"}
@@ -225,7 +225,7 @@ export default function Auth() {
           </header>
 
           <Tabs value={method} onValueChange={(v) => setMethod(v as "password" | "code")} className="w-full">
-            <TabsList className="mb-6 grid w-full grid-cols-2 rounded-xl bg-slate-100 p-1">
+            <TabsList className="mb-4 grid w-full grid-cols-2 rounded-xl bg-slate-100 p-1 sm:mb-6">
               <TabsTrigger value="password" className="rounded-lg gap-1.5 data-[state=active]:bg-white data-[state=active]:text-[#0c2340] data-[state=active]:shadow-sm">
                 <KeyRound className="h-3.5 w-3.5" /> Password
               </TabsTrigger>
@@ -248,7 +248,7 @@ export default function Auth() {
                 placeholder="name@blossomabatherapy.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-[52px] rounded-xl border-slate-200 bg-slate-50 px-4 text-[#0c2340] placeholder:text-slate-400 focus-visible:border-[#2d8a9e] focus-visible:ring-2 focus-visible:ring-[#2d8a9e]/20 focus-visible:ring-offset-0"
+                className="h-[52px] rounded-xl border-slate-200 bg-slate-50 px-4 text-base text-[#0c2340] placeholder:text-slate-400 focus-visible:border-[#2d8a9e] focus-visible:ring-2 focus-visible:ring-[#2d8a9e]/20 focus-visible:ring-offset-0"
               />
             </div>
 
@@ -265,7 +265,7 @@ export default function Auth() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-[52px] rounded-xl border-slate-200 bg-slate-50 px-4 pr-11 text-[#0c2340] placeholder:text-slate-400 focus-visible:border-[#2d8a9e] focus-visible:ring-2 focus-visible:ring-[#2d8a9e]/20 focus-visible:ring-offset-0"
+                  className="h-[52px] rounded-xl border-slate-200 bg-slate-50 px-4 pr-11 text-base text-[#0c2340] placeholder:text-slate-400 focus-visible:border-[#2d8a9e] focus-visible:ring-2 focus-visible:ring-[#2d8a9e]/20 focus-visible:ring-offset-0"
                 />
                 <button
                   type="button"
@@ -350,7 +350,7 @@ export default function Auth() {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98]"
+                className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#2d8a9e]/70 disabled:text-white disabled:shadow-none sm:hover:-translate-y-0.5"
                 style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -363,7 +363,7 @@ export default function Auth() {
             <TabsContent value="code" className="mt-0">
               {!codeSent ? (
                 <form onSubmit={handleSendCode} className="space-y-5">
-                  <div className="rounded-xl bg-[#2d8a9e]/8 border border-[#2d8a9e]/15 px-4 py-3 text-xs leading-relaxed text-[#0c2340]">
+                  <div className="rounded-xl bg-[#2d8a9e]/8 border border-[#2d8a9e]/15 px-3 py-2 text-xs leading-relaxed text-[#0c2340] sm:px-4 sm:py-3">
                     No password needed. Enter your work email and we'll send you a 6-digit sign-in code.
                   </div>
                   <div className="space-y-2">
@@ -378,13 +378,13 @@ export default function Auth() {
                       placeholder="name@blossomabatherapy.com"
                       value={codeEmail}
                       onChange={(e) => setCodeEmail(e.target.value)}
-                      className="h-[52px] rounded-xl border-slate-200 bg-slate-50 px-4 text-[#0c2340] placeholder:text-slate-400 focus-visible:border-[#2d8a9e] focus-visible:ring-2 focus-visible:ring-[#2d8a9e]/20 focus-visible:ring-offset-0"
+                      className="h-[52px] rounded-xl border-slate-200 bg-slate-50 px-4 text-base text-[#0c2340] placeholder:text-slate-400 focus-visible:border-[#2d8a9e] focus-visible:ring-2 focus-visible:ring-[#2d8a9e]/20 focus-visible:ring-offset-0"
                     />
                   </div>
                   <Button
                     type="submit"
                     disabled={codeBusy}
-                    className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98]"
+                    className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#2d8a9e]/70 disabled:text-white disabled:shadow-none sm:hover:-translate-y-0.5"
                     style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
                   >
                     {codeBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -393,14 +393,14 @@ export default function Auth() {
                 </form>
               ) : (
                 <form onSubmit={handleVerifyCode} className="space-y-5">
-                  <div className="rounded-xl bg-[#2d8a9e]/8 border border-[#2d8a9e]/15 px-4 py-3 text-xs leading-relaxed text-[#0c2340]">
+                  <div className="rounded-xl bg-[#2d8a9e]/8 border border-[#2d8a9e]/15 px-3 py-2 text-xs leading-relaxed text-[#0c2340] sm:px-4 sm:py-3">
                     We sent a 6-digit code to <strong>{codeEmail}</strong>. It expires in 10 minutes.
                   </div>
                   <div className="space-y-2">
                     <Label className="ml-1 text-sm font-medium text-slate-700">Enter the code</Label>
-                    <div className="flex justify-center py-2">
-                      <InputOTP maxLength={6} value={code} onChange={setCode}>
-                        <InputOTPGroup>
+                    <div className="flex w-full justify-center overflow-x-auto py-2 [&_[data-slot=input-otp-slot]]:h-11 [&_[data-slot=input-otp-slot]]:w-10 [&_[data-slot=input-otp-slot]]:text-[#0c2340] sm:[&_[data-slot=input-otp-slot]]:h-12 sm:[&_[data-slot=input-otp-slot]]:w-12">
+                      <InputOTP maxLength={6} value={code} onChange={setCode} containerClassName="gap-1.5 sm:gap-2">
+                        <InputOTPGroup className="gap-1.5 sm:gap-2">
                           {[0,1,2,3,4,5].map((i) => (
                             <InputOTPSlot key={i} index={i} />
                           ))}
@@ -411,13 +411,13 @@ export default function Auth() {
                   <Button
                     type="submit"
                     disabled={codeVerifying || code.length !== 6}
-                    className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0"
+                    className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#2d8a9e]/70 disabled:text-white disabled:shadow-none sm:hover:-translate-y-0.5"
                     style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
                   >
                     {codeVerifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Verify & sign in
                   </Button>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
                     <button
                       type="button"
                       onClick={() => { setCodeSent(false); setCode(""); }}
@@ -439,7 +439,7 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
 
-          <footer className="mt-10 border-t border-slate-100 pt-8 text-center text-xs leading-relaxed text-slate-500">
+          <footer className="mt-6 border-t border-slate-100 pt-5 text-center text-xs leading-relaxed text-slate-500 sm:mt-10 sm:pt-8">
             Team accounts are created by your administrator.{" "}
             <RequestAccessDialog />{" "}
             or email{" "}
@@ -454,9 +454,6 @@ export default function Auth() {
         </main>
       </div>
 
-      <div className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] text-slate-400 lg:hidden">
-        © {new Date().getFullYear()} Blossom ABA Therapy
-      </div>
     </div>
   );
 }
