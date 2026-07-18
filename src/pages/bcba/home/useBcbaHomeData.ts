@@ -123,7 +123,7 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
     supabase.from("cr_freshness_config")
       .select("type_key,current_minutes,threshold_minutes"),
     supabase.from("user_notifications")
-      .select("id,title,body,severity,category,link,created_at,read_at")
+      .select("id,title,body,kind,category,link,created_at,read_at")
       .eq("user_id", userId)
       .is("read_at", null)
       .order("created_at", { ascending: false })
@@ -289,7 +289,8 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
 
   /* Notifications → surface urgent items into queue. */
   for (const n of notifications) {
-    if ((n as any).severity === "urgent" || (n as any).severity === "critical") {
+    const k = (n as any).kind ?? "";
+    if (k === "urgent" || k === "critical" || k === "alert") {
       signals.push({
         sourceId: `notif-${n.id}`, kind: "action_task",
         title: (n as any).title,
@@ -375,7 +376,7 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
   /* ---- Support snapshot ------------------------------------------------- */
   const support: SupportSnapshot = {
     openTickets: notifications.filter((n: any) => n.category === "support").length,
-    urgentIssues: notifications.filter((n: any) => n.severity === "urgent" || n.severity === "critical").length,
+    urgentIssues: notifications.filter((n: any) => n.kind === "urgent" || n.kind === "critical" || n.kind === "alert").length,
     credentialAlerts: notifications.filter((n: any) => n.category === "credential").length,
     systemAlerts: notifications.filter((n: any) => n.category === "system").length,
     freshness,
