@@ -7,7 +7,7 @@ import {
   LayoutDashboard, AlertTriangle, MapPin, Stethoscope, CheckCircle2,
   XCircle, Gauge, LineChart, Activity, Inbox, type LucideIcon,
   FileCheck2, Clock, Eye, Flame, Library, UserPlus, Bell, List, Sparkles, ChevronRight,
-  Workflow, CalendarClock, LifeBuoy, Plug,
+  Workflow, CalendarClock, LifeBuoy, Plug, Home, User,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
@@ -646,15 +646,13 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
     sections: [
       {
         id: "bcba", label: "BCBA", items: [
-          { label: "BCBA Dashboard",              path: "/bcba",                  icon: LayoutDashboard },
-          { label: "Assigned Operational Readiness", path: "/bcba/workspace",     icon: ClipboardCheck },
-          { label: "My Clients / Assignments Visibility", path: "/bcba/clients",  icon: UserCheck },
-          { label: "Evaluations",                 path: "/evaluations",           icon: FileCheck2 },
-          { label: "Authorizations Visibility",   path: "/bcba/authorizations",   icon: ShieldCheck },
-          { label: "Scheduling Visibility",       path: "/bcba/scheduling",       icon: Calendar },
-          { label: "Supervision Visibility",      path: "/bcba/supervision",      icon: Eye },
-          { label: "Parent Training Visibility",  path: "/bcba/parent-training",  icon: HeartHandshake },
-          { label: "BCBA Productivity Reports",   path: "/reports?category=bcba-productivity", icon: BarChart3 },
+          { label: "Home",           path: "/bcba/home",     icon: Home },
+          { label: "Caseload",       path: "/bcba/caseload", icon: UserCheck },
+          { label: "My RBTs",        path: "/bcba/rbts",     icon: Users },
+          { label: "Clinical Work",  path: "/bcba/clinical", icon: ClipboardList },
+          { label: "Learn",          path: "/bcba/learn",    icon: GraduationCap },
+          { label: "Support",        path: "/bcba/support",  icon: LifeBuoy },
+          { label: "Me",             path: "/bcba/me",       icon: User },
         ],
       },
       TRAINING_AND_RESOURCES,
