@@ -212,6 +212,7 @@ import Graduation from "./pages/onboarding/Graduation";
 import HelpPage from "./pages/Help";
 import JourneyEditor from "./pages/admin/JourneyEditor";
 import RbtLifecycle from "./pages/admin/RbtLifecycle";
+import BcbaLifecycle from "./pages/admin/BcbaLifecycle";
 import RbtAdminHub from "./pages/admin/RbtAdminHub";
 import RbtJourneyCommandCenter from "./pages/admin/RbtJourneyCommandCenter";
 import RbtTrainerDashboard from "./pages/admin/RbtTrainerDashboard";
