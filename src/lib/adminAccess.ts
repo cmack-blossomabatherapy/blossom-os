@@ -11,12 +11,20 @@ export const ADMIN_HUB_EMAILS = [
 
 export const ADMIN_HUB_ROLES = [
   "admin",
+  "super_admin",
   "exec",
+  "executive",
+  "coo",
   "ops_manager",
+  "director_of_operations",
+  "operations_manager",
   "training_admin",
   "hr",
   "hr_admin",
   "hr_manager",
+  "hr_lead",
+  "state_director",
+  "assistant_state_director",
 ];
 
 export function canAccessAdminHub(user: User | null, roles: string[]): boolean {

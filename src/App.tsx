@@ -643,7 +643,7 @@ function RoleDashboardRedirect() {
 // Company Home is the universal landing page for every signed-in role.
 // Role-specific dashboards remain reachable from the sidebar and via /dashboard.
 function RootToCompanyHome() {
-  const { user, loading } = useAuth();
+  const { user, loading, roles } = useAuth();
   if (loading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
@@ -652,6 +652,15 @@ function RootToCompanyHome() {
     );
   }
   if (!user) return <Navigate to="/auth" replace />;
+  // RBTs land directly in the mobile RBT app.
+  const NON_RBT_ROLES = new Set([
+    "admin","super_admin","exec","executive","coo","ops_manager",
+    "director_of_operations","operations_manager","hr","hr_admin","hr_manager",
+    "training_admin","state_director","assistant_state_director",
+  ]);
+  const hasRbt = roles.includes("rbt");
+  const hasOtherPrimary = roles.some((r) => NON_RBT_ROLES.has(r));
+  if (hasRbt && !hasOtherPrimary) return <Navigate to="/rbt/app/home" replace />;
   return <Navigate to="/home" replace />;
 }
 
