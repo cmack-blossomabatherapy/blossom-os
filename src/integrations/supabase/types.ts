@@ -2405,6 +2405,81 @@ export type Database = {
           },
         ]
       }
+      bcba_capacity_snapshots: {
+        Row: {
+          active_clients: number
+          active_rbts: number
+          bcba_id: string
+          bcba_name: string | null
+          capacity_status: string
+          created_at: string
+          id: string
+          new_assessments: number
+          open_qa_corrections: number
+          open_staffing_gap_hours: number
+          parent_training_workload: number
+          period_end: string
+          period_start: string
+          projected_service_hours: number
+          reasoning: Json
+          reports_due: number
+          scheduled_hours: number
+          source_dates: Json
+          state: string | null
+          supervision_load_hours: number
+          upcoming_leave_days: number
+          updated_at: string
+        }
+        Insert: {
+          active_clients?: number
+          active_rbts?: number
+          bcba_id: string
+          bcba_name?: string | null
+          capacity_status?: string
+          created_at?: string
+          id?: string
+          new_assessments?: number
+          open_qa_corrections?: number
+          open_staffing_gap_hours?: number
+          parent_training_workload?: number
+          period_end: string
+          period_start: string
+          projected_service_hours?: number
+          reasoning?: Json
+          reports_due?: number
+          scheduled_hours?: number
+          source_dates?: Json
+          state?: string | null
+          supervision_load_hours?: number
+          upcoming_leave_days?: number
+          updated_at?: string
+        }
+        Update: {
+          active_clients?: number
+          active_rbts?: number
+          bcba_id?: string
+          bcba_name?: string | null
+          capacity_status?: string
+          created_at?: string
+          id?: string
+          new_assessments?: number
+          open_qa_corrections?: number
+          open_staffing_gap_hours?: number
+          parent_training_workload?: number
+          period_end?: string
+          period_start?: string
+          projected_service_hours?: number
+          reasoning?: Json
+          reports_due?: number
+          scheduled_hours?: number
+          source_dates?: Json
+          state?: string | null
+          supervision_load_hours?: number
+          upcoming_leave_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bcba_centralreach_outbox: {
         Row: {
           centralreach_client_id: string | null
@@ -3373,6 +3448,180 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      bcba_productivity_discrepancies: {
+        Row: {
+          bcba_id: string
+          created_at: string
+          detail: string | null
+          expected_value: string | null
+          id: string
+          metric_key: string
+          reported_value: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          snapshot_id: string | null
+          status: string
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          bcba_id: string
+          created_at?: string
+          detail?: string | null
+          expected_value?: string | null
+          id?: string
+          metric_key: string
+          reported_value?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          snapshot_id?: string | null
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bcba_id?: string
+          created_at?: string
+          detail?: string | null
+          expected_value?: string | null
+          id?: string
+          metric_key?: string
+          reported_value?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          snapshot_id?: string | null
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_productivity_discrepancies_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_productivity_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bcba_productivity_discrepancies_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_productivity_snapshots: {
+        Row: {
+          assessment_hours: number
+          assigned_rbt_count: number
+          bcba_id: string
+          bcba_name: string | null
+          billable_hours: number
+          cancelled_appointments: number
+          cancelled_hours_family: number
+          cancelled_hours_other: number
+          cancelled_hours_provider: number
+          caseload_size: number
+          clinical_hours: number
+          created_at: string
+          documentation_on_time_pct: number
+          forecast_hours: number
+          id: string
+          mtd_actual_hours: number
+          mtd_target_hours: number
+          notes: Json
+          open_risks: number
+          parent_training_hours: number
+          period_end: string
+          period_start: string
+          progress_reports_late: number
+          progress_reports_on_time: number
+          progress_reports_upcoming: number
+          qa_return_rate_pct: number
+          service_utilization_pct: number
+          source_dates: Json
+          state: string | null
+          supervision_hours: number
+          treatment_plans_open: number
+          treatment_plans_qa_returned: number
+          updated_at: string
+        }
+        Insert: {
+          assessment_hours?: number
+          assigned_rbt_count?: number
+          bcba_id: string
+          bcba_name?: string | null
+          billable_hours?: number
+          cancelled_appointments?: number
+          cancelled_hours_family?: number
+          cancelled_hours_other?: number
+          cancelled_hours_provider?: number
+          caseload_size?: number
+          clinical_hours?: number
+          created_at?: string
+          documentation_on_time_pct?: number
+          forecast_hours?: number
+          id?: string
+          mtd_actual_hours?: number
+          mtd_target_hours?: number
+          notes?: Json
+          open_risks?: number
+          parent_training_hours?: number
+          period_end: string
+          period_start: string
+          progress_reports_late?: number
+          progress_reports_on_time?: number
+          progress_reports_upcoming?: number
+          qa_return_rate_pct?: number
+          service_utilization_pct?: number
+          source_dates?: Json
+          state?: string | null
+          supervision_hours?: number
+          treatment_plans_open?: number
+          treatment_plans_qa_returned?: number
+          updated_at?: string
+        }
+        Update: {
+          assessment_hours?: number
+          assigned_rbt_count?: number
+          bcba_id?: string
+          bcba_name?: string | null
+          billable_hours?: number
+          cancelled_appointments?: number
+          cancelled_hours_family?: number
+          cancelled_hours_other?: number
+          cancelled_hours_provider?: number
+          caseload_size?: number
+          clinical_hours?: number
+          created_at?: string
+          documentation_on_time_pct?: number
+          forecast_hours?: number
+          id?: string
+          mtd_actual_hours?: number
+          mtd_target_hours?: number
+          notes?: Json
+          open_risks?: number
+          parent_training_hours?: number
+          period_end?: string
+          period_start?: string
+          progress_reports_late?: number
+          progress_reports_on_time?: number
+          progress_reports_upcoming?: number
+          qa_return_rate_pct?: number
+          service_utilization_pct?: number
+          source_dates?: Json
+          state?: string | null
+          supervision_hours?: number
+          treatment_plans_open?: number
+          treatment_plans_qa_returned?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       bcba_productivity_upload_batches: {
         Row: {
