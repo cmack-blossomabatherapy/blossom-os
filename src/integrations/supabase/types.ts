@@ -2279,6 +2279,125 @@ export type Database = {
         }
         Relationships: []
       }
+      bcba_dashboard_card_engagement: {
+        Row: {
+          card_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_dashboard_card_engagement_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_dashboard_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_dashboard_cards: {
+        Row: {
+          body: string | null
+          card_type: string
+          color: string | null
+          config: Json
+          created_at: string
+          created_by: string | null
+          cta_label: string | null
+          cta_link: string | null
+          data_source: string | null
+          ends_at: string | null
+          freshness_hint: string | null
+          icon: string | null
+          id: string
+          is_enabled: boolean
+          lifecycle_stages: string[]
+          priority: number
+          required_action: Json | null
+          starts_at: string | null
+          subtitle: string | null
+          target_clinics: string[]
+          target_roles: string[]
+          target_states: string[]
+          target_user_ids: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          card_type: string
+          color?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_link?: string | null
+          data_source?: string | null
+          ends_at?: string | null
+          freshness_hint?: string | null
+          icon?: string | null
+          id?: string
+          is_enabled?: boolean
+          lifecycle_stages?: string[]
+          priority?: number
+          required_action?: Json | null
+          starts_at?: string | null
+          subtitle?: string | null
+          target_clinics?: string[]
+          target_roles?: string[]
+          target_states?: string[]
+          target_user_ids?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          card_type?: string
+          color?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_link?: string | null
+          data_source?: string | null
+          ends_at?: string | null
+          freshness_hint?: string | null
+          icon?: string | null
+          id?: string
+          is_enabled?: boolean
+          lifecycle_stages?: string[]
+          priority?: number
+          required_action?: Json | null
+          starts_at?: string | null
+          subtitle?: string | null
+          target_clinics?: string[]
+          target_roles?: string[]
+          target_states?: string[]
+          target_user_ids?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bcba_lifecycle_events: {
         Row: {
           actor_id: string | null
