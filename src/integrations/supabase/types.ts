@@ -16421,14 +16421,20 @@ export type Database = {
           client_name: string
           clinic: string | null
           created_at: string
+          end_date: string | null
           family_preferences: string | null
+          first_session_date: string | null
           id: string
+          lead_rbt_support_status: string | null
+          open_concerns_count: number
           rbt_employee_id: string
           safety_notes: string | null
           schedule_summary: string | null
           start_date: string | null
           state: string | null
           status: string
+          supervision_plan: string | null
+          training_recommendations: string | null
           updated_at: string
         }
         Insert: {
@@ -16443,14 +16449,20 @@ export type Database = {
           client_name: string
           clinic?: string | null
           created_at?: string
+          end_date?: string | null
           family_preferences?: string | null
+          first_session_date?: string | null
           id?: string
+          lead_rbt_support_status?: string | null
+          open_concerns_count?: number
           rbt_employee_id: string
           safety_notes?: string | null
           schedule_summary?: string | null
           start_date?: string | null
           state?: string | null
           status?: string
+          supervision_plan?: string | null
+          training_recommendations?: string | null
           updated_at?: string
         }
         Update: {
@@ -16465,14 +16477,20 @@ export type Database = {
           client_name?: string
           clinic?: string | null
           created_at?: string
+          end_date?: string | null
           family_preferences?: string | null
+          first_session_date?: string | null
           id?: string
+          lead_rbt_support_status?: string | null
+          open_concerns_count?: number
           rbt_employee_id?: string
           safety_notes?: string | null
           schedule_summary?: string | null
           start_date?: string | null
           state?: string | null
           status?: string
+          supervision_plan?: string | null
+          training_recommendations?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -17241,6 +17259,10 @@ export type Database = {
           id: string
           notes: string | null
           rbt_readiness: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          response: string | null
+          status: string
           submitted_at: string
           training_required: boolean
         }
@@ -17256,6 +17278,10 @@ export type Database = {
           id?: string
           notes?: string | null
           rbt_readiness?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          response?: string | null
+          status?: string
           submitted_at?: string
           training_required?: boolean
         }
@@ -17271,6 +17297,10 @@ export type Database = {
           id?: string
           notes?: string | null
           rbt_readiness?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          response?: string | null
+          status?: string
           submitted_at?: string
           training_required?: boolean
         }
@@ -17438,6 +17468,7 @@ export type Database = {
       }
       rbt_first_session_checklist_items: {
         Row: {
+          audience: string
           created_at: string
           description: string | null
           is_active: boolean
@@ -17447,6 +17478,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audience?: string
           created_at?: string
           description?: string | null
           is_active?: boolean
@@ -17456,6 +17488,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audience?: string
           created_at?: string
           description?: string | null
           is_active?: boolean

@@ -10,6 +10,7 @@ import { BcbaCard } from "./shared/cards";
 import { useBcbaDashboardCards } from "./shared/useDashboardCards";
 import BcbaHomePage from "./home/BcbaHomePage";
 import CaseloadPage from "./caseload/CaseloadPage";
+import BcbaMyRbtsPage from "./rbts/MyRbtsPage";
 
 /* -------------------------------------------------------------------------- */
 /*  Shared page chrome                                                        */
@@ -104,30 +105,7 @@ export function BcbaCaseload() {
 }
 
 export function BcbaMyRbts() {
-  return (
-    <PageContainer>
-      <PageHeader
-        title="My RBTs"
-        subtitle="RBTs paired to your clients — supervision, training, and support."
-      />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <BcbaCardFrame
-          title="Assigned RBTs"
-          state="empty"
-          icon={<Users className="h-4 w-4" strokeWidth={1.75} />}
-          emptyLabel="No RBTs are currently assigned to your clients."
-          dataSource="CentralReach"
-        />
-        <BcbaCardFrame
-          title="Supervision risk"
-          state="empty"
-          icon={<UserCheck className="h-4 w-4" strokeWidth={1.75} />}
-          emptyLabel="All RBTs are within supervision targets."
-          dataSource="Blossom OS"
-        />
-      </div>
-    </PageContainer>
-  );
+  return <BcbaMyRbtsPage />;
 }
 
 export function BcbaClinicalWork() {
