@@ -1344,6 +1344,7 @@ const App = () => (
                     <Route path="parent-training" element={<BcbaParentTrainingPage />} />
                     <Route path="productivity" element={<BcbaProductivityPage />} />
                     <Route path="fellowship" element={<BcbaFellowshipPage />} />
+                    <Route path="copilot" element={<BcbaCopilotPage />} />
                   </Route>
                   <Route
                     path="/admin/bcba-onboarding"
