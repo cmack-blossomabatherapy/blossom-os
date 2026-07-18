@@ -1195,6 +1195,7 @@ const App = () => (
                   <Route path="/admin/automated-emails" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
                   <Route path="/admin/ctm" element={<AdminRoute><CTMAdmin /></AdminRoute>} />
                   <Route path="/admin/rbt-lifecycle" element={<AdminRoute><RbtLifecycle /></AdminRoute>} />
+                  <Route path="/admin/bcba-lifecycle" element={<AdminRoute><BcbaLifecycle /></AdminRoute>} />
                   <Route path="/admin/rbt" element={<AdminRoute><OSShellPage><RbtAdminHub /></OSShellPage></AdminRoute>} />
                   <Route path="/admin/rbt/journey" element={<AdminRoute><OSShellPage><RbtJourneyCommandCenter /></OSShellPage></AdminRoute>} />
                   <Route path="/admin/rbt/trainers" element={<AdminRoute><OSShellPage><RbtTrainerDashboard /></OSShellPage></AdminRoute>} />
