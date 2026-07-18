@@ -853,10 +853,10 @@ const App = () => (
                   <Route path="/treatment-plan-reviews" element={<OSQATreatmentPlans />} />
                   <Route path="/missing-information" element={<OSQAMissingInfo />} />
                   <Route path="/expiring-items" element={<OSQAExpiring />} />
-                  <Route path="/assigned-bcbas" element={<OSQABCBAs />} />
-                  <Route path="/supervision-visibility" element={<OSQASupervision />} />
+                  <Route path="/assigned-bcbas" element={<PermissionRoute allowedRoles={["admin","super_admin","qa","qa_lead","clinical_director","operations_leadership","state_director"]}><OSQABCBAs /></PermissionRoute>} />
+                  <Route path="/supervision-visibility" element={<PermissionRoute allowedRoles={["admin","super_admin","qa","qa_lead","clinical_director","operations_leadership","state_director"]}><OSQASupervision /></PermissionRoute>} />
                   <Route path="/qa-messages" element={<OSQAMessages />} />
-                  <Route path="/escalations-followups" element={<OSQAEscalations />} />
+                  <Route path="/escalations-followups" element={<PermissionRoute allowedRoles={["admin","super_admin","qa","qa_lead","clinical_director","operations_leadership","state_director"]}><OSQAEscalations /></PermissionRoute>} />
                   <Route path="/qa/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/payroll-coordinator" element={<OSPayrollCoordinator />} />
                   <Route path="/payroll/workspace" element={<OSPayrollWorkspace />} />
@@ -874,7 +874,7 @@ const App = () => (
                   <Route path="/payroll/resources" element={<Navigate to="/resource-library" replace />} />
                   {/* Case Manager role */}
                   <Route path="/case-manager" element={<OSCaseManager />} />
-                  <Route path="/clinical-director" element={<ClinicalDirectorDashboard />} />
+                  <Route path="/clinical-director" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership"]}><ClinicalDirectorDashboard /></PermissionRoute>} />
                   {/* Live Org Chart — HR + admins can edit; every authenticated
                       teammate can view. Edit gate is enforced inside OrgChartPage. */}
                   <Route path="/org-chart" element={<OSShellPage><LiveOrgChart /></OSShellPage>} />
@@ -911,15 +911,14 @@ const App = () => (
                   <Route path="/case-manager/escalations" element={<CMEscalations />} />
                   <Route path="/case-manager/community" element={<CMCommunityReferrals />} />
                   <Route path="/case-manager/resources" element={<OSCaseManagerResources />} />
-                  <Route path="/bcba" element={<OSBCBA />} />
-                  <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
-                  <Route path="/bcba/clients" element={<OSBCBAClients />} />
-                  <Route path="/bcba/authorizations" element={<OSBCBAAuthorizations />} />
-                  <Route path="/bcba/supervision" element={<OSBCBASupervision />} />
-                  <Route path="/bcba/parent-training" element={<OSBCBAParentTraining />} />
-                  <Route path="/bcba/scheduling" element={<OSBCBAScheduling />} />
-                  <Route path="/bcba/resources" element={<Navigate to="/resource-library" replace />} />
-                  <Route path="/bcba/training-academy" element={<OSBCBATrainingAcademy />} />
+                  {/* Legacy flat BCBA routes redirected into the new BcbaShell.
+                      Nested routes are declared under /bcba below. */}
+                  <Route path="/bcba/workspace"        element={<Navigate to="/bcba/home" replace />} />
+                  <Route path="/bcba/clients"          element={<Navigate to="/bcba/caseload" replace />} />
+                  <Route path="/bcba/authorizations"   element={<Navigate to="/bcba/progress-reports" replace />} />
+                  <Route path="/bcba/scheduling"       element={<Navigate to="/bcba/home" replace />} />
+                  <Route path="/bcba/resources"        element={<Navigate to="/resource-library" replace />} />
+                  <Route path="/bcba/training-academy" element={<Navigate to="/bcba/academy" replace />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/rbt/my-day" element={<OSRBTMyDay />} />
                   <Route path="/rbt/training-academy" element={<OSRBTTrainingAcademy />} />
@@ -1333,6 +1332,7 @@ const App = () => (
                     <Route path="learn"    element={<BcbaLearn />} />
                     <Route path="support"  element={<BcbaSupport />} />
                     <Route path="support-center" element={<BcbaSupportPageV2 />} />
+                    <Route path="learn" element={<Navigate to="/bcba/academy" replace />} />
                     <Route path="academy" element={<BcbaAcademyPage />} />
                     <Route path="me"       element={<BcbaMe />} />
                     <Route path="onboarding" element={<BcbaOnboardingPage />} />
