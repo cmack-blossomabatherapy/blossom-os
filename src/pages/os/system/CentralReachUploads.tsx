@@ -105,7 +105,7 @@ async function detectFile(file: File): Promise<CRUploadDetection> {
 
 /* ---------------- page ---------------- */
 
-export default function CentralReachUploads() {
+export default function CentralReachUploads({ embedded = false }: { embedded?: boolean } = {}) {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [notes, setNotes] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -331,9 +331,8 @@ export default function CentralReachUploads() {
     return rows;
   }, [sharedByKey, bcbaBatches]);
 
-  return (
-    <OSShell>
-      <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto space-y-8">
+  const body = (
+      <div className={embedded ? "space-y-8" : "px-6 lg:px-10 py-8 max-w-[1400px] mx-auto space-y-8"}>
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
