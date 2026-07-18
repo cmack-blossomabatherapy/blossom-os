@@ -7235,6 +7235,7 @@ export type Database = {
           billing_status: Database["public"]["Enums"]["billing_claim_status"]
           blockers: string[]
           case_coordination_document_generated: boolean
+          centralreach_id: string | null
           centralreach_sync_status: string
           child_age: string | null
           child_name: string
@@ -7297,6 +7298,7 @@ export type Database = {
           billing_status?: Database["public"]["Enums"]["billing_claim_status"]
           blockers?: string[]
           case_coordination_document_generated?: boolean
+          centralreach_id?: string | null
           centralreach_sync_status?: string
           child_age?: string | null
           child_name: string
@@ -7359,6 +7361,7 @@ export type Database = {
           billing_status?: Database["public"]["Enums"]["billing_claim_status"]
           blockers?: string[]
           case_coordination_document_generated?: boolean
+          centralreach_id?: string | null
           centralreach_sync_status?: string
           child_age?: string | null
           child_name?: string
@@ -10764,6 +10767,7 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           bio: string | null
+          centralreach_id: string | null
           certifications: string[]
           clinic: string | null
           competencies: string[]
@@ -10831,6 +10835,7 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           bio?: string | null
+          centralreach_id?: string | null
           certifications?: string[]
           clinic?: string | null
           competencies?: string[]
@@ -10898,6 +10903,7 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           bio?: string | null
+          centralreach_id?: string | null
           certifications?: string[]
           clinic?: string | null
           competencies?: string[]
