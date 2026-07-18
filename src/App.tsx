@@ -1260,7 +1260,11 @@ const App = () => (
                   <Route path="/admin/bcba/notifications" element={<AdminRoute><OSShellPage><BcbaNotificationEngine /></OSShellPage></AdminRoute>} />
                   <Route path="/inbox" element={<OSShellPage><NotificationInbox /></OSShellPage>} />
                   <Route path="/rbt/app/settings/notifications" element={<RbtNotificationPreferences />} />
-                  <Route path="/bcba/settings/notifications" element={<OSShellPage><BcbaNotificationPreferences /></OSShellPage>} />
+                  <Route path="/bcba/settings/notifications" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","bcba","clinical_director","operations_leadership","hr","hr_admin"]}>
+                      <OSShellPage><BcbaNotificationPreferences /></OSShellPage>
+                    </PermissionRoute>
+                  } />
                   <Route path="/training/rbt/evaluate" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
                       <OSShellPage><RbtEvaluatorConsole /></OSShellPage>
@@ -1330,7 +1334,6 @@ const App = () => (
                     <Route path="learn"    element={<BcbaLearn />} />
                     <Route path="support"  element={<BcbaSupport />} />
                     <Route path="support-center" element={<BcbaSupportPageV2 />} />
-                    <Route path="learn" element={<Navigate to="/bcba/academy" replace />} />
                     <Route path="academy" element={<BcbaAcademyPage />} />
                     <Route path="me"       element={<BcbaMe />} />
                     <Route path="onboarding" element={<BcbaOnboardingPage />} />
