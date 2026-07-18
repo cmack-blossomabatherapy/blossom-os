@@ -628,6 +628,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "clinical_leadership", label: "Clinical Leadership", items: [
           { label: "Clinical Readiness Dashboard", path: "/clinical-director",       icon: LayoutDashboard },
+          { label: "Command Centers",              path: "/clinical-leadership",     icon: LayoutDashboard },
           { label: "CentralReach Handoff Queue",   path: "/qa/board",                icon: ClipboardCheck },
           { label: "Evaluation Readiness",         path: "/evaluations",             icon: FileCheck2 },
           { label: "Assigned BCBAs",               path: "/assigned-bcbas",          icon: UserCheck },
