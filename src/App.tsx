@@ -1355,6 +1355,21 @@ const App = () => (
                       </PermissionRoute>
                     }
                   />
+                  {/* Clinical Leadership Command Centers */}
+                  <Route path="/clinical-leadership" element={
+                    <PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}>
+                      <OSShellPage><ClinicalLeadershipHome /></OSShellPage>
+                    </PermissionRoute>
+                  } />
+                  <Route path="/clinical-leadership/workforce" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}><OSShellPage><BcbaWorkforcePage /></OSShellPage></PermissionRoute>} />
+                  <Route path="/clinical-leadership/caseload-risk" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}><OSShellPage><CaseloadRiskPage /></OSShellPage></PermissionRoute>} />
+                  <Route path="/clinical-leadership/rbt-supervision" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}><OSShellPage><ClinicalRbtSupervisionPage /></OSShellPage></PermissionRoute>} />
+                  <Route path="/clinical-leadership/assessment-qa" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}><OSShellPage><AssessmentQaPage /></OSShellPage></PermissionRoute>} />
+                  <Route path="/clinical-leadership/progress-auth" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}><OSShellPage><ProgressAuthPage /></OSShellPage></PermissionRoute>} />
+                  <Route path="/clinical-leadership/parent-training" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}><OSShellPage><ParentTrainingUtilizationPage /></OSShellPage></PermissionRoute>} />
+                  <Route path="/clinical-leadership/capacity" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}><OSShellPage><ClinicalCapacityPage /></OSShellPage></PermissionRoute>} />
+                  <Route path="/clinical-leadership/support" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","state_director","assistant_state_director"]}><OSShellPage><ClinicalSupportPage /></OSShellPage></PermissionRoute>} />
+                  <Route path="/clinical-leadership/fellowship" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership"]}><OSShellPage><FellowshipSupervisionPage /></OSShellPage></PermissionRoute>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
