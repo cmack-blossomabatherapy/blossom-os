@@ -2749,6 +2749,298 @@ export type Database = {
         }
         Relationships: []
       }
+      bcba_fellowship_assignments: {
+        Row: {
+          active: boolean
+          assigned_at: string
+          bcba_id: string
+          bcba_name: string | null
+          ended_at: string | null
+          fellow_id: string
+          id: string
+          is_primary: boolean
+          role: string
+        }
+        Insert: {
+          active?: boolean
+          assigned_at?: string
+          bcba_id: string
+          bcba_name?: string | null
+          ended_at?: string | null
+          fellow_id: string
+          id?: string
+          is_primary?: boolean
+          role: string
+        }
+        Update: {
+          active?: boolean
+          assigned_at?: string
+          bcba_id?: string
+          bcba_name?: string | null
+          ended_at?: string | null
+          fellow_id?: string
+          id?: string
+          is_primary?: boolean
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_fellowship_assignments_fellow_id_fkey"
+            columns: ["fellow_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_fellowship_fellows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_fellowship_audit: {
+        Row: {
+          action: string
+          changed_by: string | null
+          changed_field: string | null
+          created_at: string
+          entity_id: string
+          entity_table: string
+          fellow_id: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+        }
+        Insert: {
+          action?: string
+          changed_by?: string | null
+          changed_field?: string | null
+          created_at?: string
+          entity_id: string
+          entity_table: string
+          fellow_id?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          changed_field?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_table?: string
+          fellow_id?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: []
+      }
+      bcba_fellowship_fellows: {
+        Row: {
+          clinic: string | null
+          coursework_status: string | null
+          created_at: string
+          email: string | null
+          fieldwork_status: string | null
+          full_name: string
+          hours_last_source_date: string | null
+          id: string
+          monthly_documentation_status: string | null
+          next_meeting_at: string | null
+          notes: string | null
+          rbt_role_status: string | null
+          readiness_status: string | null
+          restricted_hours: number
+          stage_key: string
+          start_date: string | null
+          state: string | null
+          supervision_status: string | null
+          support_need: string | null
+          target_completion_date: string | null
+          unrestricted_hours: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          clinic?: string | null
+          coursework_status?: string | null
+          created_at?: string
+          email?: string | null
+          fieldwork_status?: string | null
+          full_name: string
+          hours_last_source_date?: string | null
+          id?: string
+          monthly_documentation_status?: string | null
+          next_meeting_at?: string | null
+          notes?: string | null
+          rbt_role_status?: string | null
+          readiness_status?: string | null
+          restricted_hours?: number
+          stage_key?: string
+          start_date?: string | null
+          state?: string | null
+          supervision_status?: string | null
+          support_need?: string | null
+          target_completion_date?: string | null
+          unrestricted_hours?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          clinic?: string | null
+          coursework_status?: string | null
+          created_at?: string
+          email?: string | null
+          fieldwork_status?: string | null
+          full_name?: string
+          hours_last_source_date?: string | null
+          id?: string
+          monthly_documentation_status?: string | null
+          next_meeting_at?: string | null
+          notes?: string | null
+          rbt_role_status?: string | null
+          readiness_status?: string | null
+          restricted_hours?: number
+          stage_key?: string
+          start_date?: string | null
+          state?: string | null
+          supervision_status?: string | null
+          support_need?: string | null
+          target_completion_date?: string | null
+          unrestricted_hours?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      bcba_fellowship_program_content: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          is_published: boolean
+          section_key: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          section_key: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          section_key?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      bcba_fellowship_reviews: {
+        Row: {
+          attachments: Json
+          completed_at: string | null
+          created_at: string
+          fellow_id: string
+          follow_up_date: string | null
+          id: string
+          next_steps: string | null
+          outcome_summary: string | null
+          review_type: string
+          reviewer_id: string
+          reviewer_name: string | null
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          completed_at?: string | null
+          created_at?: string
+          fellow_id: string
+          follow_up_date?: string | null
+          id?: string
+          next_steps?: string | null
+          outcome_summary?: string | null
+          review_type: string
+          reviewer_id: string
+          reviewer_name?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          completed_at?: string | null
+          created_at?: string
+          fellow_id?: string
+          follow_up_date?: string | null
+          id?: string
+          next_steps?: string | null
+          outcome_summary?: string | null
+          review_type?: string
+          reviewer_id?: string
+          reviewer_name?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_fellowship_reviews_fellow_id_fkey"
+            columns: ["fellow_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_fellowship_fellows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_fellowship_stages: {
+        Row: {
+          active: boolean
+          color: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_terminal: boolean
+          key: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_terminal?: boolean
+          key: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_terminal?: boolean
+          key?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bcba_lifecycle_events: {
         Row: {
           actor_id: string | null
@@ -28656,6 +28948,10 @@ export type Database = {
       }
       has_credentialing_write_access: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      has_fellowship_access: {
+        Args: { _fellow_id: string; _user_id: string }
         Returns: boolean
       }
       has_permission: {
