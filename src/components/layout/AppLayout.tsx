@@ -57,14 +57,15 @@ export function AppLayout() {
     setMobileMenuFloating(false);
   }, [location.pathname]);
 
-  // RBTs live inside /rbt/app/* — never leave them stranded on the generic
-  // home/root routes where they'd see the non-RBT menu and layout.
-  const isRbtRoot =
+  // RBTs live inside /rbt/app/*. Bounce them back whenever they land on a
+  // non-RBT page so they never see the generic sidebar, menu, or Reports.
+  const RBT_ALLOWED_PREFIXES = ["/rbt/app", "/auth", "/inbox", "/profile"];
+  const isRbtOffApp =
     !loading &&
     user &&
     osRole?.role === "rbt" &&
-    (location.pathname === "/" || location.pathname === "/home");
-  if (isRbtRoot) return <Navigate to="/rbt/app/home" replace />;
+    !RBT_ALLOWED_PREFIXES.some((p) => location.pathname === p || location.pathname.startsWith(p + "/") || location.pathname === p);
+  if (isRbtOffApp) return <Navigate to="/rbt/app/home" replace />;
 
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background md:h-screen md:overflow-hidden md:flex-row">
