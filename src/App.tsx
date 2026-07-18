@@ -257,6 +257,8 @@ import BcbaAssessmentsPage from "./pages/bcba/assessments/AssessmentsPage";
 import BcbaProgressReportsPage from "./pages/bcba/progress-reports/ProgressReportsPage";
 import BcbaParentTrainingPage from "./pages/bcba/parent-training/ParentTrainingPage";
 import BcbaProductivityPage from "./pages/bcba/productivity/ProductivityPage";
+import BcbaSupportPageV2 from "./pages/bcba/support/SupportPage";
+import BcbaAcademyPage from "./pages/bcba/academy/AcademyPage";
 import BcbaSupervisionConfigPage from "./pages/admin/BcbaSupervisionConfigPage";
 import RbtGrowthConsole from "./pages/admin/RbtGrowthConsole";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
@@ -1315,6 +1317,8 @@ const App = () => (
                     <Route path="clinical" element={<BcbaClinicalWork />} />
                     <Route path="learn"    element={<BcbaLearn />} />
                     <Route path="support"  element={<BcbaSupport />} />
+                    <Route path="support-center" element={<BcbaSupportPageV2 />} />
+                    <Route path="academy" element={<BcbaAcademyPage />} />
                     <Route path="me"       element={<BcbaMe />} />
                     <Route path="onboarding" element={<BcbaOnboardingPage />} />
                     <Route path="supervision" element={<BcbaSupervisionCenter />} />
