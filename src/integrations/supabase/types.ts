@@ -29507,6 +29507,9 @@ export type Database = {
         | "schedule"
         | "timesheets"
         | "authorizations"
+        | "assignments"
+        | "documentation"
+        | "dashboard_audit"
       directory_onboarding_status:
         | "not_started"
         | "welcome"
@@ -30325,6 +30328,9 @@ export const Constants = {
         "schedule",
         "timesheets",
         "authorizations",
+        "assignments",
+        "documentation",
+        "dashboard_audit",
       ],
       directory_onboarding_status: [
         "not_started",
