@@ -51,7 +51,7 @@ async function fetchCaseload(userId: string): Promise<CaseloadRow[]> {
   const clientIds = Array.from(new Set((assignments ?? []).map((a) => a.client_id).filter(Boolean)));
   if (clientIds.length === 0) return [];
 
-  const [clientsR, authR, cancelR, ptR, tpR, supportR, sessionsR] = await Promise.all([
+  const [clientsR, authR, cancelR, ptR, tpR, supportR] = await Promise.all([
     supabase.from("clients")
       .select("id,child_name,state,clinic,active_service_status,active_staffing_status,approved_weekly_hours,scheduled_weekly_hours,delivered_weekly_hours,service_location,notes_compliance_status,next_reauth_date,centralreach_sync_status,start_date")
       .in("id", clientIds),
@@ -72,11 +72,7 @@ async function fetchCaseload(userId: string): Promise<CaseloadRow[]> {
     supabase.from("rbt_help_requests")
       .select("related_client_id,status")
       .in("related_client_id", clientIds)
-      .neq("status", "resolved"),
-    supabase.from("bcba_billable_sessions")
-      .select("client_full,hours,date_of_service")
-      .gte("date_of_service", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
-      .limit(2000),
+      .not("status", "in", "(resolved,closed)"),
   ]);
 
   const clientsById = new Map((clientsR.data ?? []).map((c) => [c.id, c]));
