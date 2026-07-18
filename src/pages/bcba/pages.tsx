@@ -9,6 +9,7 @@ import { BcbaCardFrame } from "./shared/CardFrame";
 import { BcbaCard } from "./shared/cards";
 import { useBcbaDashboardCards } from "./shared/useDashboardCards";
 import BcbaHomePage from "./home/BcbaHomePage";
+import CaseloadPage from "./caseload/CaseloadPage";
 
 /* -------------------------------------------------------------------------- */
 /*  Shared page chrome                                                        */
@@ -99,38 +100,7 @@ function ComingSoonCard({
 }
 
 export function BcbaCaseload() {
-  return (
-    <PageContainer>
-      <PageHeader
-        title="Caseload"
-        subtitle="Every client you own, with health at a glance."
-      />
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        <BcbaCardFrame
-          title="Case health"
-          subtitle="Signals across authorization, supervision, docs, and utilization"
-          state="empty"
-          icon={<Activity className="h-4 w-4" strokeWidth={1.75} />}
-          emptyLabel="Case-health snapshots appear here once your CentralReach sync runs."
-          dataSource="CentralReach"
-        />
-        <BcbaCardFrame
-          title="Authorization deadlines"
-          state="empty"
-          icon={<ShieldCheck className="h-4 w-4" strokeWidth={1.75} />}
-          emptyLabel="No authorizations approaching expiration."
-          dataSource="CentralReach"
-        />
-        <BcbaCardFrame
-          title="Documentation status"
-          state="empty"
-          icon={<FileText className="h-4 w-4" strokeWidth={1.75} />}
-          emptyLabel="No open documentation items."
-          dataSource="Blossom OS"
-        />
-      </div>
-    </PageContainer>
-  );
+  return <CaseloadPage />;
 }
 
 export function BcbaMyRbts() {
