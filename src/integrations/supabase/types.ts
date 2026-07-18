@@ -4068,6 +4068,91 @@ export type Database = {
           },
         ]
       }
+      bcba_productivity_discrepancy_attachments: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          discrepancy_id: string
+          file_name: string
+          id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          discrepancy_id: string
+          file_name: string
+          id?: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          discrepancy_id?: string
+          file_name?: string
+          id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_productivity_discrepancy_attachments_discrepancy_id_fkey"
+            columns: ["discrepancy_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_productivity_discrepancies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_productivity_discrepancy_events: {
+        Row: {
+          actor_id: string | null
+          comment: string | null
+          created_at: string
+          discrepancy_id: string
+          event_type: string
+          from_status: string | null
+          id: string
+          metadata: Json
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          comment?: string | null
+          created_at?: string
+          discrepancy_id: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          comment?: string | null
+          created_at?: string
+          discrepancy_id?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_productivity_discrepancy_events_discrepancy_id_fkey"
+            columns: ["discrepancy_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_productivity_discrepancies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bcba_productivity_snapshots: {
         Row: {
           assessment_hours: number
