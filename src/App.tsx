@@ -1315,6 +1315,7 @@ const App = () => (
                     <Route path="me"       element={<BcbaMe />} />
                     <Route path="onboarding" element={<BcbaOnboardingPage />} />
                     <Route path="supervision" element={<BcbaSupervisionCenter />} />
+                    <Route path="assessments" element={<BcbaAssessmentsPage />} />
                   </Route>
                   <Route
                     path="/admin/bcba-onboarding"
