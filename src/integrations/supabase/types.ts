@@ -3050,6 +3050,47 @@ export type Database = {
           },
         ]
       }
+      bcba_parent_training_activity: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          record_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          record_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_parent_training_activity_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_parent_training_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bcba_parent_training_logs: {
         Row: {
           barriers: string | null
@@ -3121,6 +3162,152 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      bcba_parent_training_records: {
+        Row: {
+          assigned_bcba_id: string | null
+          assigned_bcba_name: string | null
+          barrier: string | null
+          cancelled_sessions: number
+          centralreach_source_date: string | null
+          centralreach_url: string | null
+          client_id: string | null
+          client_identifier: string
+          completed_sessions: number
+          created_at: string
+          created_by: string | null
+          documentation_pending: boolean
+          id: string
+          last_completed_date: string | null
+          last_sync_at: string | null
+          next_scheduled_date: string | null
+          payer: string | null
+          required_frequency: string
+          required_per_month: number
+          reschedule_needed: boolean
+          scheduled_sessions: number
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_bcba_id?: string | null
+          assigned_bcba_name?: string | null
+          barrier?: string | null
+          cancelled_sessions?: number
+          centralreach_source_date?: string | null
+          centralreach_url?: string | null
+          client_id?: string | null
+          client_identifier: string
+          completed_sessions?: number
+          created_at?: string
+          created_by?: string | null
+          documentation_pending?: boolean
+          id?: string
+          last_completed_date?: string | null
+          last_sync_at?: string | null
+          next_scheduled_date?: string | null
+          payer?: string | null
+          required_frequency?: string
+          required_per_month?: number
+          reschedule_needed?: boolean
+          scheduled_sessions?: number
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_bcba_id?: string | null
+          assigned_bcba_name?: string | null
+          barrier?: string | null
+          cancelled_sessions?: number
+          centralreach_source_date?: string | null
+          centralreach_url?: string | null
+          client_id?: string | null
+          client_identifier?: string
+          completed_sessions?: number
+          created_at?: string
+          created_by?: string | null
+          documentation_pending?: boolean
+          id?: string
+          last_completed_date?: string | null
+          last_sync_at?: string | null
+          next_scheduled_date?: string | null
+          payer?: string | null
+          required_frequency?: string
+          required_per_month?: number
+          reschedule_needed?: boolean
+          scheduled_sessions?: number
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_parent_training_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_parent_training_support_requests: {
+        Row: {
+          category: string
+          created_at: string
+          detail: string | null
+          id: string
+          record_id: string
+          requested_by_id: string | null
+          requested_by_name: string | null
+          resolved_at: string | null
+          status: string
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          record_id: string
+          requested_by_id?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          record_id?: string
+          requested_by_id?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_parent_training_support_requests_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_parent_training_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bcba_parent_training_support_requests_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bcba_productivity_billing_rows: {
         Row: {
@@ -3515,6 +3702,98 @@ export type Database = {
           },
           {
             foreignKeyName: "bcba_progress_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_service_utilization: {
+        Row: {
+          assigned_bcba_id: string | null
+          assigned_bcba_name: string | null
+          authorized_hours: number
+          cancelled_hours: number
+          centralreach_source_date: string | null
+          centralreach_url: string | null
+          client_id: string | null
+          client_identifier: string
+          contributing_factors: Json | null
+          created_at: string
+          data_freshness_note: string | null
+          delivered_hours: number
+          family_cancellation_pattern: string
+          id: string
+          payer: string | null
+          period_end: string
+          period_start: string
+          provider_cancellation_pattern: string
+          remaining_hours: number | null
+          scheduled_hours: number
+          staffing_gap_hours: number
+          state: string | null
+          underutilization_risk: string
+          updated_at: string
+          utilization_trend: string
+        }
+        Insert: {
+          assigned_bcba_id?: string | null
+          assigned_bcba_name?: string | null
+          authorized_hours?: number
+          cancelled_hours?: number
+          centralreach_source_date?: string | null
+          centralreach_url?: string | null
+          client_id?: string | null
+          client_identifier: string
+          contributing_factors?: Json | null
+          created_at?: string
+          data_freshness_note?: string | null
+          delivered_hours?: number
+          family_cancellation_pattern?: string
+          id?: string
+          payer?: string | null
+          period_end: string
+          period_start: string
+          provider_cancellation_pattern?: string
+          remaining_hours?: number | null
+          scheduled_hours?: number
+          staffing_gap_hours?: number
+          state?: string | null
+          underutilization_risk?: string
+          updated_at?: string
+          utilization_trend?: string
+        }
+        Update: {
+          assigned_bcba_id?: string | null
+          assigned_bcba_name?: string | null
+          authorized_hours?: number
+          cancelled_hours?: number
+          centralreach_source_date?: string | null
+          centralreach_url?: string | null
+          client_id?: string | null
+          client_identifier?: string
+          contributing_factors?: Json | null
+          created_at?: string
+          data_freshness_note?: string | null
+          delivered_hours?: number
+          family_cancellation_pattern?: string
+          id?: string
+          payer?: string | null
+          period_end?: string
+          period_start?: string
+          provider_cancellation_pattern?: string
+          remaining_hours?: number | null
+          scheduled_hours?: number
+          staffing_gap_hours?: number
+          state?: string | null
+          underutilization_risk?: string
+          updated_at?: string
+          utilization_trend?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_service_utilization_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
