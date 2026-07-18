@@ -78,7 +78,10 @@ export function RbtHome() {
       .select("employee_message")
       .eq("key", context.lifecycleStage)
       .maybeSingle()
-      .then(({ data }) => setStageMessage((data as any)?.employee_message ?? undefined));
+      .then(
+        ({ data }) => setStageMessage((data as any)?.employee_message ?? undefined),
+        () => setStageMessage(undefined),
+      );
   }, [context.lifecycleStage]);
 
   useEffect(() => {
@@ -144,9 +147,13 @@ export function RbtLearn() {
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(10)
-      .then(({ data, error }) => { if (error) setErr(error.message); setRows((data as any) ?? []); });
+      .then(
+        ({ data, error }) => { if (error) setErr(error.message); setRows((data as any) ?? []); },
+        (e) => { setErr(e?.message ?? "Could not load training"); setRows([]); },
+      );
   }, [user?.id]);
-  const state = err ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
+  const state: "error" | "loading" | "empty" | "success" =
+    err ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -168,6 +175,7 @@ export function RbtLearn() {
         </Link>
       </div>
     <CardFrame title="Your learning" state={state}
+      errorLabel="We couldn't load your training right now."
       emptyLabel="Your next training will appear here when assigned.">
       <ul className="divide-y divide-border/70">
         {rows?.map((r: any) => (
@@ -240,20 +248,28 @@ export function RbtMe() {
       .select("stage, entered_at")
       .eq("employee_id", user.id)
       .maybeSingle()
-      .then(async ({ data }) => {
-        if (!data) return;
-        const { data: cfg } = await supabase.from("rbt_lifecycle_stages" as any)
-          .select("name, description, employee_message")
-          .eq("key", (data as any).stage)
-          .maybeSingle();
-        setStage({ ...(data as any), ...(cfg as any) });
-      });
+      .then(
+        async ({ data }) => {
+          if (!data) return;
+          try {
+            const { data: cfg } = await supabase.from("rbt_lifecycle_stages" as any)
+              .select("name, description, employee_message")
+              .eq("key", (data as any).stage)
+              .maybeSingle();
+            setStage({ ...(data as any), ...(cfg as any) });
+          } catch { setStage(data as any); }
+        },
+        () => setStage(null),
+      );
     supabase.from("rbt_lifecycle_events" as any)
       .select("from_stage,to_stage,occurred_at,reason,source")
       .eq("employee_id", user.id)
       .order("occurred_at", { ascending: false })
       .limit(10)
-      .then(({ data }) => setHistory((data as any) ?? []));
+      .then(
+        ({ data }) => setHistory((data as any) ?? []),
+        () => setHistory([]),
+      );
   }, [user?.id]);
 
   return (

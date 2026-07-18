@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Home, Calendar, GraduationCap, LifeBuoy, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RbtAppErrorBoundary } from "./RbtAppErrorBoundary";
 
 const tabs = [
   { to: "/rbt/app/home",     label: "Home",     icon: Home },
@@ -30,7 +31,9 @@ export default function RbtAppShell() {
 
       {/* Content */}
       <main className="mx-auto max-w-3xl px-5 pb-32 pt-4">
-        <Outlet />
+        <RbtAppErrorBoundary key={location.pathname}>
+          <Outlet />
+        </RbtAppErrorBoundary>
       </main>
 
       {/* Bottom navigation */}
