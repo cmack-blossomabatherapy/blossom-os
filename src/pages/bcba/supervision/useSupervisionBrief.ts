@@ -42,25 +42,24 @@ export function useSupervisionBrief(rbtEmployeeId: string | null, rbtName: strin
           .eq("provider_id", id)
           .order("occurred_at", { ascending: false }).limit(3),
         supabase.from("training_assignments")
-          .select("course_id,status,assigned_at")
-          .eq("assignee_id", id).neq("status", "completed")
-          .order("assigned_at", { ascending: false }).limit(10),
+          .select("course_id,notes,created_at")
+          .eq("assigned_to_user_id", id)
+          .order("created_at", { ascending: false }).limit(10),
         supabase.from("rbt_help_requests")
-          .select("id,body,created_at,status")
+          .select("id,description,created_at,status")
           .eq("rbt_employee_id", id)
           .in("status", ["open", "in_progress", "awaiting"])
           .order("created_at", { ascending: false }).limit(10),
         supabase.from("case_manager_service_issues")
           .select("created_at,description,status")
-          .eq("rbt_employee_id", id)
           .order("created_at", { ascending: false }).limit(5),
         supabase.from("rbt_journey_responses")
-          .select("id,checkpoint_key,response,created_at")
-          .eq("rbt_employee_id", id)
-          .order("created_at", { ascending: false }).limit(5),
+          .select("id,free_text,submitted_at,reflection")
+          .eq("employee_id", id)
+          .order("submitted_at", { ascending: false }).limit(5),
         supabase.from("rbt_performance_notes")
-          .select("created_at,note,category")
-          .eq("rbt_employee_id", id)
+          .select("created_at,detail,category,title")
+          .eq("employee_id", id)
           .order("created_at", { ascending: false }).limit(5),
       ]);
 
@@ -78,14 +77,14 @@ export function useSupervisionBrief(rbtEmployeeId: string | null, rbtName: strin
         assignments:          (assignR.data   ?? []) as any,
         recentSchedule:       (schedR.data    ?? []) as any,
         priorFeedback:        (feedbackR.data ?? []) as any,
-        openTraining:         (trainR.data    ?? []) as any,
-        submittedQuestions:   ((questionsR.data ?? []) as any[]).map(q => ({ id: q.id, body: q.body ?? q.description ?? null, created_at: q.created_at, status: q.status })),
+        openTraining:         ((trainR.data ?? []) as any[]).map(t => ({ course_id: t.course_id, status: t.notes ?? "assigned", assigned_at: t.created_at })),
+        submittedQuestions:   ((questionsR.data ?? []) as any[]).map(q => ({ id: q.id, body: q.description ?? null, created_at: q.created_at, status: q.status })),
         familyConcerns:       ((familyR.data  ?? []) as any[]).map(r => ({ created_at: r.created_at, concern: r.description, status: r.status })),
-        first90Responses:     (first90R.data  ?? []) as any,
+        first90Responses:     ((first90R.data ?? []) as any[]).map(r => ({ id: r.id, checkpoint_key: null, response: r.free_text ?? r.reflection ?? null, created_at: r.submitted_at })),
         documentationConcerns: [],
         recentRecognition:    ((recogR.data   ?? []) as any[])
-          .filter(n => (n.category ?? "").toLowerCase().includes("recogn") || (n.note ?? "").toLowerCase().includes("great") || (n.note ?? "").toLowerCase().includes("recognition"))
-          .map(n => ({ created_at: n.created_at, note: n.note })),
+          .filter(n => (n.category ?? "").toLowerCase().includes("recogn") || (n.title ?? "").toLowerCase().includes("recogn"))
+          .map(n => ({ created_at: n.created_at, note: n.detail ?? n.title })),
         recommendedDiscussion: recommended,
       };
     },
