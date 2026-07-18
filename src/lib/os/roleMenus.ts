@@ -690,17 +690,12 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   rbt: {
     sections: [
       {
-        id: "rbt", label: "RBT", items: [
-          { label: "RBT Dashboard / My Day",        path: "/rbt/my-day",           icon: LayoutDashboard },
-          { label: "RBT Training Academy",          path: "/rbt/training-academy", icon: GraduationCap },
-          { label: "RBT Training Journey",          path: "/welcome",              icon: BookOpen },
-          { label: "Resource Library",              path: "/rbt/resources",        icon: Library },
-          { label: "My Schedule Visibility",        path: "/rbt/schedule",         icon: Calendar },
-          { label: "Assigned Client Support Info",  path: "/rbt/clients",          icon: UserCheck },
-          { label: "Supervision Visibility",        path: "/rbt/supervision",      icon: Eye },
-          { label: "Support Requests / Help",       path: "/rbt/help",             icon: HeartHandshake },
-          { label: "Readiness",                     path: "/rbt/readiness",        icon: Activity },
-          { label: "Messages / Announcements",      path: "/rbt/messages",         icon: MessageSquare },
+        id: "rbt_app", label: "My Blossom", items: [
+          { label: "Home",     path: "/rbt/app/home",     icon: Home },
+          { label: "Schedule", path: "/rbt/app/schedule", icon: Calendar },
+          { label: "Learn",    path: "/rbt/app/learn",    icon: GraduationCap },
+          { label: "Support",  path: "/rbt/app/support",  icon: LifeBuoy },
+          { label: "Me",       path: "/rbt/app/me",       icon: User },
         ],
       },
     ],
