@@ -1260,8 +1260,10 @@ const App = () => (
                     </PermissionRoute>
                   } />
                   <Route path="/admin/rbt/notifications" element={<AdminRoute><OSShellPage><RbtNotificationEngine /></OSShellPage></AdminRoute>} />
+                  <Route path="/admin/bcba/notifications" element={<AdminRoute><OSShellPage><BcbaNotificationEngine /></OSShellPage></AdminRoute>} />
                   <Route path="/inbox" element={<OSShellPage><NotificationInbox /></OSShellPage>} />
                   <Route path="/rbt/app/settings/notifications" element={<RbtNotificationPreferences />} />
+                  <Route path="/bcba/settings/notifications" element={<OSShellPage><BcbaNotificationPreferences /></OSShellPage>} />
                   <Route path="/training/rbt/evaluate" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
                       <OSShellPage><RbtEvaluatorConsole /></OSShellPage>
