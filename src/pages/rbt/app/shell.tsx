@@ -14,7 +14,7 @@ export default function RbtAppShell() {
   const location = useLocation();
   const current = tabs.find((t) => location.pathname.startsWith(t.to));
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       {/* Top bar */}
       <header
         className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-xl"
