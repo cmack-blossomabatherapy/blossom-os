@@ -3253,6 +3253,225 @@ export type Database = {
           },
         ]
       }
+      bcba_notification_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          event_id: string | null
+          id: string
+          rule_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          event_id?: string | null
+          id?: string
+          rule_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          event_id?: string | null
+          id?: string
+          rule_id?: string | null
+        }
+        Relationships: []
+      }
+      bcba_notification_deliveries: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          event_id: string | null
+          id: string
+          metadata: Json
+          rule_id: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error?: string | null
+          event_id?: string | null
+          id?: string
+          metadata?: Json
+          rule_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          event_id?: string | null
+          id?: string
+          metadata?: Json
+          rule_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_notification_deliveries_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_notification_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bcba_notification_deliveries_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_notification_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_notification_events: {
+        Row: {
+          created_at: string
+          dedupe_key: string | null
+          deep_link: string | null
+          event_key: string
+          id: string
+          payload: Json
+          processed_at: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key?: string | null
+          deep_link?: string | null
+          event_key: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string | null
+          deep_link?: string | null
+          event_key?: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      bcba_notification_preferences: {
+        Row: {
+          channel: string
+          enabled: boolean
+          event_key: string
+          id: string
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          enabled?: boolean
+          event_key: string
+          id?: string
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          enabled?: boolean
+          event_key?: string
+          id?: string
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bcba_notification_rules: {
+        Row: {
+          action_label: string | null
+          active: boolean
+          body_template: string
+          category: string
+          channels: string[]
+          created_at: string
+          dedupe_window_minutes: number
+          deep_link_template: string | null
+          domain: string
+          event_key: string
+          id: string
+          paused_at: string | null
+          paused_by: string | null
+          paused_reason: string | null
+          required: boolean
+          respect_quiet_hours: boolean
+          sensitive: boolean
+          title_template: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          action_label?: string | null
+          active?: boolean
+          body_template: string
+          category?: string
+          channels?: string[]
+          created_at?: string
+          dedupe_window_minutes?: number
+          deep_link_template?: string | null
+          domain: string
+          event_key: string
+          id?: string
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_reason?: string | null
+          required?: boolean
+          respect_quiet_hours?: boolean
+          sensitive?: boolean
+          title_template: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          action_label?: string | null
+          active?: boolean
+          body_template?: string
+          category?: string
+          channels?: string[]
+          created_at?: string
+          dedupe_window_minutes?: number
+          deep_link_template?: string | null
+          domain?: string
+          event_key?: string
+          id?: string
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_reason?: string | null
+          required?: boolean
+          respect_quiet_hours?: boolean
+          sensitive?: boolean
+          title_template?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       bcba_onboarding_audit: {
         Row: {
           action: string
@@ -29079,6 +29298,15 @@ export type Database = {
       create_task_due_reminders: { Args: never; Returns: number }
       current_user_state: { Args: never; Returns: string }
       derive_state_from_labels: { Args: { labels: string }; Returns: string }
+      emit_bcba_notification: {
+        Args: {
+          p_deep_link?: string
+          p_event_key: string
+          p_payload?: Json
+          p_user_id: string
+        }
+        Returns: string
+      }
       emit_rbt_notification: {
         Args: {
           p_deep_link?: string
