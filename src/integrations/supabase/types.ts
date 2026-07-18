@@ -3016,10 +3016,117 @@ export type Database = {
         }
         Relationships: []
       }
+      bcba_supervision_audit: {
+        Row: {
+          actor_id: string | null
+          event: string
+          id: string
+          occurred_at: string
+          payload: Json | null
+          supervision_log_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          event: string
+          id?: string
+          occurred_at?: string
+          payload?: Json | null
+          supervision_log_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          event?: string
+          id?: string
+          occurred_at?: string
+          payload?: Json | null
+          supervision_log_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_supervision_audit_supervision_log_id_fkey"
+            columns: ["supervision_log_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_supervision_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_supervision_config: {
+        Row: {
+          created_at: string
+          field_key: string
+          id: string
+          is_operational_only: boolean
+          is_required_documentation: boolean
+          label: string
+          section: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          id?: string
+          is_operational_only?: boolean
+          is_required_documentation?: boolean
+          label: string
+          section?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          id?: string
+          is_operational_only?: boolean
+          is_required_documentation?: boolean
+          label?: string
+          section?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bcba_supervision_escalations: {
+        Row: {
+          bcba_id: string | null
+          id: string
+          level: string
+          month_key: string
+          opened_at: string
+          rbt_employee_id: string
+          reason: string | null
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          bcba_id?: string | null
+          id?: string
+          level?: string
+          month_key: string
+          opened_at?: string
+          rbt_employee_id: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          bcba_id?: string | null
+          id?: string
+          level?: string
+          month_key?: string
+          opened_at?: string
+          rbt_employee_id?: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       bcba_supervision_logs: {
         Row: {
+          attachment_url: string | null
           barriers: string | null
           bcba_id: string | null
+          bcba_signed_at: string | null
+          cases_discussed: string[]
           centralreach_client_id: string | null
           centralreach_reference: Json | null
           centralreach_session_id: string | null
@@ -3029,20 +3136,32 @@ export type Database = {
           client_name_key: string | null
           created_at: string
           created_by: string | null
+          feedback: string | null
+          followup_action: string | null
           id: string
+          individual_or_group: string
           minutes: number | null
           modality: string
           next_action: string | null
+          next_supervision_date: string | null
           notes: string | null
+          observation_completed: boolean
           occurred_at: string
           provider_id: string | null
           provider_name: string | null
+          rbt_acknowledged_at: string | null
           service_code: string | null
+          skills_reviewed: string[]
+          supervision_format: string | null
+          training_assigned: string | null
           updated_at: string
         }
         Insert: {
+          attachment_url?: string | null
           barriers?: string | null
           bcba_id?: string | null
+          bcba_signed_at?: string | null
+          cases_discussed?: string[]
           centralreach_client_id?: string | null
           centralreach_reference?: Json | null
           centralreach_session_id?: string | null
@@ -3052,20 +3171,32 @@ export type Database = {
           client_name_key?: string | null
           created_at?: string
           created_by?: string | null
+          feedback?: string | null
+          followup_action?: string | null
           id?: string
+          individual_or_group?: string
           minutes?: number | null
           modality?: string
           next_action?: string | null
+          next_supervision_date?: string | null
           notes?: string | null
+          observation_completed?: boolean
           occurred_at?: string
           provider_id?: string | null
           provider_name?: string | null
+          rbt_acknowledged_at?: string | null
           service_code?: string | null
+          skills_reviewed?: string[]
+          supervision_format?: string | null
+          training_assigned?: string | null
           updated_at?: string
         }
         Update: {
+          attachment_url?: string | null
           barriers?: string | null
           bcba_id?: string | null
+          bcba_signed_at?: string | null
+          cases_discussed?: string[]
           centralreach_client_id?: string | null
           centralreach_reference?: Json | null
           centralreach_session_id?: string | null
@@ -3075,15 +3206,24 @@ export type Database = {
           client_name_key?: string | null
           created_at?: string
           created_by?: string | null
+          feedback?: string | null
+          followup_action?: string | null
           id?: string
+          individual_or_group?: string
           minutes?: number | null
           modality?: string
           next_action?: string | null
+          next_supervision_date?: string | null
           notes?: string | null
+          observation_completed?: boolean
           occurred_at?: string
           provider_id?: string | null
           provider_name?: string | null
+          rbt_acknowledged_at?: string | null
           service_code?: string | null
+          skills_reviewed?: string[]
+          supervision_format?: string | null
+          training_assigned?: string | null
           updated_at?: string
         }
         Relationships: []
