@@ -34,17 +34,17 @@ export default function BcbaWorkforcePage() {
     (async () => {
       const [{ data: cap }, { data: prod }, { data: life }, { data: support }] = await Promise.all([
         supabase.from("bcba_capacity_snapshots").select("bcba_id, bcba_name, state, active_clients, active_rbts, capacity_status, updated_at").order("updated_at", { ascending: false }),
-        supabase.from("bcba_productivity_snapshots").select("bcba_id, bcba_name, state, updated_at, actual_billable_hours, target_billable_hours").order("updated_at", { ascending: false }),
+        supabase.from("bcba_productivity_snapshots").select("bcba_id, bcba_name, state, updated_at, mtd_actual_hours, mtd_target_hours").order("updated_at", { ascending: false }),
         supabase.from("bcba_lifecycle_state").select("employee_id, stage"),
-        supabase.from("bcba_support_requests").select("assigned_bcba_id, status"),
+        supabase.from("bcba_support_requests").select("bcba_id, status"),
       ]);
       const stageById = new Map((life ?? []).map((l: any) => [l.employee_id, l.stage]));
       const prodMap = new Map<string, any>();
       for (const p of prod ?? []) if (!prodMap.has(p.bcba_id)) prodMap.set(p.bcba_id, p);
       const supportByBcba = new Map<string, number>();
-      for (const s of support ?? []) {
+      for (const s of (support ?? []) as Array<{ bcba_id: string; status: string }>) {
         if (["resolved", "closed"].includes(String(s.status))) continue;
-        supportByBcba.set(s.assigned_bcba_id, (supportByBcba.get(s.assigned_bcba_id) ?? 0) + 1);
+        supportByBcba.set(s.bcba_id, (supportByBcba.get(s.bcba_id) ?? 0) + 1);
       }
       const seen = new Set<string>();
       const collected: Row[] = [];
@@ -55,7 +55,7 @@ export default function BcbaWorkforcePage() {
         seen.add(c.bcba_id);
         latest = latest ?? c.updated_at;
         const p = prodMap.get(c.bcba_id);
-        const pct = p?.target_billable_hours ? Math.round(100 * (p.actual_billable_hours ?? 0) / p.target_billable_hours) : null;
+        const pct = p?.mtd_target_hours ? Math.round(100 * (p.mtd_actual_hours ?? 0) / p.mtd_target_hours) : null;
         collected.push({
           bcba_id: c.bcba_id,
           assigned_bcba_id: c.bcba_id,
