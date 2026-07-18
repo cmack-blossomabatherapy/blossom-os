@@ -769,9 +769,12 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const isStateTrainingRole =
     role === "state_director" || role === "assistant_state_director" || role === "state_va" || role === "regional_state_director";
   const trainingPath = isStateTrainingRole ? "/training" : "/academy";
+  // Blossom AI is hidden for RBT and scoped to a dedicated copilot for BCBA.
+  const hideGlobalAi = role === "rbt" || role === "bcba";
+  const bcbaCopilotEntry: NavEntry = { to: "/bcba/copilot", label: "Caseload Copilot", icon: Sparkles };
   const bottomNav: NavEntry[] = [
     { to: "/home", label: "Home", icon: Home, end: true },
-    { to: "/ai/assistant", label: "Blossom AI", icon: Sparkles },
+    ...(hideGlobalAi ? [] : [{ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles } as NavEntry]),
     { to: "/tasks", label: "Tasks", icon: CheckSquare },
     { to: trainingPath, label: "Training", icon: GraduationCap },
     { to: "/resource-library", label: "Resources", icon: BookOpen },
