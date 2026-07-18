@@ -245,6 +245,11 @@ import RbtCredentialsPage from "./pages/rbt/app/active/Credentials";
 import RbtPerformancePage from "./pages/rbt/app/active/Performance";
 import RbtMyGrowth from "./pages/rbt/app/growth/RbtMyGrowth";
 import RbtFellowshipExplorer from "./pages/rbt/app/growth/RbtFellowshipExplorer";
+import BcbaShell from "./pages/bcba/BcbaShell";
+import {
+  BcbaHome, BcbaCaseload, BcbaMyRbts, BcbaClinicalWork,
+  BcbaLearn, BcbaSupport, BcbaMe,
+} from "./pages/bcba/pages";
 import RbtGrowthConsole from "./pages/admin/RbtGrowthConsole";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
 import RbtReadinessConsole from "./pages/admin/RbtReadinessConsole";
@@ -1284,6 +1289,25 @@ const App = () => (
                     <Route path="performance" element={<RbtPerformancePage />} />
                     <Route path="growth" element={<RbtMyGrowth />} />
                     <Route path="growth/fellowship" element={<RbtFellowshipExplorer />} />
+                  </Route>
+                  {/* BCBA experience — responsive shell. Desktop uses OSShell
+                      (bcba role menu, 7 items). Mobile uses a 5-tab bottom nav. */}
+                  <Route
+                    path="/bcba"
+                    element={
+                      <PermissionRoute allowedRoles={["admin","super_admin","bcba","clinical_director","operations_leadership","hr","hr_admin"]}>
+                        <BcbaShell />
+                      </PermissionRoute>
+                    }
+                  >
+                    <Route index element={<Navigate to="home" replace />} />
+                    <Route path="home"     element={<BcbaHome />} />
+                    <Route path="caseload" element={<BcbaCaseload />} />
+                    <Route path="rbts"     element={<BcbaMyRbts />} />
+                    <Route path="clinical" element={<BcbaClinicalWork />} />
+                    <Route path="learn"    element={<BcbaLearn />} />
+                    <Route path="support"  element={<BcbaSupport />} />
+                    <Route path="me"       element={<BcbaMe />} />
                   </Route>
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
