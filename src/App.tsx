@@ -255,6 +255,7 @@ import BcbaOnboardingConsole from "./pages/admin/BcbaOnboardingConsole";
 import BcbaSupervisionCenter from "./pages/bcba/supervision/SupervisionCenterPage";
 import BcbaAssessmentsPage from "./pages/bcba/assessments/AssessmentsPage";
 import BcbaProgressReportsPage from "./pages/bcba/progress-reports/ProgressReportsPage";
+import BcbaParentTrainingPage from "./pages/bcba/parent-training/ParentTrainingPage";
 import BcbaSupervisionConfigPage from "./pages/admin/BcbaSupervisionConfigPage";
 import RbtGrowthConsole from "./pages/admin/RbtGrowthConsole";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
@@ -1318,6 +1319,7 @@ const App = () => (
                     <Route path="supervision" element={<BcbaSupervisionCenter />} />
                     <Route path="assessments" element={<BcbaAssessmentsPage />} />
                     <Route path="progress-reports" element={<BcbaProgressReportsPage />} />
+                    <Route path="parent-training" element={<BcbaParentTrainingPage />} />
                   </Route>
                   <Route
                     path="/admin/bcba-onboarding"
