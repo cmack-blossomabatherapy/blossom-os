@@ -918,19 +918,20 @@ const App = () => (
                   <Route path="/bcba/scheduling"       element={<Navigate to="/bcba/home" replace />} />
                   <Route path="/bcba/resources"        element={<Navigate to="/resource-library" replace />} />
                   <Route path="/bcba/training-academy" element={<Navigate to="/bcba/academy" replace />} />
-                  <Route path="/rbt" element={<OSRBT />} />
-                  <Route path="/rbt/my-day" element={<OSRBTMyDay />} />
-                  <Route path="/rbt/training-academy" element={<OSRBTTrainingAcademy />} />
-                  <Route path="/rbt/readiness" element={<OSRBTReadinessBoard />} />
-                  <Route path="/training/rbt-readiness" element={<OSRBTReadinessBoard />} />
-                  <Route path="/training/rbt-admin" element={<OSRBTAcademyAdmin />} />
-                  <Route path="/rbt/clients" element={<OSRBTClients />} />
-                  <Route path="/rbt/schedule" element={<OSRBTSchedule />} />
-                  <Route path="/rbt/session-support" element={<OSRBTSessionSupport />} />
-                  <Route path="/rbt/supervision" element={<OSRBTSupervision />} />
-                  <Route path="/rbt/messages" element={<OSRBTMessages />} />
-                  <Route path="/rbt/help" element={<OSRBTHelp />} />
-                  <Route path="/rbt/resources" element={<OSRBTResources />} />
+                  {/* RBT OS surfaces — role-gated. Employee views for RBTs/leads/trainers; admin views also allow oversight roles. */}
+                  <Route path="/rbt" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","training_admin","hr","hr_admin","operations_leadership","state_director","assistant_state_director"]}><OSRBT /></PermissionRoute>} />
+                  <Route path="/rbt/my-day" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","training_admin"]}><OSRBTMyDay /></PermissionRoute>} />
+                  <Route path="/rbt/training-academy" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","training_admin"]}><OSRBTTrainingAcademy /></PermissionRoute>} />
+                  <Route path="/rbt/readiness" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","admin","super_admin","training_admin","bcba","clinical_director","hr","hr_admin"]}><OSRBTReadinessBoard /></PermissionRoute>} />
+                  <Route path="/training/rbt-readiness" element={<PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","hr","hr_admin","lead_rbt","trainer"]}><OSRBTReadinessBoard /></PermissionRoute>} />
+                  <Route path="/training/rbt-admin" element={<PermissionRoute allowedRoles={["admin","super_admin","training_admin","hr","hr_admin","operations_leadership"]}><OSRBTAcademyAdmin /></PermissionRoute>} />
+                  <Route path="/rbt/clients" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTClients /></PermissionRoute>} />
+                  <Route path="/rbt/schedule" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","scheduling","scheduling_lead"]}><OSRBTSchedule /></PermissionRoute>} />
+                  <Route path="/rbt/session-support" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTSessionSupport /></PermissionRoute>} />
+                  <Route path="/rbt/supervision" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","qa","qa_lead"]}><OSRBTSupervision /></PermissionRoute>} />
+                  <Route path="/rbt/messages" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","hr","hr_admin"]}><OSRBTMessages /></PermissionRoute>} />
+                  <Route path="/rbt/help" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","hr","hr_admin","operations_leadership"]}><OSRBTHelp /></PermissionRoute>} />
+                  <Route path="/rbt/resources" element={<PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","training_admin","hr","hr_admin"]}><OSRBTResources /></PermissionRoute>} />
                   <Route path="/rbt/reports" element={<Navigate to="/reports?audience=rbt" replace />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />

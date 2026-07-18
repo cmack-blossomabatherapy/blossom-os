@@ -103,6 +103,7 @@ export default function SupportTicketDetail() {
               placeholder="Add a message…" maxLength={1000}
               className="flex-1 h-11 rounded-xl bg-muted/60 border border-border px-3 text-sm" />
             <button onClick={send} disabled={!msg.trim() || sending}
+              aria-label="Send message"
               className="h-11 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50">
               <Send className="h-4 w-4" />
             </button>
@@ -117,6 +118,8 @@ export default function SupportTicketDetail() {
           <div className="flex gap-2 mt-3">
             {[1,2,3,4,5].map(n => (
               <button key={n} onClick={() => setRating(n)}
+                aria-label={`Rate ${n} out of 5`}
+                aria-pressed={rating >= n}
                 className={`h-11 w-11 rounded-xl border transition ${rating >= n ? "bg-primary/10 border-primary text-primary" : "border-border/60 text-muted-foreground"}`}>
                 <Star className="h-5 w-5 mx-auto" fill={rating >= n ? "currentColor" : "none"} />
               </button>

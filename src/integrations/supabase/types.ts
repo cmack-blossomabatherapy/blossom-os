@@ -29573,6 +29573,7 @@ export type Database = {
       is_marketing_user: { Args: { _uid: string }; Returns: boolean }
       is_people_manager: { Args: { _user_id: string }; Returns: boolean }
       is_platform_admin: { Args: { _uid: string }; Returns: boolean }
+      is_rbt_self_only: { Args: never; Returns: boolean }
       is_strict_leadership: { Args: { _user_id: string }; Returns: boolean }
       is_vault_admin: { Args: { _user_id: string }; Returns: boolean }
       kpi_can_manage: { Args: { _user_id: string }; Returns: boolean }
