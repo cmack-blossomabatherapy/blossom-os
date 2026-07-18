@@ -3250,6 +3250,278 @@ export type Database = {
         }
         Relationships: []
       }
+      bcba_progress_report_activity: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          progress_report_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          progress_report_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          progress_report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_progress_report_activity_progress_report_id_fkey"
+            columns: ["progress_report_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_progress_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_progress_report_milestones: {
+        Row: {
+          create_task: boolean
+          created_at: string
+          days_before_expiration: number
+          due_date_language: string
+          employee_message: string
+          escalate_to_clinical_leadership: boolean
+          id: string
+          is_active: boolean
+          name: string
+          notify_bcba: boolean
+          offer_support: boolean
+          payer: string | null
+          risk_level: string
+          show_on_dashboard: boolean
+          sort_order: number
+          state: string | null
+          updated_at: string
+          visible_to_authorization_team: boolean
+          visible_to_state_leadership: boolean
+        }
+        Insert: {
+          create_task?: boolean
+          created_at?: string
+          days_before_expiration: number
+          due_date_language: string
+          employee_message: string
+          escalate_to_clinical_leadership?: boolean
+          id?: string
+          is_active?: boolean
+          name: string
+          notify_bcba?: boolean
+          offer_support?: boolean
+          payer?: string | null
+          risk_level?: string
+          show_on_dashboard?: boolean
+          sort_order?: number
+          state?: string | null
+          updated_at?: string
+          visible_to_authorization_team?: boolean
+          visible_to_state_leadership?: boolean
+        }
+        Update: {
+          create_task?: boolean
+          created_at?: string
+          days_before_expiration?: number
+          due_date_language?: string
+          employee_message?: string
+          escalate_to_clinical_leadership?: boolean
+          id?: string
+          is_active?: boolean
+          name?: string
+          notify_bcba?: boolean
+          offer_support?: boolean
+          payer?: string | null
+          risk_level?: string
+          show_on_dashboard?: boolean
+          sort_order?: number
+          state?: string | null
+          updated_at?: string
+          visible_to_authorization_team?: boolean
+          visible_to_state_leadership?: boolean
+        }
+        Relationships: []
+      }
+      bcba_progress_report_support_requests: {
+        Row: {
+          category: string
+          created_at: string
+          detail: string | null
+          id: string
+          progress_report_id: string
+          requested_by_id: string | null
+          requested_by_name: string | null
+          resolved_at: string | null
+          status: string
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          progress_report_id: string
+          requested_by_id?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          progress_report_id?: string
+          requested_by_id?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_progress_report_support_requests_progress_report_id_fkey"
+            columns: ["progress_report_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_progress_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bcba_progress_report_support_requests_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_progress_reports: {
+        Row: {
+          assigned_bcba_id: string | null
+          assigned_bcba_name: string | null
+          authorization_expiration: string
+          authorization_id: string | null
+          authorization_owner_id: string | null
+          authorization_owner_name: string | null
+          authorization_period_end: string | null
+          authorization_period_start: string | null
+          authorization_status: string
+          centralreach_source_date: string | null
+          centralreach_url: string | null
+          client_id: string | null
+          client_identifier: string
+          created_at: string
+          created_by: string | null
+          current_risk: string
+          id: string
+          last_update_at: string
+          last_update_note: string | null
+          parent_input_status: string
+          parent_signature_status: string
+          payer: string | null
+          progress_report_due_date: string
+          qa_status: string
+          report_status: string
+          state: string | null
+          submission_status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_bcba_id?: string | null
+          assigned_bcba_name?: string | null
+          authorization_expiration: string
+          authorization_id?: string | null
+          authorization_owner_id?: string | null
+          authorization_owner_name?: string | null
+          authorization_period_end?: string | null
+          authorization_period_start?: string | null
+          authorization_status?: string
+          centralreach_source_date?: string | null
+          centralreach_url?: string | null
+          client_id?: string | null
+          client_identifier: string
+          created_at?: string
+          created_by?: string | null
+          current_risk?: string
+          id?: string
+          last_update_at?: string
+          last_update_note?: string | null
+          parent_input_status?: string
+          parent_signature_status?: string
+          payer?: string | null
+          progress_report_due_date: string
+          qa_status?: string
+          report_status?: string
+          state?: string | null
+          submission_status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_bcba_id?: string | null
+          assigned_bcba_name?: string | null
+          authorization_expiration?: string
+          authorization_id?: string | null
+          authorization_owner_id?: string | null
+          authorization_owner_name?: string | null
+          authorization_period_end?: string | null
+          authorization_period_start?: string | null
+          authorization_status?: string
+          centralreach_source_date?: string | null
+          centralreach_url?: string | null
+          client_id?: string | null
+          client_identifier?: string
+          created_at?: string
+          created_by?: string | null
+          current_risk?: string
+          id?: string
+          last_update_at?: string
+          last_update_note?: string | null
+          parent_input_status?: string
+          parent_signature_status?: string
+          payer?: string | null
+          progress_report_due_date?: string
+          qa_status?: string
+          report_status?: string
+          state?: string | null
+          submission_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_progress_reports_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "client_authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bcba_progress_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bcba_supervision_audit: {
         Row: {
           actor_id: string | null
