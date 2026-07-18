@@ -687,7 +687,16 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const { signOut, avatarUrl, displayName } = useAuth();
   const { role, platform } = useOSRole();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
+
+  // Reset scroll to top on route change so pages open at their header
+  // (especially important on mobile where the window is the scroll container).
+  const mainScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (hash) return; // preserve anchor navigation
+    if (typeof window !== "undefined") window.scrollTo(0, 0);
+    if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
+  }, [pathname, hash]);
 
   // Right rail toggle persistence per page.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -968,7 +977,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         </aside>
 
         {/* MAIN COLUMN */}
-        <div className="flex min-w-0 flex-1 flex-col gap-5 md:h-[calc(100vh-1.5rem)] md:overflow-y-auto">
+        <div
+          ref={mainScrollRef}
+          className="flex min-w-0 flex-1 flex-col gap-5 md:h-[calc(100vh-1.5rem)] md:overflow-y-auto"
+        >
           {/* TOPBAR */}
           <header className="flex items-center gap-3 py-1">
             <button
@@ -1227,7 +1239,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           ))}
         </CommandList>
       </CommandDialog>
-      <FloatingEscalationChat />
+      {role !== "rbt" && role !== "bcba" && <FloatingEscalationChat />}
       <TrainingProgressCloudBridge />
     </div>
     </BlossomAIProvider>
