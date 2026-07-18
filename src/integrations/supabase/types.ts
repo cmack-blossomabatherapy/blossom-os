@@ -28460,6 +28460,232 @@ export type Database = {
           },
         ]
       }
+      v_bcba_authorization_deadlines: {
+        Row: {
+          auth_status: string | null
+          cr_authorization_id: string | null
+          cr_client_id: string | null
+          days_remaining: number | null
+          end_date: string | null
+          payer: string | null
+          service_code: string | null
+        }
+        Insert: {
+          auth_status?: never
+          cr_authorization_id?: string | null
+          cr_client_id?: never
+          days_remaining?: never
+          end_date?: never
+          payer?: never
+          service_code?: never
+        }
+        Update: {
+          auth_status?: never
+          cr_authorization_id?: string | null
+          cr_client_id?: never
+          days_remaining?: never
+          end_date?: never
+          payer?: never
+          service_code?: never
+        }
+        Relationships: []
+      }
+      v_bcba_capacity_indicators: {
+        Row: {
+          active_clients: number | null
+          billable_hours_30d: number | null
+          capacity_band: string | null
+          cr_bcba_id: string | null
+        }
+        Relationships: []
+      }
+      v_bcba_caseload: {
+        Row: {
+          active_status: string | null
+          cr_bcba_id: string | null
+          cr_client_id: string | null
+          end_date: string | null
+          last_seen_at: string | null
+          relationship_type: string | null
+          start_date: string | null
+        }
+        Insert: {
+          active_status?: never
+          cr_bcba_id?: never
+          cr_client_id?: never
+          end_date?: never
+          last_seen_at?: string | null
+          relationship_type?: never
+          start_date?: never
+        }
+        Update: {
+          active_status?: never
+          cr_bcba_id?: never
+          cr_client_id?: never
+          end_date?: never
+          last_seen_at?: string | null
+          relationship_type?: never
+          start_date?: never
+        }
+        Relationships: []
+      }
+      v_bcba_parent_training_frequency: {
+        Row: {
+          cr_client_id: string | null
+          cr_employee_id: string | null
+          delivered_sessions: number | null
+          month: string | null
+          total_sessions: number | null
+        }
+        Relationships: []
+      }
+      v_bcba_productivity: {
+        Row: {
+          billable_hours: number | null
+          billed_rows: number | null
+          cr_employee_id: string | null
+          session_rows: number | null
+          week_start: string | null
+        }
+        Relationships: []
+      }
+      v_bcba_progress_report_deadlines: {
+        Row: {
+          auth_end_date: string | null
+          cr_authorization_id: string | null
+          cr_client_id: string | null
+          days_until_due: number | null
+          progress_report_due_date: string | null
+        }
+        Insert: {
+          auth_end_date?: never
+          cr_authorization_id?: string | null
+          cr_client_id?: never
+          days_until_due?: never
+          progress_report_due_date?: never
+        }
+        Update: {
+          auth_end_date?: never
+          cr_authorization_id?: string | null
+          cr_client_id?: never
+          days_until_due?: never
+          progress_report_due_date?: never
+        }
+        Relationships: []
+      }
+      v_bcba_rbt_roster: {
+        Row: {
+          active_status: string | null
+          cr_bcba_id: string | null
+          cr_client_id: string | null
+          cr_rbt_id: string | null
+          last_seen_at: string | null
+        }
+        Relationships: []
+      }
+      v_bcba_schedule: {
+        Row: {
+          appointment_status: string | null
+          cancellation_reason: string | null
+          cancellation_status: string | null
+          cr_appointment_id: string | null
+          cr_bcba_id: string | null
+          cr_client_id: string | null
+          cr_employee_id: string | null
+          end_at: string | null
+          last_seen_at: string | null
+          location_type: string | null
+          service_code: string | null
+          service_date: string | null
+          start_at: string | null
+        }
+        Insert: {
+          appointment_status?: never
+          cancellation_reason?: never
+          cancellation_status?: never
+          cr_appointment_id?: string | null
+          cr_bcba_id?: never
+          cr_client_id?: never
+          cr_employee_id?: never
+          end_at?: never
+          last_seen_at?: string | null
+          location_type?: never
+          service_code?: never
+          service_date?: never
+          start_at?: never
+        }
+        Update: {
+          appointment_status?: never
+          cancellation_reason?: never
+          cancellation_status?: never
+          cr_appointment_id?: string | null
+          cr_bcba_id?: never
+          cr_client_id?: never
+          cr_employee_id?: never
+          end_at?: never
+          last_seen_at?: string | null
+          location_type?: never
+          service_code?: never
+          service_date?: never
+          start_at?: never
+        }
+        Relationships: []
+      }
+      v_bcba_service_utilization: {
+        Row: {
+          auth_status: string | null
+          cr_authorization_id: string | null
+          cr_client_id: string | null
+          end_date: string | null
+          last_seen_at: string | null
+          payer: string | null
+          pct_used: number | null
+          service_code: string | null
+          start_date: string | null
+          units_authorized: number | null
+          units_remaining: number | null
+          units_used: number | null
+        }
+        Insert: {
+          auth_status?: never
+          cr_authorization_id?: string | null
+          cr_client_id?: never
+          end_date?: never
+          last_seen_at?: string | null
+          payer?: never
+          pct_used?: never
+          service_code?: never
+          start_date?: never
+          units_authorized?: never
+          units_remaining?: never
+          units_used?: never
+        }
+        Update: {
+          auth_status?: never
+          cr_authorization_id?: string | null
+          cr_client_id?: never
+          end_date?: never
+          last_seen_at?: string | null
+          payer?: never
+          pct_used?: never
+          service_code?: never
+          start_date?: never
+          units_authorized?: never
+          units_remaining?: never
+          units_used?: never
+        }
+        Relationships: []
+      }
+      v_bcba_supervision_indicators: {
+        Row: {
+          cr_bcba_id: string | null
+          cr_client_id: string | null
+          cr_rbt_id: string | null
+          month: string | null
+          supervision_sessions: number | null
+        }
+        Relationships: []
+      }
       v_bcbas_real: {
         Row: {
           avg_weekly_hours: number | null
