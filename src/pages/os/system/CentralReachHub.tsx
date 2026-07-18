@@ -99,15 +99,16 @@ function OverviewTab({ onGoto }: { onGoto: (t: HubTab) => void }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: f }, { count: runs }, { count: shared }, { count: bcba }, { count: exc }] = await Promise.all([
-        supabase.rpc("cr_sync_freshness").then((r) => ({ data: (r.data as any[]) ?? [] })).catch(() => ({ data: [] as any[] })),
+      let f: any[] = [];
+      try { const r = await supabase.rpc("cr_sync_freshness"); f = (r.data as any[]) ?? []; } catch { /* ignore */ }
+      const [{ count: runs }, { count: shared }, { count: bcba }, { count: exc }] = await Promise.all([
         supabase.from("cr_sync_runs").select("id", { count: "exact", head: true }),
         supabase.from("shared_report_datasets").select("id", { count: "exact", head: true }),
         supabase.from("bcba_productivity_upload_batches").select("id", { count: "exact", head: true }),
         supabase.from("cr_data_quality_exceptions" as any).select("id", { count: "exact", head: true }).eq("status", "open"),
       ]);
       if (cancelled) return;
-      setFreshness(f ?? []);
+      setFreshness(f);
       setCounts({ runs: runs ?? 0, shared: shared ?? 0, bcba: bcba ?? 0, exceptions: exc ?? 0 });
     })();
     return () => { cancelled = true; };
