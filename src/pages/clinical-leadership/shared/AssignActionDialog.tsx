@@ -39,13 +39,15 @@ export function AssignActionDialog({
       const { error } = await supabase.from("user_tasks").insert({
         title: `[${scopeKey}] ${row.title}`,
         description: [row.subtitle, note].filter(Boolean).join("\n\n") || null,
-        priority: row.severity === "critical" ? "high" : row.severity ?? "medium",
+        priority: row.severity === "critical" ? "high" : (row.severity ?? "medium"),
         status: "open",
-        created_by: creator,
-        assigned_to: assigneeId ?? creator,
-        due_date: row.dueDate ?? null,
-        related_entity_type: scopeKey,
-        related_entity_id: row.id,
+        assigned_by_id: creator,
+        assignee_id: assigneeId ?? creator,
+        due_at: row.dueDate ?? null,
+        related_record_type: scopeKey,
+        related_record_id: row.id,
+        related_record_label: row.title,
+        related_url: row.detailPath ?? null,
       } as any);
       if (error) throw error;
       toast.success("Task created");
