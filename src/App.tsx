@@ -230,6 +230,8 @@ import CrSyncCenter from "./pages/admin/CrSyncCenter";
 import RbtNotificationEngine from "./pages/admin/RbtNotificationEngine";
 import NotificationInbox from "./pages/NotificationInbox";
 import RbtNotificationPreferences from "./pages/rbt/app/settings/NotificationPreferences";
+import BcbaNotificationEngine from "./pages/admin/BcbaNotificationEngine";
+import BcbaNotificationPreferences from "./pages/bcba/settings/BcbaNotificationPreferences";
 import RbtPreboarding from "./pages/rbt/app/preboarding/RbtPreboarding";
 import RbtReadiness from "./pages/rbt/app/readiness/RbtReadiness";
 import RbtStaffing from "./pages/rbt/app/readiness/RbtStaffing";
@@ -1258,8 +1260,10 @@ const App = () => (
                     </PermissionRoute>
                   } />
                   <Route path="/admin/rbt/notifications" element={<AdminRoute><OSShellPage><RbtNotificationEngine /></OSShellPage></AdminRoute>} />
+                  <Route path="/admin/bcba/notifications" element={<AdminRoute><OSShellPage><BcbaNotificationEngine /></OSShellPage></AdminRoute>} />
                   <Route path="/inbox" element={<OSShellPage><NotificationInbox /></OSShellPage>} />
                   <Route path="/rbt/app/settings/notifications" element={<RbtNotificationPreferences />} />
+                  <Route path="/bcba/settings/notifications" element={<OSShellPage><BcbaNotificationPreferences /></OSShellPage>} />
                   <Route path="/training/rbt/evaluate" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","lead_rbt","trainer","hr","hr_admin","operations_leadership"]}>
                       <OSShellPage><RbtEvaluatorConsole /></OSShellPage>
