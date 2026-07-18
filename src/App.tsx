@@ -911,15 +911,14 @@ const App = () => (
                   <Route path="/case-manager/escalations" element={<CMEscalations />} />
                   <Route path="/case-manager/community" element={<CMCommunityReferrals />} />
                   <Route path="/case-manager/resources" element={<OSCaseManagerResources />} />
-                  <Route path="/bcba" element={<OSBCBA />} />
-                  <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
-                  <Route path="/bcba/clients" element={<OSBCBAClients />} />
-                  <Route path="/bcba/authorizations" element={<OSBCBAAuthorizations />} />
-                  <Route path="/bcba/supervision" element={<OSBCBASupervision />} />
-                  <Route path="/bcba/parent-training" element={<OSBCBAParentTraining />} />
-                  <Route path="/bcba/scheduling" element={<OSBCBAScheduling />} />
-                  <Route path="/bcba/resources" element={<Navigate to="/resource-library" replace />} />
-                  <Route path="/bcba/training-academy" element={<OSBCBATrainingAcademy />} />
+                  {/* Legacy flat BCBA routes redirected into the new BcbaShell.
+                      Nested routes are declared under /bcba below. */}
+                  <Route path="/bcba/workspace"        element={<Navigate to="/bcba/home" replace />} />
+                  <Route path="/bcba/clients"          element={<Navigate to="/bcba/caseload" replace />} />
+                  <Route path="/bcba/authorizations"   element={<Navigate to="/bcba/progress-reports" replace />} />
+                  <Route path="/bcba/scheduling"       element={<Navigate to="/bcba/home" replace />} />
+                  <Route path="/bcba/resources"        element={<Navigate to="/resource-library" replace />} />
+                  <Route path="/bcba/training-academy" element={<Navigate to="/bcba/academy" replace />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/rbt/my-day" element={<OSRBTMyDay />} />
                   <Route path="/rbt/training-academy" element={<OSRBTTrainingAcademy />} />
