@@ -570,8 +570,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
           </div>
         </Card>
       </div>
-    </OSShell>
   );
+  return embedded ? body : <OSShell>{body}</OSShell>;
 }
 
 // Suppress unused-import warning for the CRUploadKind re-export.
