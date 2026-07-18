@@ -769,9 +769,12 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const isStateTrainingRole =
     role === "state_director" || role === "assistant_state_director" || role === "state_va" || role === "regional_state_director";
   const trainingPath = isStateTrainingRole ? "/training" : "/academy";
+  // Blossom AI is hidden for RBT and scoped to a dedicated copilot for BCBA.
+  const hideGlobalAi = role === "rbt" || role === "bcba";
+  const bcbaCopilotEntry: NavEntry = { to: "/bcba/copilot", label: "Caseload Copilot", icon: Sparkles };
   const bottomNav: NavEntry[] = [
     { to: "/home", label: "Home", icon: Home, end: true },
-    { to: "/ai/assistant", label: "Blossom AI", icon: Sparkles },
+    ...(hideGlobalAi ? [] : [{ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles } as NavEntry]),
     { to: "/tasks", label: "Tasks", icon: CheckSquare },
     { to: trainingPath, label: "Training", icon: GraduationCap },
     { to: "/resource-library", label: "Resources", icon: BookOpen },
@@ -884,7 +887,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 <div className="space-y-3">
                   <div className="space-y-0.5">
                     {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true }, () => { setMobileOpen(false); setMobileSearch(""); })}
-                    {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles }, () => { setMobileOpen(false); setMobileSearch(""); })}
+                    {role === "bcba"
+                      ? renderNavItem(bcbaCopilotEntry, () => { setMobileOpen(false); setMobileSearch(""); })
+                      : hideGlobalAi
+                      ? null
+                      : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles }, () => { setMobileOpen(false); setMobileSearch(""); })}
                   </div>
                   {mobileSections.map((section) => (
                     <div key={section.id}>
@@ -938,7 +945,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             {collapsed ? (
               <div className="flex flex-col items-center gap-1.5">
                 {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
-                {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
+                {role === "bcba"
+                  ? renderNavItem(bcbaCopilotEntry)
+                  : hideGlobalAi
+                  ? null
+                  : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
                 <div className="my-2 h-px w-8 bg-foreground/[0.08]" />
                 {allItems.map((item) => renderNavItem(item))}
               </div>
@@ -946,7 +957,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <div className="space-y-2">
                 <div className="mb-2 space-y-0.5">
                   {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
-                  {renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
+                  {role === "bcba"
+                    ? renderNavItem(bcbaCopilotEntry)
+                    : hideGlobalAi
+                    ? null
+                    : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
                 </div>
                 {sections.map((section) => (
                   <div key={section.id}>

@@ -261,6 +261,7 @@ import BcbaProductivityPage from "./pages/bcba/productivity/ProductivityPage";
 import BcbaSupportPageV2 from "./pages/bcba/support/SupportPage";
 import BcbaAcademyPage from "./pages/bcba/academy/AcademyPage";
 import BcbaFellowshipPage from "./pages/bcba/fellowship/FellowshipPage";
+import BcbaCopilotPage from "./pages/bcba/copilot/BcbaCopilotPage";
 import ClinicalLeadershipHome from "./pages/clinical-leadership/ClinicalLeadershipHome";
 import BcbaWorkforcePage from "./pages/clinical-leadership/BcbaWorkforcePage";
 import CaseloadRiskPage from "./pages/clinical-leadership/CaseloadRiskPage";
@@ -556,6 +557,16 @@ function ClientsRouter() {
 function AuthorizationsRouter() {
   const { role } = useOSRole();
   return role === "intake_coordinator" ? <OSIntakeAuthorizations /> : <OSAuthorizations />;
+}
+
+// Gates the global Blossom AI experience. RBTs have no AI surface; BCBAs are
+// redirected to the caseload-scoped copilot. Everyone else sees the full
+// assistant.
+function GlobalAiRoute({ children }: { children: React.ReactNode }) {
+  const { role } = useOSRole();
+  if (role === "rbt") return <Navigate to="/rbt/app/home" replace />;
+  if (role === "bcba") return <Navigate to="/bcba/copilot" replace />;
+  return <>{children}</>;
 }
 
 const OSOutlet = () => (
@@ -1032,9 +1043,9 @@ const App = () => (
                   <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
                   <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
-                  <Route path="/ai/assistant" element={<OSAskBlossom />} />
+                  <Route path="/ai/assistant" element={<GlobalAiRoute><OSAskBlossom /></GlobalAiRoute>} />
                   <Route path="/ask-blossom" element={<Navigate to="/ai/assistant" replace />} />
-                  <Route path="/ai/insights" element={<OSAiInsights />} />
+                  <Route path="/ai/insights" element={<GlobalAiRoute><OSAiInsights /></GlobalAiRoute>} />
                   <Route path="/ai/automations" element={<Navigate to="/automations" replace />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
                   <Route path="/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
@@ -1343,6 +1354,7 @@ const App = () => (
                     <Route path="parent-training" element={<BcbaParentTrainingPage />} />
                     <Route path="productivity" element={<BcbaProductivityPage />} />
                     <Route path="fellowship" element={<BcbaFellowshipPage />} />
+                    <Route path="copilot" element={<BcbaCopilotPage />} />
                   </Route>
                   <Route
                     path="/admin/bcba-onboarding"

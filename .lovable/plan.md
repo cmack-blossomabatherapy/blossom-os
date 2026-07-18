@@ -1,28 +1,46 @@
-## Two small fixes in `src/pages/os/OSShell.tsx`
+# Blossom AI Access — RBT hidden, BCBA scoped
 
-### 1. Reset scroll to top on every route change (mobile fix)
+Align Blossom AI with the role model: RBTs never see it, BCBAs get a caseload-scoped copilot instead of the full operational workspace.
 
-Right now navigating between pages preserves the previous page's scroll position, so on mobile you land partway down and have to scroll up to see the header/title.
+## 1. Hide Blossom AI for RBTs
 
-Add a small effect keyed on `pathname` that runs on every route change:
-- Scroll the `window` to `(0, 0)` (this is the mobile scroll container).
-- Also scroll the desktop main content container (the `md:overflow-y-auto` wrapper at line 971) back to top by giving it a `ref` and setting `scrollTop = 0`.
-- Skip the reset when the URL has a `#hash` (anchor links should still work).
+- `src/lib/os/roleMenus.ts`: confirm `rbt` menu has no AI entry (already 5 tabs — Home/Schedule/Learn/Support/Me). No change expected; verify.
+- `src/App.tsx`: wrap the `/ai/assistant` route in a `PermissionRoute` that denies `rbt` (and any RBT-only permission). RBTs hitting the URL directly get bounced to `/rbt/app/home`.
+- `src/components/layout/AppLayout.tsx`: existing RBT redirect already keeps them inside `/rbt/app/*`; confirm `/ai/assistant` is not in an allow-list.
+- Any global launcher (top-bar AI button, command palette entry, floating trigger) — hide when `osRole?.role === "rbt"`, same pattern used for `FloatingEscalationChat`.
 
-This makes every page open at the top on both mobile and desktop.
+## 2. Scoped BCBA copilot (not the full workspace)
 
-### 2. Hide the floating escalation chat for RBT and BCBA
+- Route: block BCBAs from `/ai/assistant` (the general operational assistant) via `PermissionRoute`.
+- Add a new BCBA-only entry `/bcba/copilot` inside `BcbaShell.tsx` menu.
+- New page `src/pages/bcba/copilot/BcbaCopilotPage.tsx` reusing the AI Elements composer/transcript pattern already established in `/ai/assistant`, but with a constrained system prompt and constrained retrieval scope:
+  - Allowed data sources: the signed-in BCBA's caseload, supervision logs, PR status, treatment plans, parent training, productivity/capacity snapshots, assigned QA feedback, and SOPs/training content.
+  - Disallowed: staffing across other BCBAs, recruiting, finance, HR, cross-caseload PHI, executive/state reports.
+- Server side (edge function backing the copilot): enforce scoping in the query layer — filter every tool/RAG call by `auth.uid()` → BCBA's caseload, mirroring existing RLS on `bcba_*` tables. Do not rely on prompt instructions alone.
+- Suggested prompts tailored to BCBAs: "Which of my clients need a PR this month?", "Summarize my capacity", "What QA corrections are open on my caseload?", "Draft parent training talking points for {client}".
 
-`FloatingEscalationChat` is rendered unconditionally at the bottom of `OSShell` (line 1230). RBTs and BCBAs use different escalation paths (RBT app has its own Support tab; BCBAs use the Support Center / notifications workspace).
+## 3. Guardrails and audit
 
-Change the render to:
+- Reuse the existing AI audit log path so every BCBA copilot call is logged with user, prompt, and tool calls.
+- Add a small "Scope: your caseload only" chip in the copilot header so BCBAs understand the boundary.
+- No changes to the general `/ai/assistant` for Leadership/Ops/State Directors/etc.
 
-```tsx
-{role !== "rbt" && role !== "bcba" && <FloatingEscalationChat />}
-```
+## 4. Tests
 
-`role` is already destructured from `useOSRole()` in the same component (line 688), so no new imports or hooks are needed. The RBT app shell (`/rbt/app/*`) doesn't render `OSShell`, so this is belt-and-suspenders for any RBT that briefly passes through a shared page, and it fully removes the button for BCBAs everywhere.
+- Unit/route test: RBT session → `/ai/assistant` and `/bcba/copilot` both redirect away; RBT menu contains no AI item.
+- Route test: BCBA session → `/ai/assistant` denied, `/bcba/copilot` renders.
+- Server test: BCBA copilot query for a client not on their caseload returns an empty/denied result (not a filtered "no rows" that leaks existence).
 
-### Out of scope
+## Files touched (expected)
 
-No changes to navigation, layout, page contents, or escalation routing logic — just scroll-on-navigate and one conditional render.
+- `src/App.tsx` (route guards)
+- `src/lib/os/roleMenus.ts` (BCBA menu adds Copilot; verify RBT has no AI)
+- `src/pages/bcba/copilot/BcbaCopilotPage.tsx` (new)
+- `src/pages/bcba/shell.tsx` or equivalent (nav entry)
+- Edge function powering the copilot (new or forked from the existing assistant function) with caseload-scoped tools
+- Wherever the global AI launcher lives (hide for RBT + BCBA; BCBA goes to `/bcba/copilot` instead)
+
+## Out of scope
+
+- No new RBT-facing AI helper this pass (per your answer).
+- No changes to Leadership/Ops Blossom AI experience.
