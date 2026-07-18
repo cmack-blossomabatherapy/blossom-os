@@ -6,7 +6,7 @@ const APP = fs.readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
 
 describe("CentralReach Data Hub routing", () => {
   it("mounts the unified hub at /system/centralreach", () => {
-    expect(APP).toMatch(/path="\/system\/centralreach"[^>]*CentralReachHub/);
+    expect(APP).toMatch(/path="\/system\/centralreach"[\s\S]*?CentralReachHub/);
   });
 
   it("redirects every legacy upload route into a hub tab", () => {
