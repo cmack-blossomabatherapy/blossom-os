@@ -2610,6 +2610,212 @@ export type Database = {
           },
         ]
       }
+      bcba_onboarding_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          from_value: string | null
+          id: string
+          item_id: string
+          metadata: Json
+          to_value: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          from_value?: string | null
+          id?: string
+          item_id: string
+          metadata?: Json
+          to_value?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          from_value?: string | null
+          id?: string
+          item_id?: string
+          metadata?: Json
+          to_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_onboarding_audit_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_onboarding_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_onboarding_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          item_id: string
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          item_id: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_onboarding_comments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_onboarding_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_onboarding_items: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          assigned_owner_user_id: string | null
+          bcba_user_id: string
+          completed_at: string | null
+          created_at: string
+          due_date: string | null
+          external_url: string | null
+          file_path: string | null
+          id: string
+          status: Database["public"]["Enums"]["bcba_onb_status"]
+          template_item_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_owner_user_id?: string | null
+          bcba_user_id: string
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          external_url?: string | null
+          file_path?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["bcba_onb_status"]
+          template_item_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_owner_user_id?: string | null
+          bcba_user_id?: string
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          external_url?: string | null
+          file_path?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["bcba_onb_status"]
+          template_item_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_onboarding_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_onboarding_template_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_onboarding_template_items: {
+        Row: {
+          created_at: string
+          depends_on_item_id: string | null
+          due_offset_days: number | null
+          employee_instructions: string | null
+          enabled: boolean
+          evidence_type: Database["public"]["Enums"]["bcba_onb_evidence"]
+          external_link_hint: string | null
+          id: string
+          internal_instructions: string | null
+          is_completion_gate: boolean
+          lifecycle_stage: string
+          owner_role: Database["public"]["Enums"]["bcba_onb_owner"]
+          required: boolean
+          requires_approval: boolean
+          section_key: string
+          section_label: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          depends_on_item_id?: string | null
+          due_offset_days?: number | null
+          employee_instructions?: string | null
+          enabled?: boolean
+          evidence_type?: Database["public"]["Enums"]["bcba_onb_evidence"]
+          external_link_hint?: string | null
+          id?: string
+          internal_instructions?: string | null
+          is_completion_gate?: boolean
+          lifecycle_stage: string
+          owner_role: Database["public"]["Enums"]["bcba_onb_owner"]
+          required?: boolean
+          requires_approval?: boolean
+          section_key: string
+          section_label: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          depends_on_item_id?: string | null
+          due_offset_days?: number | null
+          employee_instructions?: string | null
+          enabled?: boolean
+          evidence_type?: Database["public"]["Enums"]["bcba_onb_evidence"]
+          external_link_hint?: string | null
+          id?: string
+          internal_instructions?: string | null
+          is_completion_gate?: boolean
+          lifecycle_stage?: string
+          owner_role?: Database["public"]["Enums"]["bcba_onb_owner"]
+          required?: boolean
+          requires_approval?: boolean
+          section_key?: string
+          section_label?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_onboarding_template_items_depends_on_item_id_fkey"
+            columns: ["depends_on_item_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_onboarding_template_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bcba_parent_training_logs: {
         Row: {
           barriers: string | null
@@ -26634,6 +26840,14 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      bcba_caseload_activation_status: {
+        Args: { _bcba_user_id: string }
+        Returns: {
+          blocked_titles: string[]
+          cleared_gates: number
+          total_gates: number
+        }[]
+      }
       bcba_normalize_client_name: { Args: { _name: string }; Returns: string }
       bcba_workflow_leadership_can_read: {
         Args: { _uid: string }
@@ -27154,6 +27368,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      start_bcba_onboarding: {
+        Args: { _bcba_user_id: string }
+        Returns: number
+      }
       submit_eval_form_response:
         | {
             Args: { p_answers: Json; p_signature?: string; p_token: string }
@@ -27340,6 +27558,32 @@ export type Database = {
         | "Denied"
         | "Expired"
         | "Expiring Soon"
+      bcba_onb_evidence:
+        | "none"
+        | "checkbox"
+        | "file_upload"
+        | "external_link"
+        | "approval"
+        | "comment"
+      bcba_onb_owner:
+        | "bcba"
+        | "credentialing"
+        | "hr"
+        | "clinical_leadership"
+        | "training"
+        | "systems"
+        | "state_leadership"
+        | "super_admin"
+      bcba_onb_status:
+        | "not_started"
+        | "in_progress"
+        | "waiting_on_bcba"
+        | "waiting_on_owner"
+        | "submitted"
+        | "approved"
+        | "completed"
+        | "blocked"
+        | "skipped"
       billing_claim_status:
         | "Current"
         | "Missing Sessions"
@@ -28123,6 +28367,35 @@ export const Constants = {
         "Denied",
         "Expired",
         "Expiring Soon",
+      ],
+      bcba_onb_evidence: [
+        "none",
+        "checkbox",
+        "file_upload",
+        "external_link",
+        "approval",
+        "comment",
+      ],
+      bcba_onb_owner: [
+        "bcba",
+        "credentialing",
+        "hr",
+        "clinical_leadership",
+        "training",
+        "systems",
+        "state_leadership",
+        "super_admin",
+      ],
+      bcba_onb_status: [
+        "not_started",
+        "in_progress",
+        "waiting_on_bcba",
+        "waiting_on_owner",
+        "submitted",
+        "approved",
+        "completed",
+        "blocked",
+        "skipped",
       ],
       billing_claim_status: [
         "Current",
