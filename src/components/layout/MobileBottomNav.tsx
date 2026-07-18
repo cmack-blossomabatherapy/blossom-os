@@ -1,23 +1,39 @@
-import { Home, Compass, GraduationCap, Library, User } from "lucide-react";
+import { Home, Compass, GraduationCap, Library, User, Calendar, LifeBuoy } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 
 type Item = { to: string; label: string; icon: typeof Home; match?: (p: string) => boolean };
 
+const GENERIC_ITEMS: Item[] = [
+  { to: "/", label: "Home", icon: Home, match: (p) => p === "/" },
+  { to: "/academy", label: "Academy", icon: Compass, match: (p) => p.startsWith("/academy") || p.startsWith("/blossom/academy") },
+  { to: "/my-learning", label: "Learning", icon: GraduationCap, match: (p) => p.startsWith("/my-learning") || p.startsWith("/training") || p.startsWith("/catalog") || p === "/hr/journey" },
+  { to: "/resources", label: "Resources", icon: Library, match: (p) => p.startsWith("/resources") || p.startsWith("/hr/resources") },
+  { to: "/profile", label: "Profile", icon: User, match: (p) => p.startsWith("/profile") },
+];
+
+const RBT_ITEMS: Item[] = [
+  { to: "/rbt/app/home",     label: "Home",     icon: Home,          match: (p) => p === "/rbt/app/home" || p === "/rbt/app" },
+  { to: "/rbt/app/schedule", label: "Schedule", icon: Calendar,      match: (p) => p.startsWith("/rbt/app/schedule") },
+  { to: "/rbt/app/learn",    label: "Learn",    icon: GraduationCap, match: (p) => p.startsWith("/rbt/app/learn") },
+  { to: "/rbt/app/support",  label: "Support",  icon: LifeBuoy,      match: (p) => p.startsWith("/rbt/app/support") },
+  { to: "/rbt/app/me",       label: "Me",       icon: User,          match: (p) => p.startsWith("/rbt/app/me") || p.startsWith("/profile") },
+];
+
 export function MobileBottomNav() {
   const { pathname } = useLocation();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const osRole = useOSRoleSafe();
 
-  const items: Item[] = [
-    { to: "/", label: "Home", icon: Home, match: (p) => p === "/" },
-    { to: "/academy", label: "Academy", icon: Compass, match: (p) => p.startsWith("/academy") || p.startsWith("/blossom/academy") },
-    { to: "/my-learning", label: "Learning", icon: GraduationCap, match: (p) => p.startsWith("/my-learning") || p.startsWith("/training") || p.startsWith("/catalog") || p === "/hr/journey" },
-    { to: "/resources", label: "Resources", icon: Library, match: (p) => p.startsWith("/resources") || p.startsWith("/hr/resources") },
-    { to: "/profile", label: "Profile", icon: User, match: (p) => p.startsWith("/profile") },
-  ];
+  if (loading || !user) return null;
 
-  if (!user) return null;
+  // RbtAppShell renders its own bottom nav inside /rbt/app/*; don't stack.
+  if (pathname.startsWith("/rbt/app")) return null;
+
+  const isRbt = osRole?.role === "rbt";
+  const items = isRbt ? RBT_ITEMS : GENERIC_ITEMS;
 
   return (
     <nav

@@ -1,48 +1,43 @@
-## Fix Auth page mobile experience
+# Fix: RBTs see the generic mobile menu
 
-Rework `src/pages/Auth.tsx` so the sign-in card fits and reads correctly on phones, with a clear, always-visible primary button on both the Password and Email code tabs.
+## What's happening now
 
-### Problems observed
-- Card uses `p-8 sm:p-10` and `rounded-3xl` on a full-height container, so on small screens the form overflows and the primary CTA scrolls out of view after tapping **Email me a sign-in code**.
-- The 6-slot `InputOTP` at default width pushes horizontal overflow on ~360px phones.
-- The **Verify & sign in** button is `disabled:opacity-60` on top of a teal fill — before all 6 digits are entered, white text on faded teal reads as invisible/low-contrast on mobile.
-- Bottom "© Blossom" absolute bar overlaps the footer/CTA area on short viewports.
-- Mobile logo block adds 8 units of top padding that isn't needed on small screens.
+- `src/components/layout/MobileBottomNav.tsx` renders one hardcoded 5-tab bar for everyone (Home / Academy / Learning / Resources / Profile). It is not role-aware.
+- The RBT-specific bottom bar (Home / Schedule / Learn / Support / Me → `/rbt/app/*`) only exists inside `src/pages/rbt/app/shell.tsx`, and only shows when the RBT is already inside `/rbt/app/*`.
+- Anywhere else — `/`, `/tasks`, `/resources`, `/profile`, notification deep-links, etc. — an RBT falls back to `AppLayout` + the generic `MobileBottomNav`, so they see the same menu as everyone else.
+- OS role is available via `useOSRole()` (`OSRoleContext`) and resolves to `"rbt"` for RBT users, with the same wait-for-role loading pattern already used elsewhere.
 
-### Changes (frontend only, `src/pages/Auth.tsx`)
+## What to change
 
-1. **Container & card**
-   - Main panel: `p-4 sm:p-10`, `items-start sm:items-center`, add `py-6` so the card can scroll naturally.
-   - Card: `max-w-[460px]`, `rounded-2xl sm:rounded-3xl`, `p-5 sm:p-10`, remove heavy `shadow-2xl` on mobile (`shadow-lg sm:shadow-2xl`).
-   - Remove the absolute bottom © bar on mobile (or move it inside the card footer) so it never overlaps the CTA.
+Frontend/presentation only. No permission model, routing, or data changes.
 
-2. **Header spacing**
-   - `mb-6 sm:mb-8` on `<header>`, `text-3xl sm:text-4xl` on the H1, `mb-6` on mobile logo.
+1. **Make `MobileBottomNav` role-aware.**
+   - Read `role` from `useOSRole()` (with `useOSRoleSafe()` fallback so it's tolerant outside providers) and the loading state from `useAuth()`.
+   - While auth/role is still loading, render nothing (avoid flashing the wrong menu — the pattern already used elsewhere).
+   - When `role === "rbt"`, render the RBT tab set that mirrors `RbtAppShell`:
+     - Home → `/rbt/app/home`
+     - Schedule → `/rbt/app/schedule`
+     - Learn → `/rbt/app/learn`
+     - Support → `/rbt/app/support`
+     - Me → `/rbt/app/me`
+   - Active-state matching uses `pathname.startsWith(tab.to)`, matching the RBT shell.
+   - Otherwise keep the current generic tabs unchanged.
 
-3. **Tabs**
-   - `mb-4 sm:mb-6` on `TabsList`; keep 2-col grid.
+2. **Avoid a double bottom bar inside `/rbt/app/*`.**
+   - `RbtAppShell` already renders its own bottom nav. In `MobileBottomNav`, if `pathname.startsWith("/rbt/app")`, return `null` so we don't stack two bars when an RBT route happens to be rendered under `AppLayout`.
 
-4. **Inputs & buttons**
-   - Inputs: keep `h-[52px]` (good tap target) but ensure `text-base` to prevent iOS zoom on focus.
-   - Primary buttons (both tabs): keep teal fill, but replace `disabled:opacity-60` with `disabled:bg-[#2d8a9e]/70 disabled:text-white` so text stays fully white/legible; add `disabled:shadow-none disabled:cursor-not-allowed`.
-   - Remove `hover:-translate-y-0.5` on mobile (`sm:hover:-translate-y-0.5`) so tap doesn't feel jumpy.
+3. **Send RBTs to their app by default on mobile.**
+   - In `AppLayout` (or a small `RbtHomeRedirect` used at `/` and `/home`), if `role === "rbt"` and the user lands on a generic root path (`/`, `/home`), `<Navigate to="/rbt/app/home" replace />`. This guarantees the "Home" tab in the new RBT mobile menu is where they actually live.
+   - Do not touch permissions or non-RBT routing.
 
-5. **OTP step (the reported bug)**
-   - Wrap `<InputOTP>` in a `w-full overflow-x-auto` container and set slot sizing to fit small screens: pass `containerClassName="gap-1.5 sm:gap-2"` and add responsive slot sizes via a wrapper class (`[&_[data-slot=input-otp-slot]]:h-11 [&_[data-slot=input-otp-slot]]:w-10 sm:[&_[data-slot=input-otp-slot]]:h-12 sm:[&_[data-slot=input-otp-slot]]:w-12`).
-   - Explicit slot text color: ensure OTP digits use `text-[#0c2340]` (already handled by input-otp defaults, but verify against `text-foreground` semantic token so it's dark on the white card).
-   - Reduce info banner to `text-xs`, `px-3 py-2` on mobile.
-   - Verify button: same disabled-color fix as above so it's always visible even when incomplete.
-   - Footer row (Use different email / Resend code): stack `flex-col gap-2 sm:flex-row sm:items-center sm:justify-between` on small screens so both actions are tappable full width.
+4. **Sanity-only verification (no functional test changes required).**
+   - Manually confirm via Playwright at mobile viewport, signed in as an RBT: bottom nav shows Home/Schedule/Learn/Support/Me, tapping each routes into `/rbt/app/*`, and non-RBT users still see the existing 5 tabs.
 
-6. **Footer**
-   - `mt-6 sm:mt-10`, `pt-5 sm:pt-8` on the "Team accounts…" footer to reclaim vertical space.
+## Files touched
 
-### Out of scope
-- No auth logic changes (OTP sending/verifying, redirect behavior, remember-me).
-- No changes to desktop brand panel.
-- No design system token migration in this pass — keep existing teal/navy palette for parity with current brand.
+- `src/components/layout/MobileBottomNav.tsx` — role-aware tab set + hide inside `/rbt/app/*`.
+- `src/components/layout/AppLayout.tsx` (or a tiny new `RbtHomeRedirect`) — redirect RBT off `/` and `/home` to `/rbt/app/home`.
 
-### Verification
-- Set preview to mobile (375×812), walk through: load `/auth` → Email code tab → enter email → **Email me a sign-in code** → confirm the 6-digit OTP fits without horizontal scroll and the **Verify & sign in** button is fully visible with legible white text in both disabled and enabled states.
-- Repeat at 320px width to confirm the smallest supported phone.
-- Confirm password tab still renders identically on desktop.
+## Explicitly out of scope
+
+- Desktop sidebar contents, permission model, backend/RLS, notification payloads, and any non-RBT role menus.
