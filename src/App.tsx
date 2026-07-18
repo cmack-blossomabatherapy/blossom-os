@@ -253,6 +253,7 @@ import {
 import BcbaOnboardingPage from "./pages/bcba/onboarding/BcbaOnboardingPage";
 import BcbaOnboardingConsole from "./pages/admin/BcbaOnboardingConsole";
 import BcbaSupervisionCenter from "./pages/bcba/supervision/SupervisionCenterPage";
+import BcbaAssessmentsPage from "./pages/bcba/assessments/AssessmentsPage";
 import BcbaSupervisionConfigPage from "./pages/admin/BcbaSupervisionConfigPage";
 import RbtGrowthConsole from "./pages/admin/RbtGrowthConsole";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
