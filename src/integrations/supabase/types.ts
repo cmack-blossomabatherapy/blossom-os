@@ -4009,12 +4009,14 @@ export type Database = {
           detail: string | null
           expected_value: string | null
           id: string
+          impacted_metric_keys: string[]
           metric_key: string
           reported_value: string | null
           resolution_note: string | null
           resolved_at: string | null
           resolved_by: string | null
           snapshot_id: string | null
+          source_timestamps: Json
           status: string
           task_id: string | null
           updated_at: string
@@ -4025,12 +4027,14 @@ export type Database = {
           detail?: string | null
           expected_value?: string | null
           id?: string
+          impacted_metric_keys?: string[]
           metric_key: string
           reported_value?: string | null
           resolution_note?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           snapshot_id?: string | null
+          source_timestamps?: Json
           status?: string
           task_id?: string | null
           updated_at?: string
@@ -4041,12 +4045,14 @@ export type Database = {
           detail?: string | null
           expected_value?: string | null
           id?: string
+          impacted_metric_keys?: string[]
           metric_key?: string
           reported_value?: string | null
           resolution_note?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           snapshot_id?: string | null
+          source_timestamps?: Json
           status?: string
           task_id?: string | null
           updated_at?: string

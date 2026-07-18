@@ -78,6 +78,7 @@ export function useReportDiscrepancy() {
       reported_value?: string;
       expected_value?: string;
       detail?: string;
+      impacted_metric_keys?: string[];
     }) => {
       // Create task first so we can link it
       const { data: task, error: taskErr } = await supabase
@@ -94,6 +95,13 @@ export function useReportDiscrepancy() {
         .single();
       if (taskErr) throw taskErr;
 
+      const impacted = Array.from(
+        new Set([
+          payload.metric_key,
+          ...(payload.impacted_metric_keys ?? []),
+        ].filter(Boolean)),
+      );
+
       const { data, error } = await supabase
         .from("bcba_productivity_discrepancies")
         .insert({
@@ -104,6 +112,7 @@ export function useReportDiscrepancy() {
           expected_value: payload.expected_value ?? null,
           detail: payload.detail ?? null,
           task_id: task?.id ?? null,
+          impacted_metric_keys: impacted,
         } as any)
         .select("*")
         .single();
@@ -112,6 +121,42 @@ export function useReportDiscrepancy() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bcba-productivity"] });
+    },
+  });
+}
+
+export interface DiscrepancyRow {
+  id: string;
+  snapshot_id: string | null;
+  bcba_id: string;
+  metric_key: string;
+  impacted_metric_keys: string[];
+  source_timestamps: Record<string, string>;
+  status: string;
+  detail: string | null;
+  reported_value: string | null;
+  expected_value: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Fetch a single discrepancy row with its linked metric keys + source timestamps.
+ */
+export function useDiscrepancy(discrepancyId?: string | null) {
+  return useQuery({
+    queryKey: ["bcba-disc", discrepancyId],
+    enabled: !!discrepancyId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bcba_productivity_discrepancies")
+        .select(
+          "id, snapshot_id, bcba_id, metric_key, impacted_metric_keys, source_timestamps, status, detail, reported_value, expected_value, created_at, updated_at",
+        )
+        .eq("id", discrepancyId!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as unknown as DiscrepancyRow | null;
     },
   });
 }
