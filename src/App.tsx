@@ -230,6 +230,8 @@ import CrSyncCenter from "./pages/admin/CrSyncCenter";
 import RbtNotificationEngine from "./pages/admin/RbtNotificationEngine";
 import NotificationInbox from "./pages/NotificationInbox";
 import RbtNotificationPreferences from "./pages/rbt/app/settings/NotificationPreferences";
+import BcbaNotificationEngine from "./pages/admin/BcbaNotificationEngine";
+import BcbaNotificationPreferences from "./pages/bcba/settings/BcbaNotificationPreferences";
 import RbtPreboarding from "./pages/rbt/app/preboarding/RbtPreboarding";
 import RbtReadiness from "./pages/rbt/app/readiness/RbtReadiness";
 import RbtStaffing from "./pages/rbt/app/readiness/RbtStaffing";
