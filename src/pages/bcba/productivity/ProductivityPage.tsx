@@ -21,6 +21,7 @@ import {
   type ProductivitySnapshot, type CapacitySnapshot, type CapacityStatus,
 } from "./pipeline";
 import ReportDiscrepancyDialog from "./ReportDiscrepancyDialog";
+import MetricDrilldownDialog from "./MetricDrilldownDialog";
 
 function MetricLabel({ metricKey, children }: { metricKey: string; children: React.ReactNode }) {
   const def = findDefinition(metricKey);
@@ -54,23 +55,24 @@ function SourceStamp({ sources, k }: { sources: Record<string, string>; k: strin
 }
 
 function MetricCard({
-  metricKey, primary, secondary, sources, onFlag,
+  metricKey, primary, secondary, sources, onFlag, onDrill,
 }: {
   metricKey: string;
   primary: React.ReactNode;
   secondary?: React.ReactNode;
   sources: Record<string, string>;
   onFlag: (k: string) => void;
+  onDrill?: (k: string) => void;
 }) {
   return (
-    <Card className="border-border/60">
+    <Card className="border-border/60 hover:border-primary/40 hover:shadow-sm transition cursor-pointer" onClick={() => onDrill?.(metricKey)}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <MetricLabel metricKey={metricKey}>
             <span className="text-xs font-medium text-muted-foreground">{findDefinition(metricKey)?.label ?? metricKey}</span>
           </MetricLabel>
           <button
-            onClick={() => onFlag(metricKey)}
+            onClick={(e) => { e.stopPropagation(); onFlag(metricKey); }}
             className="text-muted-foreground/60 hover:text-foreground transition"
             aria-label="Report discrepancy"
           >
@@ -79,7 +81,10 @@ function MetricCard({
         </div>
         <div className="mt-2 text-2xl font-semibold tracking-tight">{primary}</div>
         {secondary && <div className="text-xs text-muted-foreground mt-1">{secondary}</div>}
-        <div className="mt-2"><SourceStamp sources={sources} k={metricKey} /></div>
+        <div className="mt-2 flex items-center justify-between">
+          <SourceStamp sources={sources} k={metricKey} />
+          <span className="text-[10px] text-muted-foreground/60">View source →</span>
+        </div>
       </CardContent>
     </Card>
   );
@@ -97,6 +102,8 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagMetric, setFlagMetric] = useState<string | undefined>();
   const openFlag = (k: string) => { setFlagMetric(k); setFlagOpen(true); };
+  const [drillMetric, setDrillMetric] = useState<string | null>(null);
+  const openDrill = (k: string) => setDrillMetric(k);
 
   if (!snapshot) {
     return (
@@ -150,10 +157,10 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Caseload</div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <MetricCard metricKey="caseload_size"     primary={snapshot.caseload_size}       sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="assigned_rbt_count" primary={snapshot.assigned_rbt_count} sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="service_utilization_pct" primary={`${Number(snapshot.service_utilization_pct).toFixed(0)}%`} secondary="Delivered ÷ authorized" sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="open_risks" primary={snapshot.open_risks} secondary="Active clinical or ops risks" sources={snapshot.source_dates} onFlag={openFlag} />
+          <MetricCard metricKey="caseload_size"     primary={snapshot.caseload_size}       sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="assigned_rbt_count" primary={snapshot.assigned_rbt_count} sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="service_utilization_pct" primary={`${Number(snapshot.service_utilization_pct).toFixed(0)}%`} secondary="Delivered ÷ authorized" sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="open_risks" primary={snapshot.open_risks} secondary="Active clinical or ops risks" sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
         </div>
       </div>
 
@@ -161,11 +168,11 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Hours delivered</div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <MetricCard metricKey="clinical_hours"        primary={fmtHours(snapshot.clinical_hours)}        sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="billable_hours"        primary={fmtHours(snapshot.billable_hours)}        sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="assessment_hours"      primary={fmtHours(snapshot.assessment_hours)}      sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="parent_training_hours" primary={fmtHours(snapshot.parent_training_hours)} sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="supervision_hours"     primary={fmtHours(snapshot.supervision_hours)}     sources={snapshot.source_dates} onFlag={openFlag} />
+          <MetricCard metricKey="clinical_hours"        primary={fmtHours(snapshot.clinical_hours)}        sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="billable_hours"        primary={fmtHours(snapshot.billable_hours)}        sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="assessment_hours"      primary={fmtHours(snapshot.assessment_hours)}      sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="parent_training_hours" primary={fmtHours(snapshot.parent_training_hours)} sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="supervision_hours"     primary={fmtHours(snapshot.supervision_hours)}     sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
         </div>
       </div>
 
@@ -176,13 +183,13 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
           <MetricCard metricKey="progress_reports"
             primary={`${snapshot.progress_reports_on_time} on time`}
             secondary={`${snapshot.progress_reports_late} late · ${snapshot.progress_reports_upcoming} upcoming`}
-            sources={snapshot.source_dates} onFlag={openFlag} />
+            sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
           <MetricCard metricKey="treatment_plans"
             primary={`${snapshot.treatment_plans_open} open`}
             secondary={`${snapshot.treatment_plans_qa_returned} in QA correction`}
-            sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="documentation_on_time_pct" primary={`${Number(snapshot.documentation_on_time_pct).toFixed(0)}%`} sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="qa_return_rate_pct"       primary={`${Number(snapshot.qa_return_rate_pct).toFixed(0)}%`} sources={snapshot.source_dates} onFlag={openFlag} />
+            sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="documentation_on_time_pct" primary={`${Number(snapshot.documentation_on_time_pct).toFixed(0)}%`} sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="qa_return_rate_pct"       primary={`${Number(snapshot.qa_return_rate_pct).toFixed(0)}%`} sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
         </div>
       </div>
 
@@ -224,9 +231,9 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Forecast</div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <MetricCard metricKey="mtd_target_hours" primary={fmtHours(snapshot.mtd_target_hours)} sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="mtd_actual_hours" primary={fmtHours(snapshot.mtd_actual_hours)} sources={snapshot.source_dates} onFlag={openFlag} />
-          <MetricCard metricKey="forecast_hours"   primary={fmtHours(snapshot.forecast_hours)}   secondary="Projected end-of-month" sources={snapshot.source_dates} onFlag={openFlag} />
+          <MetricCard metricKey="mtd_target_hours" primary={fmtHours(snapshot.mtd_target_hours)} sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="mtd_actual_hours" primary={fmtHours(snapshot.mtd_actual_hours)} sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
+          <MetricCard metricKey="forecast_hours"   primary={fmtHours(snapshot.forecast_hours)}   secondary="Projected end-of-month" sources={snapshot.source_dates} onFlag={openFlag} onDrill={openDrill} />
         </div>
       </div>
 
@@ -243,11 +250,21 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
         bcbaId={snapshot.bcba_id}
         initialMetric={flagMetric}
       />
+
+      <MetricDrilldownDialog
+        open={!!drillMetric}
+        onOpenChange={(o) => !o && setDrillMetric(null)}
+        metricKey={drillMetric}
+        snapshot={snapshot}
+        kind="productivity"
+      />
     </div>
   );
 }
 
 function MyCapacity({ snapshot }: { snapshot: CapacitySnapshot | null }) {
+  const [drillMetric, setDrillMetric] = useState<string | null>(null);
+  const openDrill = (k: string) => setDrillMetric(k);
   if (!snapshot) {
     return (
       <Card><CardContent className="p-8 text-center text-muted-foreground">
@@ -283,14 +300,14 @@ function MyCapacity({ snapshot }: { snapshot: CapacitySnapshot | null }) {
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard metricKey="caseload_size"     primary={snapshot.active_clients} secondary="Active clients" sources={snapshot.source_dates} onFlag={() => {}} />
-        <MetricCard metricKey="assigned_rbt_count" primary={snapshot.active_rbts} secondary="Active RBTs" sources={snapshot.source_dates} onFlag={() => {}} />
-        <MetricCard metricKey="supervision_hours"  primary={fmtHours(snapshot.supervision_load_hours)} secondary="Supervision load" sources={snapshot.source_dates} onFlag={() => {}} />
-        <MetricCard metricKey="assessment_hours"   primary={snapshot.new_assessments} secondary="New assessments" sources={snapshot.source_dates} onFlag={() => {}} />
-        <MetricCard metricKey="progress_reports"   primary={snapshot.reports_due} secondary="Reports due" sources={snapshot.source_dates} onFlag={() => {}} />
-        <MetricCard metricKey="parent_training_hours" primary={snapshot.parent_training_workload} secondary="Parent training workload" sources={snapshot.source_dates} onFlag={() => {}} />
-        <MetricCard metricKey="forecast_hours"     primary={fmtHours(snapshot.projected_service_hours)} secondary="Projected service hours" sources={snapshot.source_dates} onFlag={() => {}} />
-        <MetricCard metricKey="open_risks"         primary={snapshot.open_qa_corrections} secondary="Open QA corrections" sources={snapshot.source_dates} onFlag={() => {}} />
+        <MetricCard metricKey="caseload_size"     primary={snapshot.active_clients} secondary="Active clients" sources={snapshot.source_dates} onFlag={() => {}} onDrill={openDrill} />
+        <MetricCard metricKey="assigned_rbt_count" primary={snapshot.active_rbts} secondary="Active RBTs" sources={snapshot.source_dates} onFlag={() => {}} onDrill={openDrill} />
+        <MetricCard metricKey="supervision_hours"  primary={fmtHours(snapshot.supervision_load_hours)} secondary="Supervision load" sources={snapshot.source_dates} onFlag={() => {}} onDrill={openDrill} />
+        <MetricCard metricKey="assessment_hours"   primary={snapshot.new_assessments} secondary="New assessments" sources={snapshot.source_dates} onFlag={() => {}} onDrill={openDrill} />
+        <MetricCard metricKey="progress_reports"   primary={snapshot.reports_due} secondary="Reports due" sources={snapshot.source_dates} onFlag={() => {}} onDrill={openDrill} />
+        <MetricCard metricKey="parent_training_hours" primary={snapshot.parent_training_workload} secondary="Parent training workload" sources={snapshot.source_dates} onFlag={() => {}} onDrill={openDrill} />
+        <MetricCard metricKey="forecast_hours"     primary={fmtHours(snapshot.projected_service_hours)} secondary="Projected service hours" sources={snapshot.source_dates} onFlag={() => {}} onDrill={openDrill} />
+        <MetricCard metricKey="open_risks"         primary={snapshot.open_qa_corrections} secondary="Open QA corrections" sources={snapshot.source_dates} onFlag={() => {}} onDrill={openDrill} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -307,6 +324,14 @@ function MyCapacity({ snapshot }: { snapshot: CapacitySnapshot | null }) {
           <div className="text-lg font-semibold">{snapshot.upcoming_leave_days} days</div>
         </CardContent></Card>
       </div>
+
+      <MetricDrilldownDialog
+        open={!!drillMetric}
+        onOpenChange={(o) => !o && setDrillMetric(null)}
+        metricKey={drillMetric}
+        snapshot={snapshot}
+        kind="capacity"
+      />
     </div>
   );
 }
