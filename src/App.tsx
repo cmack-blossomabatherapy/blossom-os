@@ -261,6 +261,7 @@ import BcbaProductivityPage from "./pages/bcba/productivity/ProductivityPage";
 import BcbaSupportPageV2 from "./pages/bcba/support/SupportPage";
 import BcbaAcademyPage from "./pages/bcba/academy/AcademyPage";
 import BcbaFellowshipPage from "./pages/bcba/fellowship/FellowshipPage";
+import BcbaCopilotPage from "./pages/bcba/copilot/BcbaCopilotPage";
 import ClinicalLeadershipHome from "./pages/clinical-leadership/ClinicalLeadershipHome";
 import BcbaWorkforcePage from "./pages/clinical-leadership/BcbaWorkforcePage";
 import CaseloadRiskPage from "./pages/clinical-leadership/CaseloadRiskPage";
