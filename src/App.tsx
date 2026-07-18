@@ -250,6 +250,8 @@ import {
   BcbaHome, BcbaCaseload, BcbaMyRbts, BcbaClinicalWork,
   BcbaLearn, BcbaSupport, BcbaMe,
 } from "./pages/bcba/pages";
+import BcbaOnboardingPage from "./pages/bcba/onboarding/BcbaOnboardingPage";
+import BcbaOnboardingConsole from "./pages/admin/BcbaOnboardingConsole";
 import RbtGrowthConsole from "./pages/admin/RbtGrowthConsole";
 import RbtJourneyConsole from "./pages/training/RbtJourneyConsole";
 import RbtReadinessConsole from "./pages/admin/RbtReadinessConsole";
@@ -1308,7 +1310,16 @@ const App = () => (
                     <Route path="learn"    element={<BcbaLearn />} />
                     <Route path="support"  element={<BcbaSupport />} />
                     <Route path="me"       element={<BcbaMe />} />
+                    <Route path="onboarding" element={<BcbaOnboardingPage />} />
                   </Route>
+                  <Route
+                    path="/admin/bcba-onboarding"
+                    element={
+                      <PermissionRoute allowedRoles={["admin","super_admin","hr","hr_admin","clinical_director","operations_leadership"]}>
+                        <OSShellPage><BcbaOnboardingConsole /></OSShellPage>
+                      </PermissionRoute>
+                    }
+                  />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
