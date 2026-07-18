@@ -139,10 +139,15 @@ export function useUpsertMilestone() {
     mutationFn: async (input: Partial<Milestone> & { id?: string }) => {
       if (input.id) {
         const { id, ...fields } = input;
-        const { error } = await supabase.from("bcba_progress_report_milestones").update(fields).eq("id", id);
+        const { error } = await supabase
+          .from("bcba_progress_report_milestones")
+          .update(fields as never)
+          .eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("bcba_progress_report_milestones").insert(input);
+        const { error } = await supabase
+          .from("bcba_progress_report_milestones")
+          .insert(input as never);
         if (error) throw error;
       }
     },
@@ -235,7 +240,7 @@ export function useCreateSupportRequest() {
             description: input.detail ?? null,
             assignee_id: assignee,
             assigned_by_id: u.user.id,
-            priority: input.category === "authorization_help" ? "high" : "normal",
+            priority: (input.category === "authorization_help" ? "high" : "medium") as never,
             due_at: report.progress_report_due_date
               ? new Date(report.progress_report_due_date).toISOString()
               : null,
@@ -243,7 +248,7 @@ export function useCreateSupportRequest() {
             related_record_id: input.progress_report_id,
             related_record_label: report.client_identifier,
             related_url: `/bcba/progress-reports?id=${input.progress_report_id}`,
-          })
+          } as never)
           .select("id")
           .maybeSingle();
         if (task?.id) {
