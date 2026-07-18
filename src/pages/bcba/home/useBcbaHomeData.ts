@@ -167,7 +167,7 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
         id: `sup-${s.id}`, kind: "supervision",
         title: `Supervision — ${s.provider_name ?? "RBT"}`,
         clientName: s.client_name, time: s.occurred_at,
-        deepLink: `/bcba/clinical-work?item=${s.id}`,
+        deepLink: `/bcba/clinical?item=${s.id}`,
       });
     }
   }
@@ -187,7 +187,7 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
         id: `deadline-${t.id}`, kind: "deadline",
         title: (t as any).title ?? `Deadline — ${t.client_name ?? ""}`,
         clientName: t.client_name ?? undefined, time: due,
-        deepLink: `/bcba/clinical-work?item=${t.id}`,
+        deepLink: `/bcba/clinical?item=${t.id}`,
       });
     }
   }
@@ -209,7 +209,7 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
       clientName: (t as any).client_name ?? undefined,
       dueDate: (t as any).due_date, reasons,
       owner: "bcba",
-      deepLink: `/bcba/clinical-work?task=${t.id}`,
+      deepLink: `/bcba/clinical?task=${t.id}`,
       context: (t as any).source_area,
     });
   }
