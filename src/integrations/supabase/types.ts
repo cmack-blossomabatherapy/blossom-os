@@ -2013,6 +2013,240 @@ export type Database = {
         }
         Relationships: []
       }
+      bcba_assessment_activity: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          assessment_id: string
+          created_at: string
+          event_type: string
+          from_status: string | null
+          id: string
+          message: string | null
+          metadata: Json | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          assessment_id: string
+          created_at?: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          assessment_id?: string
+          created_at?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_assessment_activity_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_assessment_qa_feedback: {
+        Row: {
+          assessment_id: string
+          comment: string
+          correction_category: string
+          created_at: string
+          date_returned: string
+          due_date: string | null
+          id: string
+          is_repeat_issue: boolean
+          resolution: string | null
+          resolution_status: string
+          resubmission_date: string | null
+          reviewer_id: string | null
+          reviewer_name: string | null
+          supporting_file_url: string | null
+          supporting_link: string | null
+          task_id: string | null
+          treatment_plan_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          comment: string
+          correction_category: string
+          created_at?: string
+          date_returned?: string
+          due_date?: string | null
+          id?: string
+          is_repeat_issue?: boolean
+          resolution?: string | null
+          resolution_status?: string
+          resubmission_date?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+          supporting_file_url?: string | null
+          supporting_link?: string | null
+          task_id?: string | null
+          treatment_plan_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          comment?: string
+          correction_category?: string
+          created_at?: string
+          date_returned?: string
+          due_date?: string | null
+          id?: string
+          is_repeat_issue?: boolean
+          resolution?: string | null
+          resolution_status?: string
+          resubmission_date?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+          supporting_file_url?: string | null
+          supporting_link?: string | null
+          task_id?: string | null
+          treatment_plan_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_assessment_qa_feedback_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bcba_assessment_qa_feedback_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bcba_assessment_qa_feedback_treatment_plan_id_fkey"
+            columns: ["treatment_plan_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_treatment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_assessments: {
+        Row: {
+          assessment_date: string | null
+          assessment_type: string
+          assigned_bcba_id: string | null
+          assigned_bcba_name: string | null
+          authorization_dependency: string | null
+          authorization_id: string | null
+          cancelled_reason: string | null
+          centralreach_assessment_url: string | null
+          centralreach_client_url: string | null
+          client_id: string | null
+          client_identifier: string
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          missing_item: string | null
+          next_action: string | null
+          notes: string | null
+          on_hold_reason: string | null
+          owner_id: string | null
+          owner_name: string | null
+          qa_reviewer_id: string | null
+          qa_reviewer_name: string | null
+          status: string
+          status_entered_at: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_date?: string | null
+          assessment_type?: string
+          assigned_bcba_id?: string | null
+          assigned_bcba_name?: string | null
+          authorization_dependency?: string | null
+          authorization_id?: string | null
+          cancelled_reason?: string | null
+          centralreach_assessment_url?: string | null
+          centralreach_client_url?: string | null
+          client_id?: string | null
+          client_identifier: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          missing_item?: string | null
+          next_action?: string | null
+          notes?: string | null
+          on_hold_reason?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          qa_reviewer_id?: string | null
+          qa_reviewer_name?: string | null
+          status?: string
+          status_entered_at?: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_date?: string | null
+          assessment_type?: string
+          assigned_bcba_id?: string | null
+          assigned_bcba_name?: string | null
+          authorization_dependency?: string | null
+          authorization_id?: string | null
+          cancelled_reason?: string | null
+          centralreach_assessment_url?: string | null
+          centralreach_client_url?: string | null
+          client_id?: string | null
+          client_identifier?: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          missing_item?: string | null
+          next_action?: string | null
+          notes?: string | null
+          on_hold_reason?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          qa_reviewer_id?: string | null
+          qa_reviewer_name?: string | null
+          status?: string
+          status_entered_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_assessments_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "client_authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bcba_assessments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bcba_assignment_history: {
         Row: {
           bcba_name: string
@@ -3328,6 +3562,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      bcba_treatment_plans: {
+        Row: {
+          approved_at: string | null
+          assessment_id: string
+          centralreach_plan_url: string | null
+          completed_at: string | null
+          created_at: string
+          drafted_at: string | null
+          id: string
+          next_action: string | null
+          owner_id: string | null
+          owner_name: string | null
+          parent_signature_url: string | null
+          sent_to_auth_at: string | null
+          status: string
+          status_entered_at: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          assessment_id: string
+          centralreach_plan_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          drafted_at?: string | null
+          id?: string
+          next_action?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          parent_signature_url?: string | null
+          sent_to_auth_at?: string | null
+          status?: string
+          status_entered_at?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          assessment_id?: string
+          centralreach_plan_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          drafted_at?: string | null
+          id?: string
+          next_action?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          parent_signature_url?: string | null
+          sent_to_auth_at?: string | null
+          status?: string
+          status_entered_at?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_treatment_plans_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bcba_workflow_activity_events: {
         Row: {

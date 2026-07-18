@@ -650,6 +650,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Caseload",       path: "/bcba/caseload", icon: UserCheck },
           { label: "My RBTs",        path: "/bcba/rbts",     icon: Users },
           { label: "Supervision",    path: "/bcba/supervision", icon: ShieldCheck },
+          { label: "Assessments",    path: "/bcba/assessments", icon: ClipboardList },
           { label: "Clinical Work",  path: "/bcba/clinical", icon: ClipboardList },
           { label: "Learn",          path: "/bcba/learn",    icon: GraduationCap },
           { label: "Support",        path: "/bcba/support",  icon: LifeBuoy },
