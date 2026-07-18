@@ -1926,6 +1926,48 @@ export type Database = {
           },
         ]
       }
+      bcba_academy_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_required: boolean
+          last_viewed_at: string | null
+          notes: string | null
+          progress_pct: number
+          section_key: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          last_viewed_at?: string | null
+          notes?: string | null
+          progress_pct?: number
+          section_key: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          last_viewed_at?: string | null
+          notes?: string | null
+          progress_pct?: number
+          section_key?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bcba_action_tasks: {
         Row: {
           assigned_bcba: string | null
@@ -4261,6 +4303,225 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      bcba_support_contacts: {
+        Row: {
+          active: boolean
+          categories: string[]
+          clinics: string[]
+          created_at: string
+          email: string | null
+          friendly_role: string | null
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string | null
+          slack_handle: string | null
+          states: string[]
+          team: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          categories?: string[]
+          clinics?: string[]
+          created_at?: string
+          email?: string | null
+          friendly_role?: string | null
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone?: string | null
+          slack_handle?: string | null
+          states?: string[]
+          team: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          categories?: string[]
+          clinics?: string[]
+          created_at?: string
+          email?: string | null
+          friendly_role?: string | null
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string | null
+          slack_handle?: string | null
+          states?: string[]
+          team?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bcba_support_request_audit: {
+        Row: {
+          changed_by: string | null
+          changed_field: string
+          created_at: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          request_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_field: string
+          created_at?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          request_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          changed_field?: string
+          created_at?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_support_request_audit_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_support_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_support_request_updates: {
+        Row: {
+          author_id: string
+          author_name: string | null
+          body: string
+          created_at: string
+          id: string
+          request_id: string
+          update_type: string
+        }
+        Insert: {
+          author_id: string
+          author_name?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          request_id: string
+          update_type?: string
+        }
+        Update: {
+          author_id?: string
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_support_request_updates_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_support_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bcba_support_requests: {
+        Row: {
+          bcba_id: string
+          bcba_name: string | null
+          category: string
+          client_ref: string | null
+          clinic: string | null
+          contains_client_details: boolean
+          created_at: string
+          detail: string | null
+          due_at: string | null
+          first_response_at: string | null
+          id: string
+          owner_id: string | null
+          owner_name: string | null
+          owner_team: string | null
+          rbt_ref: string | null
+          resolution: string | null
+          resolved_at: string | null
+          sla_hours: number
+          state: string | null
+          status: string
+          subject: string
+          task_id: string | null
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          bcba_id: string
+          bcba_name?: string | null
+          category: string
+          client_ref?: string | null
+          clinic?: string | null
+          contains_client_details?: boolean
+          created_at?: string
+          detail?: string | null
+          due_at?: string | null
+          first_response_at?: string | null
+          id?: string
+          owner_id?: string | null
+          owner_name?: string | null
+          owner_team?: string | null
+          rbt_ref?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          sla_hours?: number
+          state?: string | null
+          status?: string
+          subject: string
+          task_id?: string | null
+          updated_at?: string
+          urgency?: string
+        }
+        Update: {
+          bcba_id?: string
+          bcba_name?: string | null
+          category?: string
+          client_ref?: string | null
+          clinic?: string | null
+          contains_client_details?: boolean
+          created_at?: string
+          detail?: string | null
+          due_at?: string | null
+          first_response_at?: string | null
+          id?: string
+          owner_id?: string | null
+          owner_name?: string | null
+          owner_team?: string | null
+          rbt_ref?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          sla_hours?: number
+          state?: string | null
+          status?: string
+          subject?: string
+          task_id?: string | null
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_support_requests_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "user_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bcba_synthetic_test_profiles: {
         Row: {
