@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import BcbaMobileShell from "./BcbaMobileShell";
 import { OSRoleProvider } from "@/contexts/OSRoleContext";
-import { OSShell } from "@/components/os/OSShell";
+import { OSShell } from "@/pages/os/OSShell";
 
 /**
  * Responsive shell for /bcba/*.
