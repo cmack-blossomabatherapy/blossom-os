@@ -66,6 +66,13 @@ function readableError(error: unknown): string {
   }
 }
 
+function settle<T>(promise: Promise<T>): Promise<PromiseSettledResult<T>> {
+  return promise.then(
+    (value) => ({ status: "fulfilled", value }) as PromiseFulfilledResult<T>,
+    (reason) => ({ status: "rejected", reason }) as PromiseRejectedResult,
+  );
+}
+
 const SHARED_KEYS: SharedReportKey[] = [
   "cancellation-scheduling",
   "cancellation-billing",
@@ -142,10 +149,10 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   async function refresh() {
     setRefreshing(true);
     try {
-      const [b, s, ...shared] = await Promise.allSettled([
-        listBcbaProductivityUploadBatches(),
-        getBcbaProductivityDatasetStatus(),
-        ...SHARED_KEYS.map((k) => listSharedReportDatasets(k)),
+      const [b, s, shared] = await Promise.all([
+        settle(listBcbaProductivityUploadBatches()),
+        settle(getBcbaProductivityDatasetStatus()),
+        Promise.all(SHARED_KEYS.map((k) => settle(listSharedReportDatasets(k)))),
       ]);
       const failures: string[] = [];
 
