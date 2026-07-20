@@ -1327,35 +1327,6 @@ const App = () => (
                     <Route path="growth" element={<RbtMyGrowth />} />
                     <Route path="growth/fellowship" element={<RbtFellowshipExplorer />} />
                   </Route>
-                  {/* BCBA experience — responsive shell. Desktop uses OSShell
-                      (bcba role menu, 7 items). Mobile uses a 5-tab bottom nav. */}
-                  <Route
-                    path="/bcba"
-                    element={
-                      <PermissionRoute allowedRoles={["admin","super_admin","bcba","clinical_director","operations_leadership","hr","hr_admin"]}>
-                        <BcbaShell />
-                      </PermissionRoute>
-                    }
-                  >
-                    <Route index element={<Navigate to="home" replace />} />
-                    <Route path="home"     element={<BcbaHome />} />
-                    <Route path="caseload" element={<BcbaCaseload />} />
-                    <Route path="rbts"     element={<BcbaMyRbts />} />
-                    <Route path="clinical" element={<BcbaClinicalWork />} />
-                    <Route path="learn"    element={<BcbaLearn />} />
-                    <Route path="support"  element={<BcbaSupport />} />
-                    <Route path="support-center" element={<BcbaSupportPageV2 />} />
-                    <Route path="academy" element={<BcbaAcademyPage />} />
-                    <Route path="me"       element={<BcbaMe />} />
-                    <Route path="onboarding" element={<BcbaOnboardingPage />} />
-                    <Route path="supervision" element={<BcbaSupervisionCenter />} />
-                    <Route path="assessments" element={<BcbaAssessmentsPage />} />
-                    <Route path="progress-reports" element={<BcbaProgressReportsPage />} />
-                    <Route path="parent-training" element={<BcbaParentTrainingPage />} />
-                    <Route path="productivity" element={<BcbaProductivityPage />} />
-                    <Route path="fellowship" element={<BcbaFellowshipPage />} />
-                    <Route path="copilot" element={<BcbaCopilotPage />} />
-                  </Route>
                   <Route
                     path="/admin/bcba-onboarding"
                     element={
