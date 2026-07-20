@@ -51,6 +51,21 @@ function fmtDate(iso: string | null | undefined) {
   return new Date(iso).toLocaleString();
 }
 
+function readableError(error: unknown): string {
+  if (!error) return "Unknown error";
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  const maybe = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+  const parts = [maybe.message, maybe.details, maybe.hint, maybe.code]
+    .filter((part): part is string => typeof part === "string" && part.trim().length > 0);
+  if (parts.length) return parts.join(" — ");
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
 const SHARED_KEYS: SharedReportKey[] = [
   "cancellation-scheduling",
   "cancellation-billing",
@@ -127,24 +142,42 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   async function refresh() {
     setRefreshing(true);
     try {
-      const [b, s, ...shared] = await Promise.all([
+      const [b, s, ...shared] = await Promise.allSettled([
         listBcbaProductivityUploadBatches(),
         getBcbaProductivityDatasetStatus(),
         ...SHARED_KEYS.map((k) => listSharedReportDatasets(k)),
       ]);
-      setBcbaBatches(b);
-      setBcbaStatus(s);
+      const failures: string[] = [];
+
+      if (b.status === "fulfilled") {
+        setBcbaBatches(b.value);
+      } else {
+        failures.push(`BCBA productivity batches: ${readableError(b.reason)}`);
+      }
+
+      if (s.status === "fulfilled") {
+        setBcbaStatus(s.value);
+      } else {
+        failures.push(`BCBA productivity status: ${readableError(s.reason)}`);
+      }
+
       const map: Record<SharedReportKey, SharedReportDataset[]> = {
-        "authorization": [], "cancellation-scheduling": [],
-        "cancellation-billing": [], "cancellation-authorization": [],
+        ...sharedByKey,
       };
-      SHARED_KEYS.forEach((k, i) => { map[k] = shared[i] as SharedReportDataset[]; });
+      SHARED_KEYS.forEach((k, i) => {
+        const result = shared[i];
+        if (result?.status === "fulfilled") {
+          map[k] = result.value as SharedReportDataset[];
+        } else if (result?.status === "rejected") {
+          failures.push(`${SHARED_LABELS[k].label}: ${readableError(result.reason)}`);
+        }
+      });
       setSharedByKey(map);
+      if (failures.length) {
+        toast.error(`Failed to load upload history: ${failures.join(" | ")}`);
+      }
     } catch (e) {
-      const msg =
-        (e as { message?: string })?.message ??
-        (typeof e === "string" ? e : (() => { try { return JSON.stringify(e); } catch { return String(e); } })());
-      toast.error(`Failed to load upload history: ${msg}`);
+      toast.error(`Failed to load upload history: ${readableError(e)}`);
     } finally {
       setRefreshing(false);
     }
