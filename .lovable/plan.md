@@ -1,53 +1,51 @@
-## Goal
+## Diagnosis
 
-1. Remove the generic "Training & Resources" sidebar section from BCBA and RBT — those roles reach the Academy via their own in-shell "Academy" / "Learn" entry.
-2. Turn off the "Soon" gating on BCBA and RBT menu items whose pages are already built and mounted, so the sidebar links become clickable.
+The CentralReach Data Hub calls `listSharedReportDatasets(...)` and `listBcbaProductivityUploadBatches()` on page load. Both hit PostgREST with the authenticated role.
 
-## 1. Remove Training & Resources for BCBA and RBT
+Verified against the live database:
+- `public.shared_report_datasets` — RLS policies exist for authenticated SELECT/INSERT/UPDATE/DELETE, but **zero table GRANTs** to any role.
+- `public.bcba_productivity_upload_batches` — same: policies present, **no GRANTs**.
+- Data is still there: `shared_report_datasets` has 4 rows, `bcba_productivity_upload_batches` has 1 row.
 
-`src/lib/os/roleMenus.ts`
-- BCBA (`bcba` menu, ~line 646): remove the `TRAINING_AND_RESOURCES` section from `sections`. The existing in-shell "Academy" item (`/bcba/academy`) is the BCBA's academy entry; the general Resource Library / Reports section is dropped for BCBAs.
-- RBT (`rbt` menu, ~line 691): already has no `TRAINING_AND_RESOURCES` section — no change needed. The in-shell "Learn" tab (`/rbt/app/learn`) is the RBT's academy entry.
-- Keep the shared `TRAINING_AND_RESOURCES` constant in place for every other role.
+Without explicit GRANTs, PostgREST returns `permission denied for table …`, the `Promise.all` in `refresh()` rejects, and the catch block shows `Failed to load upload history: [object Object]` (a `PostgrestError` doesn't stringify to a message via `String(e)`).
 
-## 2. Turn on BCBA pages (remove "Soon" labels)
+Nothing was deleted — the previous uploads are intact. Restoring the GRANTs makes the existing history reappear immediately; no re-import of the attached CSVs is required (they're already represented by these rows / their storage objects).
 
-BCBA on desktop renders inside `OSShell`, which greys out any menu item whose base path is not in `ROLE_SPECIFIC_LIVE_PATHS.bcba`. The current set (`src/pages/os/OSShell.tsx` ~line 480) lists old paths (`/bcba/workspace`, `/bcba/clients`, `/bcba/training-academy`, etc.) that don't match the new menu, so most items render as "Soon".
+## Fix (single migration)
 
-`src/pages/os/OSShell.tsx` — replace the `bcba` entry in `ROLE_SPECIFIC_LIVE_PATHS` with the current menu paths (all confirmed mounted in `src/App.tsx` ~lines 1521-1540):
+Restore Data-API grants for both tables, matching their policy audience (authenticated + service_role, no anon):
 
-```
-/bcba/home
-/bcba/copilot
-/bcba/caseload
-/bcba/rbts
-/bcba/supervision
-/bcba/assessments
-/bcba/progress-reports
-/bcba/parent-training
-/bcba/productivity
-/bcba/clinical
-/bcba/fellowship
-/bcba/academy
-/bcba/support-center
-/bcba/me
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shared_report_datasets TO authenticated;
+GRANT ALL ON public.shared_report_datasets TO service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.bcba_productivity_upload_batches TO authenticated;
+GRANT ALL ON public.bcba_productivity_upload_batches TO service_role;
 ```
 
-Drop the obsolete entries (`/bcba/workspace`, `/bcba/clients`, `/bcba/authorizations`, `/bcba/scheduling`, `/bcba/resources`, `/bcba/training-academy`, `/evaluations`, `/reports`) since Training & Resources is gone and legacy paths are now redirects.
+Also audit sibling tables written by the same admin flows and grant them the same way if they're missing grants (checked in the same migration, only granting where absent):
+- `bcba_productivity_upload_rows`
+- `bcba_productivity_upload_row_errors`
+- any other `bcba_productivity_*` table the hub reads via `getBcbaProductivityDatasetStatus`
 
-## 3. RBT pages
+## Small UX improvement
 
-RBT does not use `OSShell` at runtime — `/rbt/app/*` is rendered by `RbtAppShell` (five tabs: Home, Schedule, Learn, Support, Me), and all five routes are already mounted. There is nothing to un-gate for RBT.
+In `src/pages/os/system/CentralReachUploads.tsx`, improve the error surface so future PostgREST errors show a real message instead of `[object Object]`:
 
-If RBT-facing "Coming Soon" copy exists inside a specific `/rbt/app/*` page, that is out of scope for this pass and would be handled per-page in a follow-up. (Scan confirms the only remaining static "coming soon" copy is `src/pages/rbt/app/growth/RbtFellowshipExplorer.tsx`, which is not on the 5-tab menu.)
+```ts
+const msg =
+  (e as { message?: string })?.message ??
+  (typeof e === "string" ? e : JSON.stringify(e));
+```
 
-## 4. Verification
+## Verification
 
-- Existing test `src/test/roleMenuLiveRoutes.test.ts` will re-run: every remaining BCBA/RBT menu item must map to a mounted route.
-- Manual check: sign in as BCBA on desktop, confirm no "Training & Resources" section, and confirm Home / Caseload / Copilot / Supervision / Assessments / Progress Reports / Parent Training / Productivity / Clinical / Fellowship / Academy / Support / Me are all clickable (no "Soon" chip).
+1. Re-run `select count(*)` on both tables (already confirms rows exist).
+2. Reload `/admin/centralreach-hub` (or wherever the hub is mounted) as an authenticated admin — the "Upload history" section should populate with the 4 shared datasets + 1 BCBA batch.
+3. Confirm no red toast and no console PostgREST 401/403 for these tables.
 
-## Out of scope
+## What is NOT changed
 
-- Content quality of the individual BCBA pages.
-- Any per-page "coming soon" copy inside RBT growth explorer or similar; call those out in a separate pass if you want them wired up.
-- No changes to other roles' menus or to Super Admin.
+- No RLS policy changes (policies are correct; only grants were missing).
+- No changes to storage buckets or uploaded files.
+- No changes to the actual import/parse code paths.
