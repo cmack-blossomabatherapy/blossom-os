@@ -1270,7 +1270,6 @@ const App = () => (
                   <Route path="/admin/rbt/notifications" element={<AdminRoute><OSShellPage><RbtNotificationEngine /></OSShellPage></AdminRoute>} />
                   <Route path="/admin/bcba/notifications" element={<AdminRoute><OSShellPage><BcbaNotificationEngine /></OSShellPage></AdminRoute>} />
                   <Route path="/inbox" element={<OSShellPage><NotificationInbox /></OSShellPage>} />
-                  <Route path="/rbt/app/settings/notifications" element={<RbtNotificationPreferences />} />
                   <Route path="/bcba/settings/notifications" element={
                     <PermissionRoute allowedRoles={["admin","super_admin","bcba","clinical_director","operations_leadership","hr","hr_admin"]}>
                       <OSShellPage><BcbaNotificationPreferences /></OSShellPage>
@@ -1291,42 +1290,6 @@ const App = () => (
                       <OSShellPage><RbtJourneyConsole /></OSShellPage>
                     </PermissionRoute>
                   } />
-                  {/* Mobile-first RBT app */}
-                  <Route
-                    path="/rbt/app"
-                    element={
-                      <PermissionRoute allowedRoles={["admin","hr","training_admin","rbt","registered_behavior_technician"]}>
-                        <RbtAppShell />
-                      </PermissionRoute>
-                    }
-                  >
-                    <Route index element={<Navigate to="home" replace />} />
-                    <Route path="home" element={<RbtHome />} />
-                    <Route path="preboarding" element={<RbtPreboarding />} />
-                    <Route path="readiness" element={<RbtReadiness />} />
-                    <Route path="staffing" element={<RbtStaffing />} />
-                    <Route path="schedule" element={<RbtSchedule />} />
-                    <Route path="first-case" element={<RbtFirstCase />} />
-                    <Route path="first-case/checkin" element={<FirstSessionCheckin />} />
-                    <Route path="journey" element={<RbtJourney />} />
-                    <Route path="journey/:instanceId" element={<RbtJourneyCheckpoint />} />
-                    <Route path="learn" element={<RbtLearn />} />
-                    <Route path="program" element={<RbtProgramPage />} />
-                    <Route path="passport" element={<RbtPassportPage />} />
-                    <Route path="support" element={<SupportHome />} />
-                    <Route path="support/new" element={<SupportNew />} />
-                    <Route path="support/urgent" element={<SupportUrgent />} />
-                    <Route path="support/team" element={<SupportTeam />} />
-                    <Route path="support/:ticketId" element={<SupportTicketDetail />} />
-                    <Route path="me" element={<RbtMe />} />
-                    <Route path="clients" element={<MyClients />} />
-                    <Route path="hours" element={<RbtHours />} />
-                    <Route path="supervision" element={<RbtSupervisionPage />} />
-                    <Route path="credentials" element={<RbtCredentialsPage />} />
-                    <Route path="performance" element={<RbtPerformancePage />} />
-                    <Route path="growth" element={<RbtMyGrowth />} />
-                    <Route path="growth/fellowship" element={<RbtFellowshipExplorer />} />
-                  </Route>
                   <Route
                     path="/admin/bcba-onboarding"
                     element={
@@ -1503,6 +1466,47 @@ const App = () => (
                   <Route path="/hr/settings" element={<PermissionRoute permission="hr.settings.manage"><HRSettings /></PermissionRoute>} />
                   <Route path="/hr/notifications" element={<PermissionRoute permission="hr.settings.manage"><NotificationSettings /></PermissionRoute>} />
                   <Route path="/enterprise/*" element={<NotFound />} />
+                </Route>
+                {/* Mobile-first RBT app — MUST sit outside AppLayout so we don't
+                    stack the generic sidebar/top bar/bottom nav on top of
+                    RbtAppShell's own chrome (the "2 menus / 2 headers" bug). */}
+                <Route
+                  path="/rbt/app"
+                  element={
+                    <ProtectedRoute>
+                      <PermissionRoute allowedRoles={["admin","hr","training_admin","rbt","registered_behavior_technician"]}>
+                        <RbtAppShell />
+                      </PermissionRoute>
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="home" replace />} />
+                  <Route path="home" element={<RbtHome />} />
+                  <Route path="preboarding" element={<RbtPreboarding />} />
+                  <Route path="readiness" element={<RbtReadiness />} />
+                  <Route path="staffing" element={<RbtStaffing />} />
+                  <Route path="schedule" element={<RbtSchedule />} />
+                  <Route path="first-case" element={<RbtFirstCase />} />
+                  <Route path="first-case/checkin" element={<FirstSessionCheckin />} />
+                  <Route path="journey" element={<RbtJourney />} />
+                  <Route path="journey/:instanceId" element={<RbtJourneyCheckpoint />} />
+                  <Route path="learn" element={<RbtLearn />} />
+                  <Route path="program" element={<RbtProgramPage />} />
+                  <Route path="passport" element={<RbtPassportPage />} />
+                  <Route path="support" element={<SupportHome />} />
+                  <Route path="support/new" element={<SupportNew />} />
+                  <Route path="support/urgent" element={<SupportUrgent />} />
+                  <Route path="support/team" element={<SupportTeam />} />
+                  <Route path="support/:ticketId" element={<SupportTicketDetail />} />
+                  <Route path="settings/notifications" element={<RbtNotificationPreferences />} />
+                  <Route path="me" element={<RbtMe />} />
+                  <Route path="clients" element={<MyClients />} />
+                  <Route path="hours" element={<RbtHours />} />
+                  <Route path="supervision" element={<RbtSupervisionPage />} />
+                  <Route path="credentials" element={<RbtCredentialsPage />} />
+                  <Route path="performance" element={<RbtPerformancePage />} />
+                  <Route path="growth" element={<RbtMyGrowth />} />
+                  <Route path="growth/fellowship" element={<RbtFellowshipExplorer />} />
                 </Route>
                 {/* BCBA experience — MUST sit outside AppLayout so we don't
                     stack the generic sidebar/top bar/bottom nav on top of
