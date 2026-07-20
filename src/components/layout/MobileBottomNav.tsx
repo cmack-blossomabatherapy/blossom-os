@@ -31,6 +31,8 @@ export function MobileBottomNav() {
 
   // RbtAppShell renders its own bottom nav inside /rbt/app/*; don't stack.
   if (pathname.startsWith("/rbt/app")) return null;
+  // BcbaMobileShell renders its own bottom nav inside /bcba/*; don't stack.
+  if (pathname.startsWith("/bcba")) return null;
 
   const isRbt = osRole?.role === "rbt";
   const items = isRbt ? RBT_ITEMS : GENERIC_ITEMS;
