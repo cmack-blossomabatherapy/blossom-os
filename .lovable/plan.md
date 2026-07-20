@@ -1,51 +1,35 @@
 ## Diagnosis
 
-The CentralReach Data Hub calls `listSharedReportDatasets(...)` and `listBcbaProductivityUploadBatches()` on page load. Both hit PostgREST with the authenticated role.
+The CentralReach Upload Hub is still failing because the involved upload-history tables have RLS policies but no Data API grants at all. I verified this directly in the database:
 
-Verified against the live database:
-- `public.shared_report_datasets` — RLS policies exist for authenticated SELECT/INSERT/UPDATE/DELETE, but **zero table GRANTs** to any role.
-- `public.bcba_productivity_upload_batches` — same: policies present, **no GRANTs**.
-- Data is still there: `shared_report_datasets` has 4 rows, `bcba_productivity_upload_batches` has 1 row.
+- `shared_report_datasets`: 4 existing uploaded datasets are still present, but zero grants exist.
+- `bcba_productivity_upload_batches`: 1 existing batch is still present, but zero grants exist.
+- `bcba_productivity_billing_rows`: 47,533 existing rows are still present, but zero grants exist.
+- The hub also touches `cr_sync_runs` and `cr_data_quality_exceptions`, which likewise have policies but no grants.
+- The helper functions used by those policies (`has_role`, `can_read_bcba_productivity`, `can_manage_bcba_productivity_uploads`, `cr_sync_freshness`) also currently show no explicit execute grants for app roles.
 
-Without explicit GRANTs, PostgREST returns `permission denied for table …`, the `Promise.all` in `refresh()` rejects, and the catch block shows `Failed to load upload history: [object Object]` (a `PostgrestError` doesn't stringify to a message via `String(e)`).
+So the data was not deleted; the app is being blocked from reading it.
 
-Nothing was deleted — the previous uploads are intact. Restoring the GRANTs makes the existing history reappear immediately; no re-import of the attached CSVs is required (they're already represented by these rows / their storage objects).
+## Fix plan
 
-## Fix (single migration)
+1. **Run one backend migration to restore app access**
+   - Grant authenticated app users access to the upload hub tables according to their existing RLS policies.
+   - Grant backend service access for admin/import jobs.
+   - Do not grant anonymous access.
 
-Restore Data-API grants for both tables, matching their policy audience (authenticated + service_role, no anon):
+2. **Restore function execution permissions used by RLS**
+   - Grant authenticated users permission to execute the role/access helper functions required by these policies.
+   - Include backend service execution access as well.
 
-```sql
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.shared_report_datasets TO authenticated;
-GRANT ALL ON public.shared_report_datasets TO service_role;
+3. **Harden the hub UI so one failing source does not break the whole hub**
+   - Update `CentralReachUploads.tsx` so upload history loads sources independently.
+   - If one dataset source fails, show the real error message and still display the other available upload history.
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.bcba_productivity_upload_batches TO authenticated;
-GRANT ALL ON public.bcba_productivity_upload_batches TO service_role;
-```
+4. **Harden Unified Import History**
+   - Update `CentralReachHub.tsx` so the unified history tab handles per-source query errors instead of silently staying stuck on “Loading…” or blanking out.
+   - Surface clear source-specific messages for future permission/column issues.
 
-Also audit sibling tables written by the same admin flows and grant them the same way if they're missing grants (checked in the same migration, only granting where absent):
-- `bcba_productivity_upload_rows`
-- `bcba_productivity_upload_row_errors`
-- any other `bcba_productivity_*` table the hub reads via `getBcbaProductivityDatasetStatus`
-
-## Small UX improvement
-
-In `src/pages/os/system/CentralReachUploads.tsx`, improve the error surface so future PostgREST errors show a real message instead of `[object Object]`:
-
-```ts
-const msg =
-  (e as { message?: string })?.message ??
-  (typeof e === "string" ? e : JSON.stringify(e));
-```
-
-## Verification
-
-1. Re-run `select count(*)` on both tables (already confirms rows exist).
-2. Reload `/admin/centralreach-hub` (or wherever the hub is mounted) as an authenticated admin — the "Upload history" section should populate with the 4 shared datasets + 1 BCBA batch.
-3. Confirm no red toast and no console PostgREST 401/403 for these tables.
-
-## What is NOT changed
-
-- No RLS policy changes (policies are correct; only grants were missing).
-- No changes to storage buckets or uploaded files.
-- No changes to the actual import/parse code paths.
+5. **Verify after approval**
+   - Confirm grants exist for the affected tables/functions.
+   - Confirm existing row counts remain visible.
+   - Reload the CentralReach Hub and verify upload history renders without the “Failed to load upload history” toast.
