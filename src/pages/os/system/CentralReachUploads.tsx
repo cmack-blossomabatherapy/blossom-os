@@ -141,7 +141,9 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
       SHARED_KEYS.forEach((k, i) => { map[k] = shared[i] as SharedReportDataset[]; });
       setSharedByKey(map);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg =
+        (e as { message?: string })?.message ??
+        (typeof e === "string" ? e : (() => { try { return JSON.stringify(e); } catch { return String(e); } })());
       toast.error(`Failed to load upload history: ${msg}`);
     } finally {
       setRefreshing(false);
