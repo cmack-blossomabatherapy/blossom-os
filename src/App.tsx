@@ -569,6 +569,19 @@ function GlobalAiRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Legacy /rbt/* pages render inside AppLayout for oversight roles (admin, BCBA,
+// clinical directors, HR, etc.). RBTs themselves must NEVER see AppLayout's
+// generic sidebar/topbar/bottom-nav — they live inside RbtAppShell. This
+// wrapper short-circuits the render for role=rbt and sends them to the
+// equivalent /rbt/app/* page before AppLayout paints.
+function RbtLegacyRoute({ appPath, children }: { appPath: string; children: React.ReactNode }) {
+  const { role } = useOSRole();
+  if (role === "rbt" || role === "registered_behavior_technician") {
+    return <Navigate to={`/rbt/app/${appPath}`} replace />;
+  }
+  return <>{children}</>;
+}
+
 const OSOutlet = () => (
   <OSRoleProvider>
     <Outlet />
