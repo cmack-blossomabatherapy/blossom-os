@@ -44,7 +44,7 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
   clinical_director:          "/clinical-director",
   clinical_lead:              "/clinical-director",
   bcba:                       "/bcba",
-  rbt:                        "/rbt/my-day",
+  rbt:                        "/rbt/app/home",
   behavioral_support:         "/behavioral-support",
 
   scheduling_lead:            "/scheduling",
