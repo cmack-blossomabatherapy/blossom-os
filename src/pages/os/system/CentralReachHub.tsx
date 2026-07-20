@@ -192,14 +192,14 @@ function UnifiedHistoryTab() {
     (async () => {
       const [a, b, c] = await Promise.all([
         supabase.from("cr_sync_runs").select("id,type_key,file_name,row_count_total,status,created_at").order("created_at", { ascending: false }).limit(50),
-        supabase.from("shared_report_datasets").select("id,key,file_name,uploaded_at,row_count,active").order("uploaded_at", { ascending: false }).limit(50),
-        supabase.from("bcba_productivity_upload_batches").select("id,file_name,uploaded_at,row_count,status").order("uploaded_at", { ascending: false }).limit(50),
+        supabase.from("shared_report_datasets").select("id,report_key,file_name,uploaded_at,is_active").order("uploaded_at", { ascending: false }).limit(50),
+        supabase.from("bcba_productivity_upload_batches").select("id,file_name,created_at,parsed_row_count,status").order("created_at", { ascending: false }).limit(50),
       ]);
       if (cancelled) return;
       const merged: HistoryRow[] = [];
       (a.data ?? []).forEach((r: any) => merged.push({ id: `crs-${r.id}`, source: "cr_sync", label: r.file_name ?? "—", type: r.type_key, uploaded: r.created_at, rows: r.row_count_total, status: r.status }));
-      (b.data ?? []).forEach((r: any) => merged.push({ id: `srd-${r.id}`, source: "shared_report", label: r.file_name ?? "—", type: r.key, uploaded: r.uploaded_at, rows: r.row_count, status: r.active ? "active" : "archived" }));
-      (c.data ?? []).forEach((r: any) => merged.push({ id: `bcba-${r.id}`, source: "bcba_productivity", label: r.file_name ?? "—", type: "bcba_productivity", uploaded: r.uploaded_at, rows: r.row_count, status: r.status }));
+      (b.data ?? []).forEach((r: any) => merged.push({ id: `srd-${r.id}`, source: "shared_report", label: r.file_name ?? "—", type: r.report_key, uploaded: r.uploaded_at, rows: null, status: r.is_active ? "active" : "archived" }));
+      (c.data ?? []).forEach((r: any) => merged.push({ id: `bcba-${r.id}`, source: "bcba_productivity", label: r.file_name ?? "—", type: "bcba_productivity", uploaded: r.created_at, rows: r.parsed_row_count, status: r.status }));
       merged.sort((x, y) => new Date(y.uploaded).getTime() - new Date(x.uploaded).getTime());
       setRows(merged);
       setLoading(false);
