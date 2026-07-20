@@ -183,25 +183,65 @@ type HistoryRow = {
   status?: string | null;
 };
 
+function readableHistoryError(error: unknown): string {
+  if (!error) return "Unknown error";
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  const maybe = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+  const parts = [maybe.message, maybe.details, maybe.hint, maybe.code]
+    .filter((part): part is string => typeof part === "string" && part.trim().length > 0);
+  if (parts.length) return parts.join(" — ");
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+async function settledQuery<T>(query: PromiseLike<{ data: T[] | null; error: unknown }>): Promise<PromiseSettledResult<T[]>> {
+  try {
+    const { data, error } = await query;
+    if (error) throw error;
+    return { status: "fulfilled", value: data ?? [] };
+  } catch (reason) {
+    return { status: "rejected", reason };
+  }
+}
+
 function UnifiedHistoryTab() {
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const [a, b, c] = await Promise.all([
-        supabase.from("cr_sync_runs").select("id,type_key,file_name,row_count_total,status,created_at").order("created_at", { ascending: false }).limit(50),
-        supabase.from("shared_report_datasets").select("id,report_key,file_name,uploaded_at,is_active").order("uploaded_at", { ascending: false }).limit(50),
-        supabase.from("bcba_productivity_upload_batches").select("id,file_name,created_at,parsed_row_count,status").order("created_at", { ascending: false }).limit(50),
+        settledQuery(supabase.from("cr_sync_runs").select("id,type_key,file_name,row_count_total,status,created_at").order("created_at", { ascending: false }).limit(50)),
+        settledQuery(supabase.from("shared_report_datasets").select("id,report_key,file_name,uploaded_at,is_active").order("uploaded_at", { ascending: false }).limit(50)),
+        settledQuery(supabase.from("bcba_productivity_upload_batches").select("id,file_name,created_at,parsed_row_count,status").order("created_at", { ascending: false }).limit(50)),
       ]);
       if (cancelled) return;
       const merged: HistoryRow[] = [];
-      (a.data ?? []).forEach((r: any) => merged.push({ id: `crs-${r.id}`, source: "cr_sync", label: r.file_name ?? "—", type: r.type_key, uploaded: r.created_at, rows: r.row_count_total, status: r.status }));
-      (b.data ?? []).forEach((r: any) => merged.push({ id: `srd-${r.id}`, source: "shared_report", label: r.file_name ?? "—", type: r.report_key, uploaded: r.uploaded_at, rows: null, status: r.is_active ? "active" : "archived" }));
-      (c.data ?? []).forEach((r: any) => merged.push({ id: `bcba-${r.id}`, source: "bcba_productivity", label: r.file_name ?? "—", type: "bcba_productivity", uploaded: r.created_at, rows: r.parsed_row_count, status: r.status }));
+      const nextErrors: string[] = [];
+      if (a.status === "fulfilled") {
+        a.value.forEach((r: any) => merged.push({ id: `crs-${r.id}`, source: "cr_sync", label: r.file_name ?? "—", type: r.type_key, uploaded: r.created_at, rows: r.row_count_total, status: r.status }));
+      } else {
+        nextErrors.push(`Workforce/clinical imports: ${readableHistoryError(a.reason)}`);
+      }
+      if (b.status === "fulfilled") {
+        b.value.forEach((r: any) => merged.push({ id: `srd-${r.id}`, source: "shared_report", label: r.file_name ?? "—", type: r.report_key, uploaded: r.uploaded_at, rows: null, status: r.is_active ? "active" : "archived" }));
+      } else {
+        nextErrors.push(`Reporting datasets: ${readableHistoryError(b.reason)}`);
+      }
+      if (c.status === "fulfilled") {
+        c.value.forEach((r: any) => merged.push({ id: `bcba-${r.id}`, source: "bcba_productivity", label: r.file_name ?? "—", type: "bcba_productivity", uploaded: r.created_at, rows: r.parsed_row_count, status: r.status }));
+      } else {
+        nextErrors.push(`BCBA productivity: ${readableHistoryError(c.reason)}`);
+      }
       merged.sort((x, y) => new Date(y.uploaded).getTime() - new Date(x.uploaded).getTime());
       setRows(merged);
+      setErrors(nextErrors);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -210,6 +250,11 @@ function UnifiedHistoryTab() {
   return (
     <Card className="p-6">
       <h3 className="text-sm font-semibold mb-3">Unified import history</h3>
+      {errors.length > 0 && (
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+          {errors.map((error) => <div key={error}>{error}</div>)}
+        </div>
+      )}
       {loading ? <p className="text-sm text-muted-foreground">Loading…</p> : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">No imports yet.</p>
       ) : (
