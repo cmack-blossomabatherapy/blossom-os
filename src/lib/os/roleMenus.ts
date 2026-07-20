@@ -663,7 +663,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Me",             path: "/bcba/me",       icon: User },
         ],
       },
-      TRAINING_AND_RESOURCES,
     ],
   },
 
