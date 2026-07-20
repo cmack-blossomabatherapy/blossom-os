@@ -198,14 +198,14 @@ function readableHistoryError(error: unknown): string {
   }
 }
 
-function settledQuery<T>(query: PromiseLike<{ data: T[] | null; error: unknown }>): Promise<PromiseSettledResult<T[]>> {
-  return query.then(({ data, error }) => {
+async function settledQuery<T>(query: PromiseLike<{ data: T[] | null; error: unknown }>): Promise<PromiseSettledResult<T[]>> {
+  try {
+    const { data, error } = await query;
     if (error) throw error;
-    return data ?? [];
-  }).then(
-    (value) => ({ status: "fulfilled", value }) as PromiseFulfilledResult<T[]>,
-    (reason) => ({ status: "rejected", reason }) as PromiseRejectedResult,
-  );
+    return { status: "fulfilled", value: data ?? [] };
+  } catch (reason) {
+    return { status: "rejected", reason };
+  }
 }
 
 function UnifiedHistoryTab() {
