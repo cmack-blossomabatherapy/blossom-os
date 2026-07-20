@@ -576,7 +576,7 @@ function GlobalAiRoute({ children }: { children: React.ReactNode }) {
 // equivalent /rbt/app/* page before AppLayout paints.
 function RbtLegacyRoute({ appPath, children }: { appPath: string; children: React.ReactNode }) {
   const { role } = useOSRole();
-  if (role === "rbt" || role === "registered_behavior_technician") {
+  if (role === "rbt") {
     return <Navigate to={`/rbt/app/${appPath}`} replace />;
   }
   return <>{children}</>;
