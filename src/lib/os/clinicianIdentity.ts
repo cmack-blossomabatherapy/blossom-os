@@ -136,7 +136,7 @@ export async function fetchCrMappingDiagnostics(): Promise<CrMappingDiagnosticRo
     .select("*")
     .order("mapping_status", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as CrMappingDiagnosticRow[];
+  return (data ?? []) as unknown as CrMappingDiagnosticRow[];
 }
 
 export async function reconcileEmployeeCentralreachIds(): Promise<{
