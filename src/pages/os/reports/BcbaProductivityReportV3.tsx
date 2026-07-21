@@ -31,6 +31,10 @@ import {
   getBcbaProductivitySharedRows, getBcbaProductivityDatasetStatus,
   type BcbaDatasetStatus,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
+import {
+  fetchBcbaBillingRowsAsSharedShape,
+  fetchCanonicalReportTotals,
+} from "@/lib/os/reporting/canonicalReports";
 import { normalizeUsState, resolveRowState } from "@/lib/os/bcbaProductivityV3/stateNormalization";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
@@ -246,25 +250,31 @@ export default function BcbaProductivityReportV3() {
     setSharedError("");
     setSharedProgress(null);
     try {
-      const shared = await getBcbaProductivitySharedRows({
-        force: opts?.force,
-        onProgress: (loaded, total) => setSharedProgress({ loaded, total }),
-      });
+      // Primary source: RLS-safe canonical RPC over v_cr_canonical_sessions
+      // with server-side paging so the browser never loads all 47k rows at
+      // once. Manual uploads remain an explicit temporary override.
+      const totals = await fetchCanonicalReportTotals();
       const s = await getBcbaProductivityDatasetStatus();
       setSharedStatus(s);
-      if (!shared.length) {
+      if (!totals.totalRows) {
         setRows([]);
         setFileName("");
         if (!opts?.silent) {
-          toast.info("No CentralReach billing rows uploaded yet. Add one from CentralReach Uploads.");
+          toast.info("No CentralReach billing rows are available. Add one from CentralReach Uploads.");
         }
-        setSharedLoading(false);
         return;
       }
-      setRows(shared as BillingRow[]);
-      setFileName("Shared admin dataset");
+      const shared = await fetchBcbaBillingRowsAsSharedShape({
+        pageSize: 2000,
+        hardCap: 60000,
+        onProgress: (loaded, total) => setSharedProgress({ loaded, total }),
+      });
+      setRows(shared as unknown as BillingRow[]);
+      setFileName(
+        `Canonical CentralReach dataset · ${totals.totalRows.toLocaleString()} rows · ${totals.minServiceDate ?? "—"} → ${totals.maxServiceDate ?? "—"}`,
+      );
       if (!opts?.silent) {
-        toast.success(`Loaded ${shared.length.toLocaleString()} shared admin rows`);
+        toast.success(`Loaded ${shared.length.toLocaleString()} canonical rows`);
       }
     } catch (e: any) {
       const message = e?.message ?? "Failed to load shared admin dataset";

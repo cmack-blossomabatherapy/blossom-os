@@ -14,6 +14,11 @@ import {
   getBcbaProductivityDatasetStatus,
   type BcbaSharedBillingRow,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
+import {
+  fetchBcbaBillingRowsAsSharedShape,
+  fetchCanonicalReportTotals,
+  type BcbaSharedBillingRowLike,
+} from "@/lib/os/reporting/canonicalReports";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -274,14 +279,34 @@ export default function QaSupervisionPtDashboard() {
   async function loadSharedAdminDataset(silent = false) {
     setSharedLoading(true);
     try {
-      const shared = await getBcbaProductivitySharedRows();
-      setSharedRowCount(shared.length);
-      if (!shared.length) {
-        if (!silent) toast.info("Shared admin billing dataset is empty. Upload a CentralReach file above or in Admin → BCBA Productivity Uploads.");
+      // Primary: RLS-safe canonical RPC over v_cr_canonical_sessions with
+      // server-side paging. Manual uploads remain an explicit override.
+      const totals = await fetchCanonicalReportTotals();
+      setSharedRowCount(totals.totalRows);
+      if (!totals.totalRows) {
+        // Fall back to legacy storage path if canonical view is empty for any
+        // reason (fresh env, indexer catching up, etc.). Legacy is still
+        // RLS-safe but reads storage rather than the canonical view.
+        const shared = await getBcbaProductivitySharedRows();
+        setSharedRowCount(shared.length);
+        if (!shared.length) {
+          if (!silent) toast.info("No CentralReach rows are available yet. Upload a file above or in Admin → CentralReach Uploads.");
+          return;
+        }
+        ingestSharedRows(shared as BcbaSharedBillingRow[], "Shared admin billing dataset (legacy)");
+        if (!silent) toast.success(`Loaded ${shared.length.toLocaleString()} legacy rows`);
         return;
       }
-      ingestSharedRows(shared, "Shared admin billing dataset");
-      if (!silent) toast.success(`Loaded ${shared.length.toLocaleString()} rows from Admin Uploads`);
+      const shared = await fetchBcbaBillingRowsAsSharedShape({
+        pageSize: 2000,
+        hardCap: 60000,
+      });
+      ingestSharedRows(shared as unknown as BcbaSharedBillingRow[], "Canonical CentralReach dataset");
+      if (!silent) {
+        toast.success(
+          `Loaded ${shared.length.toLocaleString()} canonical rows (${totals.h97153.toFixed(0)}h 97153 · ${totals.h97155.toFixed(0)}h 97155 · ${totals.h97156.toFixed(0)}h 97156)`,
+        );
+      }
     } catch (e: any) {
       if (!silent) toast.error(`Failed to load admin dataset: ${e?.message ?? e}`);
     } finally {

@@ -30647,6 +30647,117 @@ export type Database = {
       }
       can_view_clinical_work: { Args: { _user_id: string }; Returns: boolean }
       can_write_scheduling_ops: { Args: { _user_id: string }; Returns: boolean }
+      canonical_report_billing_rows: {
+        Args: {
+          _client_id?: string
+          _codes?: string[]
+          _end?: string
+          _kinds?: string[]
+          _limit?: number
+          _offset?: number
+          _provider_id?: string
+          _search?: string
+          _start?: string
+        }
+        Returns: {
+          batch_id: string
+          batch_uploaded_at: string
+          client_name: string
+          cr_client_id: string
+          cr_provider_id: string
+          hours: number
+          procedure_code: string
+          procedure_code_root: string
+          provider_auth_user_id: string
+          provider_employee_id: string
+          provider_mapping_status: string
+          provider_name: string
+          row_id: string
+          service_date: string
+          session_kind: string
+          source_file_name: string
+          total_count: number
+          units: number
+        }[]
+      }
+      canonical_report_client_hours: {
+        Args: {
+          _end?: string
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _start?: string
+        }
+        Returns: {
+          client_name: string
+          cr_client_id: string
+          distinct_providers: number
+          h97153: number
+          h97155: number
+          h97156: number
+          max_service_date: string
+          min_service_date: string
+          primary_provider: string
+          primary_provider_id: string
+          row_count: number
+          total_count: number
+          total_hours: number
+        }[]
+      }
+      canonical_report_provider_hours: {
+        Args: {
+          _end?: string
+          _include_unmapped?: boolean
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _start?: string
+        }
+        Returns: {
+          admin_hours: number
+          assessment_hours: number
+          cr_provider_id: string
+          direct_hours: number
+          distinct_clients: number
+          mapping_status: string
+          max_service_date: string
+          min_service_date: string
+          parent_training_hours: number
+          provider_auth_user_id: string
+          provider_employee_id: string
+          provider_name: string
+          row_count: number
+          supervision_hours: number
+          total_count: number
+          total_hours: number
+          total_units: number
+        }[]
+      }
+      canonical_report_totals: {
+        Args: { _end?: string; _search?: string; _start?: string }
+        Returns: {
+          admin_hours: number
+          assessment_hours: number
+          cancellation_hours: number
+          direct_hours: number
+          distinct_clients: number
+          distinct_providers: number
+          h97153: number
+          h97155: number
+          h97156: number
+          max_batch_uploaded_at: string
+          max_service_date: string
+          min_batch_uploaded_at: string
+          min_service_date: string
+          parent_training_hours: number
+          supervision_hours: number
+          total_hours: number
+          total_rows: number
+          unmapped_hours: number
+          unmapped_providers: number
+          unmapped_rows: number
+        }[]
+      }
       canonical_sessions_client_summary: {
         Args: {
           _auth_user_id?: string
