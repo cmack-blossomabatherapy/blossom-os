@@ -22191,11 +22191,19 @@ export type Database = {
           completed_at: string | null
           created_at: string
           employee_id: string
+          evidence_type: string | null
           evidence_url: string | null
           id: string
           notes: string | null
+          owner_role: string | null
           pathway_step_id: string
+          scheduled_at: string | null
+          signoff_at: string | null
+          signoff_by: string | null
+          signoff_role: string | null
           status: string
+          support_needed: boolean
+          support_request_id: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -22203,11 +22211,19 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           employee_id: string
+          evidence_type?: string | null
           evidence_url?: string | null
           id?: string
           notes?: string | null
+          owner_role?: string | null
           pathway_step_id: string
+          scheduled_at?: string | null
+          signoff_at?: string | null
+          signoff_by?: string | null
+          signoff_role?: string | null
           status?: string
+          support_needed?: boolean
+          support_request_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -22215,11 +22231,19 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           employee_id?: string
+          evidence_type?: string | null
           evidence_url?: string | null
           id?: string
           notes?: string | null
+          owner_role?: string | null
           pathway_step_id?: string
+          scheduled_at?: string | null
+          signoff_at?: string | null
+          signoff_by?: string | null
+          signoff_role?: string | null
           status?: string
+          support_needed?: boolean
+          support_request_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -23044,6 +23068,78 @@ export type Database = {
           type?: string
           updated_at?: string
           url?: string | null
+        }
+        Relationships: []
+      }
+      rbt_retention_checkins: {
+        Row: {
+          additional_support_needed: boolean
+          additional_support_notes: string | null
+          bcba_barriers: string | null
+          bcba_instructions_given: boolean | null
+          bcba_supervised: boolean | null
+          completed_at: string | null
+          confidence_1_5: number | null
+          created_at: string
+          created_by: string | null
+          due_at: string
+          escalated_at: string | null
+          escalated_reason: string | null
+          family_barriers: string | null
+          first_session_at: string | null
+          id: string
+          overall_feeling: string | null
+          owner_key: string
+          owner_user_id: string | null
+          status: Database["public"]["Enums"]["rbt_checkin_status"]
+          trainee_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          additional_support_needed?: boolean
+          additional_support_notes?: string | null
+          bcba_barriers?: string | null
+          bcba_instructions_given?: boolean | null
+          bcba_supervised?: boolean | null
+          completed_at?: string | null
+          confidence_1_5?: number | null
+          created_at?: string
+          created_by?: string | null
+          due_at: string
+          escalated_at?: string | null
+          escalated_reason?: string | null
+          family_barriers?: string | null
+          first_session_at?: string | null
+          id?: string
+          overall_feeling?: string | null
+          owner_key?: string
+          owner_user_id?: string | null
+          status?: Database["public"]["Enums"]["rbt_checkin_status"]
+          trainee_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          additional_support_needed?: boolean
+          additional_support_notes?: string | null
+          bcba_barriers?: string | null
+          bcba_instructions_given?: boolean | null
+          bcba_supervised?: boolean | null
+          completed_at?: string | null
+          confidence_1_5?: number | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string
+          escalated_at?: string | null
+          escalated_reason?: string | null
+          family_barriers?: string | null
+          first_session_at?: string | null
+          id?: string
+          overall_feeling?: string | null
+          owner_key?: string
+          owner_user_id?: string | null
+          status?: Database["public"]["Enums"]["rbt_checkin_status"]
+          trainee_user_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -24207,6 +24303,59 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_trainee_assignments: {
+        Row: {
+          active: boolean
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          notes: string | null
+          pathway_id: string | null
+          trainee_user_id: string
+          trainer_kind: Database["public"]["Enums"]["rbt_trainer_kind"]
+          trainer_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          pathway_id?: string | null
+          trainee_user_id: string
+          trainer_kind: Database["public"]["Enums"]["rbt_trainer_kind"]
+          trainer_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          pathway_id?: string | null
+          trainee_user_id?: string
+          trainer_kind?: Database["public"]["Enums"]["rbt_trainer_kind"]
+          trainer_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbt_trainee_assignments_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "rbt_pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rbt_training_audit: {
         Row: {
           action: string
@@ -24246,6 +24395,75 @@ export type Database = {
           from_value?: string | null
           id?: string
           to_value?: string | null
+        }
+        Relationships: []
+      }
+      rbt_training_config: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      rbt_training_owner_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          created_at: string
+          description: string | null
+          employee_id: string | null
+          id: string
+          label: string
+          owner_key: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string
+          description?: string | null
+          employee_id?: string | null
+          id?: string
+          label: string
+          owner_key: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string
+          description?: string | null
+          employee_id?: string | null
+          id?: string
+          label?: string
+          owner_key?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -30652,6 +30870,18 @@ export type Database = {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
       }
+      rbt_academy_ready_for_fellowship: {
+        Args: { _employee: string }
+        Returns: boolean
+      }
+      rbt_is_assigned_bcba: {
+        Args: { _trainee: string; _user: string }
+        Returns: boolean
+      }
+      rbt_is_assigned_trainer: {
+        Args: { _trainee: string; _user: string }
+        Returns: boolean
+      }
       rbt_journey_generate: {
         Args: { _first_case_id: string }
         Returns: undefined
@@ -31321,6 +31551,12 @@ export type Database = {
         | "Ready for Submission"
         | "Submitted to Auth"
       qa_status: "Not Started" | "In Review" | "Complete"
+      rbt_checkin_status:
+        | "due"
+        | "overdue"
+        | "completed"
+        | "escalated"
+        | "cancelled"
       rbt_lifecycle_stage:
         | "offer_accepted"
         | "preboarding"
@@ -31340,6 +31576,7 @@ export type Database = {
         | "bcba_transition"
         | "leave_inactive"
         | "offboarding"
+      rbt_trainer_kind: "lead_rbt" | "floater_lead_rbt" | "assigned_bcba"
       reauth_cycle_status:
         | "Not Started"
         | "BCBA Notified"
@@ -32175,6 +32412,13 @@ export const Constants = {
         "Submitted to Auth",
       ],
       qa_status: ["Not Started", "In Review", "Complete"],
+      rbt_checkin_status: [
+        "due",
+        "overdue",
+        "completed",
+        "escalated",
+        "cancelled",
+      ],
       rbt_lifecycle_stage: [
         "offer_accepted",
         "preboarding",
@@ -32195,6 +32439,7 @@ export const Constants = {
         "leave_inactive",
         "offboarding",
       ],
+      rbt_trainer_kind: ["lead_rbt", "floater_lead_rbt", "assigned_bcba"],
       reauth_cycle_status: [
         "Not Started",
         "BCBA Notified",
