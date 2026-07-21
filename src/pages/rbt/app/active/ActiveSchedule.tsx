@@ -124,7 +124,7 @@ export default function ActiveSchedule() {
 }
 
 function SessionDetail({ row }: { row: any; onReport: () => void }) {
-  const { user } = useAuth();
+  const { writableEmployeeId, isPreviewing } = useRbtIdentity();
   const [showReport, setShowReport] = useState(false);
   const [text, setText] = useState("");
   const [type, setType] = useState("wrong_time");
@@ -132,9 +132,9 @@ function SessionDetail({ row }: { row: any; onReport: () => void }) {
   const [err, setErr] = useState<string | null>(null);
 
   const submit = async () => {
-    if (!user || !text.trim()) return;
+    if (!writableEmployeeId || !text.trim()) return;
     const { error } = await supabase.from("rbt_shift_discrepancies" as any).insert({
-      employee_id: user.id,
+      employee_id: writableEmployeeId,
       shift_event_id: row.id,
       session_date: new Date(row.starts_at).toISOString().slice(0, 10),
       discrepancy_type: type,
@@ -183,9 +183,9 @@ function SessionDetail({ row }: { row: any; onReport: () => void }) {
             className="w-full rounded-xl bg-card border border-border p-3 text-sm" />
           {err && <p className="text-xs text-destructive">{err}</p>}
           {sent && <p className="text-xs text-primary">Thanks — the ops team will review.</p>}
-          <button onClick={submit} disabled={!text.trim() || sent}
+          <button onClick={submit} disabled={!text.trim() || sent || isPreviewing}
             className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60">
-            {sent ? "Submitted" : "Submit report"}
+            {sent ? "Submitted" : isPreviewing ? "Disabled in preview mode" : "Submit report"}
           </button>
         </div>
       )}
