@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { computeCaseHealth, type CaseHealth } from "./caseHealth";
+import {
+  deriveCaseloadClientsFromCanonical,
+  CANONICAL_SOURCE_LABEL,
+} from "@/lib/os/reporting/canonicalRoleBridge";
+import { CANONICAL_UNAVAILABLE_FIELDS } from "@/lib/os/reporting/canonicalFallback";
 
 export interface CaseloadRow {
   clientId: string;
@@ -49,7 +54,15 @@ async function fetchCaseload(userId: string): Promise<CaseloadRow[]> {
   if (aErr) throw aErr;
 
   const clientIds = Array.from(new Set((assignments ?? []).map((a) => a.client_id).filter(Boolean)));
-  if (clientIds.length === 0) return [];
+  if (clientIds.length === 0) {
+    // Role-table empty — precedence 2: derive caseload from canonical rows
+    // scoped to this BCBA (`v_cr_canonical_sessions` via RPC). Fields the
+    // billing export does not carry (weekly scheduled hours, auth window,
+    // staffing status, cancellations) stay null and are declared unavailable
+    // on each row instead of being fabricated. Returns [] when unmapped or
+    // canonical has nothing.
+    return deriveCaseloadFromCanonicalForBcba(userId);
+  }
 
   const [clientsR, authR, cancelR, ptR, tpR, supportR] = await Promise.all([
     supabase.from("clients")
@@ -190,6 +203,85 @@ async function fetchCaseload(userId: string): Promise<CaseloadRow[]> {
 
   return rows.sort((a, b) => a.approvedIdentifier.localeCompare(b.approvedIdentifier));
 }
+
+/**
+ * Canonical fallback for the BCBA caseload — only invoked when
+ * `rbt_client_assignments` returned no rows for the current BCBA. Rows are
+ * tagged with `source: "canonical"` in `fields.approvedIdentifier` so the UI
+ * can render source/freshness stamps and the "unavailable from export"
+ * badges for fields the billing view cannot supply.
+ */
+async function deriveCaseloadFromCanonicalForBcba(bcbaAuthUserId: string): Promise<CaseloadRow[]> {
+  const clients = await deriveCaseloadClientsFromCanonical({ authUserId: bcbaAuthUserId });
+  if (clients.length === 0) return [];
+  return clients.map((c) => {
+    const health = computeCaseHealth({
+      serviceStatus: null,
+      authExpiresAt: null,
+      usedUnits: null,
+      authorizedUnits: null,
+      scheduledWeeklyHours: null,
+      deliveredWeeklyHours: null,
+      staffingStatus: null,
+      progressReportDueAt: null,
+      parentTrainingNextDueAt: null,
+      documentationCompliance: null,
+      openSupportConcerns: 0,
+      cancelledLast4wk: 0,
+      sourceStale: false,
+    });
+    const stamp = { source: CANONICAL_SOURCE_LABEL, freshAt: c.maxServiceDate, stale: false };
+    const unavailable = { source: "unavailable_from_canonical" };
+    return {
+      clientId: c.crClientId || `canon:${(c.clientName ?? "").toLowerCase()}`,
+      approvedIdentifier: c.clientName ?? c.crClientId,
+      serviceStatus: null,
+      assignedRbts: [],
+      assignmentStartDate: c.minServiceDate,
+      serviceSetting: null,
+      weeklyScheduledHours: null,
+      deliveredHours: null,
+      cancelledHours: 0,
+      authStart: null,
+      authEnd: null,
+      authorizedUnits: null,
+      usedUnits: null,
+      remainingUnits: null,
+      utilizationPct: null,
+      assessmentStatus: null,
+      treatmentPlanStatus: null,
+      progressReportDueAt: null,
+      parentTrainingStatus: c.parentTrainingHours > 0 ? "on_track" : "not_started",
+      parentTrainingNextDueAt: null,
+      staffingStatus: null,
+      cancellationTrend: 0,
+      openSupportConcerns: 0,
+      health,
+      lastCrSync: c.maxServiceDate,
+      sourceStale: false,
+      fields: {
+        approvedIdentifier: stamp,
+        serviceStatus: unavailable,
+        weeklyScheduledHours: unavailable,
+        deliveredHours: { source: CANONICAL_SOURCE_LABEL, freshAt: c.maxServiceDate },
+        cancelledHours: unavailable,
+        authStart: unavailable,
+        authEnd: unavailable,
+        authorizedUnits: unavailable,
+        staffingStatus: unavailable,
+        lastCrSync: { source: "CentralReach", freshAt: c.maxServiceDate, stale: false },
+        canonicalTotals: {
+          source: CANONICAL_SOURCE_LABEL,
+          freshAt: c.maxServiceDate,
+          stale: false,
+        },
+      },
+    } as CaseloadRow;
+  });
+}
+
+// Exported for tests
+export const __test_unavailable = CANONICAL_UNAVAILABLE_FIELDS;
 
 export function useCaseload(scopedAuthUserId: string | null = null) {
   return useQuery({
