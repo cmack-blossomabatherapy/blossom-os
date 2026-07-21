@@ -38,7 +38,8 @@ describe("Training Academy visual upgrade — State Director first", () => {
   });
 
   it("Welcome to Blossom completion CTA points to the launch path", () => {
-    expect(WELCOME).toMatch(/Continue to my State Director launch path/);
+    // Current contract: role-agnostic CTA label with stable testid.
+    expect(WELCOME).toMatch(/Continue to Journey/);
     expect(WELCOME).toMatch(/data-testid="welcome-continue-launch-path"/);
   });
 
