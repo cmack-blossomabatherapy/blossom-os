@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft, Upload, FileSpreadsheet, Sparkles, Download, Search,
@@ -18,6 +18,15 @@ import { ChartCard } from "@/components/dashboards/ChartCard";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import type { KpiSpec, ChartSpec, DrilldownSpec } from "@/lib/os/dashboardEngine/types";
 import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
+import {
+  loadSharedDataset,
+  type SharedDatasetLoadResult,
+} from "@/lib/os/reporting/sharedDatasetLoader";
+import { downloadSharedReportDatasetFile } from "@/lib/os/sharedReportDatasets";
+import {
+  SharedDatasetStatusPanel,
+  type SharedSourceMode,
+} from "@/components/reports/SharedDatasetStatusPanel";
 
 /* ============================================================
  * QA Session Cancellation Dashboard
@@ -161,8 +170,22 @@ export default function QaCancellationDashboard() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sourceMode, setSourceMode] = useState<SharedSourceMode>("none");
+  const [sharedResult, setSharedResult] = useState<SharedDatasetLoadResult>({
+    key: "cancellation-scheduling",
+    status: "idle",
+    ageDays: null,
+    stale: false,
+    dataset: null,
+    parsed: null,
+    inspection: null,
+    missingFields: [],
+    errorMessage: null,
+  });
+
   /* ---- Upload ---- */
-  async function handleFiles(files: FileList | File[] | null) {
+  async function handleFiles(files: FileList | File[] | null, opts?: { fromShared?: boolean }) {
     if (!files || !files[0]) return;
     const file = files[0];
     setLoading(true);
@@ -243,6 +266,7 @@ export default function QaCancellationDashboard() {
       setRows(out);
       setFileName(file.name);
       setGenerated(false);
+      setSourceMode(opts?.fromShared ? "shared" : "manual-override");
       toast.success(`Loaded ${out.length.toLocaleString()} cancellations from ${file.name}`);
     } catch (e: any) {
       toast.error(`Failed to parse file: ${e?.message ?? e}`);
