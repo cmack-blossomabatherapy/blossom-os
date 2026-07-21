@@ -103,6 +103,14 @@ See "Verification" below for the executed result.
 
 See "Verification" below.
 
+### Verification (2026-07-21)
+
+- **Scoped vitest suites:** `7 files, 769 tests passed` in 4.10s.
+- **`bun run build`:** ✓ built in 53.60s, no errors.
+- **Migration applied:** RBT pathway step catalog realigned in-place; unique
+  index `rbt_pathway_progress_employee_step_uniq` created; legacy steps
+  retired (deleted when unused, otherwise flagged `metadata.retired=true`).
+
 ## Slice 3 — Experience Lab (admin-only pathway preview) (pending)
 
 ## Slice 4 — Walkthrough persistence + 2030 polish (pending)
