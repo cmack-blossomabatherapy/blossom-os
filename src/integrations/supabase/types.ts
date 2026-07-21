@@ -30647,6 +30647,80 @@ export type Database = {
       }
       can_view_clinical_work: { Args: { _user_id: string }; Returns: boolean }
       can_write_scheduling_ops: { Args: { _user_id: string }; Returns: boolean }
+      canonical_sessions_client_summary: {
+        Args: {
+          _auth_user_id?: string
+          _employee_id?: string
+          _end?: string
+          _start?: string
+        }
+        Returns: {
+          client_name: string
+          cr_client_id: string
+          hours: number
+          max_service_date: string
+          min_service_date: string
+          row_count: number
+          session_kind: string
+          units: number
+        }[]
+      }
+      canonical_sessions_provider_summary: {
+        Args: {
+          _auth_user_id?: string
+          _employee_id?: string
+          _end?: string
+          _start?: string
+        }
+        Returns: {
+          distinct_clients: number
+          hours: number
+          max_service_date: string
+          min_service_date: string
+          row_count: number
+          session_kind: string
+          units: number
+        }[]
+      }
+      canonical_sessions_rows: {
+        Args: {
+          _auth_user_id?: string
+          _client_id?: string
+          _employee_id?: string
+          _end?: string
+          _kinds?: string[]
+          _limit?: number
+          _start?: string
+        }
+        Returns: {
+          batch_id: string
+          batch_uploaded_at: string
+          client_name: string
+          cr_client_id: string
+          cr_provider_id: string
+          hours: number
+          procedure_code: string
+          provider_auth_user_id: string
+          provider_employee_id: string
+          provider_name: string
+          row_id: string
+          service_date: string
+          session_kind: string
+          source_file_name: string
+          units: number
+        }[]
+      }
+      canonical_sessions_unmapped_providers: {
+        Args: { _limit?: number }
+        Returns: {
+          cr_provider_id: string
+          distinct_clients: number
+          max_service_date: string
+          min_service_date: string
+          provider_name: string
+          row_count: number
+        }[]
+      }
       classify_eval_role: { Args: { _job_title: string }; Returns: string }
       compute_profile_completion: {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }
