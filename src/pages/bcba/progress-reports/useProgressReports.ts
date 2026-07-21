@@ -79,17 +79,22 @@ export interface ActivityEvent {
 
 const KEY = ["bcba_progress_reports"] as const;
 
-export function useProgressReports(opts?: { onlyMine?: boolean }) {
+export function useProgressReports(opts?: { onlyMine?: boolean; scopedAuthUserId?: string | null }) {
+  const scoped = opts?.scopedAuthUserId ?? null;
   return useQuery({
-    queryKey: [...KEY, opts?.onlyMine ?? false],
+    queryKey: [...KEY, opts?.onlyMine ?? false, scoped ?? "self"],
     queryFn: async (): Promise<ProgressReport[]> => {
       let q = supabase
         .from("bcba_progress_reports")
         .select("*")
         .order("progress_report_due_date", { ascending: true });
       if (opts?.onlyMine) {
-        const { data: u } = await supabase.auth.getUser();
-        if (u?.user?.id) q = q.eq("assigned_bcba_id", u.user.id);
+        let uid = scoped;
+        if (!uid) {
+          const { data: u } = await supabase.auth.getUser();
+          uid = u?.user?.id ?? null;
+        }
+        if (uid) q = q.eq("assigned_bcba_id", uid);
       }
       const { data, error } = await q;
       if (error) throw error;
