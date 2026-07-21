@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { FreshnessPill, freshness } from "./freshness";
 import { useCrSync } from "./useCrSync";
+import { useRbtIdentity } from "../useRbtIdentity";
 import {
   Calendar, Users, Clock, ShieldCheck, GraduationCap, LifeBuoy,
   Award, Sparkles, ArrowRight, AlertTriangle,
@@ -29,8 +29,8 @@ function Tile({ to, icon: Icon, label, hint }: any) {
 }
 
 export default function ActiveHome() {
-  const { user } = useAuth();
-  const first = (user?.user_metadata?.full_name ?? user?.email ?? "").split(" ")[0] || "there";
+  const { employeeId, displayName, loading: idLoading } = useRbtIdentity();
+  const first = (displayName ?? "").split(" ")[0] || "there";
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
@@ -45,10 +45,18 @@ export default function ActiveHome() {
   const [training, setTraining] = useState<any | null>(null);
   const [outstanding, setOutstanding] = useState<any[] | null>(null);
   const crSync = useCrSync();
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    const uid = user.id;
+    if (idLoading) return;
+    if (!employeeId) {
+      setToday([]); setNext(null); setChanges([]); setSupervision(null);
+      setCredAlerts([]); setSupportUpdates([]); setRecognition(null);
+      setGrowth(null); setTraining(null); setOutstanding([]);
+      return;
+    }
+    const uid = employeeId;
+    setLoadError(null);
     const now = new Date();
     const startDay = new Date(now); startDay.setHours(0, 0, 0, 0);
     const endDay = new Date(startDay); endDay.setDate(startDay.getDate() + 1);
@@ -68,7 +76,10 @@ export default function ActiveHome() {
       .gte("starts_at", now.toISOString())
       .order("starts_at")
       .limit(1)
-      .then(({ data }) => setNext((data as any[])?.[0] ?? null));
+      .then(({ data, error }) => {
+        if (error) setLoadError(error.message);
+        setNext((data as any[])?.[0] ?? null);
+      });
 
     // Schedule changes (recently cancelled or updated)
     supabase.from("rbt_sessions" as any)
@@ -142,9 +153,19 @@ export default function ActiveHome() {
       if ((sess.data ?? []).length) items.push({ label: `${sess.data!.length} session${sess.data!.length === 1 ? "" : "s"} to confirm`, to: "/rbt/app/schedule" });
       setOutstanding(items);
     });
-  }, [user?.id]);
+  }, [employeeId, idLoading]);
 
   const crFresh = freshness(crSync?.last_success_at, crSync?.stale_after_hours ?? 24);
+
+  if (idLoading) {
+    return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
+  }
+  if (!employeeId) {
+    return (
+      <CardFrame title="We couldn't find your clinician profile" state="error"
+        errorLabel="Ask an admin to link your login to your employee record from the CentralReach Data Hub." />
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -154,6 +175,7 @@ export default function ActiveHome() {
           <p className="text-xs text-muted-foreground">CentralReach data</p>
           <FreshnessPill f={crFresh} />
         </div>
+        {loadError && <p className="mt-2 text-xs text-destructive">Some panels failed to load: {loadError}</p>}
       </CardFrame>
 
       {/* Next session */}
