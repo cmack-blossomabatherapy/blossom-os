@@ -64,7 +64,8 @@ describe("Training Academy Redesign Pass 2 — learner surface", () => {
     expect(content).toMatch(/Shira Lasry/);
     expect(welcome).toMatch(/WELCOME_LEADERSHIP_LETTERS/);
     expect(welcome).toMatch(/A welcome from leadership/);
-    expect(welcome).toMatch(/Continue to State Director Journey/);
+    // Current contract: role-agnostic CTA that lands on the learner's Journey.
+    expect(welcome).toMatch(/Continue to Journey/);
   });
 
   it("Welcome to Blossom keeps the video first and remains revisitable", () => {

@@ -73,7 +73,8 @@ describe("Training Management Pass 1 — Control Room sections", () => {
   });
 
   it("Control Room is the default tab", () => {
-    expect(TMC).toMatch(/useState<NavId>\("control-room"\)/);
+    // Current contract: default nav falls back to "control-room" when no valid nav param.
+    expect(TMC).toMatch(/useState<NavId>\(\s*validNav\s*\?\?\s*"control-room"\s*\)/);
   });
 });
 

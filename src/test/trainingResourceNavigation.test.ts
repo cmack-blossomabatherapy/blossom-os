@@ -37,7 +37,11 @@ describe("Training + Resource UX Rescue — Pass 1", () => {
 
   it("TMC Resource Library view exposes Upload Resource + Open Resource Management CTAs", () => {
     expect(TMC).toContain("Upload Resource");
-    expect(TMC).toContain("Open Resource Management");
+    // Current contract: the resource-management surface is opened via
+    // "Manage / Upload" and "Open Resource Library" buttons that navigate to
+    // /hr/resource-management. Assert the navigation target + a stable label.
+    expect(TMC).toMatch(/navigate\("\/hr\/resource-management/);
+    expect(TMC).toMatch(/Manage \/ Upload|Open Resource Library/);
     expect(TMC).toContain("Upload first document batch");
   });
 
@@ -71,7 +75,8 @@ describe("Training + Resource UX Rescue — Pass 1", () => {
     expect(CONTENT).toMatch(/Chad Kaufman/);
     expect(CONTENT).toMatch(/Shira Lasry/);
     expect(WELCOME).toMatch(/HR partner|mentor/i);
-    expect(WELCOME).toMatch(/Continue to State Director Journey/);
+    // Current contract: role-agnostic CTA landing on the learner Journey.
+    expect(WELCOME).toMatch(/Continue to Journey/);
   });
 
 
