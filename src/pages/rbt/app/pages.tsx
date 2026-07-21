@@ -18,6 +18,8 @@ import {
   GrowthCard, SupportShortcutCard, AnnouncementCard, CrDataStatusCard,
 } from "./cards";
 import { useRbtIdentity } from "./useRbtIdentity";
+import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
+import { useProgram } from "./training/useProgram";
 
 function WelcomeBanner({ userId }: { userId: string }) {
   const key = `rbt-app-welcome-dismissed-${userId}`;
@@ -138,7 +140,8 @@ export function RbtSchedule() {
 
 // ---------------------------------------------------------------- LEARN
 export function RbtLearn() {
-  const { authUserId, loading: idLoading } = useRbtIdentity();
+  const { authUserId, employeeId, loading: idLoading } = useRbtIdentity();
+  const { pathway, stats, loading: programLoading } = useProgram(employeeId);
   const [rows, setRows] = useState<any[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -176,6 +179,46 @@ export function RbtLearn() {
 
   return (
     <div className="space-y-4">
+      <WelcomeToBlossomCard />
+      {!programLoading && pathway && (
+        <div className="rounded-2xl border border-border/70 bg-card p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Your training path</p>
+              <p className="mt-0.5 text-base font-semibold truncate">{pathway.name}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {stats.complete} of {stats.total} steps complete · {stats.percent}%
+              </p>
+            </div>
+            {stats.current ? (
+              <Link
+                to="/rbt/app/program"
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              >
+                Continue <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link
+                to="/rbt/app/program"
+                className="inline-flex items-center gap-1.5 rounded-full bg-muted px-4 py-2 text-sm font-medium"
+              >
+                View path <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
+          </div>
+          <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${stats.percent}%` }} />
+          </div>
+        </div>
+      )}
+      {!programLoading && !pathway && employeeId && (
+        <div className="rounded-2xl border border-border/70 bg-card p-4">
+          <p className="text-sm font-medium">We're preparing your personalized training path.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            You can start with Welcome to Blossom above while your path is finalized.
+          </p>
+        </div>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         <Link to="/rbt/app/program" className="rounded-2xl border border-border/70 bg-card p-4 hover:bg-muted/50 transition flex items-center gap-3">
           <span className="rounded-xl bg-primary/10 p-2.5 text-primary"><GraduationCap className="h-5 w-5" strokeWidth={1.75} /></span>
@@ -196,7 +239,7 @@ export function RbtLearn() {
       </div>
       <CardFrame title="Your learning" state={state}
         errorLabel="We couldn't load your training right now. Pull to refresh or try again in a moment."
-        emptyLabel="Your next training will appear here once a coordinator assigns it.">
+        emptyLabel="Your next training will appear here as your path is set up.">
         <ul className="divide-y divide-border/70">
           {rows?.map((r: any) => {
             const c = r.course;
@@ -241,6 +284,16 @@ export function RbtLearn() {
           })}
         </ul>
       </CardFrame>
+      <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-card p-4">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Grow with Blossom</p>
+        <p className="mt-0.5 text-sm font-semibold">Interested in becoming a BCBA?</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Explore fellowship and advancement pathways when you're ready.
+        </p>
+        <Link to="/rbt/app/support" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
+          Talk to your BCBA <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
     </div>
   );
 }

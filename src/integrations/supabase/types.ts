@@ -22273,6 +22273,45 @@ export type Database = {
         }
         Relationships: []
       }
+      rbt_pathway_assignment_audit: {
+        Row: {
+          candidate_id: string | null
+          cert_status: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          new_pathway_key: string
+          performed_by: string | null
+          previous_pathway_key: string | null
+          reason: string
+          years_experience: number | null
+        }
+        Insert: {
+          candidate_id?: string | null
+          cert_status?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          new_pathway_key: string
+          performed_by?: string | null
+          previous_pathway_key?: string | null
+          reason: string
+          years_experience?: number | null
+        }
+        Update: {
+          candidate_id?: string | null
+          cert_status?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          new_pathway_key?: string
+          performed_by?: string | null
+          previous_pathway_key?: string | null
+          reason?: string
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
       rbt_pathway_assignments: {
         Row: {
           active: boolean
@@ -24834,12 +24873,15 @@ export type Database = {
           id: string
           is_archived: boolean
           last_name: string
+          linked_employee_id: string | null
           next_action: string | null
           next_action_due: string | null
           notes: string | null
           phone: string | null
           pipeline_stage: Database["public"]["Enums"]["recruiting_pipeline_stage"]
           rating: number | null
+          rbt_certification_status: Database["public"]["Enums"]["rbt_certification_status"]
+          rbt_years_experience_direct: number | null
           recruiter: string | null
           recruiter_user_id: string | null
           resume_url: string | null
@@ -24864,12 +24906,15 @@ export type Database = {
           id?: string
           is_archived?: boolean
           last_name: string
+          linked_employee_id?: string | null
           next_action?: string | null
           next_action_due?: string | null
           notes?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["recruiting_pipeline_stage"]
           rating?: number | null
+          rbt_certification_status?: Database["public"]["Enums"]["rbt_certification_status"]
+          rbt_years_experience_direct?: number | null
           recruiter?: string | null
           recruiter_user_id?: string | null
           resume_url?: string | null
@@ -24894,12 +24939,15 @@ export type Database = {
           id?: string
           is_archived?: boolean
           last_name?: string
+          linked_employee_id?: string | null
           next_action?: string | null
           next_action_due?: string | null
           notes?: string | null
           phone?: string | null
           pipeline_stage?: Database["public"]["Enums"]["recruiting_pipeline_stage"]
           rating?: number | null
+          rbt_certification_status?: Database["public"]["Enums"]["rbt_certification_status"]
+          rbt_years_experience_direct?: number | null
           recruiter?: string | null
           recruiter_user_id?: string | null
           resume_url?: string | null
@@ -24910,7 +24958,43 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_candidates_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruiting_candidates_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "recruiting_candidates_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruiting_candidates_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "recruiting_candidates_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recruiting_escalations: {
         Row: {
@@ -31346,6 +31430,13 @@ export type Database = {
           warning_offset_hours: number
         }[]
       }
+      resolve_rbt_pathway_key: {
+        Args: {
+          _cert_status: Database["public"]["Enums"]["rbt_certification_status"]
+          _years: number
+        }
+        Returns: string
+      }
       search_assignable_employees: {
         Args: { max_rows?: number; search?: string }
         Returns: {
@@ -31398,6 +31489,10 @@ export type Database = {
       suggest_resource_roles: {
         Args: { _description: string; _source: string; _title: string }
         Returns: string[]
+      }
+      sync_rbt_pathway_assignment: {
+        Args: { _candidate_id: string }
+        Returns: string
       }
       upsert_knowledge_chunk: {
         Args: {
@@ -31978,6 +32073,7 @@ export type Database = {
         | "Ready for Submission"
         | "Submitted to Auth"
       qa_status: "Not Started" | "In Review" | "Complete"
+      rbt_certification_status: "not_certified" | "certified" | "unknown"
       rbt_checkin_status:
         | "due"
         | "overdue"
@@ -32848,6 +32944,7 @@ export const Constants = {
         "Submitted to Auth",
       ],
       qa_status: ["Not Started", "In Review", "Complete"],
+      rbt_certification_status: ["not_certified", "certified", "unknown"],
       rbt_checkin_status: [
         "due",
         "overdue",
