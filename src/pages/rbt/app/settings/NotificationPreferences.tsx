@@ -17,13 +17,22 @@ export default function NotificationPreferences() {
   const [prefs, setPrefs] = useState<Record<string, Pref>>({});
   const [quiet, setQuiet] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [masterPaused, setMasterPaused] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
+    setStatus("loading");
+    setLoadError(null);
     const [r, p] = await Promise.all([
       supabase.from("rbt_notification_rules").select("id,event_key,domain,title_template,channels,required").eq("active", true).order("domain"),
       supabase.from("rbt_notification_preferences").select("event_key,channel,enabled,quiet_hours_start,quiet_hours_end").eq("user_id", user.id),
     ]);
+    if (r.error || p.error) {
+      setLoadError(r.error?.message ?? p.error?.message ?? "Could not load preferences");
+      setStatus("error");
+      return;
+    }
     setRules((r.data as any) ?? []);
     const map: Record<string, Pref> = {};
     (p.data as any[] ?? []).forEach(x => { map[`${x.event_key}:${x.channel}`] = x; });
@@ -32,6 +41,7 @@ export default function NotificationPreferences() {
     if (first) setQuiet({ start: first.quiet_hours_start, end: first.quiet_hours_end });
     const master = (p.data as any[])?.find(x => x.event_key === "__all__" && x.channel === "__all__");
     setMasterPaused(master ? master.enabled === false : false);
+    setStatus("ready");
   };
   useEffect(() => { load(); }, [user?.id]);
 
@@ -56,10 +66,21 @@ export default function NotificationPreferences() {
 
   const saveQuietHours = async () => {
     if (!user) return;
-    // update all existing prefs; if none, users' first channel toggle will pick these up
-    await supabase.from("rbt_notification_preferences").update({
+    // Update every existing pref row; when there are none yet, seed a marker row
+    // so the values persist even before the user toggles a channel.
+    const { error: updateErr } = await supabase.from("rbt_notification_preferences").update({
       quiet_hours_start: quiet.start || null, quiet_hours_end: quiet.end || null,
     }).eq("user_id", user.id);
+    if (updateErr) { toast.error(updateErr.message); return; }
+    const { data: existing } = await supabase.from("rbt_notification_preferences")
+      .select("event_key").eq("user_id", user.id).limit(1);
+    if (!existing || existing.length === 0) {
+      const { error: seedErr } = await supabase.from("rbt_notification_preferences").upsert({
+        user_id: user.id, event_key: "__quiet_hours__", channel: "__all__", enabled: true,
+        quiet_hours_start: quiet.start || null, quiet_hours_end: quiet.end || null,
+      }, { onConflict: "user_id,event_key,channel" });
+      if (seedErr) { toast.error(seedErr.message); return; }
+    }
     toast.success("Quiet hours saved");
   };
 
@@ -76,6 +97,24 @@ export default function NotificationPreferences() {
         <p className="text-sm text-muted-foreground">Turn off nonrequired notifications. Compliance and safety alerts always stay on.</p>
       </header>
 
+      {status === "loading" && (
+        <div className="space-y-3">
+          {[0,1,2].map(i => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
+        </div>
+      )}
+      {status === "error" && (
+        <div className="rounded-xl bg-destructive/10 text-destructive text-sm p-4 flex items-center justify-between gap-3">
+          <span>{loadError ?? "Could not load preferences."}</span>
+          <button onClick={() => void load()} className="underline underline-offset-4">Retry</button>
+        </div>
+      )}
+      {status === "ready" && rules.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+          No notification rules have been published yet. Once your operations team turns them on, they'll appear here.
+        </div>
+      )}
+
+      {status === "ready" && (<>
       <Card>
         <CardHeader><CardTitle className="text-sm">Pause all notifications</CardTitle></CardHeader>
         <CardContent className="flex items-center justify-between gap-3">
@@ -131,6 +170,7 @@ export default function NotificationPreferences() {
           </CardContent>
         </Card>
       ))}
+      </>)}
     </div>
   );
 }
