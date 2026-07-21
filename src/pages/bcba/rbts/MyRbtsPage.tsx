@@ -222,11 +222,13 @@ function AssignmentCard({
   checklistItems,
   bcbaEmployeeId,
   onChanged,
+  readOnly,
 }: {
   data: any;
   checklistItems: ChecklistItem[];
   bcbaEmployeeId: string | null;
   onChanged: () => void;
+  readOnly?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const { assignment, rbt, firstCase, checklistState, followups, checkin, leadEval } = data;
@@ -236,6 +238,7 @@ function AssignmentCard({
   const checklistDone = checklistItems.every((i) => doneKeys.has(i.key));
 
   async function ensureFirstCase(): Promise<string | null> {
+    if (readOnly) { toast.info("Read-only in preview mode."); return null; }
     if (firstCase?.id) return firstCase.id;
     if (!bcbaEmployeeId || !assignment.rbt_employee_id) {
       toast.error("Missing BCBA or RBT identity for this case.");
@@ -254,6 +257,7 @@ function AssignmentCard({
   }
 
   async function toggleChecklist(itemKey: string, next: boolean) {
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     setBusy(itemKey);
     const caseId = await ensureFirstCase();
     if (!caseId) { setBusy(null); return; }
@@ -272,6 +276,7 @@ function AssignmentCard({
   }
 
   async function submitResponse(opt: typeof RESPONSE_OPTIONS[number]) {
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     setBusy(`resp-${opt.key}`);
     const caseId = await ensureFirstCase();
     if (!caseId) { setBusy(null); return; }
@@ -404,7 +409,7 @@ function AssignmentCard({
                   >
                     <Checkbox
                       checked={done}
-                      disabled={busy === it.key}
+                      disabled={busy === it.key || readOnly}
                       onCheckedChange={(v) => toggleChecklist(it.key, !!v)}
                       className="mt-0.5"
                     />
@@ -474,7 +479,7 @@ function AssignmentCard({
                   key={opt.key}
                   variant={opt.priority === "critical" ? "destructive" : opt.priority === "high" ? "default" : "outline"}
                   size="sm"
-                  disabled={!!busy}
+                  disabled={!!busy || readOnly}
                   onClick={() => submitResponse(opt)}
                   className="justify-start"
                 >
@@ -602,6 +607,7 @@ export default function BcbaMyRbtsPage() {
             checklistItems={data!.checklistItems}
             bcbaEmployeeId={data!.bcbaEmployeeId}
             onChanged={invalidate}
+            readOnly={identity.readOnly}
           />
         ))}
       </div>
