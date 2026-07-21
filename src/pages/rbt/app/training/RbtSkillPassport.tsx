@@ -177,7 +177,7 @@ export default function RbtSkillPassport() {
           evaluations={evals.filter((e) => e.skill_key === selected.key)}
           onClose={() => setSelected(null)}
           onSaved={() => { setSelected(null); void load(); }}
-          canWrite={Boolean(writableEmployeeId) && !isPreviewing}
+          canWrite={Boolean(writableEmployeeId) && !isPreviewing && !lab.active}
         />
       )}
     </div>
