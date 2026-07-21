@@ -283,6 +283,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
   const latestSupportLogs = useMemo(() => supportLogs.slice(0, 10), [supportLogs]);
 
   const confirmSession = useCallback(async (sessionId: string) => {
+    if (isPreviewing) return;
     const nowIso = new Date().toISOString();
     await supabase.from("rbt_sessions")
       .update({ confirmed_by_rbt_at: nowIso })
@@ -291,6 +292,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
   }, []);
 
   const acknowledgeSession = useCallback(async (sessionId: string) => {
+    if (isPreviewing) return;
     const nowIso = new Date().toISOString();
     await supabase.from("rbt_sessions")
       .update({ acknowledged_by_rbt_at: nowIso })
@@ -299,6 +301,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
   }, []);
 
   const markMessageRead = useCallback(async (messageId: string) => {
+    if (isPreviewing) return;
     const nowIso = new Date().toISOString();
     await supabase.from("rbt_messages")
       .update({ read_at: nowIso, status: "read" })
@@ -307,6 +310,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
   }, []);
 
   const markMessageComplete = useCallback(async (messageId: string) => {
+    if (isPreviewing) return;
     const nowIso = new Date().toISOString();
     await supabase.from("rbt_messages")
       .update({ completed_at: nowIso, status: "complete" })
@@ -315,7 +319,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
   }, []);
 
   const submitHelpRequest = useCallback<UseRbtWorkflowResult["submitHelpRequest"]>(async (input) => {
-    if (!employeeId) return null;
+    if (!employeeId || isPreviewing) return null;
     const { data, error: err } = await supabase.from("rbt_help_requests").insert({
       rbt_employee_id: employeeId,
       category: input.category,
@@ -333,7 +337,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
   }, [employeeId]);
 
   const logSessionSupport = useCallback<UseRbtWorkflowResult["logSessionSupport"]>(async (input) => {
-    if (!employeeId) return null;
+    if (!employeeId || isPreviewing) return null;
     const { data, error: err } = await supabase.from("rbt_session_support_logs").insert({
       rbt_employee_id: employeeId,
       session_id: input.session_id ?? null,
@@ -352,6 +356,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
   }, [employeeId]);
 
   const acknowledgeSupervision = useCallback(async (id: string) => {
+    if (isPreviewing) return;
     const nowIso = new Date().toISOString();
     await supabase.from("rbt_supervision")
       .update({ acknowledged_by_rbt_at: nowIso })
@@ -360,6 +365,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
   }, []);
 
   const resolveHelpRequest = useCallback(async (id: string, resolutionNote?: string) => {
+    if (isPreviewing) return;
     const nowIso = new Date().toISOString();
     const patch: any = { status: "resolved", resolved_at: nowIso };
     if (resolutionNote) patch.resolution_note = resolutionNote;
