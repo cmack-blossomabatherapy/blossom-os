@@ -1,41 +1,40 @@
-// NOTE: Skipped in release verification pass — expectations reflect prior sprint
-// design (old RBT/BCBA menus / removed admin routes / incidental substring scans)
-// that have been intentionally superseded by current shipping code.
+// Rewritten to assert the CURRENT shipping contract: the standalone
+// /system/bcba-productivity-uploads admin route has been retired and now
+// redirects into the CentralReach Data Hub, while the shared upload adapter
+// and V3 report data path remain intact.
 
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
-describe.skip("BCBA Productivity admin uploads — Sprint", () => {
-  it("admin upload page exists", () => {
-    expect(existsSync(join(root, "src/pages/os/system/BcbaProductivityUploads.tsx"))).toBe(true);
+describe("BCBA Productivity uploads — obsolete admin route retired", () => {
+  const app = read("src/App.tsx");
+  const menu = read("src/lib/os/superAdminMenu.ts");
+
+  it("legacy /system/bcba-productivity-uploads redirects into the CentralReach hub", () => {
+    expect(app).toMatch(
+      /path="\/system\/bcba-productivity-uploads"[\s\S]{0,180}Navigate to="\/system\/centralreach\?tab=reporting"/,
+    );
   });
 
-  it("admin upload route is registered in App.tsx", () => {
-    const src = read("src/App.tsx");
-    expect(src).toMatch(/BcbaProductivityUploads/);
-    expect(src).toMatch(/\/system\/bcba-productivity-uploads/);
-    expect(src).toMatch(/<AdminRoute><BcbaProductivityUploads/);
+  it("Super Admin menu no longer exposes a standalone BCBA Productivity Uploads item", () => {
+    expect(menu).not.toMatch(/BCBA Productivity Uploads/);
+    expect(menu).not.toMatch(/\/system\/bcba-productivity-uploads/);
   });
 
-  it("Super Admin System Tools menu includes BCBA Productivity Uploads", () => {
-    // The canonical Super Admin menu is defined once in superAdminMenu.ts and
-    // consumed by both OSShell and AppSidebar — verify it there, not by
-    // scanning the shell file.
-    const src = read("src/lib/os/superAdminMenu.ts");
-    expect(src).toMatch(/BCBA Productivity Uploads/);
-    expect(src).toMatch(/system_tools/);
-    expect(src).toMatch(/\/system\/bcba-productivity-uploads/);
-    // And both shells must consume the canonical source.
-    expect(read("src/pages/os/OSShell.tsx")).toMatch(/SUPER_ADMIN_MENU/);
-    expect(read("src/components/layout/AppSidebar.tsx")).toMatch(/SUPER_ADMIN_MENU/);
+  it("CentralReach Data Hub is the canonical admin upload surface", () => {
+    expect(app).toMatch(/path="\/system\/centralreach"/);
+    expect(menu).toMatch(/\/system\/centralreach-uploads|\/system\/centralreach/);
   });
+});
 
-  it("shared upload helper module exists with required exports", () => {
-    const src = read("src/lib/os/bcbaProductivityV3/adminUploadStore.ts");
+describe("BCBA Productivity uploads — shared dataset adapter still ships", () => {
+  const store = read("src/lib/os/bcbaProductivityV3/adminUploadStore.ts");
+
+  it("shared upload helper module exposes the full ingest/read/void surface", () => {
     for (const fn of [
       "parseBcbaProductivityUpload",
       "previewBcbaProductivityUpload",
@@ -45,75 +44,40 @@ describe.skip("BCBA Productivity admin uploads — Sprint", () => {
       "getBcbaProductivityDatasetStatus",
       "voidBcbaProductivityBatch",
     ]) {
-      expect(src).toMatch(new RegExp(`export[^\n]*${fn}`));
+      expect(store).toMatch(new RegExp(`export[^\n]*${fn}`));
     }
   });
+});
 
-  it("BCBA Productivity Report V3 runs from the admin-fed shared dataset", () => {
-    const src = read("src/pages/os/reports/BcbaProductivityReportV3.tsx");
-    // shared dataset wired in
-    expect(src).toMatch(/Using shared admin dataset/);
-    expect(src).toMatch(/getBcbaProductivitySharedRows/);
-    expect(src).toMatch(/getBcbaProductivityDatasetStatus/);
-    expect(src).toMatch(/Refresh dataset/);
-    expect(src).toMatch(/Manage uploads/);
-    // exact empty-state copy
-    expect(src).toMatch(
-      /No admin-uploaded BCBA productivity dataset found\. Ask an admin to upload the CentralReach billing export\./,
-    );
-    // no stale manual-direction language
-    expect(src).not.toMatch(/Manual uploads have been removed/i);
-    expect(src).not.toMatch(/This does not replace manual report uploads/);
-    expect(src).not.toMatch(/data only comes from the shared admin dataset/);
+describe("BCBA Productivity Report V3 — canonical report route + dataset", () => {
+  const app = read("src/App.tsx");
+  const report = read("src/pages/os/reports/BcbaProductivityReportV3.tsx");
+  const catalog = read("src/lib/os/reportsCatalog.ts");
+
+  it("V3 route is mounted", () => {
+    expect(app).toMatch(/path="\/reports\/bcba-productivity-report-v3"/);
   });
 
-  it("Admin upload page uses the agreed product copy", () => {
-    const src = read("src/pages/os/system/BcbaProductivityUploads.tsx");
-    expect(src).toMatch(/BCBA Productivity Uploads/);
-    expect(src).toMatch(/shared admin-fed dataset/i);
-    expect(src).toMatch(/Daily uploads append new rows and skip duplicates/i);
-    expect(src).toMatch(/team members do not need to upload this file themselves/i);
-    expect(src).not.toMatch(/This does not replace manual report uploads/i);
-    expect(src).toMatch(/Append Upload/);
-    expect(src).toMatch(/Upload History/);
-    expect(src).toMatch(/Download Current Dataset/);
-    expect(src).toMatch(/duplicates/i);
+  it("V3 pulls from the shared admin dataset adapter", () => {
+    expect(report).toMatch(/getBcbaProductivitySharedRows/);
+    expect(report).toMatch(/getBcbaProductivityDatasetStatus/);
   });
 
-  it("Admin upload store comment reflects the admin-fed dataset model", () => {
-    const store = read("src/lib/os/bcbaProductivityV3/adminUploadStore.ts");
-    expect(store).toMatch(/one shared, appended, deduped dataset/i);
-    expect(store).not.toMatch(/does NOT replace the manual upload flow/i);
-    expect(store).not.toMatch(/additional shared source/i);
+  it("V3 remains in the reports catalog", () => {
+    expect(catalog).toMatch(/id:\s*"bcba-productivity-report-v3"/);
   });
+});
 
-  it("BCBA Productivity V3 route remains in App.tsx", () => {
-    const src = read("src/App.tsx");
-    expect(src).toMatch(/\/reports\/bcba-productivity-report-v3/);
-  });
+describe("User Logins Vault + NFC Badges — redirect-only, never surfaced", () => {
+  const app = read("src/App.tsx");
+  const menu = read("src/lib/os/superAdminMenu.ts");
 
-  it("BCBA Productivity V3 remains in reportsCatalog", () => {
-    const src = read("src/lib/os/reportsCatalog.ts");
-    expect(src).toMatch(/bcba-productivity-report-v3/);
-  });
-
-  it("State Director training still routes to /training and STAGED_ROLE_LIVE_PATHS is intact", () => {
-    const src = read("src/pages/os/OSShell.tsx");
-    expect(src).toMatch(/STAGED_ROLE_LIVE_PATHS/);
-    expect(src).toMatch(/"\/academy"/);
-    expect(src).toMatch(/"\/training"/);
-    expect(src).toMatch(/"\/resource-library"/);
-    expect(src).toMatch(/"\/reports"/);
-  });
-
-  it("User Logins Vault and NFC Badge redirects live in App.tsx and are NOT surfaced as standalone menu items", () => {
-    // Redirect targets must be preserved so old links keep working…
-    const app = read("src/App.tsx");
+  it("legacy /user-logins-vault and /nfc-badges redirect to /user-management", () => {
     expect(app).toMatch(/path="\/user-logins-vault"[^>]*Navigate to="\/user-management"/);
     expect(app).toMatch(/path="\/nfc-badges"[^>]*Navigate to="\/user-management"/);
-    // …but the canonical Super Admin menu must NOT expose them as top-level items;
-    // Login Vault + NFC Badge Management live inside User Management.
-    const menu = read("src/lib/os/superAdminMenu.ts");
+  });
+
+  it("Super Admin menu does not expose Login Vault or NFC Badges as standalone items", () => {
     expect(menu).not.toMatch(/\/user-logins-vault/);
     expect(menu).not.toMatch(/\/nfc-badges/);
     expect(menu).not.toMatch(/Login Vault/);

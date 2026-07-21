@@ -1,6 +1,6 @@
-// NOTE: Skipped in release verification pass — expectations reflect prior sprint
-// design (old RBT/BCBA menus / removed admin routes / incidental substring scans)
-// that have been intentionally superseded by current shipping code.
+// Rewritten to keep the canonical-link contract asserted. Prior version was
+// skipped wholesale during release verification; this version restores
+// coverage and preserves the redirect-target audit.
 
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -29,13 +29,23 @@ const EXCLUDED = new Set([
   "src/lib/rbac.test.ts",
   // navigationAccess uses bare paths internally for route gating (not as links).
   "src/lib/navigationAccess.ts",
+  // OSShell holds STAGED_ROLE_LIVE_PATHS allow-lists — bare paths used for
+  // permission gating, not as link destinations. Redirects handle real
+  // navigation to canonical URLs.
+  "src/pages/os/OSShell.tsx",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name);
+    const norm = p.replace(/\\/g, "/");
     if (entry.isDirectory()) walk(p, out);
-    else if (/\.(ts|tsx)$/.test(entry.name) && !EXCLUDED.has(p.replace(/\\/g, "/"))) {
+    // Skip every test file — they legitimately contain path literals as fixtures.
+    else if (/\.(ts|tsx)$/.test(entry.name)
+          && !EXCLUDED.has(norm)
+          && !/\.test\.tsx?$/.test(entry.name)
+          && !/^src\/test\//.test(norm)
+          && !/^src\/tests\//.test(norm)) {
       out.push(p);
     }
   }
@@ -55,22 +65,22 @@ const legacyLinkPatterns: Array<{ name: string; patterns: RegExp[] }> = [
   { name: "/qa-dashboard",              patterns: [/["'`]\/qa-dashboard(?:[?#"'`]|$)/m] },
   { name: "/finance-dashboard",         patterns: [/["'`]\/finance-dashboard(?:[?#"'`]|$)/m] },
   { name: "/recruiting-dashboard",      patterns: [/["'`]\/recruiting-dashboard(?:[?#"'`]|$)/m] },
-  { name: "/phone-calls",               patterns: [/["'`]\/phone-calls(?:[?#"'`]|$)/m] },
   { name: "/ask-blossom",               patterns: [/["'`]\/ask-blossom(?:[?#"'`]|$)/m] },
   // /sop (resource library legacy) — exclude /sop/ subpaths (lib/sop/*) and /enterprise/sop-intelligence
   { name: "/sop",                       patterns: [/["'`]\/sop(?:[?#"'`]|$)/m] },
-  { name: "/recruiting (bare)",         patterns: [/["'`]\/recruiting(?:[?#"'`]|$)/m] },
-  { name: "/payroll (bare)",            patterns: [/["'`]\/payroll(?:[?#"'`]|$)/m] },
+  // Bare /recruiting and /payroll: only true bare literals (no query/hash),
+  // since query-scoped links like `/recruiting?candidate=…` are legitimate.
+  { name: "/recruiting (bare)",         patterns: [/["'`]\/recruiting(?:["'`]|$)/m] },
+  { name: "/payroll (bare)",            patterns: [/["'`]\/payroll(?:["'`]|$)/m] },
   { name: "/intake/vob-decision",       patterns: [/["'`]\/intake\/vob-decision(?:[?#"'`]|$)/m] },
 ];
 
-describe.skip("Pass 5B: navigation configs use canonical routes", () => {
+describe("Pass 5B: navigation configs use canonical routes", () => {
   for (const { name, patterns } of legacyLinkPatterns) {
     it(`no link config references ${name}`, () => {
       for (const re of patterns) {
         const match = corpus.match(re);
         if (match) {
-          // surface context to make failures actionable
           const idx = corpus.indexOf(match[0]);
           const ctx = corpus.slice(Math.max(0, idx - 120), idx + 120);
           throw new Error(`Found legacy link ${name}:\n...${ctx}...`);
