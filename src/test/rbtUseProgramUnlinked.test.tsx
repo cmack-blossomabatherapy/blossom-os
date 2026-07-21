@@ -3,7 +3,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 
 // Mock the supabase client. We track RPC and select invocations so we can
 // assert self-provision-attempt-at-most-once behavior.
-const rpcMock = vi.fn(async () => ({ data: null, error: null }));
+const rpcMock = vi.fn(async (_name: string) => ({ data: null, error: null }));
 const maybeSingleMock = vi.fn(async () => ({ data: null, error: null }));
 
 vi.mock("@/integrations/supabase/client", () => {
@@ -19,7 +19,7 @@ vi.mock("@/integrations/supabase/client", () => {
   return {
     supabase: {
       from: () => chain,
-      rpc: (...args: any[]) => rpcMock(...args),
+      rpc: (name: string) => rpcMock(name),
     },
   };
 });
