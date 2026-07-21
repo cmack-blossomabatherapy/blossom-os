@@ -206,3 +206,20 @@ SELECT report_key, uploaded_at FROM shared_report_datasets
   plus role-scoped query updates across ~20 hooks. Splitting into follow-up
   passes prevents landing half-migrated schema in a single commit.
 - Nothing published.
+
+## Phase 1b — Client workflow wiring (2026-07-21)
+
+- Registered `/clients/:id` → `ClientDetailRouter` in `src/App.tsx`. Router
+  precedence: (1) ClientsContext (Monday-backed) → legacy `ClientDetail`;
+  (2) UUID lookup in `public.clients` → canonical detail card; (3) CR id →
+  redirect via `/clients/cr/:crId`; (4) explicit not-found / RLS-denied UI.
+- BCBA caseload drawer (`CaseDetailDrawer.tsx`) exposes "Open full client
+  record →". UUID rows link to `/clients/<uuid>`, CR-derived rows to the
+  `/clients/cr/:crId` alias, `canon:` synthetic rows link nowhere so we
+  never send a BCBA into an unresolvable page.
+- RBT `MyClients` now surfaces an in-Blossom "Open in Blossom" action beside
+  the CentralReach link, using the same UUID-vs-CR heuristic.
+- Tests: `src/test/clientDetailRouter.test.tsx` (6), route contract update
+  in `src/test/crClientRedirectRoute.test.ts` (Phase 1b assertion),
+  `src/test/canonicalClientResolver.test.ts` (unchanged, still green). 15
+  focused tests pass; typecheck clean.
