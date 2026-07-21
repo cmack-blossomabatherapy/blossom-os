@@ -20,9 +20,14 @@ import type { KpiSpec, ChartSpec, DrilldownSpec } from "@/lib/os/dashboardEngine
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 import {
-  getActiveSharedReportDataset,
-  downloadSharedReportDatasetFile,
-} from "@/lib/os/sharedReportDatasets";
+  loadSharedDataset,
+  type SharedDatasetLoadResult,
+} from "@/lib/os/reporting/sharedDatasetLoader";
+import {
+  SharedDatasetStatusPanel,
+  type SharedSourceMode,
+} from "@/components/reports/SharedDatasetStatusPanel";
+import { downloadSharedReportDatasetFile } from "@/lib/os/sharedReportDatasets";
 
 /* ============================================================
  * QA Authorization Utilization Dashboard
@@ -161,7 +166,18 @@ export default function QaAuthUtilizationDashboard() {
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sharedLoading, setSharedLoading] = useState(false);
-  const [sharedAvailable, setSharedAvailable] = useState<boolean | null>(null);
+  const [sharedResult, setSharedResult] = useState<SharedDatasetLoadResult>({
+    key: "authorization",
+    status: "idle",
+    ageDays: null,
+    stale: false,
+    dataset: null,
+    parsed: null,
+    inspection: null,
+    missingFields: [],
+    errorMessage: null,
+  });
+  const [sourceMode, setSourceMode] = useState<SharedSourceMode>("none");
 
   // filters
   const [search, setSearch] = useState("");
@@ -177,7 +193,7 @@ export default function QaAuthUtilizationDashboard() {
   const [dragOver, setDragOver] = useState(false);
 
   /* ---- File upload ---- */
-  async function handleFiles(files: FileList | File[] | null) {
+  async function handleFiles(files: FileList | File[] | null, opts?: { fromShared?: boolean }) {
     if (!files || !files[0]) return;
     const file = files[0];
     setLoading(true);
@@ -260,6 +276,7 @@ export default function QaAuthUtilizationDashboard() {
       setRows(out);
       setFileName(file.name);
       setGenerated(false);
+      setSourceMode(opts?.fromShared ? "shared" : "manual-override");
       toast.success(`Loaded ${out.length.toLocaleString()} authorizations from ${file.name}`);
     } catch (e: any) {
       toast.error(`Failed to parse file: ${e?.message ?? e}`);
@@ -270,6 +287,7 @@ export default function QaAuthUtilizationDashboard() {
 
   function resetUpload() {
     setFileName(""); setRows([]); setMissingFields([]); setGenerated(false);
+    setSourceMode("none");
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -277,35 +295,71 @@ export default function QaAuthUtilizationDashboard() {
   async function loadSharedAdminDataset(silent = false) {
     setSharedLoading(true);
     try {
-      const ds = await getActiveSharedReportDataset("authorization");
-      if (!ds) {
-        setSharedAvailable(false);
-        if (!silent) toast.info("No admin-uploaded authorization dataset found. Ask an admin to upload the CentralReach authorization export.");
+      const result = await loadSharedDataset("authorization", {
+        requiredFields: [
+          "client_name",
+          "authorization_number",
+          "authorized_hours",
+          "worked_hours",
+        ],
+      });
+      setSharedResult(result);
+      if (result.status !== "ready" || !result.dataset) {
+        if (!silent && result.status === "missing") {
+          toast.info("No admin-uploaded authorization dataset found.");
+        } else if (!silent && result.errorMessage) {
+          toast.error(result.errorMessage);
+        }
         return;
       }
-      setSharedAvailable(true);
-      const file = await downloadSharedReportDatasetFile(ds);
-      await handleFiles([file]);
+      // Feed the parsed file back through the legacy handler so every
+      // KPI / chart / filter / export / drilldown consumes the same rows.
+      const file = await downloadSharedReportDatasetFile(result.dataset);
+      await handleFiles([file], { fromShared: true });
       setGenerated(true);
-      if (!silent) toast.success(`Loaded admin dataset: ${ds.fileName}`);
+      if (!silent) toast.success(`Loaded admin dataset: ${result.dataset.fileName}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      setSharedResult((prev) => ({ ...prev, status: "error", errorMessage: msg }));
       if (!silent) toast.error(`Failed to load admin dataset: ${msg}`);
     } finally {
       setSharedLoading(false);
     }
   }
 
+  async function resetToShared() {
+    resetUpload();
+    await loadSharedAdminDataset(false);
+  }
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setSharedLoading(true);
       try {
-        const ds = await getActiveSharedReportDataset("authorization");
+        const result = await loadSharedDataset("authorization", {
+          requiredFields: [
+            "client_name",
+            "authorization_number",
+            "authorized_hours",
+            "worked_hours",
+          ],
+        });
         if (cancelled) return;
-        setSharedAvailable(!!ds);
-        if (ds && !fileName) await loadSharedAdminDataset(true);
-      } catch {
-        if (!cancelled) setSharedAvailable(false);
+        setSharedResult(result);
+        if (result.status === "ready" && result.dataset && !fileName) {
+          await loadSharedAdminDataset(true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSharedResult((prev) => ({
+            ...prev,
+            status: "error",
+            errorMessage: err instanceof Error ? err.message : String(err),
+          }));
+        }
+      } finally {
+        if (!cancelled) setSharedLoading(false);
       }
     })();
     return () => { cancelled = true; };
@@ -579,31 +633,23 @@ export default function QaAuthUtilizationDashboard() {
           "PendingHours", "RemainingHours", "StartDate", "ExpirationDate",
           "BCBA (optional)", "State (optional)",
         ]}
-        filterNote="Powers both Authorization Analysis and Authorization Utilization — Hour Based. Uses the shared admin authorization dataset by default — upload a file below only if you want a one-off view."
+        filterNote="Powers both Authorization Analysis and Authorization Utilization — Hour Based. Uses the shared admin authorization dataset by default — upload a file below only for a one-off view."
         adminUploadsHref="/system/authorization-uploads"
-        adminSourceLabel={sharedAvailable ? "Auto-loads from Admin Uploads" : "No admin dataset yet"}
+        adminSourceLabel={sharedResult.status === "ready" ? "Auto-loads from Admin Uploads" : "No admin dataset yet"}
       />
 
       <SourceCoverageBanner reportKey={["authorization", "hour-based-utilization"]} />
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card p-4">
-        <div className="text-[12px] text-muted-foreground">
-          {sharedAvailable === false
-            ? "No admin-uploaded authorization dataset found. Ask an admin to upload the CentralReach authorization export via Admin → Authorization Uploads, or upload one below for a one-off view."
-            : sharedAvailable
-              ? "Shared admin authorization dataset is active for every user."
-              : "Checking for shared admin authorization dataset…"}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => loadSharedAdminDataset(false)}
-          disabled={sharedLoading}
-        >
-          <Database className="mr-1.5 h-3.5 w-3.5" />
-          {sharedLoading ? "Loading…" : "Reload Admin Dataset"}
-        </Button>
-      </div>
+      <SharedDatasetStatusPanel
+        title="Authorization Shared Source"
+        result={sharedResult}
+        loading={sharedLoading}
+        sourceMode={sourceMode}
+        adminUploadsHref="/system/authorization-uploads"
+        onReload={() => loadSharedAdminDataset(false)}
+        onResetToShared={resetToShared}
+        required
+      />
 
       {/* Upload */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">

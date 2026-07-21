@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft, Upload, FileSpreadsheet, Sparkles, Download, Search,
@@ -18,6 +18,15 @@ import { ChartCard } from "@/components/dashboards/ChartCard";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import type { KpiSpec, ChartSpec, DrilldownSpec } from "@/lib/os/dashboardEngine/types";
 import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
+import {
+  loadSharedDataset,
+  type SharedDatasetLoadResult,
+} from "@/lib/os/reporting/sharedDatasetLoader";
+import { downloadSharedReportDatasetFile } from "@/lib/os/sharedReportDatasets";
+import {
+  SharedDatasetStatusPanel,
+  type SharedSourceMode,
+} from "@/components/reports/SharedDatasetStatusPanel";
 
 /* ============================================================
  * QA Session Cancellation Dashboard
@@ -161,8 +170,22 @@ export default function QaCancellationDashboard() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sourceMode, setSourceMode] = useState<SharedSourceMode>("none");
+  const [sharedResult, setSharedResult] = useState<SharedDatasetLoadResult>({
+    key: "cancellation-scheduling",
+    status: "idle",
+    ageDays: null,
+    stale: false,
+    dataset: null,
+    parsed: null,
+    inspection: null,
+    missingFields: [],
+    errorMessage: null,
+  });
+
   /* ---- Upload ---- */
-  async function handleFiles(files: FileList | File[] | null) {
+  async function handleFiles(files: FileList | File[] | null, opts?: { fromShared?: boolean }) {
     if (!files || !files[0]) return;
     const file = files[0];
     setLoading(true);
@@ -243,6 +266,7 @@ export default function QaCancellationDashboard() {
       setRows(out);
       setFileName(file.name);
       setGenerated(false);
+      setSourceMode(opts?.fromShared ? "shared" : "manual-override");
       toast.success(`Loaded ${out.length.toLocaleString()} cancellations from ${file.name}`);
     } catch (e: any) {
       toast.error(`Failed to parse file: ${e?.message ?? e}`);
@@ -253,8 +277,72 @@ export default function QaCancellationDashboard() {
 
   function resetUpload() {
     setFileName(""); setRows([]); setMissingFields([]); setGenerated(false);
+    setSourceMode("none");
     if (inputRef.current) inputRef.current.value = "";
   }
+
+  /* ---- Shared admin dataset auto-load ---- */
+  async function loadSharedAdminDataset(silent = false) {
+    setSharedLoading(true);
+    try {
+      const result = await loadSharedDataset("cancellation-scheduling", {
+        requiredFields: ["client_name", "service_date"],
+      });
+      setSharedResult(result);
+      if (result.status !== "ready" || !result.dataset) {
+        if (!silent && result.status === "missing") {
+          toast.info("No admin-uploaded cancellation dataset found.");
+        } else if (!silent && result.errorMessage) {
+          toast.error(result.errorMessage);
+        }
+        return;
+      }
+      const file = await downloadSharedReportDatasetFile(result.dataset);
+      await handleFiles([file], { fromShared: true });
+      setGenerated(true);
+      if (!silent) toast.success(`Loaded admin dataset: ${result.dataset.fileName}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setSharedResult((prev) => ({ ...prev, status: "error", errorMessage: msg }));
+      if (!silent) toast.error(`Failed to load admin dataset: ${msg}`);
+    } finally {
+      setSharedLoading(false);
+    }
+  }
+
+  async function resetToShared() {
+    resetUpload();
+    await loadSharedAdminDataset(false);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setSharedLoading(true);
+      try {
+        const result = await loadSharedDataset("cancellation-scheduling", {
+          requiredFields: ["client_name", "service_date"],
+        });
+        if (cancelled) return;
+        setSharedResult(result);
+        if (result.status === "ready" && result.dataset && !fileName) {
+          await loadSharedAdminDataset(true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSharedResult((prev) => ({
+            ...prev,
+            status: "error",
+            errorMessage: err instanceof Error ? err.message : String(err),
+          }));
+        }
+      } finally {
+        if (!cancelled) setSharedLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ---- Dropdown options ---- */
   const providers = useMemo(() => Array.from(new Set(rows.map(r => r.providerName).filter(p => p && p !== "—"))).sort(), [rows]);
@@ -540,6 +628,17 @@ export default function QaCancellationDashboard() {
       </div>
 
       <SourceCoverageBanner reportKey="cancellation-scheduling" />
+
+      <SharedDatasetStatusPanel
+        title="Cancellation Shared Source"
+        result={sharedResult}
+        loading={sharedLoading}
+        sourceMode={sourceMode}
+        adminUploadsHref="/admin/uploads"
+        onReload={() => loadSharedAdminDataset(false)}
+        onResetToShared={resetToShared}
+        required
+      />
 
       {/* Upload */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">

@@ -28,6 +28,14 @@ import { pushRecent } from "@/lib/os/reportsCatalog";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 import {
+  loadSharedDataset,
+  type SharedDatasetLoadResult,
+} from "@/lib/os/reporting/sharedDatasetLoader";
+import {
+  SharedDatasetStatusPanel,
+  type SharedSourceMode,
+} from "@/components/reports/SharedDatasetStatusPanel";
+import {
   getActiveSharedReportDataset,
   downloadSharedReportDatasetFile,
   type SharedReportKey,
@@ -610,24 +618,64 @@ export default function CancellationCommandCenter() {
     scheduling: boolean; billing: boolean; authorization: boolean;
   }>({ scheduling: false, billing: false, authorization: false });
 
+  function emptyRes(key: SharedReportKey): SharedDatasetLoadResult {
+    return {
+      key,
+      status: "idle",
+      ageDays: null,
+      stale: false,
+      dataset: null,
+      parsed: null,
+      inspection: null,
+      missingFields: [],
+      errorMessage: null,
+    };
+  }
+  const [sharedResults, setSharedResults] = useState<Record<SharedReportKey, SharedDatasetLoadResult>>({
+    "cancellation-scheduling": emptyRes("cancellation-scheduling"),
+    "cancellation-billing": emptyRes("cancellation-billing"),
+    "cancellation-authorization": emptyRes("cancellation-authorization"),
+  } as Record<SharedReportKey, SharedDatasetLoadResult>);
+  const [sourceModeByKind, setSourceModeByKind] = useState<Record<SharedReportKey, SharedSourceMode>>({
+    "cancellation-scheduling": "none",
+    "cancellation-billing": "none",
+    "cancellation-authorization": "none",
+  } as Record<SharedReportKey, SharedSourceMode>);
+
   async function loadSharedKind(kind: SharedReportKey, silent = false): Promise<boolean> {
     try {
-      const ds = await getActiveSharedReportDataset(kind);
-      if (!ds) {
-        if (!silent) toast.info(`No admin-uploaded ${kind} dataset found.`);
+      const requiredFields =
+        kind === "cancellation-scheduling"
+          ? ["client_name" as const, "service_date" as const]
+          : kind === "cancellation-billing"
+            ? ["client_name" as const, "service_date" as const]
+            : ["client_name" as const];
+      const result = await loadSharedDataset(kind, { requiredFields });
+      setSharedResults((prev) => ({ ...prev, [kind]: result }));
+      if (result.status !== "ready" || !result.dataset) {
+        if (!silent && result.status === "missing") {
+          toast.info(`No admin-uploaded ${kind} dataset found.`);
+        } else if (!silent && result.errorMessage) {
+          toast.error(result.errorMessage);
+        }
         return false;
       }
-      const file = await downloadSharedReportDatasetFile(ds);
+      const file = await downloadSharedReportDatasetFile(result.dataset);
       // Build a FileList-like input by using DataTransfer
       const dt = new DataTransfer();
       dt.items.add(file);
       if (kind === "cancellation-scheduling") await handleSchedule(dt.files);
       else if (kind === "cancellation-billing") await handleBilling(dt.files);
       else if (kind === "cancellation-authorization") await handleAuths(dt.files);
-      if (!silent) toast.success(`Loaded admin ${kind} dataset: ${ds.fileName}`);
+      setSourceModeByKind((prev) => ({ ...prev, [kind]: "shared" }));
+      if (!silent) toast.success(`Loaded admin ${kind} dataset: ${result.dataset.fileName}`);
       return true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      setSharedResults((prev) => ({
+        ...prev,
+        [kind]: { ...prev[kind], status: "error", errorMessage: msg },
+      }));
       if (!silent) toast.error(`Failed to load admin ${kind} dataset: ${msg}`);
       return false;
     }
@@ -946,11 +994,11 @@ export default function CancellationCommandCenter() {
 
         {/* hidden file inputs */}
         <input ref={scheduleInput} type="file" accept={SUPPORTED_EXTENSIONS} className="hidden"
-          onChange={(e) => handleSchedule(e.target.files)} />
+          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-scheduling": "manual-override" })); handleSchedule(e.target.files); }} />
         <input ref={billingInput} type="file" accept={SUPPORTED_EXTENSIONS} className="hidden"
-          onChange={(e) => handleBilling(e.target.files)} />
+          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-billing": "manual-override" })); handleBilling(e.target.files); }} />
         <input ref={authInput} type="file" accept={SUPPORTED_EXTENSIONS} multiple className="hidden"
-          onChange={(e) => handleAuths(e.target.files)} />
+          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-authorization": "manual-override" })); handleAuths(e.target.files); }} />
 
         <CentralReachRequirementsCard
           exportName="Three CentralReach exports — Scheduling (required), Billing, Authorizations"
@@ -972,25 +1020,35 @@ export default function CancellationCommandCenter() {
           reportKey={["cancellation-scheduling", "cancellation-billing", "cancellation-authorization"]}
         />
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/60 p-3 backdrop-blur">
-          <div className="text-[12px] text-muted-foreground">
-            Admin datasets:
-            <span className="ml-2 font-semibold text-foreground">Scheduling</span>{" "}
-            <span>{sharedAvailable.scheduling ? "✓" : "—"}</span>
-            <span className="ml-3 font-semibold text-foreground">Billing</span>{" "}
-            <span>{sharedAvailable.billing ? "✓" : "—"}</span>
-            <span className="ml-3 font-semibold text-foreground">Authorization</span>{" "}
-            <span>{sharedAvailable.authorization ? "✓" : "—"}</span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => loadAllAdminDatasets(false)}
-            disabled={sharedLoading}
-          >
-            <Database className="mr-1 h-3.5 w-3.5" />
-            {sharedLoading ? "Loading…" : "Reload Admin Datasets"}
-          </Button>
+        <div className="mt-4 grid gap-3">
+          <SharedDatasetStatusPanel
+            title="Cancellation — Scheduling"
+            result={sharedResults["cancellation-scheduling"]}
+            loading={sharedLoading}
+            sourceMode={sourceModeByKind["cancellation-scheduling"]}
+            adminUploadsHref="/system/cancellation-uploads"
+            onReload={() => loadSharedKind("cancellation-scheduling", false)}
+            onResetToShared={() => { setScheduleRaws([]); setScheduleFileName(""); loadSharedKind("cancellation-scheduling", false); }}
+            required
+          />
+          <SharedDatasetStatusPanel
+            title="Cancellation — Billing (optional)"
+            result={sharedResults["cancellation-billing"]}
+            loading={sharedLoading}
+            sourceMode={sourceModeByKind["cancellation-billing"]}
+            adminUploadsHref="/system/cancellation-uploads"
+            onReload={() => loadSharedKind("cancellation-billing", false)}
+            onResetToShared={() => { setBillingRaws([]); setBillingFileName(""); loadSharedKind("cancellation-billing", false); }}
+          />
+          <SharedDatasetStatusPanel
+            title="Cancellation — Authorization (optional)"
+            result={sharedResults["cancellation-authorization"]}
+            loading={sharedLoading}
+            sourceMode={sourceModeByKind["cancellation-authorization"]}
+            adminUploadsHref="/system/cancellation-uploads"
+            onReload={() => loadSharedKind("cancellation-authorization", false)}
+            onResetToShared={() => { setAuthRecords([]); setAuthFileNames([]); loadSharedKind("cancellation-authorization", false); }}
+          />
         </div>
 
         {/* upload chips */}
