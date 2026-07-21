@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     }
 
     await supabase.from("ctm_call_events").update(update).eq("id", ev.id);
-    // INGEST_ONLY: no intake_communications / intake_tasks writes here.
+    // INGEST_ONLY: this handler never writes to Intake outbound tables.
     // Provenance is captured by the shared linker via
     // intake_lead_source_events; missed-call follow-ups are surfaced in
     // the Review Queues UI, not auto-created here.
