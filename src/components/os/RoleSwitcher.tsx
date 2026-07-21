@@ -132,6 +132,61 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
                 </div>
               </div>
             )}
+
+            {showPreviewPicker && (
+              <div className="mt-1 border-t border-border/60 px-2 pt-2 pb-1">
+                <div className="flex items-center justify-between gap-2 px-0.5 pb-1.5">
+                  <div className="flex items-center gap-2">
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Preview as {role === "bcba" ? "BCBA" : "RBT"}
+                    </p>
+                  </div>
+                  {isPreviewing && (
+                    <button
+                      onClick={() => setPreviewSubjectEmployeeId(null)}
+                      className="flex items-center gap-1 rounded-md bg-foreground/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-foreground/80 hover:bg-foreground/[0.1]"
+                    >
+                      <X className="h-3 w-3" /> Exit preview
+                    </button>
+                  )}
+                </div>
+                {isPreviewing && (
+                  <p className="mb-1.5 rounded-md bg-amber-500/10 px-2 py-1 text-[10.5px] text-amber-700">
+                    Read-only preview as <span className="font-semibold">{subjectLabel ?? "employee"}</span>. Writes are blocked.
+                  </p>
+                )}
+                <input
+                  value={subjectQuery}
+                  onChange={(e) => setSubjectQuery(e.target.value)}
+                  placeholder="Search employee…"
+                  className="w-full rounded-lg border border-border/60 bg-background/60 px-2 py-1.5 text-[12px] outline-none focus:border-foreground/30"
+                />
+                <div className="mt-1 max-h-40 overflow-y-auto">
+                  {subjectResults.map((emp) => {
+                    const active = emp.id === previewSubjectEmployeeId;
+                    return (
+                      <button
+                        key={emp.id}
+                        onClick={() => { setPreviewSubjectEmployeeId(emp.id); setOpen(false); }}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-[12px]",
+                          active ? "bg-foreground/[0.08]" : "hover:bg-foreground/[0.04]",
+                        )}
+                      >
+                        <span className="truncate">{displayNameFor(emp)}</span>
+                        <span className="shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {emp.credential ?? ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {!subjectResults.length && (
+                    <p className="px-2 py-1.5 text-[11px] text-muted-foreground">No employees found.</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
