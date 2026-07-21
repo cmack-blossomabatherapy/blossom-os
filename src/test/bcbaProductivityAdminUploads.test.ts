@@ -62,7 +62,7 @@ describe("BCBA Productivity Report V3 — canonical report route + dataset", () 
     expect(report).toMatch(/fetchCanonicalReportTotals/);
     expect(report).toMatch(/fetchBcbaBillingRowsAsSharedShape/);
     expect(report).toMatch(/void loadSharedDataset\(\{ silent: true \}\)/);
-    expect(report).toMatch(/getBcbaProductivityDatasetStatus/);
+    expect(report).not.toMatch(/getBcbaProductivityDatasetStatus/);
   });
 
   it("V3 remains in the reports catalog", () => {

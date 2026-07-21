@@ -28,7 +28,7 @@ import {
 } from "@/lib/os/bcbaProductivityV3/store";
 import { inferAssignmentHistory, type OwnershipConflict } from "@/lib/os/bcbaProductivityV3/inferAssignments";
 import {
-  getBcbaProductivitySharedRows, getBcbaProductivityDatasetStatus,
+  getBcbaProductivitySharedRows,
   type BcbaDatasetStatus,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
 import {
@@ -245,13 +245,14 @@ export default function BcbaProductivityReportV3() {
       // with server-side paging so the browser never loads all 47k rows at
       // once. Manual uploads remain an explicit temporary override.
       const totals = await fetchCanonicalReportTotals();
-      try {
-        const s = await getBcbaProductivityDatasetStatus();
-        setSharedStatus(s);
-      } catch {
-        // Legacy upload-status diagnostics should never block canonical report loading.
-        setSharedStatus(null);
-      }
+      setSharedStatus({
+        activeRowCount: totals.totalRows,
+        batchCount: totals.totalRows > 0 ? 1 : 0,
+        earliestServiceDate: totals.minServiceDate,
+        latestServiceDate: totals.maxServiceDate,
+        lastUploadAt: totals.maxBatchUploadedAt,
+        lastUploadedByEmail: null,
+      });
       if (!totals.totalRows) {
         setRows([]);
         setFileName("");
