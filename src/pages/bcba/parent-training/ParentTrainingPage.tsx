@@ -23,6 +23,7 @@ import ParentTrainingDetailDrawer from "./ParentTrainingDetailDrawer";
 import { useBcbaIdentity } from "../useBcbaIdentity";
 import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
 import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 
 function fmt(d?: string | null) {
   if (!d) return "—";
@@ -53,6 +54,14 @@ export default function ParentTrainingPage() {
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
       <BcbaPreviewBanner />
       <div className="mb-4"><BcbaMappingDiagnostic /></div>
+      <div className="mb-4">
+        <CanonicalSessionsCard
+          title="Imported CentralReach parent training (97156) — my scope"
+          scope={{ authUserId: identity.scopedAuthUserId }}
+          highlightKinds={["parent_training"]}
+          showClients
+        />
+      </div>
       <div className="mb-6">
         <h1 className="text-3xl font-semibold tracking-tight">Parent Training & Service Utilization</h1>
         <p className="text-sm text-muted-foreground mt-1">
