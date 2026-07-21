@@ -6,6 +6,10 @@ import {
   type RawSignal,
   type ReasonCode,
 } from "./priority";
+import {
+  fetchCanonicalProviderSummary,
+  summarizeProviderRows,
+} from "@/lib/os/reporting/canonicalConsumer";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                      */
@@ -27,32 +31,33 @@ export type CaseloadHealth = {
   onTrack: number;
   attentionNeeded: number;
   authorizationRisk: number;
-  staffingRisk: number;
+  staffingRisk: number | null;
   documentationRisk: number;
-  underutilization: number;
+  underutilization: number | null;
   parentTrainingConcern: number;
-  onHold: number;
+  onHold: number | null;
 };
 
 export type RbtTeamHealth = {
   total: number;
   onTrack: number;
   needSupervision: number;
-  newToCase: number;
-  requestedSupport: number;
-  trainingOverdue: number;
-  performanceFollowUp: number;
+  newToCase: number | null;
+  requestedSupport: number | null;
+  trainingOverdue: number | null;
+  performanceFollowUp: number | null;
 };
 
 export type MyMonth = {
   clinicalHours: number;
-  assessments: number;
+  assessments: number | null;
   parentTraining: number;
   supervision: number;
-  reportsSubmitted: number;
+  reportsSubmitted: number | null;
   qaReturns: number;
   documentationTimelinessPct: number;
   openRisks: number;
+  filledFromCanonical: boolean;
 };
 
 export type SupportSnapshot = {
@@ -332,11 +337,11 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
     onTrack: Math.max(0, clientIds.size - attention.size),
     attentionNeeded: attention.size,
     authorizationRisk: authRiskClients.size,
-    staffingRisk: 0, // requires staffing feed — surfaced when available
+    staffingRisk: null, // requires staffing feed — surfaced when available
     documentationRisk: docRiskClients.size,
-    underutilization: 0,
+    underutilization: null,
     parentTrainingConcern: ptConcernClients.size,
-    onHold: 0,
+    onHold: null,
   };
 
   /* ---- RBT team --------------------------------------------------------- */
@@ -349,10 +354,10 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
     total: rbtIds.size,
     onTrack: Math.max(0, rbtIds.size - needSupervision),
     needSupervision,
-    newToCase: 0,
-    requestedSupport: 0,
-    trainingOverdue: 0,
-    performanceFollowUp: 0,
+    newToCase: null,
+    requestedSupport: null,
+    trainingOverdue: null,
+    performanceFollowUp: null,
   };
 
   /* ---- My Month --------------------------------------------------------- */
@@ -360,17 +365,40 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
   const monthPt    = parentTrain.filter((p) => p.occurred_at && p.occurred_at >= monthStart);
   const clinicalHrs = monthSup.reduce((acc, s) => acc + ((s.minutes ?? 0) / 60), 0);
 
+  let mClinical = Math.round(clinicalHrs * 10) / 10;
+  let mParent = monthPt.length;
+  let mSup = monthSup.length;
+  let filledFromCanonical = false;
+  if (mClinical === 0 && mParent === 0 && mSup === 0) {
+    try {
+      const rows = await fetchCanonicalProviderSummary({
+        authUserId: userId,
+        start: monthStart.slice(0, 10),
+      });
+      const t = summarizeProviderRows(rows);
+      if (t.rowCount > 0) {
+        mClinical = Math.round((t.directHours + t.supervisionHours + t.parentTrainingHours) * 10) / 10;
+        mParent = Math.round(t.parentTrainingHours);
+        mSup = Math.round(t.supervisionHours);
+        filledFromCanonical = true;
+      }
+    } catch {
+      /* leave role-derived zeros */
+    }
+  }
+
   const month: MyMonth = {
-    clinicalHours: Math.round(clinicalHrs * 10) / 10,
-    assessments: 0,
-    parentTraining: monthPt.length,
-    supervision: monthSup.length,
-    reportsSubmitted: 0,
+    clinicalHours: mClinical,
+    assessments: null,
+    parentTraining: mParent,
+    supervision: mSup,
+    reportsSubmitted: null,
     qaReturns: notifications.filter((n: any) => n.category === "qa").length,
     documentationTimelinessPct: treatment.length === 0 ? 100 :
       Math.round((1 - treatment.filter((t: any) =>
         t.due_date && new Date(t.due_date).getTime() < now.getTime()).length / treatment.length) * 100),
     openRisks: caseload.attentionNeeded,
+    filledFromCanonical,
   };
 
   /* ---- Support snapshot ------------------------------------------------- */
