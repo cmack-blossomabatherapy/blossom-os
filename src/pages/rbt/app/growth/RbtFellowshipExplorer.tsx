@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { CardFrame } from "../CardFrame";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +11,8 @@ type Section = { section_key: string; title: string; body: string | null; order_
 
 export default function RbtFellowshipExplorer() {
   const { user } = useAuth();
+  const osRole = useOSRoleSafe();
+  const isPreviewing = Boolean(osRole?.isPreviewing);
   const [sections, setSections] = useState<Section[] | null>(null);
   const [application, setApplication] = useState<any | null>(null);
   const [interestNote, setInterestNote] = useState("");
@@ -31,6 +34,7 @@ export default function RbtFellowshipExplorer() {
 
   const expressInterest = async () => {
     if (!user) return;
+    if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
     setSubmitting(true);
     const { data, error } = await supabase.from("rbt_fellowship_applications" as any)
       .insert({
@@ -100,8 +104,9 @@ export default function RbtFellowshipExplorer() {
             placeholder="What draws you to the Fellowship? (optional)"
             className="w-full text-sm p-3 rounded-xl bg-muted/40 border border-border/70 min-h-24 mb-2" />
           <button onClick={expressInterest} disabled={submitting}
+            aria-disabled={isPreviewing || submitting}
             className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition disabled:opacity-50">
-            {submitting ? "Submitting…" : "Express interest"}
+            {submitting ? "Submitting…" : isPreviewing ? "Read-only in preview" : "Express interest"}
           </button>
         </CardFrame>
       )}
