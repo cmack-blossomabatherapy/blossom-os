@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { PathwayStep, StepProgress, StepRow } from "./types";
 
@@ -10,8 +10,24 @@ export function useProgram(employeeId: string | null | undefined) {
   const [loading, setLoading] = useState(true);
   const [needsRecruitingData, setNeedsRecruitingData] = useState(false);
 
+  // Session-scoped guard: attempt self-provision at most once per employee.
+  // Prevents the ensure_my_rbt_pathway_assignment RPC from firing on every
+  // reload/refetch when recruiting data is incomplete.
+  const provisionAttemptedRef = useRef<Set<string>>(new Set());
+
   const load = useCallback(async () => {
-    if (!employeeId) return;
+    // No linked employee yet — settle into the calm setup/support state
+    // instead of staying indefinitely loading. This is the same state an RBT
+    // sees when recruiting hasn't captured certification + years yet.
+    if (!employeeId) {
+      setPathway(null);
+      setSteps([]);
+      setProgress([]);
+      setRemediation([]);
+      setNeedsRecruitingData(true);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setNeedsRecruitingData(false);
 
@@ -25,21 +41,24 @@ export function useProgram(employeeId: string | null | undefined) {
       .maybeSingle();
 
     if (!assign) {
-      // Attempt a self-serve provisioning for the current RBT once; only
-      // succeeds when recruiting has captured certification + years and
-      // linked the candidate to this employee.
-      try {
-        await supabase.rpc("ensure_my_rbt_pathway_assignment" as any);
-      } catch { /* non-fatal — surface calm empty state below */ }
-      const retry = await supabase
-        .from("rbt_pathway_assignments" as any)
-        .select("pathway_id, assigned_at, notes, active, pathway:rbt_pathways!inner(id,key,name,description)")
-        .eq("employee_id", employeeId)
-        .eq("active", true)
-        .order("assigned_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      assign = retry.data as any;
+      // Attempt self-provision AT MOST ONCE per (employee, session). Only
+      // succeeds when recruiting has captured certification + years and linked
+      // the candidate to this employee.
+      if (!provisionAttemptedRef.current.has(employeeId)) {
+        provisionAttemptedRef.current.add(employeeId);
+        try {
+          await supabase.rpc("ensure_my_rbt_pathway_assignment" as any);
+        } catch { /* non-fatal — surface calm empty state below */ }
+        const retry = await supabase
+          .from("rbt_pathway_assignments" as any)
+          .select("pathway_id, assigned_at, notes, active, pathway:rbt_pathways!inner(id,key,name,description)")
+          .eq("employee_id", employeeId)
+          .eq("active", true)
+          .order("assigned_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        assign = retry.data as any;
+      }
       if (!assign) {
         setPathway(null); setSteps([]); setProgress([]); setRemediation([]);
         setNeedsRecruitingData(true);
