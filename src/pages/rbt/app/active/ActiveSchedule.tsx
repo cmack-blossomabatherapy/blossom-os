@@ -8,6 +8,14 @@ import { crSessionUrl } from "./cr";
 import { ExternalLink, Flag } from "lucide-react";
 
 type Tab = "today" | "week" | "upcoming";
+type StatusFilter = "all" | "active" | "cancelled";
+
+function matchesFilter(row: any, f: StatusFilter): boolean {
+  const s = String(row.status ?? "").toLowerCase();
+  if (f === "all") return true;
+  if (f === "cancelled") return /cancel/.test(s);
+  return !/cancel/.test(s);
+}
 
 function StatusPill({ status }: { status?: string | null }) {
   if (!status) return null;
@@ -26,6 +34,7 @@ function StatusPill({ status }: { status?: string | null }) {
 export default function ActiveSchedule() {
   const { employeeId, loading: idLoading } = useRbtIdentity();
   const [tab, setTab] = useState<Tab>("today");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [rows, setRows] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -54,21 +63,38 @@ export default function ActiveSchedule() {
       });
   }, [employeeId, idLoading, tab]);
 
+  const filtered = useMemo(
+    () => (rows ?? []).filter((r) => matchesFilter(r, statusFilter)),
+    [rows, statusFilter],
+  );
   const grouped = useMemo(() => {
     const map = new Map<string, any[]>();
-    (rows ?? []).forEach((r) => {
+    filtered.forEach((r) => {
       const k = new Date(r.starts_at).toDateString();
       map.set(k, [...(map.get(k) ?? []), r]);
     });
     return Array.from(map.entries());
-  }, [rows]);
+  }, [filtered]);
+  const totalMinutes = useMemo(
+    () => filtered.reduce((s, r) => s + Math.max(0, (new Date(r.ends_at).getTime() - new Date(r.starts_at).getTime()) / 60000), 0),
+    [filtered],
+  );
 
   const crFresh = freshness(crSync?.last_success_at, crSync?.stale_after_hours ?? 24);
   const state: "loading" | "empty" | "success" | "error" =
-    error ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
+    error ? "error" : rows === null || idLoading ? "loading" : filtered.length === 0 ? "empty" : "success";
+
+  const emptyLabel = rows && rows.length > 0 && filtered.length === 0
+    ? `No ${statusFilter === "cancelled" ? "cancelled" : "active"} sessions in this range.`
+    : "No sessions in this range. If this looks wrong, CentralReach may not be synced yet.";
 
   return (
     <div className="space-y-3">
+      {!employeeId && !idLoading && (
+        <div className="rounded-xl bg-destructive/10 text-destructive text-xs p-3">
+          We couldn't match your login to a clinician record. Ask an admin to link you in the CentralReach Data Hub.
+        </div>
+      )}
       {/* Freshness banner */}
       {crFresh.stale && (
         <div className="rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs p-3">
@@ -86,9 +112,26 @@ export default function ActiveSchedule() {
         ))}
       </div>
 
+      {/* Status filter + summary */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="inline-flex rounded-full bg-muted/60 p-0.5 text-xs">
+          {(["all", "active", "cancelled"] as StatusFilter[]).map((f) => (
+            <button key={f} onClick={() => setStatusFilter(f)}
+              className={`px-3 h-7 rounded-full capitalize transition ${statusFilter === f ? "bg-card shadow-sm font-medium" : "text-muted-foreground"}`}>
+              {f}
+            </button>
+          ))}
+        </div>
+        {rows && (
+          <p className="text-[11px] text-muted-foreground tabular-nums">
+            {filtered.length} session{filtered.length === 1 ? "" : "s"} · {(totalMinutes / 60).toFixed(1)} hrs
+          </p>
+        )}
+      </div>
+
       <CardFrame title={tab === "today" ? "Today" : tab === "week" ? "This week" : "Upcoming (30 days)"}
         state={state}
-        emptyLabel="No sessions in this range."
+        emptyLabel={emptyLabel}
         errorLabel="We couldn't load your schedule right now."
         subtitle={crFresh.label}
       >
