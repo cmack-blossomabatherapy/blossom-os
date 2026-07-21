@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { FreshnessPill, freshness } from "./freshness";
 import { useRbtIdentity } from "../useRbtIdentity";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 
 export default function Hours() {
   const { employeeId, writableEmployeeId, loading: idLoading, isPreviewing } = useRbtIdentity();
@@ -132,6 +133,15 @@ export default function Hours() {
           ))}
         </ul>
       </CardFrame>
+
+      {employeeId && snap === null && (
+        <CanonicalSessionsCard
+          title="CentralReach imported hours for you"
+          scope={{ employeeId }}
+          highlightKinds={["direct", "supervision", "cancellation"]}
+          showClients={false}
+        />
+      )}
     </div>
   );
 }
