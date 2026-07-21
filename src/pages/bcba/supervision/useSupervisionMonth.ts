@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+// Auth is provided by the caller via `scopedAuthUserId` so preview mode scopes
+// to the previewed BCBA rather than the admin session.
 import {
   computeStatus, escalationLevelFor, monthKey, monthBounds,
   requiredSupervisionMinutes, daysLeftInMonth,
@@ -34,9 +35,11 @@ export interface SupervisionRow {
  * current BCBA. Combines rbt_client_assignments (source of truth),
  * rbt_sessions (RBT-facing hours) and bcba_supervision_logs (BCBA records).
  */
-export function useSupervisionMonth(date: Date = new Date()) {
-  const { user } = useAuth();
-  const uid = user?.id ?? null;
+export function useSupervisionMonth(
+  scopedAuthUserId: string | null,
+  date: Date = new Date(),
+) {
+  const uid = scopedAuthUserId ?? null;
   const mKey = monthKey(date);
   const { start, end } = useMemo(() => monthBounds(date), [date]);
   const daysLeft = daysLeftInMonth(date);

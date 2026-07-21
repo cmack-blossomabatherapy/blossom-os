@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Home, UserCheck, Users, ClipboardList, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BcbaPreviewBanner } from "./BcbaPreviewBanner";
 
 const tabs = [
   { to: "/bcba/home",     label: "Home",     icon: Home },
@@ -28,6 +29,7 @@ export default function BcbaMobileShell() {
       </header>
 
       <main className="mx-auto max-w-3xl px-5 pb-28 pt-4 overflow-x-hidden">
+        <BcbaPreviewBanner />
         <Outlet />
       </main>
 

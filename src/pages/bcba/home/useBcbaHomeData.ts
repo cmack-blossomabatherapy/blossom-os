@@ -390,13 +390,19 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
 /* -------------------------------------------------------------------------- */
 
 export function useBcbaHomeData() {
+  return useBcbaHomeDataFor(null);
+}
+
+/**
+ * Scoped variant — accepts the resolved BCBA auth uid so preview mode fetches
+ * the previewed subject's data (not the admin's). Returns disabled/empty until
+ * identity is ready to prevent unscoped or cross-subject fetches.
+ */
+export function useBcbaHomeDataFor(scopedAuthUserId: string | null) {
   return useQuery({
-    queryKey: ["bcba-home"],
+    queryKey: ["bcba-home", scopedAuthUserId],
+    enabled: !!scopedAuthUserId,
     staleTime: 60_000,
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not signed in");
-      return fetchAll(user.id);
-    },
+    queryFn: async () => fetchAll(scopedAuthUserId!),
   });
 }

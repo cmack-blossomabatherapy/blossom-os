@@ -191,14 +191,11 @@ async function fetchCaseload(userId: string): Promise<CaseloadRow[]> {
   return rows.sort((a, b) => a.approvedIdentifier.localeCompare(b.approvedIdentifier));
 }
 
-export function useCaseload() {
+export function useCaseload(scopedAuthUserId: string | null = null) {
   return useQuery({
-    queryKey: ["bcba-caseload"],
+    queryKey: ["bcba-caseload", scopedAuthUserId],
+    enabled: !!scopedAuthUserId,
     staleTime: 60_000,
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not signed in");
-      return fetchCaseload(user.id);
-    },
+    queryFn: async () => fetchCaseload(scopedAuthUserId!),
   });
 }
