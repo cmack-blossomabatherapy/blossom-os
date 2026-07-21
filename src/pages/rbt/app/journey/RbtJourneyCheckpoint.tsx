@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CardFrame } from "../CardFrame";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TOPIC_DEFS, CAREER_INTERESTS } from "./topics";
@@ -29,6 +30,8 @@ function Scale({ def, value, onChange }: { def: (typeof TOPIC_DEFS)[string]; val
 
 export default function RbtJourneyCheckpoint() {
   const { user } = useAuth();
+  const osRole = useOSRoleSafe();
+  const isPreviewing = Boolean(osRole?.isPreviewing);
   const { instanceId } = useParams();
   const nav = useNavigate();
   const [instance, setInstance] = useState<any | null>(null);
@@ -64,6 +67,7 @@ export default function RbtJourneyCheckpoint() {
   if (!instance || !cfg) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
 
   const submit = async () => {
+    if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
     setSaving(true);
     const { error } = await supabase.from("rbt_journey_responses" as any).insert({
       instance_id: instance.id, employee_id: instance.employee_id,
@@ -173,9 +177,9 @@ export default function RbtJourneyCheckpoint() {
           placeholder="Optional" className="w-full rounded-xl bg-muted/60 border border-border p-3 text-sm" />
       </CardFrame>
 
-      <button onClick={submit} disabled={saving}
+      <button onClick={submit} disabled={saving || isPreviewing}
         className="w-full rounded-xl bg-primary text-primary-foreground h-12 min-h-12 text-sm font-semibold disabled:opacity-60">
-        {saving ? "Submitting…" : "Submit check-in"}
+        {saving ? "Submitting…" : isPreviewing ? "Read-only in preview" : "Submit check-in"}
       </button>
       <p className="text-center text-xs text-muted-foreground">Your answers go to your BCBA and support team. You will not see a risk score.</p>
     </div>
