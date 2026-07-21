@@ -277,8 +277,72 @@ export default function QaCancellationDashboard() {
 
   function resetUpload() {
     setFileName(""); setRows([]); setMissingFields([]); setGenerated(false);
+    setSourceMode("none");
     if (inputRef.current) inputRef.current.value = "";
   }
+
+  /* ---- Shared admin dataset auto-load ---- */
+  async function loadSharedAdminDataset(silent = false) {
+    setSharedLoading(true);
+    try {
+      const result = await loadSharedDataset("cancellation-scheduling", {
+        requiredFields: ["client_name", "service_date"],
+      });
+      setSharedResult(result);
+      if (result.status !== "ready" || !result.dataset) {
+        if (!silent && result.status === "missing") {
+          toast.info("No admin-uploaded cancellation dataset found.");
+        } else if (!silent && result.errorMessage) {
+          toast.error(result.errorMessage);
+        }
+        return;
+      }
+      const file = await downloadSharedReportDatasetFile(result.dataset);
+      await handleFiles([file], { fromShared: true });
+      setGenerated(true);
+      if (!silent) toast.success(`Loaded admin dataset: ${result.dataset.fileName}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setSharedResult((prev) => ({ ...prev, status: "error", errorMessage: msg }));
+      if (!silent) toast.error(`Failed to load admin dataset: ${msg}`);
+    } finally {
+      setSharedLoading(false);
+    }
+  }
+
+  async function resetToShared() {
+    resetUpload();
+    await loadSharedAdminDataset(false);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setSharedLoading(true);
+      try {
+        const result = await loadSharedDataset("cancellation-scheduling", {
+          requiredFields: ["client_name", "service_date"],
+        });
+        if (cancelled) return;
+        setSharedResult(result);
+        if (result.status === "ready" && result.dataset && !fileName) {
+          await loadSharedAdminDataset(true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSharedResult((prev) => ({
+            ...prev,
+            status: "error",
+            errorMessage: err instanceof Error ? err.message : String(err),
+          }));
+        }
+      } finally {
+        if (!cancelled) setSharedLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ---- Dropdown options ---- */
   const providers = useMemo(() => Array.from(new Set(rows.map(r => r.providerName).filter(p => p && p !== "—"))).sort(), [rows]);
