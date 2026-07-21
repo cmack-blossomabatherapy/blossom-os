@@ -7,11 +7,11 @@ export function freshness(
   lastAt?: string | null,
   staleAfterHours = 24,
 ): Freshness {
-  if (!lastAt) return { label: "No sync recorded", stale: true, missing: true };
+  if (!lastAt) return { label: "Not updated yet", stale: true, missing: true };
   const d = new Date(lastAt);
   const ageHrs = (Date.now() - d.getTime()) / 36e5;
   return {
-    label: `Synced ${formatDistanceToNowStrict(d, { addSuffix: true })}`,
+    label: `Updated ${formatDistanceToNowStrict(d, { addSuffix: true })}`,
     stale: ageHrs > staleAfterHours,
     missing: false,
   };
