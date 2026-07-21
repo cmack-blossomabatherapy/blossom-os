@@ -20,20 +20,22 @@ const USE_PROGRAM_SRC = "src/pages/rbt/app/training/useProgram.ts";
 const ACTIVE_HOME_SRC = "src/pages/rbt/app/active/ActiveHome.tsx";
 
 describe("Experience Lab overrides RBT Home routing", () => {
-  it("RbtHome short-circuits to ActiveHome when lab.active — before loading/error branches", () => {
+  it("RbtHome short-circuits to ActiveHome when lab.active — before loading/setup branches", () => {
     const src = read(PAGES_SRC);
     expect(src).toMatch(/useExperienceLab/);
     // The lab.active guard exists and returns ActiveHome.
     const guard = /if\s*\(\s*lab\.active\s*\)\s*return\s*<ActiveHome\s*\/>/;
     expect(src).toMatch(guard);
-    // The guard must appear BEFORE the loading/error render paths so the
-    // preview never falls through into the "could not load your home" card.
+    // The guard must appear BEFORE the loading/setup render paths so the
+    // preview never falls through into the ProgramSetupJourney fallback.
     const guardIdx = src.search(guard);
-    const errorIdx = src.indexOf('errorLabel="We could not load');
     const loadingIdx = src.indexOf("animate-pulse");
+    const setupIdx = src.indexOf("<ProgramSetupJourney");
     expect(guardIdx).toBeGreaterThan(-1);
-    expect(errorIdx).toBeGreaterThan(guardIdx);
     expect(loadingIdx).toBeGreaterThan(guardIdx);
+    expect(setupIdx).toBeGreaterThan(guardIdx);
+    // The raw "could not load your home" red error card is gone entirely.
+    expect(src).not.toMatch(/We could not load your home/);
   });
 
   it("useProgram synthesises the selected pathway+stage without touching Supabase", () => {

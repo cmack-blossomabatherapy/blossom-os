@@ -10,6 +10,7 @@ import RbtProgram from "./training/RbtProgram";
 import RbtSkillPassport from "./training/RbtSkillPassport";
 import ActiveHome from "./active/ActiveHome";
 import ActiveSchedule from "./active/ActiveSchedule";
+import { ProgramSetupJourney } from "./training/ProgramSetupJourney";
 import { Link } from "react-router-dom";
 import { GraduationCap, Award, ArrowRight, Users, Clock, ShieldCheck, BadgeCheck, Sparkles, Compass, LifeBuoy } from "lucide-react";
 import {
@@ -105,6 +106,13 @@ export function RbtHome() {
   const lab = useExperienceLab();
   const { cards, loading, error, context } = useDashboardCards();
   const [stageMessage, setStageMessage] = useState<string | undefined>();
+  const { employeeId, loading: identityLoading } = useRbtIdentity();
+  const { pathway, loading: programLoading, reload } = useProgram(employeeId);
+  const [retrying, setRetrying] = useState(false);
+  const handleRetry = async () => {
+    setRetrying(true);
+    try { await reload(); } finally { setRetrying(false); }
+  };
 
   useEffect(() => {
     if (!context.lifecycleStage) return;
@@ -129,14 +137,10 @@ export function RbtHome() {
   // and return projected data.
   if (lab.active) return <ActiveHome />;
 
-  if (loading) return (
+  if (loading || identityLoading) return (
     <div className="space-y-3">
       {[0,1,2].map(i => <div key={i} className="h-28 rounded-2xl bg-muted animate-pulse" />)}
     </div>
-  );
-
-  if (error) return (
-    <CardFrame title="Home" state="error" errorLabel="We could not load your home right now. Try again shortly." />
   );
 
   if (isPreboardingStage(context.lifecycleStage)) {
@@ -152,9 +156,29 @@ export function RbtHome() {
     return <ActiveHome />;
   }
 
-  if (cards.length === 0) return (
-    <CardFrame title="You're all caught up" state="empty" emptyLabel="Nothing needs your attention right now." />
-  );
+  // No active pathway yet OR the dashboard cards failed to load — replace the
+  // legacy dashboard (with its raw credential/schedule error cards) with the
+  // same polished, actionable Program Setup journey used on /rbt/app/program.
+  // RBTs never see raw load/sync/integration error surfaces here.
+  if (error || programLoading || !pathway) {
+    return (
+      <ProgramSetupJourney
+        employeeLinked={Boolean(employeeId)}
+        onRetry={handleRetry}
+        retrying={retrying || programLoading}
+      />
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <ProgramSetupJourney
+        employeeLinked={Boolean(employeeId)}
+        onRetry={handleRetry}
+        retrying={retrying}
+      />
+    );
+  }
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
