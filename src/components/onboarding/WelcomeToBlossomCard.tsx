@@ -6,10 +6,10 @@ import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
  * regardless of role on top of training/journey pages so Phase 0 is always
  * one click away.
  */
-export function WelcomeToBlossomCard() {
+export function WelcomeToBlossomCard({ to = "/training/welcome" }: { to?: string } = {}) {
   return (
     <Link
-      to="/training/welcome"
+      to={to}
       className="group relative block overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:p-6"
     >
       <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
