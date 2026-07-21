@@ -223,6 +223,9 @@ export default function BillingReconciliationDialog({ open, onOpenChange, snapsh
             Period {fmtDate(snapshot?.period_start)}–{fmtDate(snapshot?.period_end)}
             {latest && <> · newest source row {fmtDate(latest)}</>}
             {" · "}Source: bcba_billable_sessions · scheduled from bcba_supervision_logs
+            {rows.some(r => r.source === "canonical") && (
+              <> · <span className="text-teal-700">canonical fallback: v_cr_canonical_sessions</span></>
+            )}
           </DialogDescription>
         </DialogHeader>
 
