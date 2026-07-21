@@ -62,16 +62,23 @@ describe("Slice 4B — RBT Home cockpit (pure logic)", () => {
         expect(validRoutes.has(c.nextAction.to as any)).toBe(true);
 
         // Preset expectations.
+        // Stage assertions are percent-driven so short pathways (like the
+        // 2-step experienced_rbt fixture) don't force impossible states.
         if (preset === "needs_support") {
           expect(c.nextAction.stage).toBe("needs_support");
           expect(c.nextAction.to).toBe(COCKPIT_ROUTES.support);
-        } else if (preset === "starting") {
-          expect(["kickoff", "in_flight"]).toContain(c.nextAction.stage);
+        } else if (c.stats.total === 0) {
+          expect(c.nextAction.stage).toBe("awaiting_setup");
+        } else if (c.stats.currentIndex === null) {
+          expect(c.nextAction.stage).toBe("complete");
+        } else if (c.stats.percent < 15) {
+          expect(c.nextAction.stage).toBe("kickoff");
           expect(c.nextAction.to).toBe(COCKPIT_ROUTES.program);
-        } else if (preset === "nearly_done") {
-          expect(["final_stretch", "complete"]).toContain(c.nextAction.stage);
-        } else if (preset === "midway") {
-          expect(["in_flight", "final_stretch"]).toContain(c.nextAction.stage);
+        } else if (c.stats.percent >= 80) {
+          expect(c.nextAction.stage).toBe("final_stretch");
+          expect(c.nextAction.to).toBe(COCKPIT_ROUTES.program);
+        } else {
+          expect(c.nextAction.stage).toBe("in_flight");
           expect(c.nextAction.to).toBe(COCKPIT_ROUTES.program);
         }
 
@@ -113,9 +120,11 @@ describe("Slice 4B — RBT Home cockpit component contract", () => {
   });
 
   it("ActiveHome exposes the Fellowship path CTA to BCBA", () => {
-    const src = read(HOME_SRC);
-    expect(src).toMatch(/rbt-home-fellowship-cta/);
-    expect(src).toMatch(/\/rbt\/app\/growth\/fellowship/);
+    const home = read(HOME_SRC);
+    const cockpit = read(COCKPIT_SRC);
+    expect(home).toMatch(/rbt-home-fellowship-cta/);
+    expect(home).toMatch(/COCKPIT_ROUTES\.fellowship/);
+    expect(cockpit).toMatch(/\/rbt\/app\/growth\/fellowship/);
   });
 
   it("ActiveHome renders a milestone timeline with aria label", () => {
