@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CardFrame } from "../CardFrame";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { useFirstCase } from "./useFirstCase";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -24,6 +25,8 @@ function Scale({ label, value, onChange }: { label: string; value: number | null
 
 export default function FirstSessionCheckin() {
   const { user } = useAuth();
+  const osRole = useOSRoleSafe();
+  const isPreviewing = Boolean(osRole?.isPreviewing);
   const nav = useNavigate();
   const { primary, loading } = useFirstCase(user?.id);
 
@@ -42,6 +45,7 @@ export default function FirstSessionCheckin() {
   if (!primary) return <CardFrame title="No first case yet" state="empty" emptyLabel="Your first case will appear here once scheduled." />;
 
   const submit = async () => {
+    if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
     setSaving(true);
     const { error } = await supabase.from("rbt_first_session_checkins" as any).insert({
       first_case_id: primary.id, employee_id: primary.employee_id,
@@ -112,9 +116,9 @@ export default function FirstSessionCheckin() {
         </div>
       </CardFrame>
 
-      <button onClick={submit} disabled={saving}
+      <button onClick={submit} disabled={saving || isPreviewing}
         className="w-full rounded-xl bg-primary text-primary-foreground h-12 min-h-12 text-sm font-semibold disabled:opacity-60">
-        {saving ? "Submitting…" : "Submit check-in"}
+        {saving ? "Submitting…" : isPreviewing ? "Read-only in preview" : "Submit check-in"}
       </button>
     </div>
   );

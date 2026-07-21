@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ExternalLink, Upload, CheckCircle2, MessageSquare, History } from "lucide-react";
+import { toast } from "sonner";
 import type { PreboardingComment, PreboardingAudit, PreboardingStatus } from "./types";
 import { STATUS_META, isDone } from "./types";
 import type { PreboardingRow } from "./usePreboarding";
@@ -18,6 +20,8 @@ interface Props {
 
 export default function PreboardingItemSheet({ row, internal, onClose, onChanged }: Props) {
   const { user } = useAuth();
+  const osRole = useOSRoleSafe();
+  const isPreviewing = Boolean(osRole?.isPreviewing);
   const [comments, setComments] = useState<PreboardingComment[]>([]);
   const [audit, setAudit] = useState<PreboardingAudit[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -36,6 +40,7 @@ export default function PreboardingItemSheet({ row, internal, onClose, onChanged
   const { item, requirement } = row;
 
   async function setStatus(status: PreboardingStatus) {
+    if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
     setBusy(true);
     const patch: any = { status };
     if (status === "submitted") { patch.submitted_at = new Date().toISOString(); patch.submitted_by = user?.id; }
@@ -47,6 +52,7 @@ export default function PreboardingItemSheet({ row, internal, onClose, onChanged
 
   async function uploadFile(f: File) {
     if (!user) return;
+    if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
     setBusy(true);
     const path = `${item.employee_id}/${item.requirement_key}/${Date.now()}-${f.name}`;
     const { error } = await supabase.storage.from("rbt-preboarding-docs").upload(path, f, { upsert: true });
@@ -63,6 +69,7 @@ export default function PreboardingItemSheet({ row, internal, onClose, onChanged
 
   async function addComment() {
     if (!user || !newComment.trim()) return;
+    if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
     await supabase.from("rbt_preboarding_comments" as any).insert({
       item_id: item.id, author_id: user.id, body: newComment.trim(),
       visibility: internal ? visibility : "all",

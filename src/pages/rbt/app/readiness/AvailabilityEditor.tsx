@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ const SETTINGS = ["clinic", "home", "school"];
 
 export function AvailabilityEditor({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user } = useAuth();
+  const osRole = useOSRoleSafe();
+  const isPreviewing = Boolean(osRole?.isPreviewing);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [days, setDays] = useState<string[]>([]);
@@ -48,6 +51,7 @@ export function AvailabilityEditor({ open, onClose }: { open: boolean; onClose: 
 
   async function save() {
     if (!user) return;
+    if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
     setSaving(true);
     const { error } = await supabase.from("rbt_availability_profile" as any).upsert({
       employee_id: user.id,
@@ -139,8 +143,8 @@ export function AvailabilityEditor({ open, onClose }: { open: boolean; onClose: 
               <Input className="mt-2" placeholder="Reason (optional)" value={tempReason} onChange={(e) => setTempReason(e.target.value)} />
             </div>
 
-            <Button className="w-full" onClick={save} disabled={saving}>
-              {saving ? "Saving…" : "Save availability"}
+            <Button className="w-full" onClick={save} disabled={saving || isPreviewing}>
+              {saving ? "Saving…" : isPreviewing ? "Read-only in preview" : "Save availability"}
             </Button>
           </div>
         )}

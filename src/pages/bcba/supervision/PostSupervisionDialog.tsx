@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,8 @@ interface Props {
  */
 export function PostSupervisionDialog({ open, onOpenChange, rbtEmployeeId, rbtName, clientOptions, onSaved }: Props) {
   const { user } = useAuth();
+  const osRole = useOSRoleSafe();
+  const isPreviewing = Boolean(osRole?.isPreviewing);
   const qc = useQueryClient();
 
   const [occurredAt, setOccurredAt] = useState<string>(() => new Date().toISOString().slice(0, 16));
@@ -89,6 +92,7 @@ export function PostSupervisionDialog({ open, onOpenChange, rbtEmployeeId, rbtNa
 
   const save = useMutation({
     mutationFn: async () => {
+      if (isPreviewing) throw new Error("Read-only in preview mode.");
       if (missing.length > 0) {
         throw new Error(`Missing required documentation: ${missing.join(", ")}`);
       }
@@ -245,8 +249,8 @@ export function PostSupervisionDialog({ open, onOpenChange, rbtEmployeeId, rbtNa
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || missing.length > 0}>
-            {save.isPending ? "Saving…" : "Save supervision"}
+          <Button onClick={() => save.mutate()} disabled={save.isPending || missing.length > 0 || isPreviewing}>
+            {save.isPending ? "Saving…" : isPreviewing ? "Read-only in preview" : "Save supervision"}
           </Button>
         </DialogFooter>
       </DialogContent>
