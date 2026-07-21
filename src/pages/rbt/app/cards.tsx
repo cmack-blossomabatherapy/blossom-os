@@ -276,43 +276,8 @@ export function AnnouncementCard({ card }: { card: DashboardCard }) {
 
 /** CENTRALREACH DATA STATUS */
 export function CrDataStatusCard({ card }: { card: DashboardCard }) {
-  const { user } = useAuth();
-  const [lastSync, setLastSync] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("rbt_data_sync_status" as any)
-      .select("last_synced_at")
-      .eq("employee_id", user.id)
-      .order("last_synced_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) setErr(error.message);
-        setLastSync((data as any)?.last_synced_at ?? null); setLoaded(true);
-      });
-  }, [user?.id]);
-  const staleThresholdHours = 24;
-  const ageHours = lastSync ? (Date.now() - new Date(lastSync).getTime()) / 3_600_000 : null;
-  const state = err ? "error"
-    : !loaded ? "loading"
-    : !lastSync ? "empty"
-    : ageHours! > staleThresholdHours ? "stale"
-    : "success";
-  return (
-    <CardFrame
-      title={card.title}
-      subtitle={card.subtitle ?? undefined}
-      state={state}
-      staleLabel="May be stale"
-      emptyLabel="Waiting on the first sync from CentralReach."
-    >
-      {lastSync && (
-        <p className="text-sm text-muted-foreground">
-          Last updated {new Date(lastSync).toLocaleString()}
-        </p>
-      )}
-    </CardFrame>
-  );
+  // Operational sync telemetry is not shown to RBTs. Kept as a no-op export so
+  // any legacy dashboard-card row of type `centralreach_status` renders nothing.
+  void card;
+  return null;
 }

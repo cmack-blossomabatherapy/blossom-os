@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
-import { FreshnessPill, freshness } from "./freshness";
-import { useCrSync } from "./useCrSync";
 import { useRbtIdentity } from "../useRbtIdentity";
 import {
   Calendar, Users, Clock, ShieldCheck, GraduationCap, LifeBuoy,
@@ -44,7 +42,6 @@ export default function ActiveHome() {
   const [growth, setGrowth] = useState<any | null>(null);
   const [training, setTraining] = useState<any | null>(null);
   const [outstanding, setOutstanding] = useState<any[] | null>(null);
-  const crSync = useCrSync();
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -155,15 +152,13 @@ export default function ActiveHome() {
     });
   }, [employeeId, idLoading]);
 
-  const crFresh = freshness(crSync?.last_success_at, crSync?.stale_after_hours ?? 24);
-
   if (idLoading) {
     return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
   }
   if (!employeeId) {
     return (
-      <CardFrame title="We couldn't find your clinician profile" state="error"
-        errorLabel="Ask an admin to link your login to your employee record from the CentralReach Data Hub." />
+      <CardFrame title="Getting things ready" state="empty"
+        emptyLabel="Your home will populate as soon as your clinician record is available." />
     );
   }
 
@@ -171,11 +166,7 @@ export default function ActiveHome() {
     <div className="space-y-3">
       {/* Greeting */}
       <CardFrame title={`${greet}, ${first}`} state="success" subtitle="Here is your day.">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">CentralReach data</p>
-          <FreshnessPill f={crFresh} />
-        </div>
-        {loadError && <p className="mt-2 text-xs text-destructive">Some panels failed to load: {loadError}</p>}
+        {loadError && <p className="text-xs text-muted-foreground">Some panels are unavailable right now.</p>}
       </CardFrame>
 
       {/* Next session */}
@@ -306,16 +297,6 @@ export default function ActiveHome() {
         </CardFrame>
       )}
 
-      {/* CR last sync footer */}
-      <CardFrame title="CentralReach" subtitle="Source of scheduling & hours"
-        state={crSync ? "success" : "loading"}>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            {crSync?.status === "healthy" ? "Connected" : crSync?.message ?? "—"}
-          </span>
-          <FreshnessPill f={crFresh} />
-        </div>
-      </CardFrame>
     </div>
   );
 }

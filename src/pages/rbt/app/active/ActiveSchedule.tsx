@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRbtIdentity } from "../useRbtIdentity";
 import { CardFrame } from "../CardFrame";
-import { FreshnessPill, freshness } from "./freshness";
-import { useCrSync } from "./useCrSync";
 import { crSessionUrl } from "./cr";
 import { ExternalLink, Flag } from "lucide-react";
 import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
@@ -39,7 +37,6 @@ export default function ActiveSchedule() {
   const [rows, setRows] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const crSync = useCrSync();
 
   useEffect(() => {
     if (idLoading) return;
@@ -81,25 +78,18 @@ export default function ActiveSchedule() {
     [filtered],
   );
 
-  const crFresh = freshness(crSync?.last_success_at, crSync?.stale_after_hours ?? 24);
   const state: "loading" | "empty" | "success" | "error" =
     error ? "error" : rows === null || idLoading ? "loading" : filtered.length === 0 ? "empty" : "success";
 
   const emptyLabel = rows && rows.length > 0 && filtered.length === 0
     ? `No ${statusFilter === "cancelled" ? "cancelled" : "active"} sessions in this range.`
-    : "No sessions in this range. If this looks wrong, CentralReach may not be synced yet.";
+    : "No sessions are shown for this period. If you expected one, contact Scheduling.";
 
   return (
     <div className="space-y-3">
       {!employeeId && !idLoading && (
-        <div className="rounded-xl bg-destructive/10 text-destructive text-xs p-3">
-          We couldn't match your login to a clinician record. Ask an admin to link you in the CentralReach Data Hub.
-        </div>
-      )}
-      {/* Freshness banner */}
-      {crFresh.stale && (
-        <div className="rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs p-3">
-          Schedule data may be stale — {crFresh.label}. CentralReach is the source of truth.
+        <div className="rounded-xl bg-muted text-muted-foreground text-xs p-3">
+          Your schedule isn't available yet. If you expected sessions here, contact Scheduling.
         </div>
       )}
 
@@ -134,7 +124,6 @@ export default function ActiveSchedule() {
         state={state}
         emptyLabel={emptyLabel}
         errorLabel="We couldn't load your schedule right now."
-        subtitle={crFresh.label}
       >
         <div className="space-y-4">
           {grouped.map(([day, list]) => (
@@ -166,14 +155,11 @@ export default function ActiveSchedule() {
 
       {employeeId && rows !== null && rows.length === 0 && (
         <>
-          <div className="rounded-xl bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs p-3">
-            No scheduled sessions found in this range. What follows is your
-            <strong> delivered service history</strong> from the CentralReach billing
-            export. Scheduled start/end times, location, and live status
-            are not carried in this export — only what was billed.
+          <div className="rounded-xl bg-muted text-muted-foreground text-xs p-3">
+            No sessions are shown for this period. Below is your recent delivered service history.
           </div>
           <CanonicalSessionsCard
-            title="Delivered service history (from CentralReach billing export)"
+            title="Recent delivered service history"
             scope={{ employeeId }}
             highlightKinds={["direct", "supervision"]}
             showClients
