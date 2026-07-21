@@ -968,6 +968,10 @@ export default function CancellationCommandCenter() {
           }
         />
 
+        <SourceCoverageBanner
+          reportKey={["cancellation-scheduling", "cancellation-billing", "cancellation-authorization"]}
+        />
+
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/60 p-3 backdrop-blur">
           <div className="text-[12px] text-muted-foreground">
             Admin datasets:
