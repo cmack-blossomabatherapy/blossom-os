@@ -43,7 +43,7 @@ function fmtDate(d?: string | null) {
   try { return new Date(d).toLocaleDateString(); } catch { return "—"; }
 }
 
-export default function ProgressReportDetailDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
+export default function ProgressReportDetailDrawer({ id, onClose, readOnly = false }: { id: string | null; onClose: () => void; readOnly?: boolean }) {
   const open = !!id;
   const { data, isLoading } = useProgressReport(id);
   const { data: milestones = [] } = useMilestones();
@@ -139,6 +139,12 @@ export default function ProgressReportDetailDrawer({ id, onClose }: { id: string
               )}
             </SheetHeader>
 
+            {readOnly && (
+              <div className="mx-6 mt-3 rounded-md border border-amber-200 bg-amber-50/70 dark:bg-amber-950/20 dark:border-amber-900 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                Preview mode — status changes, notes and support requests are disabled.
+              </div>
+            )}
+
             <Tabs defaultValue="overview" className="p-6 pt-4">
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -170,9 +176,9 @@ export default function ProgressReportDetailDrawer({ id, onClose }: { id: string
 
                 <div>
                   <Label>Add an update note</Label>
-                  <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="What changed? Keep it calm and factual." />
+                  <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="What changed? Keep it calm and factual." disabled={readOnly} />
                   <div className="mt-2 flex justify-end">
-                    <Button size="sm" onClick={appendNote} disabled={!note.trim() || update.isPending}>Save note</Button>
+                    <Button size="sm" onClick={appendNote} disabled={readOnly || !note.trim() || update.isPending}>Save note</Button>
                   </div>
                   {report.last_update_note && (
                     <div className="mt-3 text-xs text-muted-foreground">
@@ -185,7 +191,7 @@ export default function ProgressReportDetailDrawer({ id, onClose }: { id: string
               <TabsContent value="statuses" className="mt-4 space-y-4">
                 <div>
                   <Label>Report status</Label>
-                  <Select value={report.report_status} onValueChange={(v) => saveStatus(v as ProgressReportStatus)}>
+                  <Select value={report.report_status} disabled={readOnly} onValueChange={(v) => saveStatus(v as ProgressReportStatus)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {REPORT_STATUS_ORDER.map((s) => (
@@ -199,36 +205,42 @@ export default function ProgressReportDetailDrawer({ id, onClose }: { id: string
                     label="Parent input"
                     value={report.parent_input_status}
                     options={PARENT_INPUT_LABELS}
+                    disabled={readOnly}
                     onChange={(v) => saveField({ parent_input_status: v })}
                   />
                   <StatusSelect
                     label="Parent signature"
                     value={report.parent_signature_status}
                     options={PARENT_SIG_LABELS}
+                    disabled={readOnly}
                     onChange={(v) => saveField({ parent_signature_status: v })}
                   />
                   <StatusSelect
                     label="QA"
                     value={report.qa_status}
                     options={QA_LABELS}
+                    disabled={readOnly}
                     onChange={(v) => saveField({ qa_status: v })}
                   />
                   <StatusSelect
                     label="Submission"
                     value={report.submission_status}
                     options={SUBMISSION_LABELS}
+                    disabled={readOnly}
                     onChange={(v) => saveField({ submission_status: v })}
                   />
                   <StatusSelect
                     label="Authorization"
                     value={report.authorization_status}
                     options={AUTH_STATUS_LABELS}
+                    disabled={readOnly}
                     onChange={(v) => saveField({ authorization_status: v })}
                   />
                   <div>
                     <Label>CentralReach URL</Label>
                     <Input
                       defaultValue={report.centralreach_url ?? ""}
+                      disabled={readOnly}
                       onBlur={(e) => e.target.value !== (report.centralreach_url ?? "") && saveField({ centralreach_url: e.target.value || null })}
                     />
                   </div>
@@ -242,7 +254,7 @@ export default function ProgressReportDetailDrawer({ id, onClose }: { id: string
                     <div className="text-sm font-medium">We can help — pick a quick action</div>
                   </div>
                   <div className="grid gap-3">
-                    <Select value={supportCategory} onValueChange={setSupportCategory}>
+                    <Select value={supportCategory} disabled={readOnly} onValueChange={setSupportCategory}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {SUPPORT_CATEGORIES.map((c) => (
@@ -254,9 +266,10 @@ export default function ProgressReportDetailDrawer({ id, onClose }: { id: string
                       value={supportDetail}
                       onChange={(e) => setSupportDetail(e.target.value)}
                       placeholder="Optional — anything that would help us help you."
+                      disabled={readOnly}
                     />
                     <div className="flex justify-end">
-                      <Button size="sm" onClick={openSupport} disabled={support.isPending}>
+                      <Button size="sm" onClick={openSupport} disabled={readOnly || support.isPending}>
                         {support.isPending && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Submit
                       </Button>
                     </div>
@@ -319,12 +332,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function StatusSelect({
-  label, value, options, onChange,
-}: { label: string; value: string; options: Record<string, string>; onChange: (v: string) => void }) {
+  label, value, options, onChange, disabled,
+}: { label: string; value: string; options: Record<string, string>; onChange: (v: string) => void; disabled?: boolean }) {
   return (
     <div>
       <Label>{label}</Label>
-      <Select value={value} onValueChange={onChange}>
+      <Select value={value} disabled={disabled} onValueChange={onChange}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
           {Object.entries(options).map(([k, v]) => (

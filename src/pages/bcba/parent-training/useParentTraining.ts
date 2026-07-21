@@ -89,17 +89,22 @@ export interface UtilizationRecord {
 const KEY = ["bcba_parent_training"] as const;
 const UTIL_KEY = ["bcba_service_utilization"] as const;
 
-export function useParentTrainingRecords(opts?: { onlyMine?: boolean }) {
+export function useParentTrainingRecords(opts?: { onlyMine?: boolean; scopedAuthUserId?: string | null }) {
+  const scoped = opts?.scopedAuthUserId ?? null;
   return useQuery({
-    queryKey: [...KEY, opts?.onlyMine ?? false],
+    queryKey: [...KEY, opts?.onlyMine ?? false, scoped ?? "self"],
     queryFn: async (): Promise<ParentTrainingRecord[]> => {
       let q = supabase
         .from("bcba_parent_training_records")
         .select("*")
         .order("next_scheduled_date", { ascending: true, nullsFirst: false });
       if (opts?.onlyMine) {
-        const { data: u } = await supabase.auth.getUser();
-        if (u?.user?.id) q = q.eq("assigned_bcba_id", u.user.id);
+        let uid = scoped;
+        if (!uid) {
+          const { data: u } = await supabase.auth.getUser();
+          uid = u?.user?.id ?? null;
+        }
+        if (uid) q = q.eq("assigned_bcba_id", uid);
       }
       const { data, error } = await q;
       if (error) throw error;
@@ -244,17 +249,22 @@ export function useCreateParentTrainingSupport() {
 
 // ---- Service utilization ----
 
-export function useServiceUtilization(opts?: { onlyMine?: boolean }) {
+export function useServiceUtilization(opts?: { onlyMine?: boolean; scopedAuthUserId?: string | null }) {
+  const scoped = opts?.scopedAuthUserId ?? null;
   return useQuery({
-    queryKey: [...UTIL_KEY, opts?.onlyMine ?? false],
+    queryKey: [...UTIL_KEY, opts?.onlyMine ?? false, scoped ?? "self"],
     queryFn: async (): Promise<UtilizationRecord[]> => {
       let q = supabase
         .from("bcba_service_utilization")
         .select("*")
         .order("period_end", { ascending: false });
       if (opts?.onlyMine) {
-        const { data: u } = await supabase.auth.getUser();
-        if (u?.user?.id) q = q.eq("assigned_bcba_id", u.user.id);
+        let uid = scoped;
+        if (!uid) {
+          const { data: u } = await supabase.auth.getUser();
+          uid = u?.user?.id ?? null;
+        }
+        if (uid) q = q.eq("assigned_bcba_id", uid);
       }
       const { data, error } = await q;
       if (error) throw error;

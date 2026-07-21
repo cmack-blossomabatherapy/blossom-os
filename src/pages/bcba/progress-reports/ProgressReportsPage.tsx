@@ -28,6 +28,9 @@ import {
 } from "./pipeline";
 import ProgressReportDetailDrawer from "./ProgressReportDetailDrawer";
 import MilestoneConfigDialog from "./MilestoneConfigDialog";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 
 function fmt(d?: string | null) {
   if (!d) return "—";
@@ -52,12 +55,17 @@ function RiskPill({ risk }: { risk: RiskLevel }) {
 
 export default function ProgressReportsPage() {
   const [params, setParams] = useSearchParams();
-  const { data: rows = [], isLoading, error, refetch, isFetching } = useProgressReports();
+  const identity = useBcbaIdentity();
+  const readOnly = identity.readOnly;
+  const [scope, setScope] = useState<"all" | "mine">("all");
+  const { data: rows = [], isLoading, error, refetch, isFetching } = useProgressReports({
+    onlyMine: scope === "mine",
+    scopedAuthUserId: identity.scopedAuthUserId,
+  });
   const { data: milestones = [] } = useMilestones();
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProgressReportStatus | "all">("all");
-  const [scope, setScope] = useState<"all" | "mine">("all");
   const [showNew, setShowNew] = useState(false);
   const [showMilestones, setShowMilestones] = useState(false);
 
@@ -71,7 +79,7 @@ export default function ProgressReportsPage() {
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.report_status !== statusFilter) return false;
-      if (scope === "mine" && !r.assigned_bcba_id) return false;
+      if (scope === "mine" && identity.scopedAuthUserId && r.assigned_bcba_id !== identity.scopedAuthUserId) return false;
       if (q) {
         const s = q.toLowerCase();
         if (![r.client_identifier, r.assigned_bcba_name, r.authorization_owner_name, r.payer, r.state]
@@ -79,7 +87,7 @@ export default function ProgressReportsPage() {
       }
       return true;
     });
-  }, [rows, statusFilter, scope, q]);
+  }, [rows, statusFilter, scope, q, identity.scopedAuthUserId]);
 
   const counts = useMemo(() => {
     const c: Partial<Record<ProgressReportStatus, number>> = {};
@@ -103,6 +111,8 @@ export default function ProgressReportsPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      <BcbaPreviewBanner />
+      <div className="mb-4"><BcbaMappingDiagnostic onRetry={() => refetch()} /></div>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
         <div>
@@ -122,7 +132,7 @@ export default function ProgressReportsPage() {
           <Button variant="outline" size="sm" onClick={() => setShowMilestones(true)}>
             <Settings2 className="h-4 w-4 mr-1" /> Milestones
           </Button>
-          <Button size="sm" onClick={() => setShowNew(true)}>
+          <Button size="sm" onClick={() => setShowNew(true)} disabled={readOnly} title={readOnly ? "Preview mode — writes disabled" : undefined}>
             <Plus className="h-4 w-4 mr-1" /> New report
           </Button>
         </div>
@@ -242,7 +252,7 @@ export default function ProgressReportsPage() {
         )}
       </div>
 
-      <ProgressReportDetailDrawer id={selectedId} onClose={() => setSelected(null)} />
+      <ProgressReportDetailDrawer id={selectedId} onClose={() => setSelected(null)} readOnly={readOnly} />
       <NewProgressReportDialog open={showNew} onOpenChange={setShowNew} />
       <MilestoneConfigDialog open={showMilestones} onOpenChange={setShowMilestones} />
     </div>

@@ -19,8 +19,8 @@ function fmt(d?: string | null) { if (!d) return "—"; try { return new Date(d)
 function fmtDate(d?: string | null) { if (!d) return "—"; try { return new Date(d).toLocaleDateString(); } catch { return "—"; } }
 
 export default function FellowDetailDrawer({
-  fellow, open, onClose,
-}: { fellow: any | null; open: boolean; onClose: () => void }) {
+  fellow, open, onClose, readOnly = false,
+}: { fellow: any | null; open: boolean; onClose: () => void; readOnly?: boolean }) {
   const fellowId = fellow?.id ?? null;
   const assignments = useFellowAssignments(fellowId);
   const reviews = useFellowReviews(fellowId);
@@ -41,6 +41,7 @@ export default function FellowDetailDrawer({
   const [rNotes, setRNotes] = useState<string>("");
 
   const submitReview = async () => {
+    if (readOnly) { toast.info("Preview mode — writes disabled"); return; }
     if (!uid) { toast.error("You must be signed in"); return; }
     try {
       await createReview.mutateAsync({
@@ -75,6 +76,11 @@ export default function FellowDetailDrawer({
           </SheetTitle>
         </SheetHeader>
 
+        {readOnly && (
+          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50/70 dark:bg-amber-950/20 dark:border-amber-900 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+            Preview mode — logging reviews and status changes are disabled.
+          </div>
+        )}
         <div className="mt-4">
           <Tabs defaultValue="overview">
             <TabsList>
@@ -122,11 +128,11 @@ export default function FellowDetailDrawer({
                         {REVIEW_TYPES.map((t) => <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                    <Input type="datetime-local" value={rWhen} onChange={(e) => setRWhen(e.target.value)} />
+                    <Input type="datetime-local" value={rWhen} onChange={(e) => setRWhen(e.target.value)} disabled={readOnly} />
                   </div>
-                  <Textarea placeholder="Outcome / next steps (optional)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} />
+                  <Textarea placeholder="Outcome / next steps (optional)" value={rNotes} onChange={(e) => setRNotes(e.target.value)} disabled={readOnly} />
                   <div className="flex justify-end">
-                    <Button size="sm" onClick={submitReview} disabled={createReview.isPending}>Add review</Button>
+                    <Button size="sm" onClick={submitReview} disabled={readOnly || createReview.isPending}>Add review</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -137,7 +143,7 @@ export default function FellowDetailDrawer({
                     <CardContent className="pt-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium">{typeLabel(r.review_type)}</div>
-                        <Select value={r.status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
+                        <Select value={r.status} disabled={readOnly} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
                           <SelectTrigger className="h-7 w-36"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {REVIEW_STATUSES.map((s) => <SelectItem key={s} value={s}>{s.replace("_"," ")}</SelectItem>)}

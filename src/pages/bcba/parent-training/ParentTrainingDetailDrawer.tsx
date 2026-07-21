@@ -26,8 +26,8 @@ function fmt(d?: string | null) {
 }
 
 export default function ParentTrainingDetailDrawer({
-  id, onClose,
-}: { id: string | null; onClose: () => void }) {
+  id, onClose, readOnly = false,
+}: { id: string | null; onClose: () => void; readOnly?: boolean }) {
   const { data, isLoading } = useParentTrainingRecord(id);
   const update = useUpdateParentTrainingRecord();
   const support = useCreateParentTrainingSupport();
@@ -71,6 +71,11 @@ export default function ParentTrainingDetailDrawer({
           </div>
         ) : (
           <div className="mt-4">
+            {readOnly && (
+              <div className="mb-3 rounded-md border border-amber-200 bg-amber-50/70 dark:bg-amber-950/20 dark:border-amber-900 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                Preview mode — status changes, edits and support requests are disabled.
+              </div>
+            )}
             {isStale(rec.centralreach_source_date) && (
               <div className="mb-3 flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-md px-3 py-2">
                 <AlertTriangle className="h-3.5 w-3.5" />
@@ -118,8 +123,9 @@ export default function ParentTrainingDetailDrawer({
                   {PT_STATUS_ORDER.map((s) => (
                     <button
                       key={s}
+                      disabled={readOnly}
                       onClick={() => setStatus(s)}
-                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition ${PT_STATUS_STYLES[s]} ${rec.status === s ? "ring-2 ring-offset-1 ring-primary" : "opacity-80 hover:opacity-100"}`}
+                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium transition ${PT_STATUS_STYLES[s]} ${rec.status === s ? "ring-2 ring-offset-1 ring-primary" : "opacity-80 hover:opacity-100"} ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {PT_STATUS_LABELS[s]}
                     </button>
@@ -132,6 +138,7 @@ export default function ParentTrainingDetailDrawer({
                     <Input
                       type="date"
                       defaultValue={rec.next_scheduled_date ?? ""}
+                      disabled={readOnly}
                       onBlur={(e) => update.mutate({ id: rec.id, next_scheduled_date: e.target.value || null })}
                     />
                   </div>
@@ -140,6 +147,7 @@ export default function ParentTrainingDetailDrawer({
                     <Input
                       type="date"
                       defaultValue={rec.last_completed_date ?? ""}
+                      disabled={readOnly}
                       onBlur={(e) => update.mutate({ id: rec.id, last_completed_date: e.target.value || null })}
                     />
                   </div>
@@ -148,6 +156,7 @@ export default function ParentTrainingDetailDrawer({
                   <Label>Barrier (factual, no clinical narrative)</Label>
                   <Textarea
                     defaultValue={rec.barrier ?? ""}
+                    disabled={readOnly}
                     onBlur={(e) => update.mutate({ id: rec.id, barrier: e.target.value || null })}
                     placeholder="e.g. Parent work schedule conflict Mondays"
                   />
@@ -158,7 +167,7 @@ export default function ParentTrainingDetailDrawer({
                 <div className="rounded-md border border-border/70 bg-card p-3 space-y-3">
                   <div>
                     <Label>Quick action</Label>
-                    <Select value={category} onValueChange={setCategory}>
+                    <Select value={category} disabled={readOnly} onValueChange={setCategory}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {SUPPORT_CATEGORIES.map((c) => (
@@ -169,9 +178,9 @@ export default function ParentTrainingDetailDrawer({
                   </div>
                   <div>
                     <Label>Detail (optional)</Label>
-                    <Textarea value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="Add operational context — no clinical narrative." />
+                    <Textarea value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="Add operational context — no clinical narrative." disabled={readOnly} />
                   </div>
-                  <Button size="sm" onClick={submitSupport} disabled={support.isPending}>
+                  <Button size="sm" onClick={submitSupport} disabled={readOnly || support.isPending}>
                     {support.isPending && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Submit
                   </Button>
                 </div>

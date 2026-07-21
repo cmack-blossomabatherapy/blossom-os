@@ -83,14 +83,19 @@ export interface ActivityEvent {
 
 const KEY = ["bcba_assessments"] as const;
 
-export function useAssessments(opts?: { onlyMine?: boolean }) {
+export function useAssessments(opts?: { onlyMine?: boolean; scopedAuthUserId?: string | null }) {
+  const scoped = opts?.scopedAuthUserId ?? null;
   return useQuery({
-    queryKey: [...KEY, opts?.onlyMine ?? false],
+    queryKey: [...KEY, opts?.onlyMine ?? false, scoped ?? "self"],
     queryFn: async (): Promise<Assessment[]> => {
       let q = supabase.from("bcba_assessments").select("*").order("updated_at", { ascending: false });
       if (opts?.onlyMine) {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user?.id) q = q.eq("assigned_bcba_id", userData.user.id);
+        let uid = scoped;
+        if (!uid) {
+          const { data: userData } = await supabase.auth.getUser();
+          uid = userData?.user?.id ?? null;
+        }
+        if (uid) q = q.eq("assigned_bcba_id", uid);
       }
       const { data, error } = await q;
       if (error) throw error;
