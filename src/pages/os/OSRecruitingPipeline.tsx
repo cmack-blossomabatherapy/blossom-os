@@ -20,6 +20,10 @@ import {
   useApploiIntegrationStatus,
   importApploiNormalizedRecords,
 } from "@/hooks/useApploiIntegration";
+import {
+  isRbtLikeRole,
+  type RbtCertificationStatus,
+} from "@/lib/recruiting/rbtPathwayClassifier";
 
 // Recruiting → Candidates → Applicant Pipeline
 // Real backend (recruiting_candidates). DnD persists pipeline_stage.
@@ -75,7 +79,7 @@ function initials(n: string) {
 }
 
 export default function OSRecruitingPipeline() {
-  const { candidates, loading, updateStage } = useRecruitingCandidates();
+  const { candidates, loading, updateStage, updateCandidate } = useRecruitingCandidates();
   const { status: apploiStatus } = useApploiIntegrationStatus();
   const handleApploiImport = async () => {
     if (apploiStatus !== "connected") { notifyApploiNotConnected(); return; }
@@ -403,6 +407,11 @@ export default function OSRecruitingPipeline() {
               setSelected({ ...selected, pipeline_stage: stage });
             }
           }}
+          onClassificationChange={async (patch) => {
+            if (!selected) return;
+            const ok = await updateCandidate(selected.id, patch);
+            if (ok) setSelected({ ...selected, ...patch });
+          }}
         />
       </div>
     </OSShell>
@@ -528,11 +537,15 @@ const STAGE_PROGRESS: PipelineStage[] = [
 ];
 
 function CandidateSlideout({
-  candidate, onClose, onStageChange,
+  candidate, onClose, onStageChange, onClassificationChange,
 }: {
   candidate: RecruitingCandidate | null;
   onClose: () => void;
   onStageChange: (stage: PipelineStage) => void;
+  onClassificationChange: (patch: {
+    rbt_certification_status?: RbtCertificationStatus;
+    rbt_years_experience_direct?: number | null;
+  }) => void | Promise<void>;
 }) {
   useSlideout(!!candidate, onClose);
   if (!candidate) return null;
@@ -637,6 +650,54 @@ function CandidateSlideout({
               </button>
             </div>
           </section>
+
+          {isRbtLikeRole(c.role) && (
+            <section className="rounded-xl border border-border/60 bg-muted/20 p-3">
+              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                RBT classification (recruiter)
+              </h3>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                Required before this candidate can advance to Orientation, Onboarding, or Ready to Staff.
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                <label className="text-[11px] text-muted-foreground">
+                  Certification status
+                  <select
+                    value={c.rbt_certification_status ?? "unknown"}
+                    onChange={(e) =>
+                      onClassificationChange({
+                        rbt_certification_status: e.target.value as RbtCertificationStatus,
+                      })
+                    }
+                    className="mt-1 w-full h-8 rounded-md border border-border/70 bg-card text-xs px-2"
+                  >
+                    <option value="unknown">Unknown — not captured yet</option>
+                    <option value="not_certified">Not certified</option>
+                    <option value="certified">Certified</option>
+                  </select>
+                </label>
+                <label className="text-[11px] text-muted-foreground">
+                  Years of direct RBT experience
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={c.rbt_years_experience_direct ?? ""}
+                    disabled={c.rbt_certification_status !== "certified"}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const num = raw === "" ? null : Number(raw);
+                      onClassificationChange({
+                        rbt_years_experience_direct: Number.isNaN(num as number) ? null : num,
+                      });
+                    }}
+                    placeholder={c.rbt_certification_status === "certified" ? "e.g. 2" : "Only for certified"}
+                    className="mt-1 w-full h-8 rounded-md border border-border/70 bg-card text-xs px-2 disabled:opacity-50"
+                  />
+                </label>
+              </div>
+            </section>
+          )}
 
           {c.notes && (
             <section>

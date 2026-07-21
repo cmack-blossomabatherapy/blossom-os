@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  checkAdvancementReadiness,
+  type RbtCertificationStatus,
+} from "@/lib/recruiting/rbtPathwayClassifier";
 
 export type RecruitingRole = "RBT" | "BCBA" | "BT" | "Other";
 export type RecruitingState = "GA" | "NC" | "TN" | "VA" | "MD" | "NJ" | "FL" | "TX" | "SC" | "Other";
@@ -44,6 +48,14 @@ export interface RecruitingCandidate {
   is_archived: boolean;
   created_at: string;
   updated_at: string;
+  /**
+   * Recruiter-owned RBT classification fields. Populated only for
+   * role === 'RBT' | 'BT'; drive `rbt_pathway_assignments` via the
+   * `sync_rbt_pathway_assignment` trigger.
+   */
+  rbt_certification_status?: RbtCertificationStatus | null;
+  rbt_years_experience_direct?: number | null;
+  linked_employee_id?: string | null;
 }
 
 export function fullName(c: Pick<RecruitingCandidate, "first_name" | "last_name">) {
@@ -90,7 +102,22 @@ export function useRecruitingCandidates() {
 
   const updateStage = useCallback(async (id: string, stage: PipelineStage) => {
     const prev = candidates;
-    const from = prev.find((c) => c.id === id)?.pipeline_stage ?? null;
+    const current = prev.find((c) => c.id === id);
+    const from = current?.pipeline_stage ?? null;
+    if (current) {
+      const check = checkAdvancementReadiness(
+        {
+          role: current.role,
+          rbt_certification_status: current.rbt_certification_status ?? "unknown",
+          rbt_years_experience_direct: current.rbt_years_experience_direct ?? null,
+        },
+        stage,
+      );
+      if (!check.ok) {
+        toast.error(check.message ?? "Complete RBT classification before advancing.");
+        return false;
+      }
+    }
     const now = new Date().toISOString();
     setCandidates((cs) => cs.map((c) => (c.id === id ? { ...c, pipeline_stage: stage, stage_entered_at: now } : c)));
     const { error } = await supabase
@@ -101,7 +128,7 @@ export function useRecruitingCandidates() {
       console.error(error);
       toast.error("Failed to update stage");
       setCandidates(prev);
-      return;
+      return false;
     }
     // Best-effort activity log; ignore failures so UI stays responsive.
     try {
@@ -116,6 +143,7 @@ export function useRecruitingCandidates() {
     } catch (e) {
       console.warn("activity log failed", e);
     }
+    return true;
   }, [candidates]);
 
   const updateCandidate = useCallback(async (id: string, patch: Partial<RecruitingCandidate>) => {
