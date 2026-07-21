@@ -68,8 +68,10 @@ describe("Intake / CTM final pass — canonical wiring", () => {
   it("ctm-link-call uses shared linker and no longer writes tasks/comms", () => {
     const src = read("supabase/functions/ctm-link-call/index.ts");
     expect(src).toMatch(/linkOrCreateLeadForCall/);
-    expect(src).not.toMatch(/intake_communications/);
-    expect(src).not.toMatch(/intake_tasks/);
+    // No actual writes to outbound Intake tables (only comments may reference them).
+    expect(src).not.toMatch(/from\("intake_communications"\)/);
+    expect(src).not.toMatch(/from\("intake_tasks"\)/);
+    expect(src).not.toMatch(/\.insert\(\{[^}]*lead_id:[^}]*communication_type/);
     expect(src).toMatch(/INGEST_ONLY/);
   });
 
