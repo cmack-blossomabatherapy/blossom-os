@@ -58,8 +58,10 @@ describe("BCBA Productivity Report V3 — canonical report route + dataset", () 
     expect(app).toMatch(/path="\/reports\/bcba-productivity-report-v3"/);
   });
 
-  it("V3 pulls from the shared admin dataset adapter", () => {
-    expect(report).toMatch(/getBcbaProductivitySharedRows/);
+  it("V3 auto-loads the canonical report dataset, not just the legacy upload status", () => {
+    expect(report).toMatch(/fetchCanonicalReportTotals/);
+    expect(report).toMatch(/fetchBcbaBillingRowsAsSharedShape/);
+    expect(report).toMatch(/void loadSharedDataset\(\{ silent: true \}\)/);
     expect(report).toMatch(/getBcbaProductivityDatasetStatus/);
   });
 

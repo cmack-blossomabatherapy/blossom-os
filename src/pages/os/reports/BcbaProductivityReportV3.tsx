@@ -229,21 +229,12 @@ export default function BcbaProductivityReportV3() {
 
   useEffect(() => { void refreshAssignments(); }, []);
 
-  /* Load shared admin dataset on mount. This is now the only data source. */
+  /* Load canonical dataset on mount. This is now the only data source. */
   useEffect(() => {
-    (async () => {
-      try {
-        const s = await getBcbaProductivityDatasetStatus();
-        setSharedStatus(s);
-        if (s.activeRowCount > 0) {
-          await loadSharedDataset({ silent: true });
-        }
-      } catch {
-        /* ignore — banner will say no admin data found */
-      }
-    })();
+    if (savedParam) return;
+    void loadSharedDataset({ silent: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [savedParam]);
 
   async function loadSharedDataset(opts?: { silent?: boolean; force?: boolean }) {
     setSharedLoading(true);
@@ -254,8 +245,13 @@ export default function BcbaProductivityReportV3() {
       // with server-side paging so the browser never loads all 47k rows at
       // once. Manual uploads remain an explicit temporary override.
       const totals = await fetchCanonicalReportTotals();
-      const s = await getBcbaProductivityDatasetStatus();
-      setSharedStatus(s);
+      try {
+        const s = await getBcbaProductivityDatasetStatus();
+        setSharedStatus(s);
+      } catch {
+        // Legacy upload-status diagnostics should never block canonical report loading.
+        setSharedStatus(null);
+      }
       if (!totals.totalRows) {
         setRows([]);
         setFileName("");
