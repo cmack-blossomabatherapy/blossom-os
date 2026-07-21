@@ -79,7 +79,15 @@ export function RbtWalkthroughDialog() {
     if (step) navigate(step.route);
   }, [controller, navigate, step]);
 
-  const handleGo = useCallback(() => { if (step) navigate(step.route); }, [navigate, step]);
+  // "Take me there" navigates to the step's target route AND closes the tour
+  // so the target page is fully visible. During admin/lab preview the
+  // controller's canPersist is false, so this dismiss is a pure UI close and
+  // never writes completion for the underlying real user.
+  const handleGo = useCallback(() => {
+    if (!step || !controller) return;
+    navigate(step.route);
+    controller.dismiss();
+  }, [navigate, step, controller]);
 
   if (!controller || !step) return null;
 

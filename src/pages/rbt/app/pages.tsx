@@ -22,6 +22,7 @@ import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCa
 import { useProgram } from "./training/useProgram";
 import { RetentionSupportPanel } from "./support/RetentionSupportPanel";
 import { useRbtWalkthrough } from "./useRbtWalkthrough";
+import { useExperienceLab } from "./useExperienceLab";
 
 /**
  * Replay control for the first-login walkthrough. Rendered on Home,
@@ -101,6 +102,7 @@ function renderCard(card: DashboardCard, stageMessage?: string) {
 // ---------------------------------------------------------------- HOME
 export function RbtHome() {
   const { user } = useAuth();
+  const lab = useExperienceLab();
   const { cards, loading, error, context } = useDashboardCards();
   const [stageMessage, setStageMessage] = useState<string | undefined>();
 
@@ -120,6 +122,12 @@ export function RbtHome() {
     if (!user) return;
     cards.forEach((c) => logCardEngagement(c.id, user.id, "view"));
   }, [cards.length, user?.id]);
+
+  // Experience Lab preview short-circuits all lifecycle/cards routing so admins
+  // always see the synthesised 2030 cockpit for the selected pathway+stage.
+  // Nothing here touches Supabase — ActiveHome + useProgram detect lab.active
+  // and return projected data.
+  if (lab.active) return <ActiveHome />;
 
   if (loading) return (
     <div className="space-y-3">
