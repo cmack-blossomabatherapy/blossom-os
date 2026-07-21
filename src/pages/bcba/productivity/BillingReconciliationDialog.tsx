@@ -141,6 +141,50 @@ export default function BillingReconciliationDialog({ open, onOpenChange, snapsh
         });
       }
 
+      // Canonical fallback: when `bcba_billable_sessions` returned no rows
+      // for this scoped BCBA/period, source billed-side entries from the
+      // canonical view (v_cr_canonical_sessions). Scheduled_* fields stay
+      // null — the billing export does not carry scheduled time, and we
+      // never fabricate values.
+      if ((rows.length === 0 || (billedR.data ?? []).length === 0) && bcbaId) {
+        try {
+          const canonicalRows = await fetchCanonicalSessionRows({
+            authUserId: bcbaId,
+            employeeId: null,
+            start,
+            end,
+            limit: 500,
+          });
+          for (const r of canonicalRows) {
+            const day = String(r.serviceDate ?? "").slice(0, 10);
+            const key = `${day}|${(r.clientName ?? "").toLowerCase()}|${(r.procedureCode ?? "").toLowerCase()}`;
+            if (seenKeys.has(key)) continue;
+            const sched = scheduledMap.get(key);
+            const billedH = Number(r.hours ?? 0);
+            const { reason, status } = bucketReason(billedH, sched?.hours ?? null);
+            rows.push({
+              id: `canon-${r.rowId}`,
+              service_date: r.serviceDate,
+              client_name: r.clientName,
+              provider_name: r.providerName,
+              procedure_code: r.procedureCode,
+              billed_units: Number(r.units ?? 0),
+              billed_hours: billedH,
+              scheduled_units: sched?.units ?? null,
+              scheduled_hours: sched?.hours ?? null,
+              variance_hours: Math.round((billedH - (sched?.hours ?? 0)) * 100) / 100,
+              reason,
+              status,
+              freshness: r.batchUploadedAt,
+              source: "canonical",
+            });
+          }
+        } catch {
+          // Canonical RPC unreachable — leave rows as they are; UI already
+          // handles the empty state with an actionable owner message.
+        }
+      }
+
       rows.sort((a, b) => (b.service_date ?? "").localeCompare(a.service_date ?? ""));
       return rows;
     },
