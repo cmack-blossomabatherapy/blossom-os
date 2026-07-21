@@ -75,18 +75,20 @@ function fmtDate(d?: string | null) {
 /*  Data hook                                                                 */
 /* -------------------------------------------------------------------------- */
 
-function useMyRbtData() {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+function useMyRbtData(scopedAuthUserId: string | null, forcedBcbaEmployeeId: string | null) {
+  const userId = scopedAuthUserId;
 
   return useQuery({
-    queryKey: ["bcba-my-rbts", userId],
+    queryKey: ["bcba-my-rbts", userId, forcedBcbaEmployeeId],
     enabled: !!userId,
     queryFn: async () => {
       // Resolve BCBA's employee id (some tables key on employees.id, not auth uid)
-      const { data: emp } = await supabase
-        .from("employees").select("id").eq("user_id", userId!).maybeSingle();
-      const bcbaEmployeeId = emp?.id ?? null;
+      let bcbaEmployeeId = forcedBcbaEmployeeId;
+      if (!bcbaEmployeeId) {
+        const { data: emp } = await supabase
+          .from("employees").select("id").eq("user_id", userId!).maybeSingle();
+        bcbaEmployeeId = emp?.id ?? null;
+      }
 
       // Shared assignment model — this is the single source of truth
       const { data: assignments, error: aErr } = await supabase
@@ -534,7 +536,11 @@ function BadgeIcon() {
 
 export default function BcbaMyRbtsPage() {
   const qc = useQueryClient();
-  const { data, isLoading, isError, error } = useMyRbtData();
+  const identity = useBcbaIdentity();
+  const { data, isLoading, isError, error, refetch } = useMyRbtData(
+    identity.scopedAuthUserId,
+    identity.employeeId,
+  );
   const [filter, setFilter] = useState<"all" | "new" | "concerns">("all");
 
   const rows = useMemo(() => {
@@ -556,6 +562,8 @@ export default function BcbaMyRbtsPage() {
           New assignments, pre-start checklists, and post-session follow-ups.
         </p>
       </div>
+
+      <div className="mb-4"><BcbaMappingDiagnostic onRetry={() => refetch()} /></div>
 
       <div className="flex items-center gap-2 mb-4">
         {(["all", "new", "concerns"] as const).map((f) => (
