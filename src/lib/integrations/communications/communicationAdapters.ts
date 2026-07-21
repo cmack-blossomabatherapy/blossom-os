@@ -48,6 +48,7 @@ async function previewOnlyIfDisabled(
     timestamp: new Date().toISOString(),
     message: INTAKE_ACTIONS_DISABLED_MESSAGE,
     needsConfiguration: false,
+    previewOnly: true,
     configHint:
       "Intake is in INGEST_ONLY mode. Ingestion continues, but outbound actions are blocked until an admin enables Full mode.",
   };
@@ -108,6 +109,10 @@ export async function sendVobUpdate(lead: LeadCommunicationContext): Promise<Com
 export function notifyCommunicationResult(result: CommunicationResult): void {
   if (result.success) {
     toast.success(result.message);
+    return;
+  }
+  if (result.previewOnly) {
+    toast(result.message, { description: result.configHint });
     return;
   }
   if (result.needsConfiguration) {
