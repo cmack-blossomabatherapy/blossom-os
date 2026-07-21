@@ -87,7 +87,7 @@ export default function CaseloadPage() {
   const isMobile = useIsMobile();
   const identity = useBcbaIdentity();
   const { data: rows, isLoading, error, refetch, isRefetching } = useCaseload(identity.scopedAuthUserId);
-  const { views, save, remove } = useSavedViews();
+  const { views, save, rename, remove, emptyFilters } = useSavedViews(identity.scopedAuthUserId);
   const [params, setParams] = useSearchParams();
 
   const [filters, setFilters] = useState<CaseloadFilters>({});
@@ -105,10 +105,26 @@ export default function CaseloadPage() {
   }
 
   function saveCurrent() {
+    if (identity.readOnly) return;
     const name = prompt("Name this view");
-    if (!name) return;
-    save.mutate({ name, filters });
+    if (!name?.trim()) return;
+    save.mutate({ name: name.trim(), filters });
   }
+
+  function renameView(id: string, current: string) {
+    if (identity.readOnly) return;
+    const next = prompt("Rename view", current);
+    if (!next?.trim() || next.trim() === current) return;
+    rename.mutate({ id, name: next.trim() });
+  }
+
+  function deleteView(id: string, current: string) {
+    if (identity.readOnly) return;
+    if (!confirm(`Delete saved view "${current}"?`)) return;
+    remove.mutate(id);
+  }
+
+  function resetFilters() { setFilters(emptyFilters); }
 
   return (
     <div className="mx-auto w-full max-w-6xl px-2 md:px-4 py-4 md:py-8 space-y-4">
@@ -164,10 +180,10 @@ export default function CaseloadPage() {
             </label>
 
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setFilters({})} className="gap-1 text-xs">
+              <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1 text-xs">
                 <X className="h-3 w-3" /> Clear
               </Button>
-              <Button variant="outline" size="sm" onClick={saveCurrent} className="gap-1 text-xs">
+              <Button variant="outline" size="sm" onClick={saveCurrent} disabled={identity.readOnly} title={identity.readOnly ? "Read-only in preview mode" : undefined} className="gap-1 text-xs">
                 <BookmarkPlus className="h-3.5 w-3.5" /> Save view
               </Button>
             </div>
@@ -178,12 +194,23 @@ export default function CaseloadPage() {
               <Bookmark className="h-3 w-3 text-muted-foreground" />
               <span className="text-[11px] text-muted-foreground">Saved:</span>
               {views.map((v) => (
-                <span key={v.id} className="inline-flex items-center gap-1">
+                <span key={v.id} className="inline-flex items-center gap-1" data-testid="bcba-saved-view">
                   <button onClick={() => setFilters((v.filters ?? {}) as CaseloadFilters)}
                     className="text-xs px-2 py-0.5 rounded-full border hover:bg-muted">
                     {v.name}
                   </button>
-                  <button onClick={() => remove.mutate(v.id)} className="text-muted-foreground hover:text-destructive text-xs">×</button>
+                  <button
+                    onClick={() => renameView(v.id, v.name)}
+                    disabled={identity.readOnly}
+                    title={identity.readOnly ? "Read-only in preview mode" : "Rename"}
+                    className="text-muted-foreground hover:text-foreground text-[10px] disabled:opacity-40"
+                  >rename</button>
+                  <button
+                    onClick={() => deleteView(v.id, v.name)}
+                    disabled={identity.readOnly}
+                    title={identity.readOnly ? "Read-only in preview mode" : "Delete"}
+                    className="text-muted-foreground hover:text-destructive text-xs disabled:opacity-40"
+                  >×</button>
                 </span>
               ))}
             </div>
