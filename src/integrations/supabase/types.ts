@@ -14045,6 +14045,36 @@ export type Database = {
           },
         ]
       }
+      intake_operating_mode: {
+        Row: {
+          created_at: string
+          id: string
+          mode: string
+          note: string | null
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mode?: string
+          note?: string | null
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mode?: string
+          note?: string | null
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       intake_tasks: {
         Row: {
           created_at: string
@@ -30749,6 +30779,7 @@ export type Database = {
         Args: { _employee_id: string }
         Returns: number
       }
+      intake_actions_enabled: { Args: never; Returns: boolean }
       is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
       is_access_request_reviewer: {
         Args: { _user_id: string }
