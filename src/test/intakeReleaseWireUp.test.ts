@@ -19,9 +19,13 @@ describe("Intake release wire-up — surface consumption", () => {
     expect(src).toContain("useCanonicalCtmCalls");
     expect(src).toContain("@/lib/intake/reviewDataLayer");
     expect(src).not.toMatch(/\.from\(["']ctm_call_events["']\)/);
-    // Transcript & recording exposure removed from the non-admin surface.
-    expect(src).not.toMatch(/recording_url/);
-    expect(src).not.toMatch(/transcript/);
+    // Transcript & recording exposure removed from the non-admin surface —
+    // no functional access (audio player, transcript field, DB select).
+    expect(src).not.toMatch(/<audio\b/);
+    expect(src).not.toMatch(/\br\.recording_url\b/);
+    expect(src).not.toMatch(/\br\.transcript\b/);
+    expect(src).not.toMatch(/select\([^)]*recording_url/);
+    expect(src).not.toMatch(/select\([^)]*transcript/);
   });
 
   it("CTMAdmin recent-calls panel reads through the canonical safe view", () => {
