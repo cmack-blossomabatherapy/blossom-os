@@ -29762,6 +29762,20 @@ export type Database = {
         }
         Relationships: []
       }
+      mv_cr_provider_mapping: {
+        Row: {
+          ambiguity_reason: string | null
+          auth_user_id: string | null
+          employee_id: string | null
+          mapping_confidence: number | null
+          mapping_method: string | null
+          mapping_status: string | null
+          provider_id: string | null
+          provider_name: string | null
+          provider_name_key: string | null
+        }
+        Relationships: []
+      }
       rbt_assigned_clients_min_v: {
         Row: {
           assigned_bcba_id: string | null
