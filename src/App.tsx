@@ -1158,6 +1158,10 @@ const App = () => (
                   <Route path="/phone" element={<PhoneSystemRoute><PhoneDashboard /></PhoneSystemRoute>} />
                   <Route path="/phone/lookup" element={<PhoneSystemRoute><PhoneLookup /></PhoneSystemRoute>} />
                   <Route path="/phone/calls" element={<PhoneSystemRoute><CTMCalls /></PhoneSystemRoute>} />
+                  {/* Canonical/legacy aliases for CTM call history. Kept behind the same
+                      PhoneSystemRoute guard so auth/role enforcement is preserved. */}
+                  <Route path="/phone/ctm-calls" element={<PhoneSystemRoute><CTMCalls /></PhoneSystemRoute>} />
+                  <Route path="/intake/ctm-calls" element={<PhoneSystemRoute><CTMCalls /></PhoneSystemRoute>} />
                   <Route path="/phone/shared" element={<PhoneSystemRoute><PhoneShared /></PhoneSystemRoute>} />
                   <Route path="/phone/directory" element={<PhoneSystemRoute><PhoneDirectory /></PhoneSystemRoute>} />
                   <Route path="/phone/requests" element={<PhoneSystemRoute><PhoneRequestList /></PhoneSystemRoute>} />
