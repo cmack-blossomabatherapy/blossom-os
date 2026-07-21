@@ -1519,6 +1519,7 @@ const App = () => (
                   <Route path="journey/:instanceId" element={<RbtJourneyCheckpoint />} />
                   <Route path="learn" element={<RbtLearn />} />
                   <Route path="learn/course/:courseId" element={<RbtCourseDetail />} />
+                  <Route path="welcome" element={<RbtWelcome />} />
                   <Route path="program" element={<RbtProgramPage />} />
                   <Route path="passport" element={<RbtPassportPage />} />
                   <Route path="support" element={<SupportHome />} />
