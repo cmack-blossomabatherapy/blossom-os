@@ -1,6 +1,6 @@
-// NOTE: Skipped in release verification pass — expectations reflect prior sprint
-// design (old RBT/BCBA menus / removed admin routes / incidental substring scans)
-// that have been intentionally superseded by current shipping code.
+// Rewritten to assert current shipping contracts: runtime tick still passes
+// the runtimeCtx, RBT role remains blocked from sensitive routes, and
+// /rbt/reports is redirect-only.
 
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -10,15 +10,14 @@ import { ROLE_MENUS } from "@/lib/os/roleMenus";
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 
-describe.skip("RBT Pass 10 - runtime ctx + shared reports access", () => {
+describe("RBT Pass 10 - runtime ctx + shared reports access", () => {
   it("TrainingModuleRuntime passes runtimeCtx to tickRuntime and has no bare 2-arg tick", () => {
     const src = read("src/pages/academy/TrainingModuleRuntime.tsx");
     expect(src).toMatch(/tickRuntime\(\s*decodedId\s*,\s*1\s*,\s*runtimeCtx\s*\)/);
     expect(src).not.toMatch(/tickRuntime\(\s*decodedId\s*,\s*1\s*\)/);
   });
 
-  it("RBT can access /reports but stays blocked from sensitive routes", () => {
-    expect(canAccessRouteForRoles("/reports", ["rbt"])).toBe(true);
+  it("RBT stays blocked from sensitive routes", () => {
     for (const p of ["/clients", "/authorizations", "/payroll", "/admin", "/integrations", "/permissions"]) {
       expect(canAccessRouteForRoles(p, ["rbt"])).toBe(false);
     }
@@ -32,10 +31,9 @@ describe.skip("RBT Pass 10 - runtime ctx + shared reports access", () => {
     expect(rbtPage).toBeUndefined();
   });
 
-  it("RBT menu Reports item points to shared /reports exactly once", () => {
+  it("RBT menu does not surface /reports as a mobile tab (RBT reports are redirect-only)", () => {
     const paths = ROLE_MENUS.rbt!.sections.flatMap((s) => s.items.map((i) => i.path));
-    const reports = paths.filter((p) => p === "/reports");
-    expect(reports.length).toBe(1);
+    expect(paths.filter((p) => p === "/reports" || p.startsWith("/reports?"))).toEqual([]);
     expect(paths).not.toContain("/rbt/reports");
   });
 });
