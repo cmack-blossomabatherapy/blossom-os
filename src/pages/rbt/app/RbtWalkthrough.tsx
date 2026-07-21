@@ -87,7 +87,6 @@ export function RbtWalkthroughDialog() {
     <Dialog open={open} onOpenChange={(v) => { if (!v) controller.dismiss(); }}>
       <DialogContent
         onKeyDown={onKeyDown}
-        aria-describedby="rbt-walkthrough-desc"
         data-testid="rbt-walkthrough"
         data-tour-version={TOUR_VERSION}
         data-reduced-motion={reduced ? "true" : "false"}
