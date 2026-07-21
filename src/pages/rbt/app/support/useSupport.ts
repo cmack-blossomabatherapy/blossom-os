@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRbtIdentity } from "../useRbtIdentity";
 
 export type SupportCategory = {
   id: string; key: string; label: string; description: string | null; icon: string | null;
@@ -45,23 +45,21 @@ export function useSupportCategories() {
 }
 
 export function useMyTickets() {
-  const { user } = useAuth();
+  const { employeeId, loading: idLoading } = useRbtIdentity();
   const [tickets, setTickets] = useState<SupportTicket[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!user) return;
-    // employee_id is the auth user id (is_employee_self checks profiles map)
-    const { data: profile } = await supabase.from("profiles").select("employee_id").eq("id", user.id).maybeSingle();
-    const empId = (profile as any)?.employee_id ?? user.id;
+    if (idLoading) return;
+    if (!employeeId) { setTickets([]); return; }
     const { data, error } = await supabase.from("rbt_help_requests" as any)
       .select("*")
-      .eq("rbt_employee_id", empId)
+      .eq("rbt_employee_id", employeeId)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) setError(error.message);
     setTickets((data as any) ?? []);
-  }, [user?.id]);
+  }, [employeeId, idLoading]);
 
   useEffect(() => { load(); }, [load]);
   return { tickets, error, reload: load };
@@ -90,14 +88,14 @@ export function useTicket(ticketId: string | undefined) {
 }
 
 export function useSupportContacts() {
-  const { user } = useAuth();
+  const { employeeId } = useRbtIdentity();
   const [contacts, setContacts] = useState<SupportContact[] | null>(null);
   useEffect(() => {
-    if (!user) return;
+    if (!employeeId) return;
     supabase.from("rbt_support_team_contacts" as any)
       .select("*").eq("active", true)
       .then(({ data }) => setContacts((data as any) ?? []));
-  }, [user?.id]);
+  }, [employeeId]);
   return { contacts };
 }
 
