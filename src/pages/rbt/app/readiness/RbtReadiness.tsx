@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Circle, Clock, AlertTriangle, ChevronRight, LifeBuoy, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -143,12 +144,15 @@ function GateDetailSheet({ row, onClose, onSupport }: { row: ReadinessRow | null
 function SupportSheet({ open, gateKey, onClose, onSent }:
   { open: boolean; gateKey?: string; onClose: () => void; onSent: () => void }) {
   const { user } = useAuth();
+  const osRole = useOSRoleSafe();
+  const isPreviewing = Boolean(osRole?.isPreviewing);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function send() {
     if (!user || !subject.trim()) return;
+    if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
     setSaving(true);
     const { error } = await supabase.from("rbt_readiness_support_requests" as any).insert({
       employee_id: user.id, gate_key: gateKey ?? null, subject: subject.trim(), body: body.trim() || null,
@@ -165,8 +169,8 @@ function SupportSheet({ open, gateKey, onClose, onSent }:
         <div className="mt-4 space-y-3">
           <Input placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
           <Textarea placeholder="How can we help?" value={body} onChange={(e) => setBody(e.target.value)} rows={4} />
-          <Button onClick={send} disabled={saving || !subject.trim()} className="w-full">
-            {saving ? "Sending…" : "Send request"}
+          <Button onClick={send} disabled={saving || !subject.trim() || isPreviewing} className="w-full">
+            {saving ? "Sending…" : isPreviewing ? "Read-only in preview" : "Send request"}
           </Button>
         </div>
       </SheetContent>

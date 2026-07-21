@@ -44,8 +44,10 @@ function Field({ label, value, source, freshAt, stale }: { label: string; value:
 
 function QuickActions({ row, onLog }: { row: CaseloadRow; onLog: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
+  const { readOnly } = useBcbaIdentity();
 
   async function logEvent(eventType: string, summary: string) {
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     setBusy(eventType);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +81,7 @@ function QuickActions({ row, onLog }: { row: CaseloadRow; onLog: () => void }) {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
       {actions.map((a) => (
         <Button key={a.key} variant="outline" size="sm"
-          disabled={busy === a.key}
+          disabled={busy === a.key || (a.key !== "cr" && readOnly)}
           onClick={a.onClick}
           className="justify-start gap-2 h-auto py-2">
           <a.icon className="h-3.5 w-3.5 shrink-0" />
@@ -97,6 +99,7 @@ function QuickActions({ row, onLog }: { row: CaseloadRow; onLog: () => void }) {
 function OperationalNotes({ clientId }: { clientId: string }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const { readOnly } = useBcbaIdentity();
   const notes = useQuery({
     queryKey: ["case-notes", clientId],
     queryFn: async () => {
@@ -109,6 +112,7 @@ function OperationalNotes({ clientId }: { clientId: string }) {
 
   async function add() {
     if (!text.trim()) return;
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     setBusy(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -129,7 +133,9 @@ function OperationalNotes({ clientId }: { clientId: string }) {
       <div className="flex items-start gap-2">
         <Textarea placeholder="Add an operational note — visible to your clinical team"
           value={text} onChange={(e) => setText(e.target.value)} rows={2} className="text-sm" />
-        <Button onClick={add} disabled={busy || !text.trim()} size="sm">Add</Button>
+        <Button onClick={add} disabled={busy || !text.trim() || readOnly} size="sm">
+          {readOnly ? "Read-only" : "Add"}
+        </Button>
       </div>
       <p className="text-[10px] text-muted-foreground flex items-center gap-1">
         <StickyNote className="h-3 w-3" /> Operational notes only. Do not include clinical documentation — use CentralReach.
