@@ -413,6 +413,8 @@ import OSRBTMyDay from "./pages/os/OSRBTMyDay";
 import OSRBTTrainingAcademy from "./pages/os/OSRBTTrainingAcademy";
 import OSRBTReadinessBoard from "./pages/os/OSRBTReadinessBoard";
 import OSRBTAcademyAdmin from "./pages/os/OSRBTAcademyAdmin";
+import TrainingAcademyAdminPage from "./pages/os/TrainingAcademyAdminPage";
+import BcbaMyTraineesPage from "./pages/bcba/trainees/BcbaMyTraineesPage";
 import OSRBTClients from "./pages/os/OSRBTClients";
 import OSRBTSchedule from "./pages/os/OSRBTSchedule";
 import OSRBTSessionSupport from "./pages/os/OSRBTSessionSupport";
