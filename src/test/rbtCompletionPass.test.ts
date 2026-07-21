@@ -52,7 +52,7 @@ describe("RBT completion pass — current mobile-first shipping contract", () =>
   it("mounts every /rbt/app child route inside the RbtAppShell", () => {
     for (const sub of RBT_APP_SUBROUTES) {
       expect(APP_TSX, `App.tsx missing /rbt/app child route "${sub}"`).toMatch(
-        new RegExp(`<Route\\s+path="${sub}"`),
+        new RegExp(`<Route\\s+path="\\/rbt\\/app\\/${sub}"`),
       );
     }
   });

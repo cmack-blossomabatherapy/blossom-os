@@ -847,6 +847,8 @@ const App = () => (
                   <Route path="/recruiting/background"     element={<OSRecruitingBackgroundChecks />} />
                   <Route path="/recruiting/orientation"    element={<OSRecruitingOrientation />} />
                   <Route path="/recruiting/staffing-needs" element={<OSRecruitingStaffingNeeds />} />
+                 <Route path="/recruiting/ready-to-staff" element={<Navigate to="/recruiting/staffing-needs" replace />} />
+                 <Route path="/recruiting/apploi" element={<Navigate to="/admin/integrations?connector=apploi" replace />} />
                   <Route path="/recruiting/rbt"            element={<OSRecruitingRBT />} />
                   <Route path="/recruiting/bcba"           element={<OSRecruitingBCBA />} />
                   <Route path="/recruiting/performance"    element={<OSRecruitingPerformance />} />
@@ -959,7 +961,17 @@ const App = () => (
                   <Route path="/training/academy-admin" element={<PermissionRoute allowedRoles={["admin","super_admin","training_admin","hr","hr_admin","operations_leadership"]}><TrainingAcademyAdminPage /></PermissionRoute>} />
                   <Route path="/training/rbt-academy" element={<Navigate to="/training/academy-admin" replace />} />
                   <Route path="/rbt/clients" element={<RbtLegacyRoute appPath="clients"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTClients /></PermissionRoute></RbtLegacyRoute>} />
-                  <Route path="/rbt/schedule" element={<RbtLegacyRoute appPath="schedule"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","scheduling","scheduling_lead"]}><OSRBTSchedule /></PermissionRoute></RbtLegacyRoute>} />
+                  <Route
+                    element={
+                      <RbtLegacyRoute appPath="schedule">
+                        <PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","scheduling","scheduling_lead"]}>
+                          <Outlet />
+                        </PermissionRoute>
+                      </RbtLegacyRoute>
+                    }
+                  >
+                    <Route path="/rbt/schedule" element={<OSRBTSchedule />} />
+                  </Route>
                   <Route path="/rbt/session-support" element={<RbtLegacyRoute appPath="support"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTSessionSupport /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/supervision" element={<RbtLegacyRoute appPath="supervision"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","qa","qa_lead"]}><OSRBTSupervision /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/messages" element={<RbtLegacyRoute appPath="support"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","hr","hr_admin"]}><OSRBTMessages /></PermissionRoute></RbtLegacyRoute>} />
@@ -1507,35 +1519,35 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 >
-                  <Route index element={<Navigate to="home" replace />} />
-                  <Route path="home" element={<RbtHome />} />
-                  <Route path="preboarding" element={<RbtPreboarding />} />
-                  <Route path="readiness" element={<RbtReadiness />} />
-                  <Route path="staffing" element={<RbtStaffing />} />
-                  <Route path="schedule" element={<RbtSchedule />} />
-                  <Route path="first-case" element={<RbtFirstCase />} />
-                  <Route path="first-case/checkin" element={<FirstSessionCheckin />} />
-                  <Route path="journey" element={<RbtJourney />} />
-                  <Route path="journey/:instanceId" element={<RbtJourneyCheckpoint />} />
-                  <Route path="learn" element={<RbtLearn />} />
-                  <Route path="learn/course/:courseId" element={<RbtCourseDetail />} />
-                  <Route path="welcome" element={<RbtWelcome />} />
-                  <Route path="program" element={<RbtProgramPage />} />
-                  <Route path="passport" element={<RbtPassportPage />} />
-                  <Route path="support" element={<SupportHome />} />
-                  <Route path="support/new" element={<SupportNew />} />
-                  <Route path="support/urgent" element={<SupportUrgent />} />
-                  <Route path="support/team" element={<SupportTeam />} />
-                  <Route path="support/:ticketId" element={<SupportTicketDetail />} />
-                  <Route path="settings/notifications" element={<RbtNotificationPreferences />} />
-                  <Route path="me" element={<RbtMe />} />
-                  <Route path="clients" element={<MyClients />} />
-                  <Route path="hours" element={<RbtHours />} />
-                  <Route path="supervision" element={<RbtSupervisionPage />} />
-                  <Route path="credentials" element={<RbtCredentialsPage />} />
-                  <Route path="performance" element={<RbtPerformancePage />} />
-                  <Route path="growth" element={<RbtMyGrowth />} />
-                  <Route path="growth/fellowship" element={<RbtFellowshipExplorer />} />
+                  <Route index element={<Navigate to="/rbt/app/home" replace />} />
+                  <Route path="/rbt/app/home" element={<RbtHome />} />
+                  <Route path="/rbt/app/preboarding" element={<RbtPreboarding />} />
+                  <Route path="/rbt/app/readiness" element={<RbtReadiness />} />
+                  <Route path="/rbt/app/staffing" element={<RbtStaffing />} />
+                  <Route path="/rbt/app/schedule" element={<RbtSchedule />} />
+                  <Route path="/rbt/app/first-case" element={<RbtFirstCase />} />
+                  <Route path="/rbt/app/first-case/checkin" element={<FirstSessionCheckin />} />
+                  <Route path="/rbt/app/journey" element={<RbtJourney />} />
+                  <Route path="/rbt/app/journey/:instanceId" element={<RbtJourneyCheckpoint />} />
+                  <Route path="/rbt/app/learn" element={<RbtLearn />} />
+                  <Route path="/rbt/app/learn/course/:courseId" element={<RbtCourseDetail />} />
+                  <Route path="/rbt/app/welcome" element={<RbtWelcome />} />
+                  <Route path="/rbt/app/program" element={<RbtProgramPage />} />
+                  <Route path="/rbt/app/passport" element={<RbtPassportPage />} />
+                  <Route path="/rbt/app/support" element={<SupportHome />} />
+                  <Route path="/rbt/app/support/new" element={<SupportNew />} />
+                  <Route path="/rbt/app/support/urgent" element={<SupportUrgent />} />
+                  <Route path="/rbt/app/support/team" element={<SupportTeam />} />
+                  <Route path="/rbt/app/support/:ticketId" element={<SupportTicketDetail />} />
+                  <Route path="/rbt/app/settings/notifications" element={<RbtNotificationPreferences />} />
+                  <Route path="/rbt/app/me" element={<RbtMe />} />
+                  <Route path="/rbt/app/clients" element={<MyClients />} />
+                  <Route path="/rbt/app/hours" element={<RbtHours />} />
+                  <Route path="/rbt/app/supervision" element={<RbtSupervisionPage />} />
+                  <Route path="/rbt/app/credentials" element={<RbtCredentialsPage />} />
+                  <Route path="/rbt/app/performance" element={<RbtPerformancePage />} />
+                  <Route path="/rbt/app/growth" element={<RbtMyGrowth />} />
+                  <Route path="/rbt/app/growth/fellowship" element={<RbtFellowshipExplorer />} />
                 </Route>
                 {/* BCBA experience — MUST sit outside AppLayout so we don't
                     stack the generic sidebar/top bar/bottom nav on top of
