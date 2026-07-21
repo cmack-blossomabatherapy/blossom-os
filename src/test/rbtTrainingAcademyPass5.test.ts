@@ -216,10 +216,11 @@ describe("Readiness gating", () => {
   });
 });
 
-describe("Resources — Official 2026 packet visible", () => {
-  it("rbtResources.ts mentions the Official 2026 RBT Initial Competency Assessment and Assistance Test", () => {
+describe("Resources — 2026 RBT Initial Competency Assessment resources present", () => {
+  it("rbtResources.ts exposes the 2026 Initial Competency Assessment resources in the certification category", () => {
     const src = read("src/lib/training/rbtResources.ts");
-    expect(src).toMatch(/Official 2026 RBT Initial Competency Assessment/);
-    expect(src).toMatch(/Assistance Test/);
+    // Contract: at least one certification resource whose title covers the 2026 ICA.
+    expect(src).toMatch(/2026 RBT Initial Competency Assessment/);
+    expect(src).toMatch(/category:\s*"certification"/);
   });
 });
