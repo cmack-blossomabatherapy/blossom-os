@@ -1,6 +1,6 @@
-// NOTE: Skipped in release verification pass — expectations reflect prior sprint
-// design (old RBT/BCBA menus / removed admin routes / incidental substring scans)
-// that have been intentionally superseded by current shipping code.
+// Rewritten to keep the canonical-link contract asserted. Prior version was
+// skipped wholesale during release verification; this version restores
+// coverage and preserves the redirect-target audit.
 
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -64,13 +64,12 @@ const legacyLinkPatterns: Array<{ name: string; patterns: RegExp[] }> = [
   { name: "/intake/vob-decision",       patterns: [/["'`]\/intake\/vob-decision(?:[?#"'`]|$)/m] },
 ];
 
-describe.skip("Pass 5B: navigation configs use canonical routes", () => {
+describe("Pass 5B: navigation configs use canonical routes", () => {
   for (const { name, patterns } of legacyLinkPatterns) {
     it(`no link config references ${name}`, () => {
       for (const re of patterns) {
         const match = corpus.match(re);
         if (match) {
-          // surface context to make failures actionable
           const idx = corpus.indexOf(match[0]);
           const ctx = corpus.slice(Math.max(0, idx - 120), idx + 120);
           throw new Error(`Found legacy link ${name}:\n...${ctx}...`);
