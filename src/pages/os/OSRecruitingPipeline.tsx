@@ -20,6 +20,10 @@ import {
   useApploiIntegrationStatus,
   importApploiNormalizedRecords,
 } from "@/hooks/useApploiIntegration";
+import {
+  isRbtLikeRole,
+  type RbtCertificationStatus,
+} from "@/lib/recruiting/rbtPathwayClassifier";
 
 // Recruiting → Candidates → Applicant Pipeline
 // Real backend (recruiting_candidates). DnD persists pipeline_stage.
