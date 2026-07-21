@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader2, ShieldCheck, ClipboardList, Search, ExternalLink, AlertTriangle } from "lucide-react";
 import { useSupervisionMonth, type SupervisionRow } from "./useSupervisionMonth";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 import { STATUS_LABELS, STATUS_STYLES } from "./supervisionLogic";
 import { PostSupervisionDialog } from "./PostSupervisionDialog";
 import { SupervisionBriefDrawer } from "./SupervisionBriefDrawer";
@@ -13,7 +15,11 @@ function fmtMinutes(m: number) { const h = Math.floor(m / 60); const r = m % 60;
 
 export default function SupervisionCenterPage() {
   const now = new Date();
-  const { data, isLoading, error, refetch, isFetching } = useSupervisionMonth(now);
+  const identity = useBcbaIdentity();
+  const { data, isLoading, error, refetch, isFetching } = useSupervisionMonth(
+    identity.scopedAuthUserId,
+    now,
+  );
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<SupervisionRow | null>(null);
   const [logging, setLogging]   = useState<SupervisionRow | null>(null);
@@ -61,7 +67,9 @@ export default function SupervisionCenterPage() {
         ))}
       </div>
 
-      {isLoading ? (
+      <BcbaMappingDiagnostic onRetry={() => refetch()} />
+
+      {(identity.loading || (isLoading && identity.scopedAuthUserId)) ? (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading supervision picture…
         </div>
@@ -125,7 +133,7 @@ export default function SupervisionCenterPage() {
                       <Button size="sm" variant="outline" onClick={() => setSelected(r)} className="mr-1">
                         <ClipboardList className="h-3.5 w-3.5 mr-1" /> Brief
                       </Button>
-                      <Button size="sm" onClick={() => setLogging(r)}>
+                      <Button size="sm" onClick={() => setLogging(r)} disabled={identity.readOnly} title={identity.readOnly ? "Read-only in preview mode" : undefined}>
                         <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Log
                       </Button>
                     </td>
