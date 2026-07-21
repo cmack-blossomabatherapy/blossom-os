@@ -173,9 +173,6 @@ export function RbtLearn() {
     })();
   }, [authUserId, idLoading]);
 
-  const state: "error" | "loading" | "empty" | "success" =
-    err ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
-
   const isPublished = (c: any | null) => Boolean(c && c.is_active !== false && c.status !== "draft" && c.status !== "archived");
 
   return (
