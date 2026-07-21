@@ -1,13 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const maybeSingle = vi.fn();
-const eq = vi.fn(() => ({ maybeSingle }));
-const select = vi.fn(() => ({ eq }));
-const from = vi.fn(() => ({ select }));
+vi.mock("@/integrations/supabase/client", () => {
+  const maybeSingle = vi.fn();
+  const eq = vi.fn(() => ({ maybeSingle }));
+  const select = vi.fn(() => ({ eq }));
+  const from = vi.fn(() => ({ select }));
+  return {
+    supabase: { from },
+    __mocks: { from, select, eq, maybeSingle },
+  };
+});
 
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { from },
-}));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const { __mocks } = await import("@/integrations/supabase/client") as any;
+const { from, select, eq, maybeSingle } = __mocks;
 
 import {
   isUuid,
