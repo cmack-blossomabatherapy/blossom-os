@@ -88,7 +88,6 @@ export function useTicket(ticketId: string | undefined) {
 }
 
 export function useSupportContacts() {
-export function useSupportContacts() {
   const { employeeId, loading: idLoading } = useRbtIdentity();
   const [contacts, setContacts] = useState<SupportContact[] | null>(null);
   const [error, setError] = useState<string | null>(null);
