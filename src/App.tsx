@@ -26,6 +26,7 @@ import BDTerritories from "./pages/os/mapsly/BDTerritories";
 import RecruitingMap from "./pages/os/mapsly/RecruitingMap";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
+import CrClientRedirect from "./pages/CrClientRedirect";
 import Pipeline from "./pages/Pipeline";
 import Authorizations from "./pages/Authorizations";
 import AuthDetail from "./pages/AuthDetail";
