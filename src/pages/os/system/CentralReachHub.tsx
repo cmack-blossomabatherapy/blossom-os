@@ -366,10 +366,6 @@ function DataQualityTab() {
 
 // ---------- Audit ----------
 function AuditTab() {
-  // (moved above)
-  return <AuditTabImpl />;
-}
-function AuditTabImpl() {
   const [rows, setRows] = useState<any[]>([]);
   useEffect(() => {
     supabase.from("cr_sync_audit").select("*").order("created_at", { ascending: false }).limit(100)
