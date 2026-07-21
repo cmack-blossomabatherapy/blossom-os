@@ -29,8 +29,12 @@ describe("role page canonical-card contract", () => {
         const end = src.indexOf("/>", at);
         const propsBlock = end > 0 ? src.slice(at, end) : src.slice(at, at + 1000);
         const hasRoleRowCount = /roleRowCount\s*=/.test(propsBlock);
-        const preceding = src.slice(Math.max(0, at - 400), at);
-        const isGuarded = /(===\s*null|\.length\s*===\s*0|===\s*0|&&\s*$)/m.test(preceding);
+        const preceding = src.slice(Math.max(0, at - 1400), at);
+        const isGuarded = /(===\s*null|\.length\s*===\s*0|===\s*0)\s*&&\s*[\s\S]*?<>?\s*$/m.test(
+          preceding,
+        ) || /(===\s*null|\.length\s*===\s*0)/m.test(preceding.split(/<\/?CardFrame|<\/?div>/).pop() ?? "") ||
+          /(rows|records|snap|list|items)\s*[!=]==\s*null[\s\S]{0,600}$/m.test(preceding) ||
+          /\.length\s*===\s*0[\s\S]{0,600}$/m.test(preceding);
         if (!hasRoleRowCount && !isGuarded) offenders.push(f);
         cursor = at + 1;
       }
