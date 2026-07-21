@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRbtIdentity } from "../useRbtIdentity";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,18 +17,18 @@ interface Evaluation {
 }
 
 export default function RbtSkillPassport() {
-  const { user } = useAuth();
+  const { employeeId, writableEmployeeId, loading: idLoading, isPreviewing } = useRbtIdentity();
   const [defs, setDefs] = useState<Def[] | null>(null);
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [evals, setEvals] = useState<Evaluation[]>([]);
   const [selected, setSelected] = useState<Def | null>(null);
 
   async function load() {
-    if (!user) return;
+    if (!employeeId) return;
     const [d, s, e] = await Promise.all([
       supabase.from("rbt_skill_definitions" as any).select("*").eq("is_active", true).order("sort_order"),
-      supabase.from("rbt_skill_status" as any).select("*").eq("employee_id", user.id),
-      supabase.from("rbt_skill_evaluations" as any).select("*").eq("employee_id", user.id).order("evaluated_at", { ascending: false }),
+      supabase.from("rbt_skill_status" as any).select("*").eq("employee_id", employeeId),
+      supabase.from("rbt_skill_evaluations" as any).select("*").eq("employee_id", employeeId).order("evaluated_at", { ascending: false }),
     ]);
     setDefs(((d.data as any[]) ?? []) as Def[]);
     const map: Record<string, Status> = {};
@@ -36,7 +36,7 @@ export default function RbtSkillPassport() {
     setStatus(map);
     setEvals(((e.data as any[]) ?? []) as Evaluation[]);
   }
-  useEffect(() => { void load(); }, [user?.id]);
+  useEffect(() => { if (!idLoading) void load(); }, [employeeId, idLoading]);
 
   const grouped = useMemo(() => {
     const g = new Map<string, Def[]>();
@@ -97,19 +97,21 @@ export default function RbtSkillPassport() {
           evaluations={evals.filter((e) => e.skill_key === selected.key)}
           onClose={() => setSelected(null)}
           onSaved={() => { setSelected(null); void load(); }}
+          canWrite={Boolean(writableEmployeeId) && !isPreviewing}
         />
       )}
     </div>
   );
 }
 
-function SkillSheet({ def, state, evaluations, onClose, onSaved }:
-  { def: Def; state: SkillState; evaluations: Evaluation[]; onClose: () => void; onSaved: () => void }) {
+function SkillSheet({ def, state, evaluations, onClose, onSaved, canWrite }:
+  { def: Def; state: SkillState; evaluations: Evaluation[]; onClose: () => void; onSaved: () => void; canWrite: boolean }) {
   const [ackNote, setAckNote] = useState("");
   const [saving, setSaving] = useState(false);
   const meta = SKILL_META[state];
 
   async function acknowledge(id: string) {
+    if (!canWrite) return;
     setSaving(true);
     const { error } = await supabase.from("rbt_skill_evaluations" as any)
       .update({ employee_acknowledged_at: new Date().toISOString(), employee_acknowledgment_note: ackNote.trim() || null })
@@ -152,7 +154,7 @@ function SkillSheet({ def, state, evaluations, onClose, onSaved }:
                   {!ev.employee_acknowledged_at ? (
                     <div className="mt-3 space-y-2">
                       <Textarea rows={2} value={ackNote} onChange={(e) => setAckNote(e.target.value)} placeholder="Your acknowledgment (optional)" />
-                      <Button size="sm" onClick={() => acknowledge(ev.id)} disabled={saving}>Acknowledge</Button>
+                      <Button size="sm" onClick={() => acknowledge(ev.id)} disabled={saving || !canWrite}>Acknowledge</Button>
                     </div>
                   ) : (
                     <p className="mt-3 text-xs text-primary">
