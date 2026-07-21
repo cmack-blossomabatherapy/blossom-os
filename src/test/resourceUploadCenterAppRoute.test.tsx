@@ -82,6 +82,7 @@ vi.mock("@/integrations/supabase/client", () => ({
       },
     },
     from: vi.fn((table: string) => makeQuery(table)),
+    rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
     channel: vi.fn(() => ({
       on: vi.fn(function (this: any) { return this; }),
       subscribe: vi.fn(function (this: any) { return this; }),
