@@ -111,6 +111,30 @@ See "Verification" below.
   index `rbt_pathway_progress_employee_step_uniq` created; legacy steps
   retired (deleted when unused, otherwise flagged `metadata.retired=true`).
 
+## Slice 3 — RBT Experience Lab (superadmin-only, read-only)
+
+- New module `src/lib/rbt/experienceLab.ts` — projections, fixtures, and
+  role-gated hook (`useExperienceLabController`). Zero Supabase writes.
+- New hook `src/pages/rbt/app/useExperienceLab.ts` binds the controller to
+  `useAuth()` so eligibility always follows the *underlying* roles, not the
+  OSRoleProvider view-as override.
+- New UI `src/pages/rbt/app/RbtExperienceLabBar.tsx` — elegant primary/indigo
+  bar (deliberately non-yellow) with pathway + stage selectors and
+  Reset/Exit. Rendered inside the RBT shell.
+- `useProgram` short-circuits DB reads when the lab is active, feeding
+  synthetic pathway + progress rows. Save controls disabled in `RbtProgram`
+  and `RbtSkillPassport` while lab is active.
+- Presets: `starting` · `midway` · `nearly_done` · `needs_support`.
+- Pathways: `new_rbt_certification`, `under_2_years`, `experienced_rbt`.
+- Persistence: `sessionStorage` only, key `rbt.experienceLab.v1:<adminUserId>`.
+  Tampered payloads are rejected on read; storage is purged on eligibility
+  loss.
+- Ordinary RBTs cannot activate the lab: eligibility gate + storage-scrub
+  covers URL tampering, hand-crafted storage payloads, and role downgrades.
+- Tests: `src/test/rbtExperienceLabSlice3.test.ts` — 15 tests covering all
+  three pathways × all four presets, stage switching, persistence isolation,
+  tamper rejection, write blocking, and ordinary-user denial.
+
 ## Slice 3 — Experience Lab (admin-only pathway preview) (pending)
 
 ## Slice 4 — Walkthrough persistence + 2030 polish (pending)
