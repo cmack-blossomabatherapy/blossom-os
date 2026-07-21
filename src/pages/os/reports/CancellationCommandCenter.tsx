@@ -26,6 +26,7 @@ import {
 } from "@/lib/os/cancellationSavedReports";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
+import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 import {
   getActiveSharedReportDataset,
   downloadSharedReportDatasetFile,
