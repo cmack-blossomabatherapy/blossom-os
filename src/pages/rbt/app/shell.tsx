@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
 import { RbtAppErrorBoundary } from "./RbtAppErrorBoundary";
 import { PreviewBanner } from "./PreviewBanner";
+import { OSRoleProvider } from "@/contexts/OSRoleContext";
 
 /**
  * RBT app shell now renders inside the standard Blossom OS shell so RBTs
@@ -12,11 +13,13 @@ import { PreviewBanner } from "./PreviewBanner";
 export default function RbtAppShell() {
   const location = useLocation();
   return (
-    <OSShell>
-      <PreviewBanner />
-      <RbtAppErrorBoundary key={location.pathname}>
-        <Outlet />
-      </RbtAppErrorBoundary>
-    </OSShell>
+    <OSRoleProvider>
+      <OSShell>
+        <PreviewBanner />
+        <RbtAppErrorBoundary key={location.pathname}>
+          <Outlet />
+        </RbtAppErrorBoundary>
+      </OSShell>
+    </OSRoleProvider>
   );
 }
