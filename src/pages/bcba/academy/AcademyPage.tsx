@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -9,10 +8,13 @@ import { CheckCircle2, Circle, PlayCircle, GraduationCap, Wrench, ArrowRight } f
 import { toast } from "sonner";
 import { BCBA_ACADEMY_SECTIONS, SUPERVISOR_TOOLKIT } from "./config";
 import { useMyAcademyProgress, useUpdateAcademyProgress } from "./useAcademy";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
 
 export default function AcademyPage() {
-  const [uid, setUid] = useState<string | null>(null);
-  useEffect(() => { (async () => { const { data: { user } } = await supabase.auth.getUser(); setUid(user?.id ?? null); })(); }, []);
+  const identity = useBcbaIdentity();
+  const uid = identity.scopedAuthUserId;
+  const readOnly = identity.readOnly;
 
   const progress = useMyAcademyProgress(uid);
   const upd = useUpdateAcademyProgress();
@@ -31,6 +33,7 @@ export default function AcademyPage() {
 
   const setStatus = async (sectionKey: string, isRequired: boolean, status: "in_progress" | "completed") => {
     if (!uid) return;
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     try {
       await upd.mutateAsync({
         user_id: uid, section_key: sectionKey, is_required: isRequired,
@@ -44,6 +47,9 @@ export default function AcademyPage() {
     const p = map.get(s.key);
     const status = p?.status ?? "not_started";
     const Icon = s.icon;
+    // Published-content gate: sections without a linked path cannot be "opened",
+    // so we disable "Mark complete" until the owner ships the content link.
+    const missingContent = !s.path;
     return (
       <Card className="hover:shadow-sm transition">
         <CardContent className="p-4">
@@ -56,6 +62,9 @@ export default function AcademyPage() {
                   <span className="text-[10px] rounded-full bg-primary/10 text-primary px-1.5 py-0.5">Required</span>
                 ) : (
                   <span className="text-[10px] rounded-full bg-muted text-muted-foreground px-1.5 py-0.5">Optional</span>
+                )}
+                {missingContent && (
+                  <span className="text-[10px] rounded-full bg-amber-100 text-amber-800 px-1.5 py-0.5" title="Owner: Training team">Content pending</span>
                 )}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">{s.description}</div>
@@ -72,9 +81,16 @@ export default function AcademyPage() {
                   {status !== "completed" && (
                     <>
                       {status === "not_started" && (
-                        <Button size="sm" variant="outline" onClick={() => setStatus(s.key, isRequired, "in_progress")}>Start</Button>
+                        <Button size="sm" variant="outline" disabled={readOnly} title={readOnly ? "Read-only in preview mode" : undefined} onClick={() => setStatus(s.key, isRequired, "in_progress")}>Start</Button>
                       )}
-                      <Button size="sm" onClick={() => setStatus(s.key, isRequired, "completed")}>Mark complete</Button>
+                      <Button
+                        size="sm"
+                        disabled={readOnly || missingContent}
+                        title={missingContent ? "Owner (Training): publish content before this can be completed" : readOnly ? "Read-only in preview mode" : undefined}
+                        onClick={() => setStatus(s.key, isRequired, "completed")}
+                      >
+                        Mark complete
+                      </Button>
                     </>
                   )}
                   {s.path && (
@@ -93,6 +109,7 @@ export default function AcademyPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6">
+      <BcbaPreviewBanner />
       <div className="mb-6">
         <h1 className="text-3xl font-semibold tracking-tight">BCBA Academy</h1>
         <p className="text-sm text-muted-foreground mt-1">
