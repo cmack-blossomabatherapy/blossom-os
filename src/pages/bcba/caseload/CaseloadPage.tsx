@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCaseload, type CaseloadRow } from "./useCaseload";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 import { useSavedViews, type CaseloadFilters } from "./useSavedViews";
 import { CaseDetailDrawer } from "./CaseDetailDrawer";
 import { HEALTH_LABEL, HEALTH_TONE, type CaseHealthStatus } from "./caseHealth";
@@ -83,7 +85,8 @@ function CaseCard({ row, onOpen }: { row: CaseloadRow; onOpen: () => void }) {
 
 export default function CaseloadPage() {
   const isMobile = useIsMobile();
-  const { data: rows, isLoading, error, refetch, isRefetching } = useCaseload();
+  const identity = useBcbaIdentity();
+  const { data: rows, isLoading, error, refetch, isRefetching } = useCaseload(identity.scopedAuthUserId);
   const { views, save, remove } = useSavedViews();
   const [params, setParams] = useSearchParams();
 
@@ -120,6 +123,8 @@ export default function CaseloadPage() {
           <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </div>
+
+      <BcbaMappingDiagnostic onRetry={() => refetch()} />
 
       {/* Filter bar */}
       <Card className="border-border/60 bg-card/70 backdrop-blur-sm">

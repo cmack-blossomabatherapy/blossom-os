@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,18 +76,20 @@ function fmtDate(d?: string | null) {
 /*  Data hook                                                                 */
 /* -------------------------------------------------------------------------- */
 
-function useMyRbtData() {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+function useMyRbtData(scopedAuthUserId: string | null, forcedBcbaEmployeeId: string | null) {
+  const userId = scopedAuthUserId;
 
   return useQuery({
-    queryKey: ["bcba-my-rbts", userId],
+    queryKey: ["bcba-my-rbts", userId, forcedBcbaEmployeeId],
     enabled: !!userId,
     queryFn: async () => {
       // Resolve BCBA's employee id (some tables key on employees.id, not auth uid)
-      const { data: emp } = await supabase
-        .from("employees").select("id").eq("user_id", userId!).maybeSingle();
-      const bcbaEmployeeId = emp?.id ?? null;
+      let bcbaEmployeeId = forcedBcbaEmployeeId;
+      if (!bcbaEmployeeId) {
+        const { data: emp } = await supabase
+          .from("employees").select("id").eq("user_id", userId!).maybeSingle();
+        bcbaEmployeeId = emp?.id ?? null;
+      }
 
       // Shared assignment model — this is the single source of truth
       const { data: assignments, error: aErr } = await supabase
@@ -219,11 +222,13 @@ function AssignmentCard({
   checklistItems,
   bcbaEmployeeId,
   onChanged,
+  readOnly,
 }: {
   data: any;
   checklistItems: ChecklistItem[];
   bcbaEmployeeId: string | null;
   onChanged: () => void;
+  readOnly?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const { assignment, rbt, firstCase, checklistState, followups, checkin, leadEval } = data;
@@ -233,6 +238,7 @@ function AssignmentCard({
   const checklistDone = checklistItems.every((i) => doneKeys.has(i.key));
 
   async function ensureFirstCase(): Promise<string | null> {
+    if (readOnly) { toast.info("Read-only in preview mode."); return null; }
     if (firstCase?.id) return firstCase.id;
     if (!bcbaEmployeeId || !assignment.rbt_employee_id) {
       toast.error("Missing BCBA or RBT identity for this case.");
@@ -251,6 +257,7 @@ function AssignmentCard({
   }
 
   async function toggleChecklist(itemKey: string, next: boolean) {
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     setBusy(itemKey);
     const caseId = await ensureFirstCase();
     if (!caseId) { setBusy(null); return; }
@@ -269,6 +276,7 @@ function AssignmentCard({
   }
 
   async function submitResponse(opt: typeof RESPONSE_OPTIONS[number]) {
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     setBusy(`resp-${opt.key}`);
     const caseId = await ensureFirstCase();
     if (!caseId) { setBusy(null); return; }
@@ -401,7 +409,7 @@ function AssignmentCard({
                   >
                     <Checkbox
                       checked={done}
-                      disabled={busy === it.key}
+                      disabled={busy === it.key || readOnly}
                       onCheckedChange={(v) => toggleChecklist(it.key, !!v)}
                       className="mt-0.5"
                     />
@@ -471,7 +479,7 @@ function AssignmentCard({
                   key={opt.key}
                   variant={opt.priority === "critical" ? "destructive" : opt.priority === "high" ? "default" : "outline"}
                   size="sm"
-                  disabled={!!busy}
+                  disabled={!!busy || readOnly}
                   onClick={() => submitResponse(opt)}
                   className="justify-start"
                 >
@@ -534,7 +542,11 @@ function BadgeIcon() {
 
 export default function BcbaMyRbtsPage() {
   const qc = useQueryClient();
-  const { data, isLoading, isError, error } = useMyRbtData();
+  const identity = useBcbaIdentity();
+  const { data, isLoading, isError, error, refetch } = useMyRbtData(
+    identity.scopedAuthUserId,
+    identity.employeeId,
+  );
   const [filter, setFilter] = useState<"all" | "new" | "concerns">("all");
 
   const rows = useMemo(() => {
@@ -556,6 +568,8 @@ export default function BcbaMyRbtsPage() {
           New assignments, pre-start checklists, and post-session follow-ups.
         </p>
       </div>
+
+      <div className="mb-4"><BcbaMappingDiagnostic onRetry={() => refetch()} /></div>
 
       <div className="flex items-center gap-2 mb-4">
         {(["all", "new", "concerns"] as const).map((f) => (
@@ -593,6 +607,7 @@ export default function BcbaMyRbtsPage() {
             checklistItems={data!.checklistItems}
             bcbaEmployeeId={data!.bcbaEmployeeId}
             onChanged={invalidate}
+            readOnly={identity.readOnly}
           />
         ))}
       </div>

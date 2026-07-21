@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { REASON_LABELS, type ActionItem, type EscalationLevel } from "./priority";
-import { useBcbaHomeData } from "./useBcbaHomeData";
+import { useBcbaHomeDataFor } from "./useBcbaHomeData";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 
 /* -------------------------------------------------------------------------- */
 
@@ -94,9 +96,18 @@ function ActionRow({ item }: { item: ActionItem }) {
 
 export default function BcbaHomePage() {
   const isMobile = useIsMobile();
-  const { data, isLoading, error } = useBcbaHomeData();
+  const identity = useBcbaIdentity();
+  const { data, isLoading, error, refetch } = useBcbaHomeDataFor(identity.scopedAuthUserId);
 
-  if (isLoading) {
+  if (identity.mappingMissing) {
+    return (
+      <div className="mx-auto w-full max-w-6xl px-2 md:px-4 py-6 space-y-4">
+        <BcbaMappingDiagnostic onRetry={() => refetch()} />
+      </div>
+    );
+  }
+
+  if (identity.loading || (isLoading && identity.scopedAuthUserId)) {
     return (
       <div className="mx-auto w-full max-w-6xl px-2 md:px-4 py-6 space-y-4">
         <Skeleton className="h-8 w-56" />
@@ -108,6 +119,7 @@ export default function BcbaHomePage() {
   if (error || !data) {
     return (
       <div className="mx-auto w-full max-w-6xl px-2 md:px-4 py-6">
+        <BcbaMappingDiagnostic onRetry={() => refetch()} />
         <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">
           Couldn't load your home dashboard. Please refresh.
         </CardContent></Card>
