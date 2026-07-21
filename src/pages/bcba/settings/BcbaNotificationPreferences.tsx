@@ -7,23 +7,31 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
 
 type Rule = { id: string; event_key: string; domain: string; title_template: string; channels: string[]; required: boolean; sensitive: boolean };
 type Pref = { event_key: string; channel: string; enabled: boolean; quiet_hours_start: string | null; quiet_hours_end: string | null };
 
 export default function BcbaNotificationPreferences() {
   const { user } = useAuth();
+  const identity = useBcbaIdentity();
+  const readOnly = identity.readOnly;
   const [rules, setRules] = useState<Rule[]>([]);
   const [prefs, setPrefs] = useState<Record<string, Pref>>({});
   const [quiet, setQuiet] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [masterPaused, setMasterPaused] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
+    setLoadError(null);
     const [r, p] = await Promise.all([
       supabase.from("bcba_notification_rules").select("id,event_key,domain,title_template,channels,required,sensitive").eq("active", true).order("domain"),
       supabase.from("bcba_notification_preferences").select("event_key,channel,enabled,quiet_hours_start,quiet_hours_end").eq("user_id", user.id),
     ]);
+    if (r.error) setLoadError(r.error.message);
+    if (p.error) setLoadError(p.error.message);
     setRules((r.data as any) ?? []);
     const map: Record<string, Pref> = {};
     (p.data as any[] ?? []).forEach(x => { map[`${x.event_key}:${x.channel}`] = x; });
@@ -37,6 +45,7 @@ export default function BcbaNotificationPreferences() {
 
   const toggleMasterPause = async (pause: boolean) => {
     if (!user) return;
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     const { error } = await supabase.from("bcba_notification_preferences").upsert({
       user_id: user.id, event_key: "__all__", channel: "__all__", enabled: !pause,
     }, { onConflict: "user_id,event_key,channel" });
@@ -47,6 +56,7 @@ export default function BcbaNotificationPreferences() {
 
   const toggle = async (rule: Rule, channel: string, enabled: boolean) => {
     if (!user || rule.required) return;
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     const { error } = await supabase.from("bcba_notification_preferences").upsert({
       user_id: user.id, event_key: rule.event_key, channel, enabled,
       quiet_hours_start: quiet.start || null, quiet_hours_end: quiet.end || null,
@@ -56,6 +66,7 @@ export default function BcbaNotificationPreferences() {
 
   const saveQuietHours = async () => {
     if (!user) return;
+    if (readOnly) { toast.info("Read-only in preview mode."); return; }
     await supabase.from("bcba_notification_preferences").update({
       quiet_hours_start: quiet.start || null, quiet_hours_end: quiet.end || null,
     }).eq("user_id", user.id);
@@ -70,9 +81,11 @@ export default function BcbaNotificationPreferences() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4 pb-24">
+      <BcbaPreviewBanner />
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">BCBA notification preferences</h1>
         <p className="text-sm text-muted-foreground">Turn off non-required notifications. Required compliance and safety alerts always deliver. Sensitive clinical alerts never route to SMS or email.</p>
+        {loadError && <p className="mt-2 text-xs text-destructive">Couldn't load preferences: {loadError}</p>}
       </header>
 
       <Card>
@@ -81,16 +94,23 @@ export default function BcbaNotificationPreferences() {
           <div className="text-xs text-muted-foreground">
             Pauses every non-required alert across in-app, email, SMS, and leadership routing. Safety and compliance alerts still deliver.
           </div>
-          <Switch checked={masterPaused} onCheckedChange={toggleMasterPause} aria-label="Pause all notifications" />
+          <Switch checked={masterPaused} disabled={readOnly} onCheckedChange={toggleMasterPause} aria-label="Pause all notifications" />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-sm">Quiet hours</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
-          <div><Label className="text-xs">Start</Label><Input type="time" value={quiet.start} onChange={e => setQuiet({ ...quiet, start: e.target.value })} /></div>
-          <div><Label className="text-xs">End</Label><Input type="time" value={quiet.end} onChange={e => setQuiet({ ...quiet, end: e.target.value })} /></div>
-          <button className="col-span-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground" onClick={saveQuietHours}>Save quiet hours</button>
+          <div><Label className="text-xs">Start</Label><Input type="time" disabled={readOnly} value={quiet.start} onChange={e => setQuiet({ ...quiet, start: e.target.value })} /></div>
+          <div><Label className="text-xs">End</Label><Input type="time" disabled={readOnly} value={quiet.end} onChange={e => setQuiet({ ...quiet, end: e.target.value })} /></div>
+          <button
+            className="col-span-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            disabled={readOnly}
+            title={readOnly ? "Read-only in preview mode" : undefined}
+            onClick={saveQuietHours}
+          >
+            Save quiet hours
+          </button>
         </CardContent>
       </Card>
 
@@ -117,7 +137,7 @@ export default function BcbaNotificationPreferences() {
                     const blocked = r.sensitive && (ch === "sms" || ch === "email");
                     return (
                       <label key={ch} className="flex items-center gap-2 text-sm">
-                        <Switch checked={enabled && !blocked} disabled={r.required || blocked} onCheckedChange={(v) => toggle(r, ch, v)} />
+                        <Switch checked={enabled && !blocked} disabled={r.required || blocked || readOnly} onCheckedChange={(v) => toggle(r, ch, v)} />
                         <span className="capitalize">{ch.replace("_", " ")}</span>
                         {blocked && <span className="text-[10px] text-muted-foreground">(blocked)</span>}
                       </label>

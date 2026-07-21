@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   Users, UserCheck, ShieldCheck, GraduationCap, Calendar, AlertTriangle,
-  ChevronRight, CheckCircle2, Loader2, HeartHandshake, LifeBuoy,
+  ChevronRight, CheckCircle2, Loader2, HeartHandshake, LifeBuoy, Download,
 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
@@ -560,6 +560,37 @@ export default function BcbaMyRbtsPage() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["bcba-my-rbts"] });
 
+  function exportCsv() {
+    const rowsForExport = data?.assignments ?? [];
+    if (rowsForExport.length === 0) { toast.info("Nothing to export."); return; }
+    const header = [
+      "rbt_name","client_name","status","first_session_date","start_date","end_date",
+      "readiness","experience_bucket","pathway","open_concerns","cr_sync_status","cr_last_synced_at",
+    ];
+    const escape = (v: any) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [header.join(",")];
+    for (const r of rowsForExport as any[]) {
+      lines.push([
+        r.rbt.name, r.assignment.client_name, r.assignment.status,
+        r.assignment.first_session_date, r.assignment.start_date, r.assignment.end_date,
+        r.rbt.readinessStatus, r.rbt.experienceBucket, r.rbt.pathwayLabel,
+        r.assignment.open_concerns_count ?? 0,
+        r.assignment.centralreach_sync_status,
+        r.assignment.centralreach_last_synced_at,
+      ].map(escape).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `my-rbts-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
       <div className="mb-5">
@@ -571,12 +602,21 @@ export default function BcbaMyRbtsPage() {
 
       <div className="mb-4"><BcbaMappingDiagnostic onRetry={() => refetch()} /></div>
 
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         {(["all", "new", "concerns"] as const).map((f) => (
           <Button key={f} size="sm" variant={filter === f ? "default" : "outline"} onClick={() => setFilter(f)}>
             {f === "all" ? "All" : f === "new" ? "New RBT starting" : "Open concerns"}
           </Button>
         ))}
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-auto"
+          onClick={exportCsv}
+          disabled={!data || (data?.assignments?.length ?? 0) === 0}
+        >
+          <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+        </Button>
       </div>
 
       {isLoading && (
