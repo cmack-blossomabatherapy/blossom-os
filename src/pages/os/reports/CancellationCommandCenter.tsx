@@ -26,6 +26,7 @@ import {
 } from "@/lib/os/cancellationSavedReports";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
+import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 import {
   getActiveSharedReportDataset,
   downloadSharedReportDatasetFile,
@@ -965,6 +966,10 @@ export default function CancellationCommandCenter() {
               ? "Auto-loads from Admin Uploads"
               : "No admin datasets yet"
           }
+        />
+
+        <SourceCoverageBanner
+          reportKey={["cancellation-scheduling", "cancellation-billing", "cancellation-authorization"]}
         />
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/60 p-3 backdrop-blur">

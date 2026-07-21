@@ -37,6 +37,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
+import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -996,6 +997,7 @@ export default function BcbaProductivityReportV3() {
           adminUploadsHref="/admin/bcba-productivity-uploads"
           adminSourceLabel="Auto-loads from Admin Uploads"
         />
+        <SourceCoverageBanner reportKey="bcba-productivity" />
 
         {/* Setup / inferred banners stay above tabs */}
         {setupIncomplete && (

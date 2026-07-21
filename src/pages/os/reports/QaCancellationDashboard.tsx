@@ -17,6 +17,7 @@ import { KpiTile } from "@/components/dashboards/KpiTile";
 import { ChartCard } from "@/components/dashboards/ChartCard";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import type { KpiSpec, ChartSpec, DrilldownSpec } from "@/lib/os/dashboardEngine/types";
+import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 
 /* ============================================================
  * QA Session Cancellation Dashboard
@@ -537,6 +538,8 @@ export default function QaCancellationDashboard() {
         </div>
         <ReportAIButton preset="cancellation" />
       </div>
+
+      <SourceCoverageBanner reportKey="cancellation-scheduling" />
 
       {/* Upload */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">

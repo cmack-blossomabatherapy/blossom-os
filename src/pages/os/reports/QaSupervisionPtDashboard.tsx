@@ -7,6 +7,7 @@ import {
 import { OSShell } from "@/pages/os/OSShell";
 import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
+import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 import {
   getBcbaProductivitySharedRows,
   getBcbaProductivityDatasetStatus,
@@ -733,6 +734,8 @@ export default function QaSupervisionPtDashboard() {
         adminUploadsHref="/admin/bcba-productivity-uploads"
         adminSourceLabel={sharedRowCount != null ? `Admin dataset: ${sharedRowCount.toLocaleString()} rows` : "Auto-loads from Admin Uploads"}
       />
+
+      <SourceCoverageBanner reportKey={["bcba-supervision", "parent-training-97156"]} />
 
       {/* Upload + month selector */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">
