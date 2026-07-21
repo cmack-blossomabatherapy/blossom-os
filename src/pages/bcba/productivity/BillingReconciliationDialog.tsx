@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, RefreshCw, AlertTriangle, Info } from "lucide-react";
 import { fmtDate } from "./pipeline";
 import type { ProductivitySnapshot } from "./pipeline";
+import { fetchCanonicalSessionRows } from "@/lib/os/reporting/canonicalConsumer";
 
 interface Props {
   open: boolean;
@@ -30,6 +31,7 @@ interface ReconRow {
   reason: string;
   status: "match" | "over_billed" | "under_billed" | "unscheduled" | "unbilled";
   freshness: string | null;
+  source: "role" | "canonical";
 }
 
 function bucketReason(billed: number, scheduled: number | null): { reason: string; status: ReconRow["status"] } {
