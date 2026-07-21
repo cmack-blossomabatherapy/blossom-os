@@ -138,25 +138,42 @@ export function RbtSchedule() {
 
 // ---------------------------------------------------------------- LEARN
 export function RbtLearn() {
-  const { employeeId, authUserId, loading: idLoading } = useRbtIdentity();
+  const { authUserId, loading: idLoading } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
   useEffect(() => {
     if (idLoading) return;
     const uid = authUserId;
     if (!uid) { setRows([]); return; }
-    supabase.from("user_training_progress" as any)
-      .select("course_id,progress_percent,status,updated_at")
-      .eq("user_id", uid)
-      .order("updated_at", { ascending: false })
-      .limit(10)
-      .then(
-        ({ data, error }) => { if (error) setErr(error.message); setRows((data as any) ?? []); },
-        (e) => { setErr(e?.message ?? "Could not load training"); setRows([]); },
-      );
-  }, [authUserId, idLoading, employeeId]);
+    (async () => {
+      setErr(null);
+      const { data, error } = await supabase
+        .from("user_training_progress")
+        .select("training_id,progress_percent,status,updated_at,completed_at")
+        .eq("user_id", uid)
+        .order("updated_at", { ascending: false })
+        .limit(25);
+      if (error) { setErr(error.message); setRows([]); return; }
+      const list = (data ?? []) as any[];
+      const ids = Array.from(new Set(list.map((r) => r.training_id).filter(Boolean)));
+      let courseMap: Record<string, any> = {};
+      if (ids.length) {
+        const { data: courses } = await supabase
+          .from("training_courses")
+          .select("id,title,name,status,is_active,duration_minutes,estimated_minutes")
+          .in("id", ids);
+        (courses ?? []).forEach((c: any) => { courseMap[c.id] = c; });
+      }
+      setRows(list.map((r) => ({ ...r, course: courseMap[r.training_id] ?? null })));
+    })();
+  }, [authUserId, idLoading]);
+
   const state: "error" | "loading" | "empty" | "success" =
     err ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
+
+  const isPublished = (c: any | null) => Boolean(c && c.is_active !== false && c.status !== "draft" && c.status !== "archived");
+
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -177,23 +194,47 @@ export function RbtLearn() {
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
         </Link>
       </div>
-    <CardFrame title="Your learning" state={state}
-      errorLabel="We couldn't load your training right now."
-      emptyLabel="Your next training will appear here when assigned.">
-      <ul className="divide-y divide-border/70">
-        {rows?.map((r: any) => (
-          <li key={r.course_id} className="py-3">
-            <div className="flex justify-between text-sm mb-1.5">
-              <span className="font-medium truncate">{r.course_id}</span>
-              <span className="text-muted-foreground tabular-nums">{r.progress_percent ?? 0}%</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div className="h-full bg-primary" style={{ width: `${r.progress_percent ?? 0}%` }} />
-            </div>
-          </li>
-        ))}
-      </ul>
-    </CardFrame>
+      <CardFrame title="Your learning" state={state}
+        errorLabel="We couldn't load your training right now. Pull to refresh or try again in a moment."
+        emptyLabel="Your next training will appear here once a coordinator assigns it.">
+        <ul className="divide-y divide-border/70">
+          {rows?.map((r: any) => {
+            const c = r.course;
+            const label = c?.title ?? c?.name ?? `Course ${String(r.training_id).slice(0, 8)}`;
+            const published = isPublished(c);
+            const complete = r.status === "completed" || (r.progress_percent ?? 0) >= 100;
+            return (
+              <li key={r.training_id} className="py-3">
+                <div className="flex justify-between items-start gap-3 mb-1.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{label}</p>
+                    {!published && (
+                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                        Unpublished — a coordinator will publish this before you can complete it.
+                      </p>
+                    )}
+                    {published && !complete && (
+                      <Link to={`/academy/course/${r.training_id}`}
+                        className="text-[11px] text-primary underline underline-offset-4">
+                        Continue course
+                      </Link>
+                    )}
+                    {complete && r.completed_at && (
+                      <p className="text-[11px] text-primary mt-0.5">
+                        Completed {new Date(r.completed_at).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-muted-foreground text-sm tabular-nums">{r.progress_percent ?? 0}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full bg-primary" style={{ width: `${r.progress_percent ?? 0}%` }} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </CardFrame>
     </div>
   );
 }
