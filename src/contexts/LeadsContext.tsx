@@ -5,6 +5,8 @@ import { mondayRowToLead, type MondayLeadRow } from "@/lib/leads/mondayMapper";
 import { intakeLeadRowToLead, type IntakeLeadRow } from "@/lib/leads/intakeLeadMapper";
 import { canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIntakeOperatingMode } from "@/lib/intake/operatingMode";
+import { guardIntakeMutation, setIntakeActionMode, describePreview } from "@/lib/intake/actionGuard";
 
 /** Columns selected from public.intake_leads — must include every extended field
  *  read by IntakeLeadRow / intakeLeadRowToLead so the round-trip is lossless. */
@@ -366,6 +368,14 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Mirror the server-authoritative Intake operating mode into the
+  // synchronous actionGuard module so mutation helpers below can
+  // short-circuit into "Preview only" without an async round-trip.
+  const { data: modeState } = useIntakeOperatingMode();
+  useEffect(() => {
+    setIntakeActionMode(modeState?.mode ?? null);
+  }, [modeState?.mode]);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -593,14 +603,36 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   }, [currentOwnerName]);
 
   const updateLead = useCallback((id: string, patch: Partial<Lead>) => {
+    const preview = guardIntakeMutation("update lead fields", [id], {
+      fields: Object.keys(patch),
+    });
+    if (preview) {
+      setLeads((prev) => prev.map((l) =>
+        l.id === id
+          ? { ...l, automationLog: [...l.automationLog, describePreview(preview)] }
+          : l,
+      ));
+      return;
+    }
     setLeads((prev) => prev.map((l) => (l.id === id ? withIntakeAutomation(l, patch) : l)));
   }, []);
 
   const bulkUpdate = useCallback((ids: string[], patch: Partial<Lead>) => {
+    const preview = guardIntakeMutation("bulk update", ids, { fields: Object.keys(patch) });
+    if (preview) return;
     setLeads((prev) => prev.map((l) => (ids.includes(l.id) ? { ...l, ...patch, updatedAt: new Date().toISOString() } : l)));
   }, []);
 
   const moveStage = useCallback((ids: string[], status: LeadStatus) => {
+    const preview = guardIntakeMutation("advance/revert stage", ids, { to: status });
+    if (preview) {
+      setLeads((prev) => prev.map((l) =>
+        ids.includes(l.id)
+          ? { ...l, automationLog: [...l.automationLog, describePreview(preview)] }
+          : l,
+      ));
+      return;
+    }
     setLeads((prev) => prev.map((l) => {
       if (!ids.includes(l.id)) return l;
       const event = makeTimelineEvent(`Stage moved to ${status}`);
@@ -650,6 +682,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const assignOwner = useCallback((ids: string[], owner: string) => {
+    const preview = guardIntakeMutation("assign owner", ids, { owner });
+    if (preview) return;
     setLeads((prev) => prev.map((l) => {
       if (!ids.includes(l.id)) return l;
       logLeadActivity(l.id, "note", `Owner reassigned: ${l.owner || "Unassigned"} → ${owner}`);
@@ -659,6 +693,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addTag = useCallback((ids: string[], tag: string) => {
+    const preview = guardIntakeMutation("add tag", ids, { tag });
+    if (preview) return;
     setLeads((prev) => prev.map((l) => {
       if (!ids.includes(l.id)) return l;
       const next = Array.from(new Set([...(l.tags ?? []), tag]));
@@ -671,6 +707,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteLeads = useCallback((ids: string[]) => {
+    const preview = guardIntakeMutation("delete leads", ids);
+    if (preview) return;
     setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
   }, []);
 
