@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { PhoneCall, RefreshCw, Trash2, Copy } from "lucide-react";
+import {
+  useCanonicalCtmCalls,
+  useProviderReadiness,
+  classifyProviderReadiness,
+} from "@/lib/intake/reviewDataLayer";
 
 type Mapping = {
   id: string;
@@ -16,49 +21,39 @@ type Mapping = {
   is_active: boolean;
 };
 
-type CallRow = {
-  id: string;
-  ctm_call_id: string;
-  from_number: string | null;
-  to_number: string | null;
-  tracking_number: string | null;
-  duration_seconds: number | null;
-  source_name: string | null;
-  campaign_name: string | null;
-  resolved_state: string | null;
-  intake_lead_id: string | null;
-  called_at: string | null;
-  recording_url: string | null;
-};
-
 export default function CTMAdmin() {
   const [mappings, setMappings] = useState<Mapping[]>([]);
-  const [calls, setCalls] = useState<CallRow[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [draft, setDraft] = useState({ tracking_number: "", friendly_name: "", state_code: "" });
   const projectId = (import.meta.env.VITE_SUPABASE_PROJECT_ID as string) ?? "";
   const webhookBase = projectId ? `https://${projectId}.functions.supabase.co/ctm-webhook` : "";
   const webhookUrl = webhookBase ? `${webhookBase}?token=YOUR_CTM_WEBHOOK_TOKEN` : "";
 
+  // Recent calls come from the PII-masked canonical view — same source as
+  // /phone/calls. Admin identity is still required to reach this page.
+  const { data: callsPage, isLoading: callsLoading, refetch: refetchCalls } =
+    useCanonicalCtmCalls({ page: 1, pageSize: 50 });
+  const calls = callsPage?.rows ?? [];
+
+  const { data: providers, isLoading: provLoading } = useProviderReadiness();
+  const ctm = useMemo(
+    () => providers?.find((p) => p.integration_id?.toLowerCase().includes("ctm")) ?? null,
+    [providers],
+  );
+  const ctmReadiness = ctm ? classifyProviderReadiness(ctm) : null;
+
   async function load() {
-    const [m, c] = await Promise.all([
-      supabase.from("ctm_number_mapping").select("*").order("tracking_number"),
-      supabase.from("ctm_call_events")
-        .select("id,ctm_call_id,from_number,to_number,tracking_number,duration_seconds,source_name,campaign_name,resolved_state,intake_lead_id,called_at,recording_url")
-        .order("called_at", { ascending: false, nullsFirst: false })
-        .limit(50),
-    ]);
+    const m = await supabase.from("ctm_number_mapping").select("*").order("tracking_number");
     setMappings((m.data ?? []) as Mapping[]);
-    setCalls((c.data ?? []) as CallRow[]);
   }
 
   useEffect(() => {
     void load();
     const ch = supabase.channel("ctm-calls-admin")
-      .on("postgres_changes", { event: "*", schema: "public", table: "ctm_call_events" }, () => void load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "ctm_call_events" }, () => void refetchCalls())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [refetchCalls]);
 
   async function addMapping() {
     if (!draft.tracking_number) return;
@@ -86,6 +81,7 @@ export default function CTMAdmin() {
     if (d?.error) return toast.error(d.error);
     toast.success(`Synced ${d?.upserted ?? 0} calls`);
     void load();
+    void refetchCalls();
   }
 
   return (
@@ -102,6 +98,29 @@ export default function CTMAdmin() {
           {syncing ? "Syncing…" : "Run backfill"}
         </Button>
       </header>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Provider readiness</CardTitle></CardHeader>
+        <CardContent className="text-sm">
+          {provLoading ? (
+            <div className="text-muted-foreground">Loading provider status…</div>
+          ) : !ctm ? (
+            <div className="text-muted-foreground">CTM connection is not registered in the integration catalog.</div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                ctmReadiness?.label === "connected" ? "bg-emerald-100 text-emerald-800"
+                : ctmReadiness?.label === "stale" ? "bg-amber-100 text-amber-800"
+                : ctmReadiness?.label === "error" ? "bg-destructive/10 text-destructive"
+                : "bg-slate-100 text-slate-700"
+              }`}>
+                {ctmReadiness?.label}
+              </span>
+              <span className="text-muted-foreground">{ctmReadiness?.detail}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Webhook setup</CardTitle></CardHeader>
@@ -172,7 +191,10 @@ export default function CTMAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {calls.length === 0 && (
+                {callsLoading && (
+                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Loading…</td></tr>
+                )}
+                {!callsLoading && calls.length === 0 && (
                   <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">
                     No CTM calls yet. Add tracking-number mappings above and run a backfill, or wait for the webhook to fire.
                   </td></tr>
