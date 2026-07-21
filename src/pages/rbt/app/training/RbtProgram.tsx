@@ -16,7 +16,15 @@ export default function RbtProgram() {
   const { employeeId, writableEmployeeId, isPreviewing, loading: idLoading } = useRbtIdentity();
   const lab = useExperienceLab();
   const { pathway, rows, remediation, stats, loading, reload } = useProgram(employeeId);
-  const [selected, setSelected] = useState<StepRow | null>(null);
+  // Track selection by step id (not row reference). Row references can drift
+  // between renders / memo re-computations while step ids are stable, so
+  // Up Next / Blocked / Roadmap all resolve to the intended step even if
+  // `stats.current` and `rows` are computed in different memos.
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const selected = selectedStepId
+    ? rows.find((r) => r.step.id === selectedStepId) ?? null
+    : null;
+  const openStep = (row: StepRow | null) => setSelectedStepId(row?.step.id ?? null);
   const [retrying, setRetrying] = useState(false);
 
   if (loading || idLoading) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
@@ -59,7 +67,12 @@ export default function RbtProgram() {
           {stats.current.step.description && (
             <p className="mt-1 text-sm text-muted-foreground">{stats.current.step.description}</p>
           )}
-          <Button className="mt-3" onClick={() => setSelected(stats.current)}>
+          <Button
+            className="mt-3"
+            data-testid="rbt-upnext-open"
+            data-step-id={stats.current.step.id}
+            onClick={() => openStep(stats.current)}
+          >
             Open <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </section>
@@ -72,7 +85,13 @@ export default function RbtProgram() {
             <p className="text-sm font-medium">Support needed on {stats.blocked.step.title}</p>
             <p className="text-xs text-muted-foreground">A trainer will follow up. You can also add a note.</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setSelected(stats.blocked)}>Open</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="rbt-blocked-open"
+            data-step-id={stats.blocked.step.id}
+            onClick={() => openStep(stats.blocked)}
+          >Open</Button>
         </section>
       )}
 
@@ -104,7 +123,12 @@ export default function RbtProgram() {
               : status !== "not_started" ? Clock : Circle;
             return (
               <li key={r.step.id}>
-                <button onClick={() => setSelected(r)} className="w-full text-left flex items-center gap-3 p-4 hover:bg-muted/50 transition">
+                <button
+                  data-testid="rbt-roadmap-row"
+                  data-step-id={r.step.id}
+                  onClick={() => openStep(r)}
+                  className="w-full text-left flex items-center gap-3 p-4 hover:bg-muted/50 transition"
+                >
                   <Icon
                     className={`h-5 w-5 shrink-0 ${
                       status === "complete" ? "text-primary"
@@ -138,9 +162,10 @@ export default function RbtProgram() {
 
       {selected && (
         <StepSheet
+          key={selected.step.id}
           row={selected}
-          onClose={() => setSelected(null)}
-          onSaved={() => { setSelected(null); void reload(); }}
+          onClose={() => setSelectedStepId(null)}
+          onSaved={() => { setSelectedStepId(null); void reload(); }}
           canWrite={Boolean(writableEmployeeId) && !isPreviewing && !lab.active}
         />
       )}
