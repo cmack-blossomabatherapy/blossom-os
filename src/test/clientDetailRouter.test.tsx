@@ -58,6 +58,9 @@ beforeEach(() => {
   select.mockClear();
   eq.mockClear();
   maybeSingle.mockReset();
+  // Default: any un-queued read resolves to a benign miss so a re-mount from
+  // a redirect doesn't blow up the test with an undefined result.
+  maybeSingle.mockResolvedValue({ data: null, error: null });
   H.clientsLoading.value = false;
 });
 
