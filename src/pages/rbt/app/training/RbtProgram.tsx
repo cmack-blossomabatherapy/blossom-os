@@ -9,27 +9,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useProgram } from "./useProgram";
 import { STEP_META, type StepRow } from "./types";
+import { ProgramSetupJourney } from "./ProgramSetupJourney";
 
 export default function RbtProgram() {
   const { employeeId, writableEmployeeId, isPreviewing, loading: idLoading } = useRbtIdentity();
   const { pathway, rows, remediation, stats, loading, reload } = useProgram(employeeId);
   const [selected, setSelected] = useState<StepRow | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   if (loading || idLoading) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
 
   if (!pathway) {
     return (
-      <section className="rounded-3xl border border-border/70 bg-card p-6 text-center space-y-3">
-        <p className="text-lg font-semibold tracking-tight">No pathway assigned yet</p>
-        <p className="text-sm text-muted-foreground">
-          Your training coordinator hasn't assigned a pathway to your record yet.
-          You can still ask a question while you wait.
-        </p>
-        <div className="flex justify-center gap-2 pt-1">
-          <Button asChild variant="outline"><Link to="/rbt/app/support/new?category=training">Ask about my pathway</Link></Button>
-          <Button asChild><Link to="/rbt/app/passport">Open Skill Passport</Link></Button>
-        </div>
-      </section>
+      <ProgramSetupJourney
+        employeeLinked={Boolean(employeeId)}
+        retrying={retrying}
+        onRetry={async () => {
+          setRetrying(true);
+          try { await reload(); } finally { setRetrying(false); }
+        }}
+      />
     );
   }
 
