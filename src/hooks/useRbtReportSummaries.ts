@@ -19,6 +19,7 @@ import {
   fetchCanonicalProviderSummary,
   summarizeProviderRows,
 } from "@/lib/os/reporting/canonicalConsumer";
+import { deriveRbtSupervisionCoverage } from "@/lib/os/reporting/canonicalRoleBridge";
 
 export interface RbtReportSummary {
   key:
@@ -219,6 +220,26 @@ export function useRbtReportSummaries(): RbtReportSummaries {
               primary: `${supRows.length}`,
               secondary: daysAgo == null ? "last unknown" : `last ${daysAgo}d ago`,
             };
+          } else {
+            // Canonical fallback: 97155 coverage associated with THIS RBT's
+            // own canonical rows only. Rows are labelled as client-level
+            // coverage — never as a direct one-to-one BCBA→RBT observation.
+            try {
+              const coverage = await deriveRbtSupervisionCoverage({
+                authUserId: uid,
+                employeeId,
+              });
+              const totalHours = coverage.reduce((a, b) => a + b.supervisionHoursOnClient, 0);
+              if (coverage.length > 0) {
+                summaries["rbt-my-supervision"] = {
+                  key: "rbt-my-supervision",
+                  primary: `${totalHours.toFixed(1)}h`,
+                  secondary: `client-level 97155 coverage · ${coverage.length} client${coverage.length === 1 ? "" : "s"}`,
+                };
+              }
+            } catch {
+              /* keep EMPTY */
+            }
           }
         }
 
