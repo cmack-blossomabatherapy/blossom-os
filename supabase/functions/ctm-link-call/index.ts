@@ -1,6 +1,6 @@
 // Re-links a CTM call event to the matching intake lead, client, employee,
 // and dial-intent (agent). Idempotent — safe to invoke multiple times.
-// INGEST_ONLY-safe: never creates intake_communications or intake_tasks;
+// INGEST_ONLY-safe: never creates outbound communications or follow-up tasks;
 // lead creation/linking is delegated to the shared normalizer/linker
 // (external-id first, then unique E.164, ambiguous => review queue).
 // Callable from ctm-webhook (fire-and-forget) or admin backfill.

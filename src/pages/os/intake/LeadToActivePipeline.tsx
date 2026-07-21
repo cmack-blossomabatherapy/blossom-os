@@ -28,8 +28,8 @@ import { useIntakeOperatingMode } from "@/lib/intake/operatingMode";
  *
  * All mutations pass through the INGEST_ONLY guard so the button remains
  * visible but opens a deterministic Preview dialog when Intake actions
- * are disabled. No STAGE_TO_LEAD_STATUS translation table is used — the
- * canonical helpers own that behavior.
+ * are disabled. The canonical helpers own stage transitions directly
+ * (no legacy translation map).
  */
 export default function LeadToActivePipeline() {
   const { leads, moveStage, revertStage } = useLeads();

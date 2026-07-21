@@ -86,7 +86,13 @@ describe("Intake / CTM final pass — canonical wiring", () => {
     const src = read("src/App.tsx");
     expect(src).toMatch(/import LeadToActivePipeline/);
     expect(src).toMatch(/import IntakePromotionReviewQueues/);
-    expect(src).toMatch(/path="\/intake\/lead-to-active"[^>]*element=\{[^}]*LeadToActivePipeline/);
-    expect(src).toMatch(/path="\/intake\/review-queues"[^>]*element=\{[^}]*IntakePromotionReviewQueues/);
+    // Both routes must render their canonical component, not a Navigate redirect.
+    const leadToActive = src.match(/path="\/intake\/lead-to-active"[\s\S]{0,600}?\/>/);
+    expect(leadToActive, "/intake/lead-to-active route missing").not.toBeNull();
+    expect(leadToActive![0]).toMatch(/LeadToActivePipeline/);
+    expect(leadToActive![0]).not.toMatch(/Navigate/);
+    const reviewQueues = src.match(/path="\/intake\/review-queues"[\s\S]{0,600}?\/>/);
+    expect(reviewQueues, "/intake/review-queues route missing").not.toBeNull();
+    expect(reviewQueues![0]).toMatch(/IntakePromotionReviewQueues/);
   });
 });
