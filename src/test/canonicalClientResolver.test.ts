@@ -1,33 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/integrations/supabase/client", () => {
-  const maybeSingle = vi.fn();
-  const eq = vi.fn(() => ({ maybeSingle }));
-  const select = vi.fn(() => ({ eq }));
-  const from = vi.fn(() => ({ select }));
-  return { supabase: { from }, __mocks: { from, select, eq, maybeSingle } };
-});
+const maybeSingle = vi.fn();
+const eq = vi.fn(() => ({ maybeSingle }));
+const select = vi.fn(() => ({ eq }));
+const from = vi.fn(() => ({ select }));
 
-import { supabase } from "@/integrations/supabase/client";
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { from },
+}));
+
 import {
   isUuid,
   resolveClientRef,
   resolveClientByCentralReachId,
 } from "@/lib/os/reporting/canonicalClientResolver";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mocks = (supabase as any).from.mock ? {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (supabase as any).from as ReturnType<typeof vi.fn>,
-} : ({} as never);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { __mocks } = (supabase as any).__proto__ ? {} : require("@/integrations/supabase/client");
-
 beforeEach(() => {
-  __mocks.from.mockClear();
-  __mocks.select.mockClear();
-  __mocks.eq.mockClear();
-  __mocks.maybeSingle.mockReset();
+  from.mockClear();
+  select.mockClear();
+  eq.mockClear();
+  maybeSingle.mockReset();
 });
 
 describe("canonicalClientResolver", () => {
@@ -42,35 +34,35 @@ describe("canonicalClientResolver", () => {
   it("resolveClientByCentralReachId returns null for empty input without querying", async () => {
     const uuid = await resolveClientByCentralReachId("  ");
     expect(uuid).toBeNull();
-    expect(__mocks.from).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("resolveClientByCentralReachId returns the client uuid on hit", async () => {
-    __mocks.maybeSingle.mockResolvedValueOnce({
+    maybeSingle.mockResolvedValueOnce({
       data: { id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
       error: null,
     });
     const uuid = await resolveClientByCentralReachId("cr_42");
     expect(uuid).toBe("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-    expect(__mocks.from).toHaveBeenCalledWith("clients");
-    expect(__mocks.eq).toHaveBeenCalledWith("centralreach_id", "cr_42");
+    expect(from).toHaveBeenCalledWith("clients");
+    expect(eq).toHaveBeenCalledWith("centralreach_id", "cr_42");
   });
 
   it("resolveClientByCentralReachId returns null on miss and on error", async () => {
-    __mocks.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    maybeSingle.mockResolvedValueOnce({ data: null, error: null });
     expect(await resolveClientByCentralReachId("cr_missing")).toBeNull();
-    __mocks.maybeSingle.mockResolvedValueOnce({ data: null, error: { message: "rls" } });
+    maybeSingle.mockResolvedValueOnce({ data: null, error: { message: "rls" } });
     expect(await resolveClientByCentralReachId("cr_denied")).toBeNull();
   });
 
   it("resolveClientRef passes UUIDs straight through without a round trip", async () => {
     const uuid = "11111111-2222-3333-4444-555555555555";
     expect(await resolveClientRef(uuid)).toBe(uuid);
-    expect(__mocks.from).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("resolveClientRef falls back to a CR-id lookup for non-uuid input", async () => {
-    __mocks.maybeSingle.mockResolvedValueOnce({
+    maybeSingle.mockResolvedValueOnce({
       data: { id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
       error: null,
     });
