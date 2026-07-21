@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { SKILL_META, type SkillState } from "./types";
+import { useExperienceLab } from "../useExperienceLab";
+import { projectSkillPassport } from "@/lib/rbt/experienceLab";
 
 interface Def { key: string; label: string; category: string; sort_order: number; }
 interface Status { skill_key: string; state: SkillState; last_updated_at: string; last_evaluator_id: string | null; last_evaluation_id: string | null; }
@@ -18,6 +20,7 @@ interface Evaluation {
 
 export default function RbtSkillPassport() {
   const { employeeId, writableEmployeeId, loading: idLoading, isPreviewing } = useRbtIdentity();
+  const lab = useExperienceLab();
   const [defs, setDefs] = useState<Def[] | null>(null);
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [evals, setEvals] = useState<Evaluation[]>([]);
@@ -26,6 +29,14 @@ export default function RbtSkillPassport() {
   const [selected, setSelected] = useState<Def | null>(null);
 
   async function load() {
+    if (lab.active && lab.state) {
+      const proj = projectSkillPassport(lab.state);
+      setDefs(proj.defs as Def[]);
+      setStatus(proj.status as Record<string, Status>);
+      setEvals([]);
+      setLoadError(null);
+      return;
+    }
     if (!employeeId) { setDefs([]); return; }
     setLoadError(null);
     const [d, s, e] = await Promise.all([
@@ -42,7 +53,7 @@ export default function RbtSkillPassport() {
     setStatus(map);
     setEvals(((e.data as any[]) ?? []) as Evaluation[]);
   }
-  useEffect(() => { if (!idLoading) void load(); }, [employeeId, idLoading]);
+  useEffect(() => { if (!idLoading) void load(); }, [employeeId, idLoading, lab.active, lab.state?.pathway, lab.state?.preset]);
 
   const categories = useMemo(
     () => Array.from(new Set((defs ?? []).map((d) => d.category))),
@@ -166,7 +177,7 @@ export default function RbtSkillPassport() {
           evaluations={evals.filter((e) => e.skill_key === selected.key)}
           onClose={() => setSelected(null)}
           onSaved={() => { setSelected(null); void load(); }}
-          canWrite={Boolean(writableEmployeeId) && !isPreviewing}
+          canWrite={Boolean(writableEmployeeId) && !isPreviewing && !lab.active}
         />
       )}
     </div>

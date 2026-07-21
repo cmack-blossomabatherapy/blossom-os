@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
 import { RbtAppErrorBoundary } from "./RbtAppErrorBoundary";
 import { PreviewBanner } from "./PreviewBanner";
+import { RbtExperienceLabBar } from "./RbtExperienceLabBar";
 import { OSRoleProvider } from "@/contexts/OSRoleContext";
 
 /**
@@ -15,6 +16,7 @@ export default function RbtAppShell() {
   return (
     <OSRoleProvider>
       <OSShell>
+        <RbtExperienceLabBar />
         <PreviewBanner />
         <RbtAppErrorBoundary key={location.pathname}>
           <Outlet />

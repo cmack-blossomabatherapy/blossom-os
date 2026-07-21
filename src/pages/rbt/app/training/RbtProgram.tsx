@@ -10,9 +10,11 @@ import { toast } from "sonner";
 import { useProgram } from "./useProgram";
 import { STEP_META, type StepRow } from "./types";
 import { ProgramSetupJourney } from "./ProgramSetupJourney";
+import { useExperienceLab } from "../useExperienceLab";
 
 export default function RbtProgram() {
   const { employeeId, writableEmployeeId, isPreviewing, loading: idLoading } = useRbtIdentity();
+  const lab = useExperienceLab();
   const { pathway, rows, remediation, stats, loading, reload } = useProgram(employeeId);
   const [selected, setSelected] = useState<StepRow | null>(null);
   const [retrying, setRetrying] = useState(false);
@@ -139,7 +141,7 @@ export default function RbtProgram() {
           row={selected}
           onClose={() => setSelected(null)}
           onSaved={() => { setSelected(null); void reload(); }}
-          canWrite={Boolean(writableEmployeeId) && !isPreviewing}
+          canWrite={Boolean(writableEmployeeId) && !isPreviewing && !lab.active}
         />
       )}
     </div>

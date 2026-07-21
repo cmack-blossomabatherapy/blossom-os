@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { PathwayStep, StepProgress, StepRow } from "./types";
+import { useExperienceLab } from "../useExperienceLab";
+import { projectProgram } from "@/lib/rbt/experienceLab";
 
 export function useProgram(employeeId: string | null | undefined) {
+  const lab = useExperienceLab();
   const [pathway, setPathway] = useState<any | null>(null);
   const [steps, setSteps] = useState<PathwayStep[] | null>(null);
   const [progress, setProgress] = useState<StepProgress[] | null>(null);
@@ -16,6 +19,18 @@ export function useProgram(employeeId: string | null | undefined) {
   const provisionAttemptedRef = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
+    // Experience Lab short-circuits all Supabase reads/writes and returns
+    // synthesised, deterministic data for the selected pathway + preset.
+    if (lab.active && lab.state) {
+      const proj = projectProgram(lab.state);
+      setPathway(proj.pathway);
+      setSteps(proj.rows.map((r) => r.step));
+      setProgress(proj.rows.map((r) => r.progress));
+      setRemediation([]);
+      setNeedsRecruitingData(false);
+      setLoading(false);
+      return;
+    }
     // No linked employee yet — settle into the calm setup/support state
     // instead of staying indefinitely loading. This is the same state an RBT
     // sees when recruiting hasn't captured certification + years yet.
@@ -95,7 +110,7 @@ export function useProgram(employeeId: string | null | undefined) {
     setProgress(progRows);
     setRemediation((remRes.data as any[]) ?? []);
     setLoading(false);
-  }, [employeeId]);
+  }, [employeeId, lab.active, lab.state]);
 
   useEffect(() => { void load(); }, [load]);
 

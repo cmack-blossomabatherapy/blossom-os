@@ -24,6 +24,17 @@ vi.mock("@/integrations/supabase/client", () => {
   };
 });
 
+// Isolate useProgram from the Experience Lab (Slice 3). The lab hook uses
+// useAuth, which requires an AuthProvider — irrelevant to this test's
+// concern (self-provision RPC behavior).
+vi.mock("@/pages/rbt/app/useExperienceLab", () => ({
+  useExperienceLab: () => ({
+    eligible: false, active: false, state: null,
+    setPathway: () => {}, setPreset: () => {},
+    enable: () => {}, exit: () => {}, reset: () => {},
+  }),
+}));
+
 import { useProgram } from "@/pages/rbt/app/training/useProgram";
 
 describe("useProgram unlinked/self-provision behavior", () => {
