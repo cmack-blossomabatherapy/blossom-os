@@ -1020,25 +1020,35 @@ export default function CancellationCommandCenter() {
           reportKey={["cancellation-scheduling", "cancellation-billing", "cancellation-authorization"]}
         />
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/60 p-3 backdrop-blur">
-          <div className="text-[12px] text-muted-foreground">
-            Admin datasets:
-            <span className="ml-2 font-semibold text-foreground">Scheduling</span>{" "}
-            <span>{sharedAvailable.scheduling ? "✓" : "—"}</span>
-            <span className="ml-3 font-semibold text-foreground">Billing</span>{" "}
-            <span>{sharedAvailable.billing ? "✓" : "—"}</span>
-            <span className="ml-3 font-semibold text-foreground">Authorization</span>{" "}
-            <span>{sharedAvailable.authorization ? "✓" : "—"}</span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => loadAllAdminDatasets(false)}
-            disabled={sharedLoading}
-          >
-            <Database className="mr-1 h-3.5 w-3.5" />
-            {sharedLoading ? "Loading…" : "Reload Admin Datasets"}
-          </Button>
+        <div className="mt-4 grid gap-3">
+          <SharedDatasetStatusPanel
+            title="Cancellation — Scheduling"
+            result={sharedResults["cancellation-scheduling"]}
+            loading={sharedLoading}
+            sourceMode={sourceModeByKind["cancellation-scheduling"]}
+            adminUploadsHref="/system/cancellation-uploads"
+            onReload={() => loadSharedKind("cancellation-scheduling", false)}
+            onResetToShared={() => { resetSchedule(); loadSharedKind("cancellation-scheduling", false); }}
+            required
+          />
+          <SharedDatasetStatusPanel
+            title="Cancellation — Billing (optional)"
+            result={sharedResults["cancellation-billing"]}
+            loading={sharedLoading}
+            sourceMode={sourceModeByKind["cancellation-billing"]}
+            adminUploadsHref="/system/cancellation-uploads"
+            onReload={() => loadSharedKind("cancellation-billing", false)}
+            onResetToShared={() => { resetBilling(); loadSharedKind("cancellation-billing", false); }}
+          />
+          <SharedDatasetStatusPanel
+            title="Cancellation — Authorization (optional)"
+            result={sharedResults["cancellation-authorization"]}
+            loading={sharedLoading}
+            sourceMode={sourceModeByKind["cancellation-authorization"]}
+            adminUploadsHref="/system/cancellation-uploads"
+            onReload={() => loadSharedKind("cancellation-authorization", false)}
+            onResetToShared={() => { resetAuths(); loadSharedKind("cancellation-authorization", false); }}
+          />
         </div>
 
         {/* upload chips */}
