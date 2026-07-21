@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 // Send-to-State-Support has been retired here in favor of the
 // floating escalation chat available site-wide from OSShell.
 import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
+import { IntakeSystemHealthPanel } from "@/components/intake/IntakeSystemHealthPanel";
 import {
   callParent,
   sendLeadEmail,
@@ -235,6 +236,7 @@ export default function IntakeDashboard() {
           counts.inPipeline ? `${counts.inPipeline} open pipeline` : null,
         ].filter(Boolean) as string[]}
       />
+      <IntakeSystemHealthPanel />
       {/* Intake Pulse */}
       <section>
         <SectionHeader icon={Zap} tone="primary" title="Intake Pulse" subtitle="Live snapshot of where families are right now — tap a tile to drill in." />
