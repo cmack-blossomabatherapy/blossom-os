@@ -20,7 +20,23 @@ function escalationTone(level: EscalationLevel) {
   }
 }
 
-function Stat({ label, value, tone }: { label: string; value: number | string; tone?: string }) {
+function Stat({ label, value, tone, unavailableHint }: {
+  label: string;
+  value: number | string | null;
+  tone?: string;
+  unavailableHint?: string;
+}) {
+  if (value === null) {
+    return (
+      <div className="rounded-xl border bg-card/60 backdrop-blur-sm px-4 py-3" title={unavailableHint}>
+        <div className="text-2xl font-semibold text-muted-foreground">—</div>
+        <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+        {unavailableHint && (
+          <div className="text-[10px] text-muted-foreground/80 mt-0.5">{unavailableHint}</div>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border bg-card/60 backdrop-blur-sm px-4 py-3">
       <div className={`text-2xl font-semibold ${tone ?? ""}`}>{value}</div>
@@ -199,7 +215,7 @@ export default function BcbaHomePage() {
               <Stat label="Auth risk" value={caseload.authorizationRisk} tone={caseload.authorizationRisk ? "text-orange-600" : ""} />
               <Stat label="Doc risk" value={caseload.documentationRisk} />
               <Stat label="Parent training" value={caseload.parentTrainingConcern} />
-              <Stat label="Staffing risk" value={caseload.staffingRisk} />
+              <Stat label="Staffing risk" value={caseload.staffingRisk} unavailableHint="Needs staffing feed" />
             </div>
           </SectionCard>
 
@@ -208,8 +224,8 @@ export default function BcbaHomePage() {
             <div className="grid grid-cols-2 gap-2">
               <Stat label="On track" value={rbtTeam.onTrack} tone="text-emerald-600" />
               <Stat label="Need supervision" value={rbtTeam.needSupervision} tone={rbtTeam.needSupervision ? "text-amber-600" : ""} />
-              <Stat label="New to case" value={rbtTeam.newToCase} />
-              <Stat label="Requested support" value={rbtTeam.requestedSupport} />
+              <Stat label="New to case" value={rbtTeam.newToCase} unavailableHint="Needs first-case tracker" />
+              <Stat label="Requested support" value={rbtTeam.requestedSupport} unavailableHint="Needs support-ticket feed" />
             </div>
           </SectionCard>
 
@@ -223,7 +239,14 @@ export default function BcbaHomePage() {
               <Stat label="Doc timeliness" value={`${month.documentationTimelinessPct}%`}
                     tone={month.documentationTimelinessPct >= 90 ? "text-emerald-600" : "text-amber-600"} />
               <Stat label="Open risks" value={month.openRisks} />
+              <Stat label="Assessments" value={month.assessments} unavailableHint="Needs assessment feed" />
+              <Stat label="Reports submitted" value={month.reportsSubmitted} unavailableHint="Needs reports feed" />
             </div>
+            {month.filledFromCanonical && (
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Hours filled from CentralReach billing (no clinical logs recorded in Blossom OS this month).
+              </p>
+            )}
           </SectionCard>
 
           {/* F. Support & alerts */}

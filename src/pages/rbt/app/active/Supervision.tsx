@@ -3,11 +3,15 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { useRbtIdentity } from "../useRbtIdentity";
-import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
+import {
+  deriveRbtSupervisionCoverage,
+  type CanonicalRbtSupervisionCoverage,
+} from "@/lib/os/reporting/canonicalRoleBridge";
 
 export default function Supervision() {
   const { employeeId, writableEmployeeId, loading: idLoading, isPreviewing } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
+  const [coverage, setCoverage] = useState<CanonicalRbtSupervisionCoverage[] | null>(null);
 
   useEffect(() => {
     if (idLoading) return;
@@ -18,6 +22,7 @@ export default function Supervision() {
       .order("supervision_date", { ascending: false })
       .limit(20)
       .then(({ data }) => setRows((data as any[]) ?? []));
+    deriveRbtSupervisionCoverage({ employeeId }).then(setCoverage);
   }, [employeeId, idLoading]);
 
   const last = rows?.[0];
@@ -26,6 +31,8 @@ export default function Supervision() {
   // Monthly status: percent of the current month's 5% requirement met (approx by hours logged this month)
   const currentMonth = new Date().toISOString().slice(0, 7);
   const monthCount = rows?.filter((r) => (r.supervision_date ?? "").startsWith(currentMonth)).length ?? 0;
+  const showCanonicalMonth = rows !== null && monthCount === 0;
+  const coverageHoursTotal = (coverage ?? []).reduce((a, c) => a + c.supervisionHoursOnClient, 0);
 
   const ack = async (id: string) => {
     if (!writableEmployeeId) return;
@@ -65,20 +72,31 @@ export default function Supervision() {
 
       <CardFrame title="This month" state="success" subtitle="Supervision entries logged">
         <p className="text-2xl font-semibold tabular-nums">{monthCount}</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Your BCBA tracks the exact hour requirement in CentralReach.
-        </p>
+        {showCanonicalMonth ? (
+          <p className="text-xs text-muted-foreground mt-1">
+            No supervision entries logged for you in Blossom OS this month.
+            97155 supervision billed on your caseload is tracked by your BCBA in CentralReach —
+            it isn't attributed one-to-one to you here.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground mt-1">
+            Your BCBA tracks the exact hour requirement in CentralReach.
+          </p>
+        )}
+        {coverage && coverage.length > 0 && (
+          <div className="mt-3 rounded-lg border border-border/60 p-2">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              Client-level 97155 coverage (imported)
+            </p>
+            <p className="text-sm font-semibold tabular-nums mt-0.5">
+              {coverageHoursTotal.toFixed(1)}h across {coverage.length} client{coverage.length === 1 ? "" : "s"}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Client-level only — not a one-to-one BCBA→RBT observation.
+            </p>
+          </div>
+        )}
       </CardFrame>
-
-      {employeeId && (
-        <CanonicalSessionsCard
-          title="Imported CentralReach supervision (97155)"
-          scope={{ employeeId }}
-          roleRowCount={rows?.length ?? 0}
-          highlightKinds={["supervision"]}
-          showClients
-        />
-      )}
 
       <CardFrame title="Feedback & follow-ups" state={state} emptyLabel="No supervision notes yet.">
         <ul className="space-y-3">
