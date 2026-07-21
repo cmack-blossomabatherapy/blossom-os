@@ -459,9 +459,11 @@ export function deriveSourceState(
  * BcbaProductivityReportV3 assumes a `BcbaSharedBillingRow`-shaped row set
  * (see `@/lib/os/bcbaProductivityV3/adminUploadStore`). Convert canonical
  * billing rows to that shape so the existing report can consume the RPC
- * without a rewrite. The canonical view does NOT carry state/payor/labels
- * columns; those degrade to empty strings and the state/payor filters
- * silently collapse to "All" until the ingest pipeline enriches them. */
+ * without a rewrite. The canonical view does NOT carry state/payor columns;
+ * those degrade to empty strings and the state/payor filters silently collapse
+ * to "All" until the ingest pipeline enriches them. Provider labels are
+ * reconstructed from canonical session kind so the legacy V3 ownership engine
+ * can still infer BCBA owners from non-97153 clinical rows. */
 
 export interface BcbaSharedBillingRowLike {
   clientId: string;
@@ -480,12 +482,13 @@ export function toBcbaSharedShape(r: CanonicalReportBillingRow): BcbaSharedBilli
   const code = r.procedureCode ?? "";
   const provider = r.providerName ?? "";
   const is97153 = /^97153\b/.test(code) || code.startsWith("97153");
+  const providerLabels = !is97153 && provider ? "BCBA" : "";
   return {
     clientId: r.crClientId ?? "",
     clientName: r.clientName ?? "",
     rbt: is97153 ? provider : "",
     renderingProvider: provider,
-    providerLabels: "",
+    providerLabels,
     code,
     hours: r.hours,
     date: r.serviceDate ?? "",

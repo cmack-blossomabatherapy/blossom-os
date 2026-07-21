@@ -20,6 +20,7 @@ import {
   mapClientRow,
   mapProviderRow,
   mapBillingRow,
+  toBcbaSharedShape,
   type CanonicalReportBillingRow,
 } from "@/lib/os/reporting/canonicalReports";
 
@@ -196,5 +197,24 @@ describe("canonical report engines — adapter contract", () => {
     expect(c.clientName).toBeNull(); // empty coerces to null
     const p = mapProviderRow({ mapping_status: "unmapped", direct_hours: 1 });
     expect(p.isMapped).toBe(false);
+  });
+
+  it("BCBA V3 bridge reconstructs BCBA labels for non-97153 canonical rows", () => {
+    const supervision = toBcbaSharedShape(mapBillingRow({
+      row_id: "sup", service_date: "2026-06-30", cr_client_id: "c1",
+      client_name: "Client One", cr_provider_id: "p1", provider_name: "BCBA One",
+      procedure_code: "97155", session_kind: "supervision", hours: 1.5, units: 6,
+    }));
+    expect(supervision.providerLabels).toBe("BCBA");
+    expect(supervision.renderingProvider).toBe("BCBA One");
+    expect(supervision.rbt).toBe("");
+
+    const direct = toBcbaSharedShape(mapBillingRow({
+      row_id: "direct", service_date: "2026-06-30", cr_client_id: "c1",
+      client_name: "Client One", cr_provider_id: "rbt1", provider_name: "RBT One",
+      procedure_code: "97153", session_kind: "direct", hours: 4, units: 16,
+    }));
+    expect(direct.providerLabels).toBe("");
+    expect(direct.rbt).toBe("RBT One");
   });
 });

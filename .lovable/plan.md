@@ -1,35 +1,40 @@
-## Diagnosis
+## Goal
+Get the BCBA Productivity Report V3 actually loading the live CentralReach rows into the report table, not just showing source coverage as ready.
 
-The CentralReach Upload Hub is still failing because the involved upload-history tables have RLS policies but no Data API grants at all. I verified this directly in the database:
+## Verified current issue
+- The page successfully calls `canonical_report_totals` and gets `47,533` rows.
+- The browser never calls `canonical_report_billing_rows`, so the detailed rows are not being fetched.
+- In `BcbaProductivityReportV3.tsx`, the mount-time auto-load is gated by legacy upload dataset status before loading canonical rows. This lets the coverage banner show “ready” while the report body remains empty.
+- The canonical-to-V3 bridge also sends blank `providerLabels`, but the V3 ownership inference requires non-97153 BCBA anchor rows to have a BCBA label. Without this, even loaded rows cannot infer BCBA ownership correctly.
 
-- `shared_report_datasets`: 4 existing uploaded datasets are still present, but zero grants exist.
-- `bcba_productivity_upload_batches`: 1 existing batch is still present, but zero grants exist.
-- `bcba_productivity_billing_rows`: 47,533 existing rows are still present, but zero grants exist.
-- The hub also touches `cr_sync_runs` and `cr_data_quality_exceptions`, which likewise have policies but no grants.
-- The helper functions used by those policies (`has_role`, `can_read_bcba_productivity`, `can_manage_bcba_productivity_uploads`, `cr_sync_freshness`) also currently show no explicit execute grants for app roles.
+## Implementation plan
+1. **Fix the auto-load gate**
+   - Update `src/pages/os/reports/BcbaProductivityReportV3.tsx` so mount-time loading calls `loadSharedDataset({ silent: true })` directly when there is no saved report param.
+   - Keep legacy upload status as diagnostics only; it must not block canonical row loading.
 
-So the data was not deleted; the app is being blocked from reading it.
+2. **Make refresh resilient**
+   - In `loadSharedDataset`, fetch canonical totals first.
+   - Wrap `getBcbaProductivityDatasetStatus()` in a non-blocking `try/catch` so a legacy upload-status failure cannot stop the canonical detail-row fetch.
+   - Preserve the visible error only for actual canonical load failures.
 
-## Fix plan
+3. **Restore V3 BCBA ownership inference from canonical rows**
+   - Update `src/lib/os/reporting/canonicalReports.ts` so `toBcbaSharedShape()` reconstructs `providerLabels: "BCBA"` for non-97153 rows with a provider.
+   - Keep 97153 rows labeled as RBT rows and set `rbt` from the rendering provider.
+   - Leave state/payor blank for now because the canonical RPC does not expose those columns yet.
 
-1. **Run one backend migration to restore app access**
-   - Grant authenticated app users access to the upload hub tables according to their existing RLS policies.
-   - Grant backend service access for admin/import jobs.
-   - Do not grant anonymous access.
+4. **Add regression coverage**
+   - Update `src/test/canonicalReportsEngines.test.ts` to verify the canonical-to-V3 bridge labels 97155/non-97153 rows as BCBA anchors and 97153 rows as RBT rows.
+   - Update the BCBA productivity route/dataset test to assert the page auto-loads canonical rows directly instead of only checking legacy upload status.
 
-2. **Restore function execution permissions used by RLS**
-   - Grant authenticated users permission to execute the role/access helper functions required by these policies.
-   - Include backend service execution access as well.
+5. **Verify**
+   - Run focused tests for canonical report engines and BCBA productivity uploads.
+   - Run a browser check on `/reports/bcba-productivity-report-v3` and confirm network requests include both:
+     - `canonical_report_totals`
+     - `canonical_report_billing_rows`
+   - Confirm the report renders non-zero rows/KPIs after load.
 
-3. **Harden the hub UI so one failing source does not break the whole hub**
-   - Update `CentralReachUploads.tsx` so upload history loads sources independently.
-   - If one dataset source fails, show the real error message and still display the other available upload history.
-
-4. **Harden Unified Import History**
-   - Update `CentralReachHub.tsx` so the unified history tab handles per-source query errors instead of silently staying stuck on “Loading…” or blanking out.
-   - Surface clear source-specific messages for future permission/column issues.
-
-5. **Verify after approval**
-   - Confirm grants exist for the affected tables/functions.
-   - Confirm existing row counts remain visible.
-   - Reload the CentralReach Hub and verify upload history renders without the “Failed to load upload history” toast.
+## Out of scope
+- No publishing.
+- No outbound actions or automation changes.
+- No CentralReach write-back.
+- No broad redesign of the report UI.
