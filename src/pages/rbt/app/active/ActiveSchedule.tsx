@@ -6,6 +6,7 @@ import { FreshnessPill, freshness } from "./freshness";
 import { useCrSync } from "./useCrSync";
 import { crSessionUrl } from "./cr";
 import { ExternalLink, Flag } from "lucide-react";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 
 type Tab = "today" | "week" | "upcoming";
 type StatusFilter = "all" | "active" | "cancelled";
@@ -162,6 +163,15 @@ export default function ActiveSchedule() {
           ))}
         </div>
       </CardFrame>
+
+      {employeeId && rows !== null && rows.length === 0 && (
+        <CanonicalSessionsCard
+          title="Imported CentralReach sessions for you"
+          scope={{ employeeId }}
+          highlightKinds={["direct", "supervision"]}
+          showClients
+        />
+      )}
     </div>
   );
 }

@@ -28,6 +28,7 @@ import BillingReconciliationDialog from "./BillingReconciliationDialog";
 import { useBcbaIdentity } from "../useBcbaIdentity";
 import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
 import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 
 function MetricLabel({ metricKey, children }: { metricKey: string; children: React.ReactNode }) {
   const def = findDefinition(metricKey);
@@ -546,6 +547,16 @@ export default function ProductivityPage() {
       </div>
 
       <div className="mb-4"><BcbaMappingDiagnostic onRetry={() => { productivity.refetch(); capacity.refetch(); }} /></div>
+
+      <div className="mb-4">
+        <CanonicalSessionsCard
+          title="Imported CentralReach billing — my scope"
+          scope={{ authUserId: uid }}
+          roleRowCount={productivity.data ? 1 : 0}
+          highlightKinds={["direct", "supervision", "parent_training"]}
+          showClients
+        />
+      </div>
 
       <Tabs value={initialTab} onValueChange={setTab}>
         <TabsList>

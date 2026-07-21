@@ -8,6 +8,7 @@ import { OSShell } from "@/pages/os/OSShell";
 import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 import {
   getBcbaProductivitySharedRows,
   getBcbaProductivityDatasetStatus,
@@ -736,6 +737,15 @@ export default function QaSupervisionPtDashboard() {
       />
 
       <SourceCoverageBanner reportKey={["bcba-supervision", "parent-training-97156"]} />
+      <div className="mt-3">
+        <CanonicalSessionsCard
+          title="Auto-loaded from imported CentralReach (supervision + parent training)"
+          scope={{}}
+          requireScope={false}
+          highlightKinds={["supervision", "parent_training"]}
+          showClients={false}
+        />
+      </div>
 
       {/* Upload + month selector */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">

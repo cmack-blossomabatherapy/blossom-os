@@ -38,6 +38,7 @@ import autoTable from "jspdf-autotable";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -998,6 +999,15 @@ export default function BcbaProductivityReportV3() {
           adminSourceLabel="Auto-loads from Admin Uploads"
         />
         <SourceCoverageBanner reportKey="bcba-productivity" />
+        <div className="mt-3">
+          <CanonicalSessionsCard
+            title="Auto-loaded from imported CentralReach billing (company-wide)"
+            scope={{}}
+            requireScope={false}
+            highlightKinds={["direct", "supervision", "parent_training"]}
+            showClients={false}
+          />
+        </div>
 
         {/* Setup / inferred banners stay above tabs */}
         {setupIncomplete && (

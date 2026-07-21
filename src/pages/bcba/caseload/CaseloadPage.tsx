@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useCaseload, type CaseloadRow } from "./useCaseload";
 import { useBcbaIdentity } from "../useBcbaIdentity";
 import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 import { useSavedViews, type CaseloadFilters } from "./useSavedViews";
 import { CaseDetailDrawer } from "./CaseDetailDrawer";
 import { HEALTH_LABEL, HEALTH_TONE, type CaseHealthStatus } from "./caseHealth";
@@ -141,6 +142,16 @@ export default function CaseloadPage() {
       </div>
 
       <BcbaMappingDiagnostic onRetry={() => refetch()} />
+
+      <div className="my-4">
+        <CanonicalSessionsCard
+          title="Imported CentralReach delivery — my caseload scope"
+          scope={{ authUserId: identity.scopedAuthUserId }}
+          roleRowCount={rows?.length ?? 0}
+          highlightKinds={["direct", "cancellation"]}
+          showClients
+        />
+      </div>
 
       {/* Filter bar */}
       <Card className="border-border/60 bg-card/70 backdrop-blur-sm">
