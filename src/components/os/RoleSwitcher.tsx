@@ -26,6 +26,39 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
 
   const showPreviewPicker = role === "rbt" || role === "bcba";
 
+  // Search employees by name when picker is open.
+  useEffect(() => {
+    if (!showPreviewPicker || !open) return;
+    let cancelled = false;
+    const run = async () => {
+      const q = subjectQuery.trim();
+      const credentialFilter = role === "bcba" ? "BCBA" : "RBT";
+      let query = supabase
+        .from("employees")
+        .select("id,first_name,last_name,email,credential")
+        .ilike("credential", `%${credentialFilter}%`)
+        .order("last_name", { ascending: true })
+        .limit(15);
+      if (q) query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
+      const { data } = await query;
+      if (!cancelled) setSubjectResults((data as any) ?? []);
+    };
+    void run();
+    return () => { cancelled = true; };
+  }, [subjectQuery, showPreviewPicker, open, role]);
+
+  // Resolve label for the current preview subject once.
+  useEffect(() => {
+    let cancelled = false;
+    if (!previewSubjectEmployeeId) { setSubjectLabel(null); return; }
+    supabase.from("employees")
+      .select("first_name,last_name,email")
+      .eq("id", previewSubjectEmployeeId)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setSubjectLabel(data ? displayNameFor(data as any) : null); });
+    return () => { cancelled = true; };
+  }, [previewSubjectEmployeeId]);
+
   return (
     <div className="relative">
       <button
