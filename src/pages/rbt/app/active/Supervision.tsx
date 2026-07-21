@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
+import { useRbtIdentity } from "../useRbtIdentity";
 
 export default function Supervision() {
-  const { user } = useAuth();
+  const { employeeId, writableEmployeeId, loading: idLoading, isPreviewing } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (idLoading) return;
+    if (!employeeId) { setRows([]); return; }
     supabase.from("rbt_supervision" as any)
       .select("id,supervision_date,bcba_id,supervision_type,notes,feedback,competency_area,status,signed_by_bcba_at,acknowledged_by_rbt_at")
-      .eq("rbt_employee_id", user.id)
+      .eq("rbt_employee_id", employeeId)
       .order("supervision_date", { ascending: false })
       .limit(20)
       .then(({ data }) => setRows((data as any[]) ?? []));
-  }, [user?.id]);
+  }, [employeeId, idLoading]);
 
   const last = rows?.[0];
   const nextPlanned = rows?.find((r) => new Date(r.supervision_date) > new Date());
@@ -26,6 +27,7 @@ export default function Supervision() {
   const monthCount = rows?.filter((r) => (r.supervision_date ?? "").startsWith(currentMonth)).length ?? 0;
 
   const ack = async (id: string) => {
+    if (!writableEmployeeId) return;
     await supabase.from("rbt_supervision" as any)
       .update({ acknowledged_by_rbt_at: new Date().toISOString() })
       .eq("id", id);
@@ -76,8 +78,8 @@ export default function Supervision() {
                   {new Date(r.supervision_date).toLocaleDateString()}
                 </span>
                 {!r.acknowledged_by_rbt_at && r.signed_by_bcba_at && (
-                  <button onClick={() => ack(r.id)}
-                    className="text-xs rounded-full bg-primary text-primary-foreground px-3 py-1">
+                  <button onClick={() => ack(r.id)} disabled={isPreviewing}
+                    className="text-xs rounded-full bg-primary text-primary-foreground px-3 py-1 disabled:opacity-50">
                     Acknowledge
                   </button>
                 )}

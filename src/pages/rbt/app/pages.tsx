@@ -17,6 +17,7 @@ import {
   TrainingProgressCard, SupervisionCard, CredentialAlertCard, RecognitionCard,
   GrowthCard, SupportShortcutCard, AnnouncementCard, CrDataStatusCard,
 } from "./cards";
+import { useRbtIdentity } from "./useRbtIdentity";
 
 function WelcomeBanner({ userId }: { userId: string }) {
   const key = `rbt-app-welcome-dismissed-${userId}`;
@@ -137,21 +138,23 @@ export function RbtSchedule() {
 
 // ---------------------------------------------------------------- LEARN
 export function RbtLearn() {
-  const { user } = useAuth();
+  const { employeeId, authUserId, loading: idLoading } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    if (!user) return;
+    if (idLoading) return;
+    const uid = authUserId;
+    if (!uid) { setRows([]); return; }
     supabase.from("user_training_progress" as any)
       .select("course_id,progress_percent,status,updated_at")
-      .eq("user_id", user.id)
+      .eq("user_id", uid)
       .order("updated_at", { ascending: false })
       .limit(10)
       .then(
         ({ data, error }) => { if (error) setErr(error.message); setRows((data as any) ?? []); },
         (e) => { setErr(e?.message ?? "Could not load training"); setRows([]); },
       );
-  }, [user?.id]);
+  }, [authUserId, idLoading, employeeId]);
   const state: "error" | "loading" | "empty" | "success" =
     err ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
   return (
@@ -239,14 +242,16 @@ export function RbtSupport() {
 
 // ---------------------------------------------------------------- ME
 export function RbtMe() {
-  const { user, signOut } = useAuth() as any;
+  const { signOut } = useAuth() as any;
+  const { employeeId, displayName, email, credential, loading: idLoading } = useRbtIdentity();
   const [stage, setStage] = useState<any | null>(null);
   const [history, setHistory] = useState<any[] | null>(null);
   useEffect(() => {
-    if (!user) return;
+    if (idLoading) return;
+    if (!employeeId) { setStage(null); setHistory([]); return; }
     supabase.from("rbt_lifecycle_state" as any)
       .select("stage, entered_at")
-      .eq("employee_id", user.id)
+      .eq("employee_id", employeeId)
       .maybeSingle()
       .then(
         async ({ data }) => {
@@ -263,18 +268,21 @@ export function RbtMe() {
       );
     supabase.from("rbt_lifecycle_events" as any)
       .select("from_stage,to_stage,occurred_at,reason,source")
-      .eq("employee_id", user.id)
+      .eq("employee_id", employeeId)
       .order("occurred_at", { ascending: false })
       .limit(10)
       .then(
         ({ data }) => setHistory((data as any) ?? []),
         () => setHistory([]),
       );
-  }, [user?.id]);
+  }, [employeeId, idLoading]);
 
   return (
     <div className="space-y-3">
-      <CardFrame title={user?.email ?? "You"} subtitle="Your Blossom profile" state="success"
+      <CardFrame
+        title={displayName}
+        subtitle={[credential, email].filter(Boolean).join(" · ") || "Your Blossom profile"}
+        state="success"
         action={signOut && <button onClick={() => signOut()} className="text-sm text-muted-foreground underline underline-offset-4">Sign out</button>}>
         {stage ? (
           <div>

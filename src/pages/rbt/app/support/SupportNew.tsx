@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { submitTicket, useSupportCategories, URGENCY_LABEL } from "./useSupport";
+import { useRbtIdentity } from "../useRbtIdentity";
 import { toast } from "sonner";
 
 export default function SupportNew() {
   const nav = useNavigate();
-  const { user } = useAuth();
+  const { writableEmployeeId, isPreviewing } = useRbtIdentity();
   const [params] = useSearchParams();
   const { categories } = useSupportCategories();
   const nonUrgent = useMemo(() => (categories ?? []).filter(c => !c.is_urgent_safety), [categories]);
@@ -21,14 +21,14 @@ export default function SupportNew() {
   const [sending, setSending] = useState(false);
 
   const selected = nonUrgent.find(c => c.key === categoryKey);
-  const canSubmit = !!selected && subject.trim().length >= 3 && description.trim().length >= 10;
+  const canSubmit = !!selected && subject.trim().length >= 3 && description.trim().length >= 10 && !isPreviewing;
 
   const submit = async () => {
-    if (!user || !canSubmit || !selected) return;
+    if (!writableEmployeeId || !canSubmit || !selected) return;
     setSending(true);
     try {
       const t = await submitTicket({
-        employeeId: user.id,
+        employeeId: writableEmployeeId,
         category: selected.key,
         subcategory: subcategory || undefined,
         subject: subject.trim(),

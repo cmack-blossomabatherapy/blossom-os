@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { FreshnessPill, freshness } from "./freshness";
+import { useRbtIdentity } from "../useRbtIdentity";
 
 export default function Hours() {
-  const { user } = useAuth();
+  const { employeeId, writableEmployeeId, loading: idLoading, isPreviewing } = useRbtIdentity();
   const [snap, setSnap] = useState<any | null | undefined>(undefined);
   const [issues, setIssues] = useState<any[] | null>(null);
   const [form, setForm] = useState({ issue_type: "missing_hours", expected: "", reported: "", description: "" });
@@ -13,27 +13,28 @@ export default function Hours() {
   const [err, setErr] = useState<string | null>(null);
 
   const load = () => {
-    if (!user) return;
+    if (idLoading) return;
+    if (!employeeId) { setSnap(null); setIssues([]); return; }
     supabase.from("rbt_hours_snapshots" as any)
       .select("period_start,period_end,scheduled_hours,completed_hours,cancelled_hours,imported_hours,last_import_at,source")
-      .eq("employee_id", user.id)
+      .eq("employee_id", employeeId)
       .order("period_end", { ascending: false })
       .limit(1)
       .then(({ data }) => setSnap((data as any[])?.[0] ?? null));
     supabase.from("rbt_hours_issues" as any)
       .select("id,issue_type,description,status,created_at,resolution_note,resolved_at")
-      .eq("employee_id", user.id)
+      .eq("employee_id", employeeId)
       .order("created_at", { ascending: false })
       .limit(10)
       .then(({ data }) => setIssues((data as any[]) ?? []));
   };
-  useEffect(load, [user?.id]);
+  useEffect(load, [employeeId, idLoading]);
 
   const submit = async () => {
-    if (!user || !form.description.trim()) return;
+    if (!writableEmployeeId || !form.description.trim()) return;
     setErr(null);
     const { error } = await supabase.from("rbt_hours_issues" as any).insert({
-      employee_id: user.id,
+      employee_id: writableEmployeeId,
       period_start: snap?.period_start,
       period_end: snap?.period_end,
       issue_type: form.issue_type,
@@ -83,7 +84,7 @@ export default function Hours() {
 
       <CardFrame title="Report an hours issue" state="success"
         action={
-          <button onClick={submit} disabled={!form.description.trim()}
+          <button onClick={submit} disabled={!form.description.trim() || isPreviewing}
             className="rounded-xl bg-primary text-primary-foreground px-5 h-11 font-medium disabled:opacity-60">
             Submit
           </button>

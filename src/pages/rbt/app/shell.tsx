@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Home, Calendar, GraduationCap, LifeBuoy, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RbtAppErrorBoundary } from "./RbtAppErrorBoundary";
+import { PreviewBanner } from "./PreviewBanner";
 
 const tabs = [
   { to: "/rbt/app/home",     label: "Home",     icon: Home },
@@ -60,6 +61,7 @@ export default function RbtAppShell() {
             </span>
             <span className="text-xs text-muted-foreground md:hidden">Blossom OS</span>
           </div>
+          <PreviewBanner />
         </header>
 
         {/* Content */}

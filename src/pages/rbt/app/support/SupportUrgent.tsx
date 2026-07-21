@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AlertTriangle, Phone, ShieldAlert, ArrowLeft } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { submitTicket, useSupportCategories } from "./useSupport";
+import { useRbtIdentity } from "../useRbtIdentity";
 import { toast } from "sonner";
 
 export default function SupportUrgent() {
   const nav = useNavigate();
-  const { user } = useAuth();
+  const { writableEmployeeId, isPreviewing } = useRbtIdentity();
   const { categories } = useSupportCategories();
   const urgentOptions = (categories ?? []).filter(c => c.is_urgent_safety);
   const [ack, setAck] = useState(false);
@@ -19,11 +19,11 @@ export default function SupportUrgent() {
   const selected = urgentOptions.find(c => c.key === category);
 
   const submit = async () => {
-    if (!user || !ack || description.trim().length < 10) return;
+    if (!writableEmployeeId || !ack || description.trim().length < 10) return;
     setSending(true);
     try {
       const t = await submitTicket({
-        employeeId: user.id,
+        employeeId: writableEmployeeId,
         category, subcategory: subcategory || undefined,
         subject: `URGENT: ${selected?.label ?? category}`,
         description, urgency: "urgent",
@@ -125,9 +125,9 @@ export default function SupportUrgent() {
           <span>I understand this is not for emergencies. If someone is in immediate danger I will call 911.</span>
         </label>
 
-        <button onClick={submit} disabled={!ack || sending || description.trim().length < 10}
+        <button onClick={submit} disabled={!ack || sending || description.trim().length < 10 || isPreviewing}
           className="w-full h-12 rounded-xl bg-red-600 text-white font-medium disabled:opacity-50 hover:bg-red-700 transition">
-          {sending ? "Sending…" : "Send urgent request"}
+          {sending ? "Sending…" : isPreviewing ? "Disabled in preview mode" : "Send urgent request"}
         </button>
       </section>
     </div>
