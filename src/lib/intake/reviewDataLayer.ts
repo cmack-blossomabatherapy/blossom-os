@@ -75,18 +75,21 @@ export interface CanonicalCtmCallRow {
 export interface CanonicalSourceEventRow {
   id: string;
   lead_id: string | null;
-  provider_key: string | null;
+  integration_id: string | null;
   event_kind: string | null;
-  external_id: string | null;
+  provider_event_id: string | null;
+  normalized_record_id: string | null;
   created_at: string;
   metadata: Record<string, unknown> | null;
 }
 
 export type PromotionState =
-  | "pending"
+  | "staged"
+  | "incomplete_review"
+  | "ambiguous_review"
+  | "rejected"
   | "linked_existing"
   | "promoted"
-  | "ambiguous"
   | "error";
 
 export interface CanonicalPromotionRow {
@@ -151,7 +154,7 @@ export interface CtmQueryOptions {
 export interface SourceEventsQueryOptions {
   page?: number;
   pageSize?: number;
-  providerKey?: string;
+  integrationId?: string;
   leadId?: string;
   since?: string;
 }
@@ -193,7 +196,7 @@ export async function fetchCanonicalIntakeLeads(
         "pipeline_stage, assigned_intake_coordinator, priority, created_at, updated_at, stage_entered_at",
       { count: "exact" },
     );
-  if (opts.stage) q = q.eq("pipeline_stage", opts.stage);
+  if (opts.stage) q = q.eq("pipeline_stage", opts.stage as never);
   if (opts.state) q = q.eq("state", opts.state);
   if (opts.source) q = q.eq("lead_source", opts.source);
   if (opts.search) {
@@ -213,7 +216,7 @@ export async function fetchCanonicalIntakeLeads(
   const { data, count, error } = await q;
   if (error) throw error;
   return {
-    rows: (data ?? []) as CanonicalIntakeLeadRow[],
+    rows: (data ?? []) as unknown as CanonicalIntakeLeadRow[],
     count: count ?? 0,
     page,
     pageSize,
@@ -252,7 +255,7 @@ export async function fetchCanonicalCtmCalls(
   const { data, count, error } = await q;
   if (error) throw error;
   return {
-    rows: (data ?? []) as CanonicalCtmCallRow[],
+    rows: (data ?? []) as unknown as CanonicalCtmCallRow[],
     count: count ?? 0,
     page,
     pageSize,
@@ -270,7 +273,7 @@ export async function fetchCanonicalSourceEvents(
   let q = supabase
     .from("intake_lead_source_events")
     .select("*", { count: "exact" });
-  if (opts.providerKey) q = q.eq("provider_key", opts.providerKey);
+  if (opts.integrationId) q = q.eq("integration_id", opts.integrationId);
   if (opts.leadId) q = q.eq("lead_id", opts.leadId);
   if (opts.since) q = q.gte("created_at", opts.since);
   q = q.order("created_at", { ascending: false }).range(from, to);
@@ -298,16 +301,16 @@ export async function fetchCanonicalPromotions(
       "id, normalized_record_id, state, reason, candidate_lead_ids, lead_id, created_at, updated_at",
       { count: "exact" },
     );
-  if (opts.state) q = q.eq("state", opts.state);
+  if (opts.state) q = q.eq("state", opts.state as never);
   if (opts.search) {
     const term = `%${opts.search.trim()}%`;
-    q = q.or(`reason.ilike.${term},normalized_record_id.eq.${opts.search}`);
+    q = q.ilike("reason", term);
   }
   q = q.order("updated_at", { ascending: false }).range(from, to);
   const { data, count, error } = await q;
   if (error) throw error;
   return {
-    rows: (data ?? []) as CanonicalPromotionRow[],
+    rows: (data ?? []) as unknown as CanonicalPromotionRow[],
     count: count ?? 0,
     page,
     pageSize,
