@@ -90,7 +90,7 @@ Run after the follow-up correction — see "Build result (revised)" below.
 ### Build result (revised)
 
 ```
-✓ built in <see below>
+✓ built in 51.08s
 ```
 
 ## Deliberately out of scope
