@@ -104,6 +104,11 @@ export default function RbtMyGrowth() {
 
   return (
     <div className="space-y-3">
+      {g.writableEmployeeId === null && g.employeeId && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 text-amber-800 dark:text-amber-300 text-xs px-3 py-2">
+          Preview mode — interests, mentor and opportunity submissions are read-only.
+        </div>
+      )}
       {/* Current stage */}
       <CardFrame title="Your growth" subtitle="Career stage, next steps, and opportunities" state="success">
         <div className="space-y-2">
