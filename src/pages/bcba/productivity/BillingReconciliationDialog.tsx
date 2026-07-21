@@ -137,6 +137,7 @@ export default function BillingReconciliationDialog({ open, onOpenChange, snapsh
           variance_hours: Math.round(-sched.hours * 100) / 100,
           reason, status,
           freshness: sched.source,
+          source: "role",
         });
       }
 
