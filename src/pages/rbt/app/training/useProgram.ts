@@ -8,12 +8,14 @@ export function useProgram(employeeId: string | null | undefined) {
   const [progress, setProgress] = useState<StepProgress[] | null>(null);
   const [remediation, setRemediation] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsRecruitingData, setNeedsRecruitingData] = useState(false);
 
   const load = useCallback(async () => {
     if (!employeeId) return;
     setLoading(true);
+    setNeedsRecruitingData(false);
 
-    const { data: assign } = await supabase
+    let { data: assign } = await supabase
       .from("rbt_pathway_assignments" as any)
       .select("pathway_id, assigned_at, notes, active, pathway:rbt_pathways!inner(id,key,name,description)")
       .eq("employee_id", employeeId)
@@ -23,7 +25,26 @@ export function useProgram(employeeId: string | null | undefined) {
       .maybeSingle();
 
     if (!assign) {
-      setPathway(null); setSteps([]); setProgress([]); setRemediation([]); setLoading(false); return;
+      // Attempt a self-serve provisioning for the current RBT once; only
+      // succeeds when recruiting has captured certification + years and
+      // linked the candidate to this employee.
+      try {
+        await supabase.rpc("ensure_my_rbt_pathway_assignment" as any);
+      } catch { /* non-fatal — surface calm empty state below */ }
+      const retry = await supabase
+        .from("rbt_pathway_assignments" as any)
+        .select("pathway_id, assigned_at, notes, active, pathway:rbt_pathways!inner(id,key,name,description)")
+        .eq("employee_id", employeeId)
+        .eq("active", true)
+        .order("assigned_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      assign = retry.data as any;
+      if (!assign) {
+        setPathway(null); setSteps([]); setProgress([]); setRemediation([]);
+        setNeedsRecruitingData(true);
+        setLoading(false); return;
+      }
     }
     const pathwayRow = (assign as any).pathway;
     setPathway(pathwayRow);
@@ -72,5 +93,5 @@ export function useProgram(employeeId: string | null | undefined) {
     return { total, complete, current, blocked, percent, totalDays };
   }, [rows]);
 
-  return { pathway, rows, remediation, stats, loading, reload: load };
+  return { pathway, rows, remediation, stats, loading, reload: load, needsRecruitingData };
 }
