@@ -20,6 +20,9 @@ import {
   type ParentTrainingStatus,
 } from "./pipeline";
 import ParentTrainingDetailDrawer from "./ParentTrainingDetailDrawer";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 
 function fmt(d?: string | null) {
   if (!d) return "—";
@@ -36,6 +39,7 @@ function StatusPill({ status }: { status: ParentTrainingStatus }) {
 
 export default function ParentTrainingPage() {
   const [params, setParams] = useSearchParams();
+  const identity = useBcbaIdentity();
   const [tab, setTab] = useState<"parent_training" | "utilization">("parent_training");
 
   const selectedId = params.get("id");
@@ -47,6 +51,8 @@ export default function ParentTrainingPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      <BcbaPreviewBanner />
+      <div className="mb-4"><BcbaMappingDiagnostic /></div>
       <div className="mb-6">
         <h1 className="text-3xl font-semibold tracking-tight">Parent Training & Service Utilization</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -61,36 +67,40 @@ export default function ParentTrainingPage() {
         </TabsList>
 
         <TabsContent value="parent_training" className="mt-4">
-          <ParentTrainingView onSelect={setSelected} />
+          <ParentTrainingView onSelect={setSelected} identity={identity} />
         </TabsContent>
 
         <TabsContent value="utilization" className="mt-4">
-          <UtilizationView />
+          <UtilizationView identity={identity} />
         </TabsContent>
       </Tabs>
 
-      <ParentTrainingDetailDrawer id={selectedId} onClose={() => setSelected(null)} />
+      <ParentTrainingDetailDrawer id={selectedId} onClose={() => setSelected(null)} readOnly={identity.readOnly} />
     </div>
   );
 }
 
-function ParentTrainingView({ onSelect }: { onSelect: (id: string) => void }) {
-  const { data: rows = [], isLoading, error, refetch, isFetching } = useParentTrainingRecords();
+function ParentTrainingView({ onSelect, identity }: { onSelect: (id: string) => void; identity: ReturnType<typeof useBcbaIdentity> }) {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<ParentTrainingStatus | "all">("all");
   const [scope, setScope] = useState<"all" | "mine">("all");
   const [showNew, setShowNew] = useState(false);
+  const { data: rows = [], isLoading, error, refetch, isFetching } = useParentTrainingRecords({
+    onlyMine: scope === "mine",
+    scopedAuthUserId: identity.scopedAuthUserId,
+  });
+  const readOnly = identity.readOnly;
 
   const filtered = useMemo(() => rows.filter((r) => {
     if (statusFilter !== "all" && r.status !== statusFilter) return false;
-    if (scope === "mine" && !r.assigned_bcba_id) return false;
+    if (scope === "mine" && identity.scopedAuthUserId && r.assigned_bcba_id !== identity.scopedAuthUserId) return false;
     if (q) {
       const s = q.toLowerCase();
       if (![r.client_identifier, r.assigned_bcba_name, r.payer, r.state]
         .some((v) => (v ?? "").toLowerCase().includes(s))) return false;
     }
     return true;
-  }), [rows, statusFilter, scope, q]);
+  }), [rows, statusFilter, scope, q, identity.scopedAuthUserId]);
 
   const counts = useMemo(() => {
     const c: Partial<Record<ParentTrainingStatus, number>> = {};
@@ -132,7 +142,7 @@ function ParentTrainingView({ onSelect }: { onSelect: (id: string) => void }) {
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
           {isFetching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Refresh"}
         </Button>
-        <Button size="sm" className="ml-auto" onClick={() => setShowNew(true)}>
+        <Button size="sm" className="ml-auto" onClick={() => setShowNew(true)} disabled={readOnly} title={readOnly ? "Preview mode — writes disabled" : undefined}>
           <Plus className="h-4 w-4 mr-1" /> New record
         </Button>
       </div>
@@ -225,8 +235,10 @@ function ParentTrainingView({ onSelect }: { onSelect: (id: string) => void }) {
   );
 }
 
-function UtilizationView() {
-  const { data: rows = [], isLoading, error, refetch, isFetching } = useServiceUtilization();
+function UtilizationView({ identity }: { identity: ReturnType<typeof useBcbaIdentity> }) {
+  const { data: rows = [], isLoading, error, refetch, isFetching } = useServiceUtilization({
+    scopedAuthUserId: identity.scopedAuthUserId,
+  });
   const [q, setQ] = useState("");
   const [risk, setRisk] = useState<"all" | "watch" | "elevated" | "critical">("all");
 

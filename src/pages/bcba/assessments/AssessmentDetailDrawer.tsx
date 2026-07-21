@@ -33,7 +33,7 @@ import {
 function fmt(d?: string | null) { try { return d ? new Date(d).toLocaleString() : "—"; } catch { return "—"; } }
 function fmtDate(d?: string | null) { try { return d ? new Date(d).toLocaleDateString() : "—"; } catch { return "—"; } }
 
-export default function AssessmentDetailDrawer({ id, onClose }: { id: string | null; onClose: () => void }) {
+export default function AssessmentDetailDrawer({ id, onClose, readOnly = false }: { id: string | null; onClose: () => void; readOnly?: boolean }) {
   const { data, isLoading } = useAssessment(id);
   const updateStatus = useUpdateAssessmentStatus();
   const update = useUpdateAssessment();
@@ -64,6 +64,11 @@ export default function AssessmentDetailDrawer({ id, onClose }: { id: string | n
                 </span>
               </div>
             </SheetHeader>
+            {readOnly && (
+              <div className="mb-3 rounded-md border border-amber-200 bg-amber-50/70 dark:bg-amber-950/20 dark:border-amber-900 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                Preview mode — status changes, QA feedback and edits are disabled.
+              </div>
+            )}
 
             {/* Quick facts */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mb-4">
@@ -111,7 +116,7 @@ export default function AssessmentDetailDrawer({ id, onClose }: { id: string | n
                   {ASSESSMENT_STATUS_ORDER.map((s) => (
                     <button
                       key={s}
-                      disabled={s === a.status || updateStatus.isPending}
+                      disabled={readOnly || s === a.status || updateStatus.isPending}
                       onClick={async () => {
                         try { await updateStatus.mutateAsync({ id: a.id, status: s }); toast.success("Stage updated"); }
                         catch (e: any) { toast.error(e?.message ?? "Failed"); }
@@ -131,6 +136,7 @@ export default function AssessmentDetailDrawer({ id, onClose }: { id: string | n
                   <Label className="text-xs uppercase tracking-wide">Treatment plan status</Label>
                   <Select
                     value={plan?.status ?? "not_started"}
+                    disabled={readOnly}
                     onValueChange={async (v) => {
                       try {
                         await upsertPlan.mutateAsync({ assessment_id: a.id, status: v as TreatmentPlanStatus });
@@ -161,16 +167,16 @@ export default function AssessmentDetailDrawer({ id, onClose }: { id: string | n
               </TabsContent>
 
               <TabsContent value="qa" className="mt-4 space-y-4">
-                <AddFeedback assessmentId={a.id} onSubmit={async (v) => {
+                {!readOnly && <AddFeedback assessmentId={a.id} onSubmit={async (v) => {
                   try { await addFeedback.mutateAsync({ assessment_id: a.id, ...v }); toast.success("Feedback recorded — task created"); }
                   catch (e: any) { toast.error(e?.message ?? "Failed"); }
-                }} />
+                }} />}
                 <div className="space-y-2">
                   {(data?.feedback ?? []).length === 0 ? (
                     <div className="text-sm text-muted-foreground">No QA feedback recorded.</div>
                   ) : (
                     (data?.feedback ?? []).map((f) => (
-                      <FeedbackCard key={f.id} f={f} onResolve={async (resolution, status) => {
+                      <FeedbackCard key={f.id} f={f} readOnly={readOnly} onResolve={async (resolution, status) => {
                         try { await resolveFeedback.mutateAsync({ id: f.id, resolution, resolution_status: status }); toast.success("Resolved"); }
                         catch (e: any) { toast.error(e?.message ?? "Failed"); }
                       }} />
@@ -180,13 +186,15 @@ export default function AssessmentDetailDrawer({ id, onClose }: { id: string | n
               </TabsContent>
 
               <TabsContent value="edit" className="mt-4 space-y-3">
-                <EditDetailsForm
+                {readOnly ? (
+                  <div className="text-sm text-muted-foreground">Editing disabled in preview.</div>
+                ) : <EditDetailsForm
                   initial={a}
                   onSave={async (patch) => {
                     try { await update.mutateAsync({ id: a.id, ...patch }); toast.success("Saved"); }
                     catch (e: any) { toast.error(e?.message ?? "Failed"); }
                   }}
-                />
+                />}
               </TabsContent>
 
               <TabsContent value="activity" className="mt-4">
@@ -297,7 +305,7 @@ function AddFeedback({ assessmentId, onSubmit }: {
   );
 }
 
-function FeedbackCard({ f, onResolve }: { f: QaFeedback; onResolve: (resolution: string, status: QaFeedback["resolution_status"]) => Promise<void> }) {
+function FeedbackCard({ f, onResolve, readOnly = false }: { f: QaFeedback; onResolve: (resolution: string, status: QaFeedback["resolution_status"]) => Promise<void>; readOnly?: boolean }) {
   const [resolution, setResolution] = useState(f.resolution ?? "");
   const resolved = f.resolution_status === "resolved" || f.resolution_status === "waived";
   return (
@@ -326,7 +334,7 @@ function FeedbackCard({ f, onResolve }: { f: QaFeedback; onResolve: (resolution:
           <ExternalLink className="h-3 w-3" /> supporting link
         </a>
       )}
-      {!resolved && (
+      {!resolved && !readOnly && (
         <div className="mt-2 space-y-2">
           <Textarea rows={2} value={resolution} onChange={(e) => setResolution(e.target.value)} placeholder="Resolution note…" />
           <div className="flex gap-2 justify-end">

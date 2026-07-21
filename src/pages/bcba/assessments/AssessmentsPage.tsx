@@ -17,6 +17,9 @@ import AssessmentDetailDrawer from "./AssessmentDetailDrawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 
 function fmtDate(d?: string | null) {
   if (!d) return "—";
@@ -33,10 +36,15 @@ function StatusPill({ status }: { status: AssessmentStatus }) {
 
 export default function AssessmentsPage() {
   const [params, setParams] = useSearchParams();
-  const { data: rows = [], isLoading, error, refetch, isFetching } = useAssessments();
+  const identity = useBcbaIdentity();
+  const readOnly = identity.readOnly;
+  const [scope, setScope] = useState<"all" | "mine">("all");
+  const { data: rows = [], isLoading, error, refetch, isFetching } = useAssessments({
+    onlyMine: scope === "mine",
+    scopedAuthUserId: identity.scopedAuthUserId,
+  });
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<AssessmentStatus | "all">("all");
-  const [scope, setScope] = useState<"all" | "mine">("all");
   const [showNew, setShowNew] = useState(false);
 
   const selectedId = params.get("id");
@@ -49,7 +57,7 @@ export default function AssessmentsPage() {
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
-      if (scope === "mine" && !r.assigned_bcba_id) return false;
+      if (scope === "mine" && identity.scopedAuthUserId && r.assigned_bcba_id !== identity.scopedAuthUserId) return false;
       if (q) {
         const s = q.toLowerCase();
         if (![r.client_identifier, r.assigned_bcba_name, r.qa_reviewer_name, r.next_action, r.missing_item]
@@ -57,7 +65,7 @@ export default function AssessmentsPage() {
       }
       return true;
     });
-  }, [rows, statusFilter, scope, q]);
+  }, [rows, statusFilter, scope, q, identity.scopedAuthUserId]);
 
   const counts = useMemo(() => {
     const c: Partial<Record<AssessmentStatus, number>> = {};
@@ -74,6 +82,8 @@ export default function AssessmentsPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      <BcbaPreviewBanner />
+      <div className="mb-4"><BcbaMappingDiagnostic onRetry={() => refetch()} /></div>
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Assessment & Treatment Plans</h1>
@@ -89,7 +99,7 @@ export default function AssessmentsPage() {
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
             {isFetching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Refresh"}
           </Button>
-          <Button size="sm" onClick={() => setShowNew(true)}>
+          <Button size="sm" onClick={() => setShowNew(true)} disabled={readOnly} title={readOnly ? "Preview mode — writes disabled" : undefined}>
             <Plus className="h-4 w-4 mr-1" /> New assessment
           </Button>
         </div>
@@ -170,7 +180,7 @@ export default function AssessmentsPage() {
         )}
       </div>
 
-      <AssessmentDetailDrawer id={selectedId} onClose={() => setSelected(null)} />
+      <AssessmentDetailDrawer id={selectedId} onClose={() => setSelected(null)} readOnly={readOnly} />
       <NewAssessmentDialog open={showNew} onOpenChange={setShowNew} />
     </div>
   );

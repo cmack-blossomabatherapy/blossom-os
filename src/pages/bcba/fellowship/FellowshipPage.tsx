@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -7,14 +6,15 @@ import { GraduationCap, Search } from "lucide-react";
 import { useMyFellows, useFellowshipStages } from "./useFellowship";
 import { STAGE_TONE } from "./config";
 import FellowDetailDrawer from "./FellowDetailDrawer";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 
 function fmt(d?: string | null) { if (!d) return "—"; try { return new Date(d).toLocaleDateString(); } catch { return "—"; } }
 
 export default function FellowshipPage() {
-  const [uid, setUid] = useState<string | null>(null);
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null)); }, []);
-
-  const fellows = useMyFellows(uid);
+  const identity = useBcbaIdentity();
+  const fellows = useMyFellows(identity.scopedAuthUserId);
   const stages = useFellowshipStages();
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<any | null>(null);
@@ -36,6 +36,8 @@ export default function FellowshipPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-6">
+      <BcbaPreviewBanner />
+      <BcbaMappingDiagnostic onRetry={() => fellows.refetch()} />
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -103,7 +105,7 @@ export default function FellowshipPage() {
         </CardContent>
       </Card>
 
-      <FellowDetailDrawer fellow={selected} open={!!selected} onClose={() => setSelected(null)} />
+      <FellowDetailDrawer fellow={selected} open={!!selected} onClose={() => setSelected(null)} readOnly={identity.readOnly} />
     </div>
   );
 }
