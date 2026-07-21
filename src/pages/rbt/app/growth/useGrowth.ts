@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useRbtIdentity } from "../useRbtIdentity";
 
 export type CareerStage = {
   key: string; name: string; order_index: number;
@@ -41,7 +41,8 @@ export const PRIMARY_INTEREST_OPTIONS = [
 ] as const;
 
 export function useGrowth() {
-  const { user } = useAuth();
+  const { employeeId, writableEmployeeId, authUserId } = useRbtIdentity();
+  const eid = employeeId;
   const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState<CareerStage[]>([]);
   const [currentStageKey, setCurrentStageKey] = useState<string | null>(null);
@@ -52,22 +53,22 @@ export function useGrowth() {
   const [fellowshipParticipant, setFellowshipParticipant] = useState<any | null>(null);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!eid) { setLoading(false); return; }
     setLoading(true);
     const [stagesRes, reqsRes, evalsRes, interestsRes, lifecycleRes, devplanRes, participantRes] = await Promise.all([
       supabase.from("rbt_career_stages" as any).select("*").eq("active", true).order("order_index"),
       supabase.from("rbt_career_stage_requirements" as any).select("*").eq("active", true).order("order_index"),
-      supabase.from("rbt_career_stage_evaluations" as any).select("*").eq("employee_id", user.id),
-      supabase.from("rbt_career_interests" as any).select("*").eq("employee_id", user.id).maybeSingle(),
-      supabase.from("rbt_lifecycle_state" as any).select("stage").eq("employee_id", user.id).maybeSingle(),
-      supabase.from("rbt_development_plans" as any).select("*").eq("employee_id", user.id).eq("status", "active").maybeSingle(),
-      supabase.from("rbt_fellowship_participants" as any).select("*, rbt_fellowship_stages(name,category)").eq("employee_id", user.id).maybeSingle(),
+      supabase.from("rbt_career_stage_evaluations" as any).select("*").eq("employee_id", eid),
+      supabase.from("rbt_career_interests" as any).select("*").eq("employee_id", eid).maybeSingle(),
+      supabase.from("rbt_lifecycle_state" as any).select("stage").eq("employee_id", eid).maybeSingle(),
+      supabase.from("rbt_development_plans" as any).select("*").eq("employee_id", eid).eq("status", "active").maybeSingle(),
+      supabase.from("rbt_fellowship_participants" as any).select("*, rbt_fellowship_stages(name,category)").eq("employee_id", eid).maybeSingle(),
     ]);
     setStages(((stagesRes.data as any[]) ?? []) as CareerStage[]);
     setRequirements(((reqsRes.data as any[]) ?? []) as Requirement[]);
     setEvaluations(((evalsRes.data as any[]) ?? []) as Evaluation[]);
     setInterests((interestsRes.data as any) ?? {
-      employee_id: user.id, primary_interest: null, secondary_interests: [],
+      employee_id: eid, primary_interest: null, secondary_interests: [],
       mentor_requested: false, mentor_request_notes: null,
       open_to_internal_opportunities: false, notes: null,
     });
@@ -87,18 +88,18 @@ export function useGrowth() {
     setDevPlan(devplanRes.data ?? null);
     setFellowshipParticipant(participantRes.data ?? null);
     setLoading(false);
-  }, [user?.id]);
+  }, [eid]);
 
   useEffect(() => { void load(); }, [load]);
 
   const saveInterests = async (patch: Partial<CareerInterests>) => {
-    if (!user) return;
-    const next = { ...(interests ?? { employee_id: user.id } as any), ...patch, employee_id: user.id, updated_by: user.id };
+    if (!writableEmployeeId) return { error: { message: "Preview mode — read-only" } as any };
+    const next = { ...(interests ?? { employee_id: writableEmployeeId } as any), ...patch, employee_id: writableEmployeeId, updated_by: authUserId };
     const { error } = await supabase.from("rbt_career_interests" as any).upsert(next as any);
     if (!error) {
       setInterests(next as CareerInterests);
       await supabase.from("rbt_growth_audit" as any).insert({
-        employee_id: user.id, actor_id: user.id, event_type: "career_interests.updated",
+        employee_id: writableEmployeeId, actor_id: authUserId, event_type: "career_interests.updated",
         entity_table: "rbt_career_interests", payload: patch,
       } as any);
     }
@@ -108,6 +109,7 @@ export function useGrowth() {
   return {
     loading, stages, currentStageKey, requirements, evaluations,
     interests, devPlan, fellowshipParticipant, saveInterests, reload: load,
+    employeeId: eid, writableEmployeeId,
   };
 }
 
