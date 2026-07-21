@@ -29,6 +29,10 @@ const EXCLUDED = new Set([
   "src/lib/rbac.test.ts",
   // navigationAccess uses bare paths internally for route gating (not as links).
   "src/lib/navigationAccess.ts",
+  // OSShell holds STAGED_ROLE_LIVE_PATHS allow-lists — bare paths used for
+  // permission gating, not as link destinations. Redirects handle real
+  // navigation to canonical URLs.
+  "src/pages/os/OSShell.tsx",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
