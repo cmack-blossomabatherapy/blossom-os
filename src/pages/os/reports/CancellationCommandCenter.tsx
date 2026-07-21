@@ -994,11 +994,11 @@ export default function CancellationCommandCenter() {
 
         {/* hidden file inputs */}
         <input ref={scheduleInput} type="file" accept={SUPPORTED_EXTENSIONS} className="hidden"
-          onChange={(e) => handleSchedule(e.target.files)} />
+          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-scheduling": "manual-override" })); handleSchedule(e.target.files); }} />
         <input ref={billingInput} type="file" accept={SUPPORTED_EXTENSIONS} className="hidden"
-          onChange={(e) => handleBilling(e.target.files)} />
+          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-billing": "manual-override" })); handleBilling(e.target.files); }} />
         <input ref={authInput} type="file" accept={SUPPORTED_EXTENSIONS} multiple className="hidden"
-          onChange={(e) => handleAuths(e.target.files)} />
+          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-authorization": "manual-override" })); handleAuths(e.target.files); }} />
 
         <CentralReachRequirementsCard
           exportName="Three CentralReach exports — Scheduling (required), Billing, Authorizations"
