@@ -25346,6 +25346,47 @@ export type Database = {
           },
         ]
       }
+      recruiting_pathway_data_quality: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          detail: string | null
+          employee_id: string | null
+          id: string
+          kind: string
+          resolved_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          detail?: string | null
+          employee_id?: string | null
+          id?: string
+          kind: string
+          resolved_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          detail?: string | null
+          employee_id?: string | null
+          id?: string
+          kind?: string
+          resolved_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_pathway_data_quality_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recruiting_staffing_needs: {
         Row: {
           client_label: string
@@ -31070,6 +31111,7 @@ export type Database = {
         }
         Returns: string
       }
+      ensure_my_rbt_pathway_assignment: { Args: never; Returns: string }
       eval_can_access: { Args: { _user_id: string }; Returns: boolean }
       eval_is_qa: { Args: { _user_id: string }; Returns: boolean }
       evaluate_hr_admin_assistant_graduation: {
