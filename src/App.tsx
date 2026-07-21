@@ -959,7 +959,17 @@ const App = () => (
                   <Route path="/training/academy-admin" element={<PermissionRoute allowedRoles={["admin","super_admin","training_admin","hr","hr_admin","operations_leadership"]}><TrainingAcademyAdminPage /></PermissionRoute>} />
                   <Route path="/training/rbt-academy" element={<Navigate to="/training/academy-admin" replace />} />
                   <Route path="/rbt/clients" element={<RbtLegacyRoute appPath="clients"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTClients /></PermissionRoute></RbtLegacyRoute>} />
-                  <Route path="/rbt/schedule" element={<RbtLegacyRoute appPath="schedule"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","scheduling","scheduling_lead"]}><OSRBTSchedule /></PermissionRoute></RbtLegacyRoute>} />
+                  <Route
+                    element={
+                      <RbtLegacyRoute appPath="schedule">
+                        <PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","scheduling","scheduling_lead"]}>
+                          <Outlet />
+                        </PermissionRoute>
+                      </RbtLegacyRoute>
+                    }
+                  >
+                    <Route path="/rbt/schedule" element={<OSRBTSchedule />} />
+                  </Route>
                   <Route path="/rbt/session-support" element={<RbtLegacyRoute appPath="support"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTSessionSupport /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/supervision" element={<RbtLegacyRoute appPath="supervision"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","qa","qa_lead"]}><OSRBTSupervision /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/messages" element={<RbtLegacyRoute appPath="support"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","hr","hr_admin"]}><OSRBTMessages /></PermissionRoute></RbtLegacyRoute>} />
