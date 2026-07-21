@@ -44,6 +44,12 @@ export interface CommunicationResult {
   needsConfiguration?: boolean;
   /** Which admin integration to set up to fix this. */
   configHint?: string;
+  /**
+   * True when the action was blocked because Intake is in INGEST_ONLY mode.
+   * UI should render this as a neutral "preview only" state rather than an
+   * error or missing-config warning.
+   */
+  previewOnly?: boolean;
 }
 
 export type EmailTemplateKey =
