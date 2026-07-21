@@ -41,7 +41,7 @@ describe("BCBA identity — mapping diagnostic selector", () => {
         identityReady: true,
         mappingMissing: false,
         needsVerification: false,
-        identitySource: "auth_user",
+        identitySource: "centralreach_id",
       }),
     ).toBeNull();
   });
