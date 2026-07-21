@@ -64,7 +64,7 @@ export default function IntakePromotionReviewQueues() {
       const { data, error } = await supabase
         .from("intake_promotion_state")
         .select("id,normalized_record_id,state,reason,candidate_lead_ids,lead_id,created_at,updated_at")
-        .eq("state", tab)
+        .eq("state", tab as Exclude<QueueId, "ctm_unmatched">)
         .order("updated_at", { ascending: false })
         .limit(500);
       if (error) throw error;
