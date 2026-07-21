@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import {
   UploadCloud, Users, Stethoscope, LayoutDashboard, ShieldCheck,
-  History, Gauge, FileSpreadsheet, AlertTriangle, ExternalLink,
+  History, Gauge, FileSpreadsheet, AlertTriangle, ExternalLink, Link2,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import CentralReachUploads from "./CentralReachUploads";
 import CrSyncCenter from "@/pages/admin/CrSyncCenter";
+import { fetchCrMappingDiagnostics, reconcileEmployeeCentralreachIds, type CrMappingDiagnosticRow } from "@/lib/os/clinicianIdentity";
+import { toast } from "@/hooks/use-toast";
 
 type HubTab =
   | "overview"
@@ -19,6 +21,7 @@ type HubTab =
   | "history"
   | "freshness"
   | "data-quality"
+  | "identity"
   | "audit";
 
 const TABS: { key: HubTab; label: string; icon: any; help: string }[] = [
@@ -28,6 +31,7 @@ const TABS: { key: HubTab; label: string; icon: any; help: string }[] = [
   { key: "history",             label: "Import History",       icon: History,         help: "Every upload from every path in one list." },
   { key: "freshness",           label: "Freshness",            icon: Gauge,           help: "Configurable staleness thresholds per import type." },
   { key: "data-quality",        label: "Data Quality",         icon: AlertTriangle,   help: "Unknown clients, orphan appointments, mismatches — triage queue." },
+  { key: "identity",            label: "Clinician Identity",   icon: Link2,           help: "Reconcile employees to CentralReach provider IDs — the source of truth for RBT/BCBA scoping." },
   { key: "audit",               label: "Audit Log",            icon: ShieldCheck,     help: "Append-only audit of every commit / rollback / config change." },
 ];
 
@@ -85,6 +89,7 @@ export default function CentralReachHub() {
         {tab === "history"            && <UnifiedHistoryTab />}
         {tab === "freshness"          && <FreshnessTab />}
         {tab === "data-quality"       && <DataQualityTab />}
+        {tab === "identity"           && <IdentityTab />}
         {tab === "audit"              && <AuditTab />}
       </div>
     </OSShell>
