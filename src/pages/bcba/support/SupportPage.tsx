@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,13 +12,18 @@ import {
 import { useMySupportRequests, useSupportContacts } from "./useSupport";
 import NewSupportRequestDialog from "./NewSupportRequestDialog";
 import SupportRequestDrawer from "./SupportRequestDrawer";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 
 function fmt(d?: string | null) { if (!d) return "—"; try { return new Date(d).toLocaleDateString(); } catch { return "—"; } }
 
 export default function SupportPage() {
   const [params, setParams] = useSearchParams();
-  const [uid, setUid] = useState<string | null>(null);
-  const [uname, setUname] = useState<string | undefined>();
+  const identity = useBcbaIdentity();
+  const uid = identity.scopedAuthUserId;
+  const uname = identity.displayName ?? undefined;
+  const readOnly = identity.readOnly;
   const [dlgOpen, setDlgOpen] = useState(false);
   const [initialCat, setInitialCat] = useState<SupportCategoryKey | undefined>();
   const selectedId = params.get("id");
@@ -28,14 +32,6 @@ export default function SupportPage() {
     if (id) n.set("id", id); else n.delete("id");
     setParams(n, { replace: true });
   };
-
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUid(user?.id ?? null);
-      setUname(user?.user_metadata?.full_name ?? user?.email ?? undefined);
-    })();
-  }, []);
 
   const requests = useMySupportRequests(uid);
   const contacts = useSupportContacts();
@@ -58,6 +54,7 @@ export default function SupportPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6">
+      <BcbaPreviewBanner />
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Support</h1>
@@ -65,10 +62,16 @@ export default function SupportPage() {
             Send a request to the right team without knowing the org chart. Every request has an owner, status, due date, and audit history.
           </p>
         </div>
-        <Button onClick={() => { setInitialCat(undefined); setDlgOpen(true); }}>
+        <Button
+          disabled={readOnly}
+          title={readOnly ? "Read-only in preview mode" : undefined}
+          onClick={() => { setInitialCat(undefined); setDlgOpen(true); }}
+        >
           <Plus className="h-4 w-4 mr-1.5" /> New request
         </Button>
       </div>
+
+      <div className="mb-4"><BcbaMappingDiagnostic onRetry={() => { requests.refetch(); }} /></div>
 
       <Tabs defaultValue="new">
         <TabsList>
@@ -86,8 +89,10 @@ export default function SupportPage() {
               return (
                 <button
                   key={c.key}
-                  onClick={() => { setInitialCat(c.key); setDlgOpen(true); }}
-                  className="text-left rounded-xl border bg-card hover:shadow-sm hover:border-primary/40 transition p-4"
+                  disabled={readOnly}
+                  onClick={() => { if (readOnly) return; setInitialCat(c.key); setDlgOpen(true); }}
+                  className="text-left rounded-xl border bg-card hover:shadow-sm hover:border-primary/40 transition p-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={readOnly ? "Read-only in preview mode" : undefined}
                 >
                   <div className="flex items-start gap-3">
                     <div className="rounded-lg bg-primary/10 text-primary p-2"><Icon className="h-4 w-4" /></div>
