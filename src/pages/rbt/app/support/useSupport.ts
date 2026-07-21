@@ -88,16 +88,44 @@ export function useTicket(ticketId: string | undefined) {
 }
 
 export function useSupportContacts() {
-  const { employeeId } = useRbtIdentity();
+export function useSupportContacts() {
+  const { employeeId, loading: idLoading } = useRbtIdentity();
   const [contacts, setContacts] = useState<SupportContact[] | null>(null);
-  useEffect(() => {
-    if (!employeeId) return;
-    supabase.from("rbt_support_team_contacts" as any)
-      .select("*").eq("active", true)
-      .then(({ data }) => setContacts((data as any) ?? []));
-  }, [employeeId]);
-  return { contacts };
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (idLoading) return;
+    if (!employeeId) { setContacts([]); return; }
+    setError(null);
+    const { data, error } = await supabase.from("rbt_support_team_contacts" as any)
+      .select("*").eq("active", true);
+    if (error) { setError(error.message); setContacts([]); return; }
+    setContacts((data as any) ?? []);
+  }, [employeeId, idLoading]);
+
+  useEffect(() => { void load(); }, [load]);
+  return { contacts, error, reload: load, loading: contacts === null && !error };
 }
+
+/** Deterministic contact picker: employee-scope > state-scope > default. */
+export function pickContactForRole(contacts: SupportContact[] | null, roleKey: string): SupportContact | null {
+  const pool = (contacts ?? []).filter((c) => c.role_key === roleKey);
+  return (
+    pool.find((c) => c.scope === "employee") ??
+    pool.find((c) => c.scope === "state") ??
+    pool.find((c) => c.scope === "default") ??
+    null
+  );
+}
+
+/** Category key each role's fallback "ask an owner" support request should target. */
+export const ROLE_FALLBACK_CATEGORY: Record<string, string> = {
+  bcba: "clinical_question",
+  rbt_support: "employee_help",
+  scheduling: "scheduling",
+  training: "training",
+  state_clinic: "state_operations",
+};
 
 export async function submitTicket(input: {
   employeeId: string;
