@@ -180,6 +180,9 @@ function todayISODate() {
 
 export function useRbtWorkflow(): UseRbtWorkflowResult {
   const { user } = useAuth();
+  const osRole = useOSRoleSafe();
+  const previewSubjectId = osRole?.previewSubjectEmployeeId ?? null;
+  const isPreviewing = Boolean(osRole?.isPreviewing);
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [clients, setClients] = useState<RbtClientAssignment[]>([]);
   const [sessions, setSessions] = useState<RbtSession[]>([]);
@@ -200,12 +203,17 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
         setMessages([]); setHelpRequests([]); setSupportLogs([]);
         return;
       }
-      const { data: emp } = await supabase
-        .from("employees")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const eid = (emp?.id as string | undefined) ?? null;
+      let eid: string | null = null;
+      if (previewSubjectId) {
+        eid = previewSubjectId;
+      } else {
+        const { data: emp } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        eid = (emp?.id as string | undefined) ?? null;
+      }
       setEmployeeId(eid);
       if (!eid) {
         setClients([]); setSessions([]); setSupervision([]);
@@ -239,7 +247,7 @@ export function useRbtWorkflow(): UseRbtWorkflowResult {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, previewSubjectId]);
 
   useEffect(() => { void loadAll(); }, [loadAll]);
 
