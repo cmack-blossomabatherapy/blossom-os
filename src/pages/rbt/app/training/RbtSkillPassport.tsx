@@ -60,11 +60,14 @@ export default function RbtSkillPassport() {
 
   if (!employeeId) {
     return (
-      <section className="rounded-3xl border border-destructive/40 bg-destructive/5 p-6 text-center">
-        <p className="text-sm font-semibold">We couldn't find your clinician profile</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Ask an admin to link your login to your employee record from the CentralReach Data Hub.
+      <section className="rounded-3xl border border-border/70 bg-card p-6 text-center space-y-2">
+        <p className="text-sm font-semibold">Your Skill Passport is getting set up</p>
+        <p className="text-xs text-muted-foreground">
+          We're finalizing your profile. This usually only takes a moment — check back shortly, or reach out to your BCBA if you'd like a hand.
         </p>
+        <a href="/rbt/app/support" className="inline-block text-xs font-medium text-primary underline underline-offset-4">
+          Contact support
+        </a>
       </section>
     );
   }

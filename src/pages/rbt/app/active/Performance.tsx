@@ -44,8 +44,8 @@ export default function Performance() {
 
       {canon && (
         <CardFrame
-          title="Delivered activity — from CentralReach billing"
-          subtitle={`${canon.firstServiceDate ?? "?"} → ${canon.lastServiceDate ?? "?"} · ${canon.rowCount.toLocaleString()} rows · ${canon.distinctClients} clients`}
+          title="Delivered activity"
+          subtitle={`${canon.firstServiceDate ?? "?"} → ${canon.lastServiceDate ?? "?"} · ${canon.distinctClients} clients`}
           state="success"
         >
           <div className="grid grid-cols-2 gap-3">
@@ -55,9 +55,7 @@ export default function Performance() {
             <PerfStat label="Cancelled hours" value={canon.cancellationHours} tone="muted" />
           </div>
           <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
-            Attendance % and productivity-target % aren't available from the CentralReach billing
-            export — it doesn't carry a scheduled-session denominator. Ask your BCBA for the
-            productivity view when needed.
+            Ask your BCBA if you'd like to see your productivity-target and attendance view.
           </p>
         </CardFrame>
       )}

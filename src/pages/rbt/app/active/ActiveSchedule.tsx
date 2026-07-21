@@ -4,7 +4,6 @@ import { useRbtIdentity } from "../useRbtIdentity";
 import { CardFrame } from "../CardFrame";
 import { crSessionUrl } from "./cr";
 import { ExternalLink, Flag } from "lucide-react";
-import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 
 type Tab = "today" | "week" | "upcoming";
 type StatusFilter = "all" | "active" | "cancelled";
@@ -154,17 +153,9 @@ export default function ActiveSchedule() {
       </CardFrame>
 
       {employeeId && rows !== null && rows.length === 0 && (
-        <>
-          <div className="rounded-xl bg-muted text-muted-foreground text-xs p-3">
-            No sessions are shown for this period. Below is your recent delivered service history.
-          </div>
-          <CanonicalSessionsCard
-            title="Recent delivered service history"
-            scope={{ employeeId }}
-            highlightKinds={["direct", "supervision"]}
-            showClients
-          />
-        </>
+        <div className="rounded-xl bg-muted text-muted-foreground text-xs p-3">
+          Nothing on your schedule for this range. If you were expecting a session, reach out to Scheduling.
+        </div>
       )}
     </div>
   );
@@ -200,7 +191,6 @@ function SessionDetail({ row }: { row: any; onReport: () => void }) {
         <Detail label="Location" value={row.location_type ?? "—"} />
         <Detail label="BCBA" value={row.bcba_first_name ? `${row.bcba_first_name} ${row.bcba_last_initial ?? ""}` : "—"} />
         <Detail label="Status" value={row.status ?? "—"} />
-        <Detail label="Source" value={row.source ?? "centralreach"} />
       </div>
 
       <div className="flex items-center gap-2 pt-1">
@@ -226,7 +216,7 @@ function SessionDetail({ row }: { row: any; onReport: () => void }) {
             <option value="other">Other</option>
           </select>
           <textarea value={text} onChange={(e) => setText(e.target.value)}
-            rows={3} placeholder="What's off? (This does not change CentralReach.)"
+            rows={3} placeholder="What's off? Share as much detail as you'd like."
             className="w-full rounded-xl bg-card border border-border p-3 text-sm" />
           {err && <p className="text-xs text-destructive">{err}</p>}
           {sent && <p className="text-xs text-primary">Thanks — the ops team will review.</p>}

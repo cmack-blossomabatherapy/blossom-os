@@ -85,7 +85,7 @@ export default function Hours() {
   return (
     <div className="space-y-3">
       <CardFrame
-        title={usingCanonical ? "Month to date · from CentralReach billing" : "Current pay period"}
+        title={usingCanonical ? "Month to date" : "Current pay period"}
         subtitle={activeSnap ? `${activeSnap.period_start} → ${activeSnap.period_end}` : undefined}
         state={snap === undefined ? "loading" : activeSnap === null ? "empty" : "success"}
         emptyLabel="No hours have been imported yet."
@@ -97,7 +97,7 @@ export default function Hours() {
                 label="Scheduled"
                 value={activeSnap.scheduled_hours}
                 unavailable={usingCanonical}
-                unavailableHint="Not in CentralReach billing export"
+                unavailableHint="Not available yet"
               />
               <Stat label="Completed" value={activeSnap.completed_hours} />
               <Stat label="Cancelled" value={activeSnap.cancelled_hours} tone="muted" />
@@ -113,9 +113,7 @@ export default function Hours() {
             </div>
             {usingCanonical && (
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Source: v_cr_canonical_sessions · {canonicalSnap!.rowCount.toLocaleString()} rows ·
-                {" "}{canonicalSnap!.distinctClients} client{canonicalSnap!.distinctClients === 1 ? "" : "s"}.
-                Pay-period boundaries and scheduled hours aren't carried in the billing export.
+                Scheduled hours will appear here once your schedule is finalized. If something looks off, submit a report below.
               </p>
             )}
           </>
