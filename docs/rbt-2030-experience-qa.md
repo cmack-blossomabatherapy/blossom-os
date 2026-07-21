@@ -140,3 +140,73 @@ See "Verification" below.
 ## Slice 4 — Walkthrough persistence + 2030 polish (pending)
 
 ## Slice 5 — Full QA sweep + manual test matrix (pending)
+---
+
+## Slice 4A — First-login walkthrough (shipped 2026-07-21)
+
+### Scope
+Warm, versioned first-login tour that introduces every RBT surface:
+Home, My Program, Learn, Schedule, Skill Passport, Support, Me, and the
+BCBA Fellowship path. Replay controls on Home, Learn, and Me.
+
+### Files added
+- `src/lib/rbt/walkthrough.ts` — pure module. `TOUR_VERSION=1`,
+  `TOUR_STEPS` deck (9 warm-toned steps), per-user localStorage
+  persistence, `shouldAutoOpen`, `useReducedMotion`, and the
+  `useRbtWalkthroughController` state machine (open/index/next/prev/
+  goTo/finish/dismiss/start).
+- `src/pages/rbt/app/useRbtWalkthrough.ts` — `RbtWalkthroughContext`
+  and consumer hook used by replay buttons.
+- `src/pages/rbt/app/RbtWalkthrough.tsx` — Radix Dialog UI with
+  ARIA progressbar, step dots (jump targets), Skip/Back/Next/Finish,
+  Arrow-key navigation, auto-focus on the primary action, reduced-
+  motion suppression of transitions.
+
+### Files edited
+- `src/pages/rbt/app/shell.tsx` — mounts `RbtWalkthroughProvider`
+  under the OSShell so every RBT route gets the tour.
+- `src/pages/rbt/app/pages.tsx` — replay buttons on Home, Learn, Me.
+
+### Persistence & preview isolation
+- Key: `rbt.walkthrough.v1:<userId>` in `localStorage` — real users only.
+- Completion payload: `{ version, completedAt }`.
+- `canPersist = Boolean(userId) && !previewActive`. `previewActive`
+  = Experience Lab active **or** OSRole preview-as active. When
+  either is true the tour never auto-opens and Finish/Dismiss are
+  visual-only — no `localStorage` write.
+- Bumping `TOUR_VERSION` re-opens the tour for everyone at next login.
+- Skip and Escape write the same completion record as Finish — users
+  who intentionally dismiss the tour are not re-nagged.
+
+### Accessibility
+- Radix Dialog: focus trap, Escape-to-close, body-scroll lock, focus
+  return to the invoking button.
+- `role="progressbar"` with `aria-valuenow/valuemin/valuemax` and
+  `aria-current="step"` on the active dot.
+- Every icon is `aria-hidden`; every interactive control has a name.
+- Arrow keys navigate; Enter activates the focused button.
+- `prefers-reduced-motion: reduce` disables Dialog transitions and
+  progress-bar tweening; `data-reduced-motion="true"` is exposed on
+  the DialogContent for verification.
+
+### Tests
+- `src/test/rbtWalkthroughSlice4a.test.tsx` — 19 controller/logic
+  tests: storage key isolation, read/write/clear, version bump auto-
+  reopen, first-login open, finish/dismiss persistence, replay start,
+  next/prev/goTo bounds, preview-active blocking of both auto-open
+  and persistence, anonymous user, reduced-motion, and the tour deck
+  covering every required route.
+- `src/test/rbtWalkthroughDialog.test.tsx` — 5 component tests:
+  first-login render, ArrowRight/ArrowLeft navigation, focus on the
+  Next button, reduced-motion attribute, Skip persists completion.
+
+### Verification
+- `bunx vitest run` (10 scoped RBT suites): **860 tests passed**, 6.73s.
+- `bun run build`: ✓ 49.19s.
+
+### Not in scope for 4A (deferred to later slices)
+- Home cockpit redesign (Slice 4B).
+- Removal of placeholder / decorative / test-data copy (Slice 4C).
+- Coherent premium polish pass across Home / Learn / My Program /
+  Welcome / Passport (Slice 4D).
+- Full QA matrix and manual regression checklist (Slice 5).
