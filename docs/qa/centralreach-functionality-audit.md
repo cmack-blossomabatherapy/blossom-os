@@ -22,6 +22,14 @@ across Clinical, RBT, BCBA, and Reports.
 | `bcba_billable_imports` | **0** | — | Legacy. |
 | `cr_sync_runs` / `cr_external_records` | 0 / 0 | — | New CR Sync engine not yet emitting; `cr_sync_freshness` returns empty. |
 | `clients` (public) | **0** | — | No CR-derived clients promoted into `public.clients`. Client-list surfaces cannot query this table for real data today. |
+
+> **Phase 1a P0-1 status (2026-07-21):** `public.clients` now contains **879**
+> rows keyed on `centralreach_id`, promoted from `v_cr_canonical_sessions` via
+> the new admin-only `promote_canonical_clients()` RPC. The idempotent
+> `resolve_client_by_cr_id(text)` RPC and the front-end
+> `canonicalClientResolver` module let any Clinical/BCBA/RBT surface translate
+> a CentralReach id into the internal client UUID. A new `/clients/cr/:crId`
+> alias route forwards CR-only deep links to the canonical detail page.
 | `employees` | 366 | current | 31 linked to `auth.users` (`user_id`); **0 with `centralreach_id`**. |
 
 ### `v_cr_canonical_sessions` breakdown
