@@ -250,8 +250,9 @@ import RbtFellowshipExplorer from "./pages/rbt/app/growth/RbtFellowshipExplorer"
 import BcbaShell from "./pages/bcba/BcbaShell";
 import {
   BcbaHome, BcbaCaseload, BcbaMyRbts, BcbaClinicalWork,
-  BcbaLearn, BcbaSupport, BcbaMe,
+  BcbaLearn, BcbaSupport,
 } from "./pages/bcba/pages";
+import BcbaMe from "./pages/bcba/me/BcbaMePage";
 import BcbaOnboardingPage from "./pages/bcba/onboarding/BcbaOnboardingPage";
 import BcbaOnboardingConsole from "./pages/admin/BcbaOnboardingConsole";
 import BcbaSupervisionCenter from "./pages/bcba/supervision/SupervisionCenterPage";
