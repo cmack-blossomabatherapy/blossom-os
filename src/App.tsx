@@ -26,6 +26,7 @@ import BDTerritories from "./pages/os/mapsly/BDTerritories";
 import RecruitingMap from "./pages/os/mapsly/RecruitingMap";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
+import ClientDetailRouter from "./pages/ClientDetailRouter";
 import CrClientRedirect from "./pages/CrClientRedirect";
 import Pipeline from "./pages/Pipeline";
 import Authorizations from "./pages/Authorizations";
@@ -986,6 +987,7 @@ const App = () => (
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<ClientsRouter />} />
                   <Route path="/clients/cr/:crId" element={<CrClientRedirect />} />
+                  <Route path="/clients/:id" element={<ClientDetailRouter />} />
                   <Route path="/intake/clients" element={<OSIntakeClients />} />
                   <Route path="/intake/leads" element={<Navigate to="/leads" replace />} />
                   <Route path="/intake/vob-decision" element={<Navigate to="/vob-decision-center" replace />} />
