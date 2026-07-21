@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { canAcknowledge, isCoursePublished } from "../training/RbtCourseDetail";
+import { pickContactForRole, ROLE_FALLBACK_CATEGORY } from "../support/useSupport";
 
 // Mirrors src/pages/rbt/app/active/ActiveSchedule.tsx status filter logic.
 function matchesFilter(row: { status?: string | null }, f: "all" | "active" | "cancelled"): boolean {
@@ -36,6 +37,58 @@ describe("ActiveSchedule status filter", () => {
     expect(rows.filter((r) => matchesFilter(r, "cancelled")).map((r) => r.status))
       .toEqual(["cancelled", "cancelled_late"]);
   });
+});
+
+describe("Support contact resolution (pickContactForRole)", () => {
+  const contacts = [
+    { role_key: "bcba", scope: "default", contact_name: "Fallback BCBA" },
+    { role_key: "bcba", scope: "state", contact_name: "GA BCBA" },
+    { role_key: "bcba", scope: "employee", contact_name: "Assigned BCBA" },
+    { role_key: "scheduling", scope: "state", contact_name: "GA Scheduling" },
+  ] as any[];
+
+  it("prefers employee scope over state and default", () => {
+    expect(pickContactForRole(contacts, "bcba")?.contact_name).toBe("Assigned BCBA");
+  });
+
+  it("falls back to state when no employee-scope contact exists", () => {
+    expect(pickContactForRole(contacts, "scheduling")?.contact_name).toBe("GA Scheduling");
+  });
+
+  it("returns null when there is no contact and null-safe on empty inputs", () => {
+    expect(pickContactForRole(contacts, "training")).toBeNull();
+    expect(pickContactForRole(null, "bcba")).toBeNull();
+  });
+
+  it("exposes an actionable fallback category for every menu role", () => {
+    ["bcba", "rbt_support", "scheduling", "training", "state_clinic"].forEach((k) => {
+      expect(ROLE_FALLBACK_CATEGORY[k]).toBeTruthy();
+    });
+  });
+});
+
+describe("Notification preferences empty-state gating", () => {
+  // Mirrors NotificationPreferences.tsx: only show the toggles when rules exist and
+  // the load succeeded. Anything else must render the empty/error surface.
+  function shouldRenderToggles(status: "loading" | "ready" | "error", ruleCount: number): boolean {
+    return status === "ready" && ruleCount > 0;
+  }
+  it("hides toggles while loading", () => expect(shouldRenderToggles("loading", 10)).toBe(false));
+  it("hides toggles on error", () => expect(shouldRenderToggles("error", 10)).toBe(false));
+  it("hides toggles when no rules are published", () => expect(shouldRenderToggles("ready", 0)).toBe(false));
+  it("shows toggles when ready with rules", () => expect(shouldRenderToggles("ready", 3)).toBe(true));
+});
+
+describe("Preview-mode write gating", () => {
+  // Mirrors the writableEmployeeId contract from useRbtIdentity: mutations must be
+  // blocked whenever the current session is an admin previewing another employee.
+  function canWrite(isPreviewing: boolean, employeeId: string | null): boolean {
+    if (!employeeId) return false;
+    return !isPreviewing;
+  }
+  it("blocks writes in preview mode", () => expect(canWrite(true, "emp-1")).toBe(false));
+  it("allows writes for the signed-in owner", () => expect(canWrite(false, "emp-1")).toBe(true));
+  it("blocks writes without an employee id", () => expect(canWrite(false, null)).toBe(false));
 });
 
 describe("RbtLearn course publish gate", () => {
