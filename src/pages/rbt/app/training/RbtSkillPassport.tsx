@@ -21,15 +21,21 @@ export default function RbtSkillPassport() {
   const [defs, setDefs] = useState<Def[] | null>(null);
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [evals, setEvals] = useState<Evaluation[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [category, setCategory] = useState<string>("all");
   const [selected, setSelected] = useState<Def | null>(null);
 
   async function load() {
-    if (!employeeId) return;
+    if (!employeeId) { setDefs([]); return; }
+    setLoadError(null);
     const [d, s, e] = await Promise.all([
       supabase.from("rbt_skill_definitions" as any).select("*").eq("is_active", true).order("sort_order"),
       supabase.from("rbt_skill_status" as any).select("*").eq("employee_id", employeeId),
       supabase.from("rbt_skill_evaluations" as any).select("*").eq("employee_id", employeeId).order("evaluated_at", { ascending: false }),
     ]);
+    if (d.error || s.error || e.error) {
+      setLoadError(d.error?.message || s.error?.message || e.error?.message || "Failed to load");
+    }
     setDefs(((d.data as any[]) ?? []) as Def[]);
     const map: Record<string, Status> = {};
     ((s.data as any[]) ?? []).forEach((r: any) => { map[r.skill_key] = r; });
@@ -38,15 +44,54 @@ export default function RbtSkillPassport() {
   }
   useEffect(() => { if (!idLoading) void load(); }, [employeeId, idLoading]);
 
+  const categories = useMemo(
+    () => Array.from(new Set((defs ?? []).map((d) => d.category))),
+    [defs],
+  );
   const grouped = useMemo(() => {
     const g = new Map<string, Def[]>();
-    (defs ?? []).forEach((d) => { g.set(d.category, [...(g.get(d.category) ?? []), d]); });
+    (defs ?? [])
+      .filter((d) => category === "all" || d.category === category)
+      .forEach((d) => { g.set(d.category, [...(g.get(d.category) ?? []), d]); });
     return Array.from(g.entries());
-  }, [defs]);
+  }, [defs, category]);
 
-  if (defs === null) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
+  if (idLoading || defs === null) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
+
+  if (!employeeId) {
+    return (
+      <section className="rounded-3xl border border-destructive/40 bg-destructive/5 p-6 text-center">
+        <p className="text-sm font-semibold">We couldn't find your clinician profile</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Ask an admin to link your login to your employee record from the CentralReach Data Hub.
+        </p>
+      </section>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <section className="rounded-3xl border border-destructive/40 bg-destructive/5 p-6 text-center space-y-2">
+        <p className="text-sm font-semibold">Couldn't load your Skill Passport</p>
+        <p className="text-xs text-muted-foreground">{loadError}</p>
+        <button onClick={() => void load()} className="text-xs underline underline-offset-4">Try again</button>
+      </section>
+    );
+  }
+
+  if (defs.length === 0) {
+    return (
+      <section className="rounded-3xl border border-border/70 bg-card p-6 text-center">
+        <p className="text-sm font-semibold">No skill definitions yet</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Your Skill Passport activates once your trainer publishes the competency library.
+        </p>
+      </section>
+    );
+  }
 
   const totalCompetent = Object.values(status).filter((s) => s.state === "competent").length;
+  const unackTotal = evals.filter((e) => !e.employee_acknowledged_at).length;
 
   return (
     <div className="space-y-5">
@@ -58,7 +103,28 @@ export default function RbtSkillPassport() {
         <p className="mt-1 text-sm text-muted-foreground">
           Only evaluators can change a skill state. Tap a skill to see your history and acknowledge feedback.
         </p>
+        {unackTotal > 0 && (
+          <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+            {unackTotal} evaluation{unackTotal === 1 ? "" : "s"} awaiting your acknowledgment.
+          </p>
+        )}
+        {isPreviewing && (
+          <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+            Preview mode — you can view history but cannot acknowledge on someone else's behalf.
+          </p>
+        )}
       </section>
+
+      {categories.length > 1 && (
+        <div className="flex gap-1 overflow-x-auto -mx-1 px-1 pb-1">
+          {["all", ...categories].map((c) => (
+            <button key={c} onClick={() => setCategory(c)}
+              className={`shrink-0 rounded-full px-3 h-7 text-xs capitalize transition ${category === c ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              {c.replace(/_/g, " ")}
+            </button>
+          ))}
+        </div>
+      )}
 
       {grouped.map(([category, list]) => (
         <section key={category}>
