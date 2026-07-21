@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { ShieldCheck, FileText, Heart, MapPin, ClipboardList } from "lucide-react";
+import { useRbtIdentity } from "../useRbtIdentity";
 
 const ICONS: Record<string, any> = {
   rbt_cert: ShieldCheck,
@@ -29,17 +29,18 @@ function StatusPill({ status, expires }: { status: string; expires?: string | nu
 }
 
 export default function Credentials() {
-  const { user } = useAuth();
+  const { employeeId, loading: idLoading } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (idLoading) return;
+    if (!employeeId) { setRows([]); return; }
     supabase.from("rbt_credentials" as any)
       .select("id,credential_type,label,identifier,status,issued_on,expires_on,state_code,notes,last_verified_at")
-      .eq("employee_id", user.id)
+      .eq("employee_id", employeeId)
       .order("expires_on", { ascending: true, nullsFirst: false })
       .then(({ data }) => setRows((data as any[]) ?? []));
-  }, [user?.id]);
+  }, [employeeId, idLoading]);
 
   const state = rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
   const groups = ["rbt_cert", "cpr_first_aid", "background_check", "state_requirement", "document"];
