@@ -11,7 +11,7 @@ export default function MyClients() {
   const { employeeId, loading: idLoading } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
   const [alerts, setAlerts] = useState<Record<string, any[]>>({});
-  const [sourceLabel, setSourceLabel] = useState<"role" | "canonical" | null>(null);
+  const [derived, setDerived] = useState<boolean>(false);
 
   useEffect(() => {
     if (idLoading) return;
@@ -25,12 +25,12 @@ export default function MyClients() {
         const roleRows = (data as any[]) ?? [];
         if (roleRows.length > 0) {
           setRows(roleRows);
-          setSourceLabel("role");
+          setDerived(false);
           return;
         }
-        // Canonical fallback — derive distinct clients this RBT served from
-        // v_cr_canonical_sessions. Scheduled fields are declared unavailable
-        // rather than fabricated.
+        // Fallback: derive distinct clients this RBT has served from
+        // delivered service history so the page isn't empty for tenured
+        // RBTs while their assignment table catches up.
         const canon = await deriveMyClientsFromCanonical({ employeeId });
         setRows(
           canon.map((c) => ({
@@ -39,16 +39,16 @@ export default function MyClients() {
             client_name: c.clientName,
             clinic: null,
             assigned_bcba_id: null,
-            schedule_summary: null, // unavailable_from_canonical
+            schedule_summary: null,
             centralreach_client_id: c.crClientId,
             centralreach_last_synced_at: c.lastServiceDate,
             status: "active",
-            __canonical: true,
+            __derived: true,
             __hours: c.totalHours,
             __rowCount: c.rowCount,
           })),
         );
-        setSourceLabel(canon.length > 0 ? "canonical" : null);
+        setDerived(canon.length > 0);
       });
 
     // operational alerts scoped to this RBT's clients
@@ -72,9 +72,9 @@ export default function MyClients() {
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground px-1">
         Showing only your active assigned clients. Full clinical information stays in CentralReach.
-        {sourceLabel === "canonical" && (
-          <span className="ml-1 text-amber-700 dark:text-amber-400">
-            Derived from CentralReach billing export — weekly schedule &amp; BCBA assignment aren&apos;t in this export.
+        {derived && (
+          <span className="ml-1 text-muted-foreground">
+            Based on your recent service history — a couple of details may still be filling in.
           </span>
         )}
       </p>
@@ -89,7 +89,7 @@ export default function MyClients() {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{c.client_name ?? "Client"}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {c.clinic ?? (c.__canonical ? "Location not in export" : "Location TBD")}
+                      {c.clinic ?? "Location TBD"}
                     </p>
                   </div>
                   <FreshnessPill f={fresh} />
@@ -98,16 +98,16 @@ export default function MyClients() {
                   <div>
                     <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">BCBA</dt>
                     <dd className="text-sm truncate">
-                      {c.assigned_bcba_id ? "Assigned" : c.__canonical ? "Not in export" : "—"}
+                      {c.assigned_bcba_id ? "Assigned" : "—"}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {c.__canonical ? "Delivered hours (all time)" : "Weekly schedule"}
+                      {c.__derived ? "Delivered hours" : "Weekly schedule"}
                     </dt>
                     <dd className="text-sm truncate">
-                      {c.__canonical
-                        ? `${(c.__hours ?? 0).toFixed(1)}h · ${c.__rowCount} rows`
+                      {c.__derived
+                        ? `${(c.__hours ?? 0).toFixed(1)}h to date`
                         : (c.schedule_summary ?? "See CentralReach")}
                     </dd>
                   </div>
