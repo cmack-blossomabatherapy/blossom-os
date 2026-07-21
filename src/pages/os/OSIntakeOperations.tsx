@@ -1066,17 +1066,20 @@ function RecentActivityFeed({ leads, onOpen }: { leads: Lead[]; onOpen: (id: str
       <SectionHeader
         icon={Activity}
         tone="sky"
-        title="Recent Activity"
-        subtitle="Latest intake communication and updates."
+        title="Historical Import — Recent Activity"
+        subtitle="Legacy Monday updates for already-matched leads. Not current truth."
       />
       <div className="rounded-2xl border border-border/70 bg-card divide-y divide-border/50">
         {loading ? (
           <div className="p-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></div>
         ) : updates.length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">No recent activity.</div>
+          <div className="p-10 text-center text-sm text-muted-foreground">No historical import activity for matched leads.</div>
         ) : (
-          updates.slice(0, 12).map((u) => {
-            const lead = u.parent_item_name ? nameIndex.get(u.parent_item_name) : null;
+          updates
+            .filter((u) => u.parent_item_name && nameIndex.has(u.parent_item_name))
+            .slice(0, 12)
+            .map((u) => {
+              const lead = u.parent_item_name ? nameIndex.get(u.parent_item_name) : null;
             return (
               <div
                 key={u.id}
