@@ -69,6 +69,30 @@ export interface DevelopingBand {
     | "staff_case_bcba_first_session";
 }
 
+export interface PathwaySummary {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  metadata: Record<string, any>;
+  step_count: number;
+  alias_of_key?: string | null;
+}
+
+export interface StepSummary {
+  id: string;
+  pathway_id: string;
+  key: string;
+  title: string;
+  description: string | null;
+  kind: string;
+  order_index: number;
+  estimated_days: number | null;
+  delivery_mode: string | null;
+  required: boolean;
+  metadata: Record<string, any>;
+}
+
 /** Non-overlapping bands. Deterministic — lower band wins on ties by min. */
 export function classifyDevelopingScore(
   score: number,
@@ -93,6 +117,25 @@ export function validateBands(bands: DevelopingBand[]): {
   return { ok: true };
 }
 
+/**
+ * Resolve an aliased pathway to its canonical key. Never returns the alias itself;
+ * this is how the assignment resolver keeps "certified w/o experience" pointing
+ * at "under_2_years" without duplicating progress.
+ */
+export function resolveAliasKey(
+  key: string,
+  all: Pick<PathwaySummary, "key" | "metadata">[],
+): string {
+  const p = all.find((x) => x.key === key);
+  const alias = p?.metadata?.alias_of_key;
+  return typeof alias === "string" && alias.length ? alias : key;
+}
+
+// Never infer trainer/BCBA ownership from CentralReach shared clients or billing rows.
+// Ownership is *only* rbt_trainee_assignments (active) — enforced by the DB helper
+// functions rbt_is_assigned_trainer / rbt_is_assigned_bcba.
+export const OWNERSHIP_SOURCE = "rbt_trainee_assignments" as const;
+
 // ---- reads ---------------------------------------------------------------
 
 export async function loadTrainingConfig(): Promise<Record<string, unknown>> {
@@ -112,6 +155,36 @@ export async function loadOwnerAssignments(): Promise<OwnerAssignmentRow[]> {
     .order("label");
   if (error) throw error;
   return (data as any[]) ?? [];
+}
+
+export async function loadPathways(): Promise<PathwaySummary[]> {
+  const { data, error } = await supabase
+    .from("rbt_pathways" as any)
+    .select("id,key,name,description,metadata")
+    .order("name");
+  if (error) throw error;
+  const rows = (data as any[]) ?? [];
+  const { data: sc } = await supabase
+    .from("rbt_pathway_steps" as any)
+    .select("pathway_id");
+  const counts = new Map<string, number>();
+  for (const r of (sc as any[]) ?? []) counts.set(r.pathway_id, (counts.get(r.pathway_id) ?? 0) + 1);
+  return rows.map((r) => ({
+    ...r,
+    metadata: r.metadata ?? {},
+    step_count: counts.get(r.id) ?? 0,
+    alias_of_key: r.metadata?.alias_of_key ?? null,
+  }));
+}
+
+export async function loadStepsFor(pathwayId: string): Promise<StepSummary[]> {
+  const { data, error } = await supabase
+    .from("rbt_pathway_steps" as any)
+    .select("id,pathway_id,key,title,description,kind,order_index,estimated_days,delivery_mode,required,metadata")
+    .eq("pathway_id", pathwayId)
+    .order("order_index");
+  if (error) throw error;
+  return ((data as any[]) ?? []).map((r) => ({ ...r, metadata: r.metadata ?? {} }));
 }
 
 export async function loadTraineeAssignmentsFor(
@@ -139,6 +212,21 @@ export async function loadRetentionCheckinsFor(
     : q);
   if (error) throw error;
   return (data as any[]) ?? [];
+}
+
+/**
+ * Compute the derived status of a check-in without requiring a DB write.
+ * The cron/RPC eventually persists `overdue`, but the UI should show the
+ * derived state immediately.
+ */
+export function deriveCheckinStatus(
+  row: Pick<RetentionCheckin, "status" | "due_at" | "completed_at">,
+  now: Date = new Date(),
+): RetentionCheckin["status"] {
+  if (row.status === "completed" || row.status === "escalated" || row.status === "cancelled")
+    return row.status;
+  if (row.completed_at) return "completed";
+  return new Date(row.due_at).getTime() < now.getTime() ? "overdue" : "due";
 }
 
 /**

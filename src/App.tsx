@@ -413,6 +413,8 @@ import OSRBTMyDay from "./pages/os/OSRBTMyDay";
 import OSRBTTrainingAcademy from "./pages/os/OSRBTTrainingAcademy";
 import OSRBTReadinessBoard from "./pages/os/OSRBTReadinessBoard";
 import OSRBTAcademyAdmin from "./pages/os/OSRBTAcademyAdmin";
+import TrainingAcademyAdminPage from "./pages/os/TrainingAcademyAdminPage";
+import BcbaMyTraineesPage from "./pages/bcba/trainees/BcbaMyTraineesPage";
 import OSRBTClients from "./pages/os/OSRBTClients";
 import OSRBTSchedule from "./pages/os/OSRBTSchedule";
 import OSRBTSessionSupport from "./pages/os/OSRBTSessionSupport";
@@ -951,6 +953,8 @@ const App = () => (
                   <Route path="/rbt/readiness" element={<RbtLegacyRoute appPath="readiness"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","admin","super_admin","training_admin","bcba","clinical_director","hr","hr_admin"]}><OSRBTReadinessBoard /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/training/rbt-readiness" element={<PermissionRoute allowedRoles={["admin","super_admin","training_admin","bcba","clinical_director","hr","hr_admin","lead_rbt","trainer"]}><OSRBTReadinessBoard /></PermissionRoute>} />
                   <Route path="/training/rbt-admin" element={<PermissionRoute allowedRoles={["admin","super_admin","training_admin","hr","hr_admin","operations_leadership"]}><OSRBTAcademyAdmin /></PermissionRoute>} />
+                  <Route path="/training/academy-admin" element={<PermissionRoute allowedRoles={["admin","super_admin","training_admin","hr","hr_admin","operations_leadership"]}><TrainingAcademyAdminPage /></PermissionRoute>} />
+                  <Route path="/training/rbt-academy" element={<Navigate to="/training/academy-admin" replace />} />
                   <Route path="/rbt/clients" element={<RbtLegacyRoute appPath="clients"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTClients /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/schedule" element={<RbtLegacyRoute appPath="schedule"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","scheduling","scheduling_lead"]}><OSRBTSchedule /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/session-support" element={<RbtLegacyRoute appPath="support"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTSessionSupport /></PermissionRoute></RbtLegacyRoute>} />
@@ -1542,6 +1546,7 @@ const App = () => (
                   <Route path="/bcba/home"     element={<BcbaHome />} />
                   <Route path="/bcba/caseload" element={<BcbaCaseload />} />
                   <Route path="/bcba/rbts"     element={<BcbaMyRbts />} />
+                  <Route path="/bcba/trainees" element={<BcbaMyTraineesPage />} />
                   <Route path="/bcba/clinical" element={<BcbaClinicalWork />} />
                   <Route path="/bcba/learn"    element={<BcbaLearn />} />
                   <Route path="/bcba/support"  element={<BcbaSupport />} />

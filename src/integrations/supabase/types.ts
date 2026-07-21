@@ -22271,6 +22271,7 @@ export type Database = {
           id: string
           key: string
           kind: string
+          metadata: Json
           order_index: number
           pathway_id: string
           ref_id: string | null
@@ -22292,6 +22293,7 @@ export type Database = {
           id?: string
           key: string
           kind?: string
+          metadata?: Json
           order_index?: number
           pathway_id: string
           ref_id?: string | null
@@ -22313,6 +22315,7 @@ export type Database = {
           id?: string
           key?: string
           kind?: string
+          metadata?: Json
           order_index?: number
           pathway_id?: string
           ref_id?: string | null
@@ -22339,6 +22342,7 @@ export type Database = {
           id: string
           is_active: boolean
           key: string
+          metadata: Json
           name: string
           updated_at: string
         }
@@ -22349,6 +22353,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           key: string
+          metadata?: Json
           name: string
           updated_at?: string
         }
@@ -22359,6 +22364,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           key?: string
+          metadata?: Json
           name?: string
           updated_at?: string
         }
@@ -30149,6 +30155,22 @@ export type Database = {
     }
     Functions: {
       _training_status_rank: { Args: { _s: string }; Returns: number }
+      _upsert_rbt_step: {
+        Args: {
+          _capabilities: Json
+          _delivery_mode: string
+          _description: string
+          _est_days: number
+          _key: string
+          _kind: string
+          _metadata: Json
+          _order: number
+          _pathway_key: string
+          _required: boolean
+          _title: string
+        }
+        Returns: undefined
+      }
       admin_rollback_onboarding: {
         Args: {
           clear_certificate?: boolean
@@ -30886,6 +30908,7 @@ export type Database = {
         Args: { _first_case_id: string }
         Returns: undefined
       }
+      rbt_mark_retention_overdue: { Args: never; Returns: number }
       recalc_course_progress: {
         Args: { _course_id: string; _user_id: string }
         Returns: undefined
