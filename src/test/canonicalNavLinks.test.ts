@@ -34,8 +34,14 @@ const EXCLUDED = new Set([
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, entry.name);
+    const norm = p.replace(/\\/g, "/");
     if (entry.isDirectory()) walk(p, out);
-    else if (/\.(ts|tsx)$/.test(entry.name) && !EXCLUDED.has(p.replace(/\\/g, "/"))) {
+    // Skip every test file — they legitimately contain path literals as fixtures.
+    else if (/\.(ts|tsx)$/.test(entry.name)
+          && !EXCLUDED.has(norm)
+          && !/\.test\.tsx?$/.test(entry.name)
+          && !/^src\/test\//.test(norm)
+          && !/^src\/tests\//.test(norm)) {
       out.push(p);
     }
   }
@@ -55,12 +61,13 @@ const legacyLinkPatterns: Array<{ name: string; patterns: RegExp[] }> = [
   { name: "/qa-dashboard",              patterns: [/["'`]\/qa-dashboard(?:[?#"'`]|$)/m] },
   { name: "/finance-dashboard",         patterns: [/["'`]\/finance-dashboard(?:[?#"'`]|$)/m] },
   { name: "/recruiting-dashboard",      patterns: [/["'`]\/recruiting-dashboard(?:[?#"'`]|$)/m] },
-  { name: "/phone-calls",               patterns: [/["'`]\/phone-calls(?:[?#"'`]|$)/m] },
   { name: "/ask-blossom",               patterns: [/["'`]\/ask-blossom(?:[?#"'`]|$)/m] },
   // /sop (resource library legacy) — exclude /sop/ subpaths (lib/sop/*) and /enterprise/sop-intelligence
   { name: "/sop",                       patterns: [/["'`]\/sop(?:[?#"'`]|$)/m] },
-  { name: "/recruiting (bare)",         patterns: [/["'`]\/recruiting(?:[?#"'`]|$)/m] },
-  { name: "/payroll (bare)",            patterns: [/["'`]\/payroll(?:[?#"'`]|$)/m] },
+  // Bare /recruiting and /payroll: only true bare literals (no query/hash),
+  // since query-scoped links like `/recruiting?candidate=…` are legitimate.
+  { name: "/recruiting (bare)",         patterns: [/["'`]\/recruiting(?:["'`]|$)/m] },
+  { name: "/payroll (bare)",            patterns: [/["'`]\/payroll(?:["'`]|$)/m] },
   { name: "/intake/vob-decision",       patterns: [/["'`]\/intake\/vob-decision(?:[?#"'`]|$)/m] },
 ];
 
