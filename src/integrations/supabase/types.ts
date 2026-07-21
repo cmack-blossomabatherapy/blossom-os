@@ -14762,6 +14762,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "integration_sync_runs_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "v_intake_provider_readiness"
+            referencedColumns: ["connection_id"]
+          },
+          {
             foreignKeyName: "integration_sync_runs_integration_id_fkey"
             columns: ["integration_id"]
             isOneToOne: false
@@ -14823,6 +14830,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "integration_connections"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_webhook_events_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "v_intake_provider_readiness"
+            referencedColumns: ["connection_id"]
           },
           {
             foreignKeyName: "integration_webhook_events_integration_id_fkey"
@@ -18323,6 +18337,13 @@ export type Database = {
             columns: ["matched_ctm_call_id"]
             isOneToOne: false
             referencedRelation: "ctm_call_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_dial_events_matched_ctm_call_id_fkey"
+            columns: ["matched_ctm_call_id"]
+            isOneToOne: false
+            referencedRelation: "v_intake_ctm_calls_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -30272,6 +30293,174 @@ export type Database = {
           },
         ]
       }
+      v_intake_ctm_calls_safe: {
+        Row: {
+          called_at: string | null
+          caller_city: string | null
+          caller_state: string | null
+          campaign_name: string | null
+          created_at: string | null
+          ctm_call_id: string | null
+          direction: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          from_number: string | null
+          id: string | null
+          intake_lead_id: string | null
+          link_status: string | null
+          linked_at: string | null
+          matched_agent_user_id: string | null
+          matched_client_id: string | null
+          matched_employee_id: string | null
+          matched_lead_id: string | null
+          resolved_campaign_id: string | null
+          resolved_source_id: string | null
+          resolved_state: string | null
+          source_name: string | null
+          status: string | null
+          tags: string[] | null
+          talk_time_seconds: number | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          called_at?: string | null
+          caller_city?: string | null
+          caller_state?: string | null
+          campaign_name?: string | null
+          created_at?: string | null
+          ctm_call_id?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number?: never
+          id?: string | null
+          intake_lead_id?: string | null
+          link_status?: never
+          linked_at?: string | null
+          matched_agent_user_id?: string | null
+          matched_client_id?: string | null
+          matched_employee_id?: string | null
+          matched_lead_id?: string | null
+          resolved_campaign_id?: string | null
+          resolved_source_id?: string | null
+          resolved_state?: string | null
+          source_name?: string | null
+          status?: string | null
+          tags?: string[] | null
+          talk_time_seconds?: number | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          called_at?: string | null
+          caller_city?: string | null
+          caller_state?: string | null
+          campaign_name?: string | null
+          created_at?: string | null
+          ctm_call_id?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number?: never
+          id?: string | null
+          intake_lead_id?: string | null
+          link_status?: never
+          linked_at?: string | null
+          matched_agent_user_id?: string | null
+          matched_client_id?: string | null
+          matched_employee_id?: string | null
+          matched_lead_id?: string | null
+          resolved_campaign_id?: string | null
+          resolved_source_id?: string | null
+          resolved_state?: string | null
+          source_name?: string | null
+          status?: string | null
+          tags?: string[] | null
+          talk_time_seconds?: number | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctm_call_events_matched_client_id_fkey"
+            columns: ["matched_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
+            columns: ["matched_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_call_events_matched_lead_id_fkey"
+            columns: ["matched_lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_intake_provider_readiness: {
+        Row: {
+          category: string | null
+          connection_id: string | null
+          connection_type: string | null
+          criticality: string | null
+          display_name: string | null
+          enabled: boolean | null
+          environment: string | null
+          integration_id: string | null
+          last_error: string | null
+          last_error_at: string | null
+          last_success_at: string | null
+          last_tested_at: string | null
+          owner_department: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_connections_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integration_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_payor_mix: {
         Row: {
           charges: number | null
@@ -30912,6 +31101,27 @@ export type Database = {
         Returns: number
       }
       intake_actions_enabled: { Args: never; Returns: boolean }
+      intake_admin_reprocess_normalized_record: {
+        Args: { _record_id: string }
+        Returns: Json
+      }
+      intake_is_authorized_reader: { Args: never; Returns: boolean }
+      intake_provider_readiness: {
+        Args: never
+        Returns: {
+          category: string
+          display_name: string
+          enabled: boolean
+          environment: string
+          freshness_seconds: number
+          integration_id: string
+          last_error: string
+          last_error_at: string
+          last_success_at: string
+          status: string
+        }[]
+      }
+      intake_review_stats: { Args: never; Returns: Json }
       is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
       is_access_request_reviewer: {
         Args: { _user_id: string }
