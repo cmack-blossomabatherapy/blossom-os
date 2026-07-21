@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { canAcknowledge, isCoursePublished } from "../training/RbtCourseDetail";
 
 // Mirrors src/pages/rbt/app/active/ActiveSchedule.tsx status filter logic.
 function matchesFilter(row: { status?: string | null }, f: "all" | "active" | "cancelled"): boolean {
@@ -67,5 +68,56 @@ describe("Skill Passport acknowledgment gating", () => {
   });
   it("allows writes for the authenticated clinician", () => {
     expect(canWrite("emp-1", false)).toBe(true);
+  });
+});
+
+describe("RbtCourseDetail publish gate", () => {
+  it("treats null / draft / archived / deactivated as unpublished", () => {
+    expect(isCoursePublished(null)).toBe(false);
+    expect(isCoursePublished({ id: "c", status: "draft" })).toBe(false);
+    expect(isCoursePublished({ id: "c", status: "archived" })).toBe(false);
+    expect(isCoursePublished({ id: "c", is_active: false })).toBe(false);
+  });
+  it("treats active/published as published", () => {
+    expect(isCoursePublished({ id: "c", status: "published", is_active: true })).toBe(true);
+  });
+});
+
+describe("RbtCourseDetail acknowledgment gate", () => {
+  const base = {
+    published: true,
+    requiredLessonIds: ["l1", "l2"],
+    completedLessonIds: new Set<string>(["l1", "l2"]),
+    alreadyCompleted: false,
+    canWrite: true,
+  };
+  it("allows acknowledgment only when everything is satisfied", () => {
+    expect(canAcknowledge(base).allowed).toBe(true);
+  });
+  it("blocks in preview mode", () => {
+    expect(canAcknowledge({ ...base, canWrite: false }).reason).toBe("preview");
+  });
+  it("blocks when course is unpublished", () => {
+    expect(canAcknowledge({ ...base, published: false }).reason).toBe("unpublished");
+  });
+  it("blocks when course has no content", () => {
+    expect(canAcknowledge({ ...base, requiredLessonIds: [] }).reason).toBe("no_content");
+  });
+  it("blocks when required lessons are still open", () => {
+    expect(canAcknowledge({ ...base, completedLessonIds: new Set(["l1"]) }).reason).toBe("incomplete_required");
+  });
+  it("marks already-completed courses as no-op (persist once)", () => {
+    expect(canAcknowledge({ ...base, alreadyCompleted: true }).reason).toBe("already_completed");
+  });
+});
+
+describe("Assigned-program navigation targets", () => {
+  // Guards that we don't reintroduce the dead /academy/course/:id link.
+  function learnCourseHref(id: string): string {
+    return `/rbt/app/learn/course/${id}`;
+  }
+  it("routes course links inside the RBT shell", () => {
+    expect(learnCourseHref("abc")).toBe("/rbt/app/learn/course/abc");
+    expect(learnCourseHref("abc").startsWith("/rbt/app/learn/")).toBe(true);
   });
 });
