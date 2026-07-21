@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import {
   UploadCloud, Users, Stethoscope, LayoutDashboard, ShieldCheck,
-  History, Gauge, FileSpreadsheet, AlertTriangle, ExternalLink,
+  History, Gauge, FileSpreadsheet, AlertTriangle, ExternalLink, Link2,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import CentralReachUploads from "./CentralReachUploads";
 import CrSyncCenter from "@/pages/admin/CrSyncCenter";
+import { fetchCrMappingDiagnostics, reconcileEmployeeCentralreachIds, type CrMappingDiagnosticRow } from "@/lib/os/clinicianIdentity";
+import { toast } from "@/hooks/use-toast";
 
 type HubTab =
   | "overview"
@@ -19,6 +21,7 @@ type HubTab =
   | "history"
   | "freshness"
   | "data-quality"
+  | "identity"
   | "audit";
 
 const TABS: { key: HubTab; label: string; icon: any; help: string }[] = [
@@ -28,6 +31,7 @@ const TABS: { key: HubTab; label: string; icon: any; help: string }[] = [
   { key: "history",             label: "Import History",       icon: History,         help: "Every upload from every path in one list." },
   { key: "freshness",           label: "Freshness",            icon: Gauge,           help: "Configurable staleness thresholds per import type." },
   { key: "data-quality",        label: "Data Quality",         icon: AlertTriangle,   help: "Unknown clients, orphan appointments, mismatches — triage queue." },
+  { key: "identity",            label: "Clinician Identity",   icon: Link2,           help: "Reconcile employees to CentralReach provider IDs — the source of truth for RBT/BCBA scoping." },
   { key: "audit",               label: "Audit Log",            icon: ShieldCheck,     help: "Append-only audit of every commit / rollback / config change." },
 ];
 
@@ -85,6 +89,7 @@ export default function CentralReachHub() {
         {tab === "history"            && <UnifiedHistoryTab />}
         {tab === "freshness"          && <FreshnessTab />}
         {tab === "data-quality"       && <DataQualityTab />}
+        {tab === "identity"           && <IdentityTab />}
         {tab === "audit"              && <AuditTab />}
       </div>
     </OSShell>
@@ -384,6 +389,103 @@ function AuditTab() {
                   <td className="font-medium">{r.action}</td>
                   <td className="text-muted-foreground">{r.actor_id ?? "—"}</td>
                   <td className="text-xs text-muted-foreground">{JSON.stringify(r.details ?? {})}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ---------- Clinician Identity ----------
+function IdentityTab() {
+  const [rows, setRows] = useState<CrMappingDiagnosticRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [filter, setFilter] = useState<"all" | "linked" | "ambiguous" | "candidate" | "unmatched">("all");
+
+  const load = async () => {
+    setLoading(true); setError(null);
+    try { setRows(await fetchCrMappingDiagnostics()); }
+    catch (e: any) { setError(e?.message ?? String(e)); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { void load(); }, []);
+
+  const totals = useMemo(() => {
+    const t = { linked: 0, ambiguous: 0, candidate: 0, unmatched: 0 };
+    rows.forEach((r) => { t[r.mapping_status] += 1; });
+    return t;
+  }, [rows]);
+
+  const visible = filter === "all" ? rows : rows.filter((r) => r.mapping_status === filter);
+
+  const runReconcile = async () => {
+    setBusy(true);
+    try {
+      const res = await reconcileEmployeeCentralreachIds();
+      toast({ title: "Reconcile complete", description: `Linked ${res.linked}, ambiguous ${res.ambiguous}, unmatched ${res.unmatched} of ${res.total_employees}.` });
+      await load();
+    } catch (e: any) {
+      toast({ title: "Reconcile failed", description: e?.message ?? String(e), variant: "destructive" });
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Card className="p-6 space-y-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Clinician ↔ CentralReach identity</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Employees are linked to imported CentralReach providers by stable ID first. Name-only matches remain marked so admins can verify before RBT/BCBA experiences trust them.</p>
+        </div>
+        <Button size="sm" onClick={runReconcile} disabled={busy}>{busy ? "Reconciling…" : "Run reconcile"}</Button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {(["all","linked","candidate","ambiguous","unmatched"] as const).map((k) => (
+          <button
+            key={k}
+            onClick={() => setFilter(k)}
+            className={`rounded-full border px-3 py-1 text-xs ${filter === k ? "bg-foreground text-background border-foreground" : "border-border/70 text-muted-foreground hover:text-foreground"}`}
+          >
+            {k === "all" ? `All (${rows.length})` : `${k} (${totals[k]})`}
+          </button>
+        ))}
+      </div>
+      {error && <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
+      {loading ? <p className="text-sm text-muted-foreground">Loading…</p> : visible.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nothing to show for this filter.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground border-b">
+              <tr>
+                <th className="text-left py-2">Employee</th>
+                <th className="text-left">Credential</th>
+                <th className="text-left">Status</th>
+                <th className="text-left">CR provider_id</th>
+                <th className="text-left">Candidate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.slice(0, 400).map((r) => (
+                <tr key={r.employee_id} className="border-b border-border/40">
+                  <td className="py-2">{[r.first_name, r.last_name].filter(Boolean).join(" ") || r.email || "—"}</td>
+                  <td className="text-muted-foreground">{r.credential ?? "—"}</td>
+                  <td>
+                    <Badge variant="outline" className={
+                      r.mapping_status === "linked"    ? "border-emerald-200 bg-emerald-50 text-emerald-700" :
+                      r.mapping_status === "candidate" ? "border-sky-200 bg-sky-50 text-sky-700" :
+                      r.mapping_status === "ambiguous" ? "border-amber-200 bg-amber-50 text-amber-700" :
+                                                        "border-border/60 text-muted-foreground"
+                    }>
+                      {r.mapping_status}
+                    </Badge>
+                  </td>
+                  <td className="text-muted-foreground">{r.centralreach_id ?? "—"}</td>
+                  <td className="text-xs text-muted-foreground">{r.candidate_provider_name ? `${r.candidate_provider_name} · ${r.candidate_provider_id}` : "—"}</td>
                 </tr>
               ))}
             </tbody>

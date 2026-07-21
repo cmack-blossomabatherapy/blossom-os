@@ -122,11 +122,21 @@ interface OSRoleContextValue {
   profileState: OSState | null;
   /** True when the current role is state-scoped and profileState is set. */
   hasAssignedState: boolean;
+  /**
+   * Admin-only preview subject. When set, super/systems-admins previewing an
+   * RBT/BCBA experience act as this employee for READ queries only. Writes
+   * must be blocked at each call site via `isPreviewing`.
+   */
+  previewSubjectEmployeeId: string | null;
+  setPreviewSubjectEmployeeId: (id: string | null) => void;
+  /** True when the current session is impersonating another employee. */
+  isPreviewing: boolean;
 }
 
 const OSRoleContext = createContext<OSRoleContextValue | null>(null);
 const STORAGE_KEY = "os.demo.role";
 const STATE_KEY = "os.demo.state";
+const PREVIEW_SUBJECT_KEY = "os.preview.subjectEmployeeId";
 const HAT_KEY_BASE = "os.activeHatId";
 const hatStorageKey = (userId: string | null | undefined) =>
   userId ? `${HAT_KEY_BASE}.${userId}` : HAT_KEY_BASE;
@@ -136,6 +146,10 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   const [roleOverride, setRoleState] = useState<OSRole | null>(() => {
     if (typeof window === "undefined") return null;
     return (window.localStorage.getItem(STORAGE_KEY) as OSRole) || null;
+  });
+  const [previewSubjectId, setPreviewSubjectIdState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try { return window.localStorage.getItem(PREVIEW_SUBJECT_KEY); } catch { return null; }
   });
   // Fall back to the lowest-privilege OS role if none of the user's app roles
   // map to a known OS role — never silently elevate to State Director.
@@ -223,6 +237,13 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
 
   const setRole = useCallback((r: OSRole) => setRoleState(r), []);
   const setActiveHat = useCallback((id: string) => setActiveHatIdState(id), []);
+  const setPreviewSubjectEmployeeId = useCallback((id: string | null) => {
+    setPreviewSubjectIdState(id);
+    try {
+      if (id) window.localStorage.setItem(PREVIEW_SUBJECT_KEY, id);
+      else window.localStorage.removeItem(PREVIEW_SUBJECT_KEY);
+    } catch { /* ignore */ }
+  }, []);
   const setActiveState = useCallback((s: OSState) => {
     // State Directors AND Assistant State Directors stay pinned to their
     // profile state. Multi-hat users with a state-scoped active hat stay
@@ -266,7 +287,10 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
     activeDepartment: activeHat?.departmentKey ?? null,
     profileState,
     hasAssignedState: Boolean(profileState),
-  }), [role, effectiveState, setRole, setActiveState, hats, activeHat, setActiveHat, profileState]);
+    previewSubjectEmployeeId: isSuperAdmin ? previewSubjectId : null,
+    setPreviewSubjectEmployeeId,
+    isPreviewing: Boolean(isSuperAdmin && previewSubjectId),
+  }), [role, effectiveState, setRole, setActiveState, hats, activeHat, setActiveHat, profileState, isSuperAdmin, previewSubjectId, setPreviewSubjectEmployeeId]);
 
   return <OSRoleContext.Provider value={value}>{children}</OSRoleContext.Provider>;
 }
