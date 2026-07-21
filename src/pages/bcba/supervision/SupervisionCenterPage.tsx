@@ -9,6 +9,7 @@ import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 import { STATUS_LABELS, STATUS_STYLES } from "./supervisionLogic";
 import { PostSupervisionDialog } from "./PostSupervisionDialog";
 import { SupervisionBriefDrawer } from "./SupervisionBriefDrawer";
+import SupervisionSessionsDrawer from "./SupervisionSessionsDrawer";
 
 function fmt(d?: string | null) { try { return d ? new Date(d).toLocaleDateString() : "—"; } catch { return "—"; } }
 function fmtMinutes(m: number) { const h = Math.floor(m / 60); const r = m % 60; return h ? `${h}h ${r}m` : `${r}m`; }
@@ -23,6 +24,7 @@ export default function SupervisionCenterPage() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<SupervisionRow | null>(null);
   const [logging, setLogging]   = useState<SupervisionRow | null>(null);
+  const [detail, setDetail]     = useState<SupervisionRow | null>(null);
 
   const rows = useMemo(() => {
     const list = data?.rows ?? [];
@@ -106,7 +108,12 @@ export default function SupervisionCenterPage() {
               </thead>
               <tbody className="divide-y divide-border/60">
                 {rows.map(r => (
-                  <tr key={r.rbtEmployeeId} className="hover:bg-muted/30">
+                  <tr
+                    key={r.rbtEmployeeId}
+                    className="hover:bg-muted/30 cursor-pointer"
+                    onClick={() => setDetail(r)}
+                    data-testid="bcba-supervision-row"
+                  >
                     <td className="px-4 py-3 font-medium">{r.rbtName}</td>
                     <td className="px-3 py-3 text-muted-foreground max-w-[180px] truncate" title={r.clientNames.join(", ")}>
                       {r.assignedClientCount} · {r.clientNames.slice(0, 2).join(", ")}{r.clientNames.length > 2 && "…"}
@@ -129,7 +136,7 @@ export default function SupervisionCenterPage() {
                       {r.missingDocumentation.length ? r.missingDocumentation.join(" · ") : "—"}
                     </td>
                     <td className="px-3 py-3 text-xs">{r.actionRequired}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" variant="outline" onClick={() => setSelected(r)} className="mr-1">
                         <ClipboardList className="h-3.5 w-3.5 mr-1" /> Brief
                       </Button>
@@ -172,6 +179,13 @@ export default function SupervisionCenterPage() {
           onSaved={() => refetch()}
         />
       )}
+      <SupervisionSessionsDrawer
+        open={!!detail}
+        onOpenChange={o => !o && setDetail(null)}
+        row={detail}
+        monthDate={now}
+        readOnly={identity.readOnly}
+      />
     </div>
   );
 }

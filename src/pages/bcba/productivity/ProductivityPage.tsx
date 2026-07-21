@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertTriangle, Flag, Info, Activity, Users, TrendingUp, ShieldAlert, Sparkles, ListChecks } from "lucide-react";
+import { AlertTriangle, Flag, Info, Activity, Users, TrendingUp, ShieldAlert, Sparkles, ListChecks, Receipt } from "lucide-react";
 import {
   useMyProductivitySnapshot, useMyCapacitySnapshot,
   useAllProductivity, useAllCapacity,
@@ -24,6 +24,7 @@ import ReportDiscrepancyDialog from "./ReportDiscrepancyDialog";
 import MetricDrilldownDialog from "./MetricDrilldownDialog";
 import ScenarioPlannerDialog from "./ScenarioPlannerDialog";
 import DiscrepanciesPanel from "./DiscrepanciesPanel";
+import BillingReconciliationDialog from "./BillingReconciliationDialog";
 import { useBcbaIdentity } from "../useBcbaIdentity";
 import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
 import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
@@ -106,6 +107,7 @@ function CapacityBadge({ status }: { status: CapacityStatus }) {
 function MyProductivity({ snapshot, readOnly }: { snapshot: ProductivitySnapshot | null; readOnly: boolean }) {
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagMetric, setFlagMetric] = useState<string | undefined>();
+  const [reconOpen, setReconOpen] = useState(false);
   const openFlag = (k: string) => {
     if (readOnly) return;
     setFlagMetric(k); setFlagOpen(true);
@@ -249,6 +251,15 @@ function MyProductivity({ snapshot, readOnly }: { snapshot: ProductivitySnapshot
         <Button
           variant="outline"
           size="sm"
+          className="mr-2"
+          disabled={!snapshot}
+          onClick={() => setReconOpen(true)}
+        >
+          <Receipt className="h-3.5 w-3.5 mr-1.5" /> Reconcile billing
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           disabled={readOnly}
           title={readOnly ? "Read-only in preview mode" : undefined}
           onClick={() => { setFlagMetric(undefined); setFlagOpen(true); }}
@@ -271,6 +282,11 @@ function MyProductivity({ snapshot, readOnly }: { snapshot: ProductivitySnapshot
         metricKey={drillMetric}
         snapshot={snapshot}
         kind="productivity"
+      />
+      <BillingReconciliationDialog
+        open={reconOpen}
+        onOpenChange={setReconOpen}
+        snapshot={snapshot}
       />
     </div>
   );
