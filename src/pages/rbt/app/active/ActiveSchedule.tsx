@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useRbtIdentity } from "../useRbtIdentity";
 import { CardFrame } from "../CardFrame";
 import { FreshnessPill, freshness } from "./freshness";
 import { useCrSync } from "./useCrSync";
@@ -24,14 +24,17 @@ function StatusPill({ status }: { status?: string | null }) {
 }
 
 export default function ActiveSchedule() {
-  const { user } = useAuth();
+  const { employeeId, loading: idLoading } = useRbtIdentity();
   const [tab, setTab] = useState<Tab>("today");
   const [rows, setRows] = useState<any[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const crSync = useCrSync();
 
   useEffect(() => {
-    if (!user) return;
+    if (idLoading) return;
+    if (!employeeId) { setRows([]); return; }
+    setError(null);
     const now = new Date();
     const start = new Date(now); start.setHours(0, 0, 0, 0);
     const end = new Date(start);
@@ -41,12 +44,15 @@ export default function ActiveSchedule() {
 
     supabase.from("rbt_shift_events" as any)
       .select("id,starts_at,ends_at,client_initials,client_external_id,service_code,location_type,status,bcba_first_name,bcba_last_initial,external_id,source,created_at")
-      .eq("employee_id", user.id)
+      .eq("employee_id", employeeId)
       .gte("starts_at", start.toISOString())
       .lt("starts_at", end.toISOString())
       .order("starts_at")
-      .then(({ data }) => setRows((data as any[]) ?? []));
-  }, [user?.id, tab]);
+      .then(({ data, error }) => {
+        if (error) setError(error.message);
+        setRows((data as any[]) ?? []);
+      });
+  }, [employeeId, idLoading, tab]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -58,7 +64,8 @@ export default function ActiveSchedule() {
   }, [rows]);
 
   const crFresh = freshness(crSync?.last_success_at, crSync?.stale_after_hours ?? 24);
-  const state = rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
+  const state: "loading" | "empty" | "success" | "error" =
+    error ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
 
   return (
     <div className="space-y-3">
@@ -82,6 +89,7 @@ export default function ActiveSchedule() {
       <CardFrame title={tab === "today" ? "Today" : tab === "week" ? "This week" : "Upcoming (30 days)"}
         state={state}
         emptyLabel="No sessions in this range."
+        errorLabel="We couldn't load your schedule right now."
         subtitle={crFresh.label}
       >
         <div className="space-y-4">
