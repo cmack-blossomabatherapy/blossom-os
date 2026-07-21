@@ -29,6 +29,9 @@ export interface SupervisionRow {
   actionRequired: string;
   hasSupervisionPlan: boolean;
   openEscalationLevel: EscalationLevel | null;
+  /** "role" when rbt_sessions produced the hours, "canonical" when derived
+   * from v_cr_canonical_sessions because rbt_sessions was empty for the RBT. */
+  hoursSource?: "role" | "canonical";
 }
 
 /**
