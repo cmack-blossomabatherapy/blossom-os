@@ -8,25 +8,33 @@ vi.mock("@/pages/ClientDetail", () => ({
   default: () => <div data-testid="legacy-client-detail">legacy</div>,
 }));
 
-// Deterministic ClientsContext — the router flips into "context" mode only
-// when getClient returns a truthy record for the current id.
-const getClientMock = vi.fn();
-let clientsLoading = false;
+// Hoisted mocks — factories run before top-level module code, so any refs
+// they close over must be declared with vi.hoisted().
+const H = vi.hoisted(() => {
+  const maybeSingle = vi.fn();
+  const eq = vi.fn(() => ({ maybeSingle }));
+  const select = vi.fn(() => ({ eq }));
+  const from = vi.fn(() => ({ select }));
+  const getClientMock = vi.fn();
+  return {
+    maybeSingle,
+    eq,
+    select,
+    from,
+    getClientMock,
+    clientsLoading: { value: false },
+  };
+});
 vi.mock("@/contexts/ClientsContext", () => ({
   useClients: () => ({
-    getClient: getClientMock,
-    loading: clientsLoading,
+    getClient: H.getClientMock,
+    loading: H.clientsLoading.value,
   }),
 }));
-
-// Supabase mock covering public.clients lookups (both uuid and CR-id paths).
-const maybeSingle = vi.fn();
-const eq = vi.fn(() => ({ maybeSingle }));
-const select = vi.fn(() => ({ eq }));
-const from = vi.fn(() => ({ select }));
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { from },
+  supabase: { from: H.from },
 }));
+const { maybeSingle, eq, from, getClientMock } = H;
 
 import ClientDetailRouter from "@/pages/ClientDetailRouter";
 
