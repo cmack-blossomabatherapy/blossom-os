@@ -74,25 +74,23 @@ export default function Supervision() {
         <p className="text-2xl font-semibold tabular-nums">{monthCount}</p>
         {showCanonicalMonth ? (
           <p className="text-xs text-muted-foreground mt-1">
-            No supervision entries logged for you in Blossom OS this month.
-            97155 supervision billed on your caseload is tracked by your BCBA in CentralReach —
-            it isn't attributed one-to-one to you here.
+            No supervision entries logged yet this month. Your BCBA will add them after your next observation.
           </p>
         ) : (
           <p className="text-xs text-muted-foreground mt-1">
-            Your BCBA tracks the exact hour requirement in CentralReach.
+            Your BCBA tracks the full hour requirement for you.
           </p>
         )}
         {coverage && coverage.length > 0 && (
           <div className="mt-3 rounded-lg border border-border/60 p-2">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Client-level 97155 coverage (imported)
+              Recent supervision coverage on your clients
             </p>
             <p className="text-sm font-semibold tabular-nums mt-0.5">
               {coverageHoursTotal.toFixed(1)}h across {coverage.length} client{coverage.length === 1 ? "" : "s"}
             </p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              Client-level only — not a one-to-one BCBA→RBT observation.
+              Grouped by client. Your BCBA will log individual observations here.
             </p>
           </div>
         )}
