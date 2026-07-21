@@ -21,6 +21,34 @@ import { useRbtIdentity } from "./useRbtIdentity";
 import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
 import { useProgram } from "./training/useProgram";
 import { RetentionSupportPanel } from "./support/RetentionSupportPanel";
+import { useRbtWalkthrough } from "./useRbtWalkthrough";
+
+/**
+ * Replay control for the first-login walkthrough. Rendered on Home,
+ * Learn, and Me so users can retake the tour any time.
+ */
+function ReplayTourButton({ variant = "ghost" }: { variant?: "ghost" | "inline" }) {
+  const { available, openTour } = useRbtWalkthrough();
+  if (!available) return null;
+  const base =
+    "inline-flex items-center gap-1.5 rounded-full text-xs font-medium transition ";
+  const styles =
+    variant === "inline"
+      ? base + "px-3 h-8 border border-border/70 hover:bg-muted text-foreground"
+      : base + "px-3 h-8 text-muted-foreground hover:text-foreground hover:bg-muted";
+  return (
+    <button
+      type="button"
+      onClick={openTour}
+      className={styles}
+      data-testid="rbt-walkthrough-replay"
+      aria-label="Replay the Blossom quick tour"
+    >
+      <Sparkles className="h-3.5 w-3.5" aria-hidden />
+      Take the tour
+    </button>
+  );
+}
 
 function WelcomeBanner({ userId }: { userId: string }) {
   const key = `rbt-app-welcome-dismissed-${userId}`;
@@ -123,6 +151,7 @@ export function RbtHome() {
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {user && <div className="md:col-span-2"><WelcomeBanner userId={user.id} /></div>}
+      <div className="md:col-span-2 flex justify-end"><ReplayTourButton /></div>
       <div className="md:col-span-2"><FirstCaseHomeCard /></div>
       <div className="md:col-span-2"><JourneyHomeCard /></div>
       {cards.map((c) => (
@@ -178,6 +207,7 @@ export function RbtLearn() {
   return (
     <div className="space-y-4">
       <WelcomeToBlossomCard to="/rbt/app/welcome" />
+      <div className="flex justify-end"><ReplayTourButton variant="inline" /></div>
       {!programLoading && pathway && (
         <div className="rounded-2xl border border-border/70 bg-card p-4">
           <div className="flex items-center justify-between gap-3">
@@ -410,7 +440,16 @@ export function RbtMe() {
         title={displayName}
         subtitle={[credential, email].filter(Boolean).join(" · ") || "Your Blossom profile"}
         state="success"
-        action={signOut && <button onClick={() => signOut()} className="text-sm text-muted-foreground underline underline-offset-4">Sign out</button>}>
+        action={
+          <div className="flex items-center gap-2">
+            <ReplayTourButton variant="inline" />
+            {signOut && (
+              <button onClick={() => signOut()} className="text-sm text-muted-foreground underline underline-offset-4">
+                Sign out
+              </button>
+            )}
+          </div>
+        }>
         {stage ? (
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Current stage</p>
