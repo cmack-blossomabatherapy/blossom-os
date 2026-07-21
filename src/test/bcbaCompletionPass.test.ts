@@ -1,73 +1,72 @@
-// NOTE: Skipped in release verification pass — expectations reflect prior sprint
-// design (old RBT/BCBA menus / removed admin routes / incidental substring scans)
-// that have been intentionally superseded by current shipping code.
+// Rewritten in release verification pass to assert the CURRENT shipping BCBA
+// contract (mobile-first `/bcba/*` menu + dedicated BcbaShell) instead of the
+// legacy sprint substring scans that were previously skipped.
 
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { ROLE_MENUS } from "@/lib/os/roleMenus";
 
-const OS_DIR = path.resolve(__dirname, "../pages/os");
-const BCBA_PAGES = readdirSync(OS_DIR).filter((f) => /^OSBCBA.*\.tsx$/.test(f));
+const APP_TSX = readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
 
-describe.skip("BCBA completion pass", () => {
+// Current shipping BCBA workspace paths (source of truth: roleMenus.ts `bcba`).
+const REQUIRED_BCBA_MENU_PATHS = [
+  "/bcba/home",
+  "/bcba/caseload",
+  "/bcba/rbts",
+  "/bcba/supervision",
+  "/bcba/assessments",
+  "/bcba/progress-reports",
+  "/bcba/parent-training",
+  "/bcba/productivity",
+  "/bcba/clinical",
+  "/bcba/fellowship",
+  "/bcba/academy",
+  "/bcba/support-center",
+  "/bcba/me",
+];
+
+describe("BCBA completion pass — current shipping menu contract", () => {
   const menu = ROLE_MENUS.bcba;
+  const paths = menu!.sections.flatMap((s) => s.items.map((i) => i.path));
 
   it("exposes a BCBA menu", () => {
     expect(menu).toBeDefined();
   });
 
-  it("has only /reports as the reports destination", () => {
-    const paths = menu!.sections.flatMap((s) => s.items.map((i) => i.path));
-    const reportsLinks = paths.filter((p) => p === "/reports");
-    expect(reportsLinks.length).toBeGreaterThanOrEqual(1);
-    // No separate BCBA reports page
+  it("includes every current BCBA workspace surface", () => {
+    for (const required of REQUIRED_BCBA_MENU_PATHS) {
+      expect(paths, `BCBA menu missing ${required}`).toContain(required);
+    }
+  });
+
+  it("does not expose the retired flat operational paths", () => {
+    // These lived in the old sprint menu but now belong to non-BCBA roles.
+    for (const removed of ["/bcba/clients", "/bcba/workspace", "/bcba/scheduling", "/bcba/authorizations"]) {
+      expect(paths, `BCBA menu should no longer expose ${removed}`).not.toContain(removed);
+    }
+  });
+
+  it("has no /reports link in the BCBA menu (BCBA reports live under /bcba/*)", () => {
+    expect(paths.filter((p) => p === "/reports" || p.startsWith("/reports?"))).toEqual([]);
     expect(paths.some((p) => /^\/bcba\/reports/.test(p))).toBe(false);
-    expect(paths.some((p) => /reports/i.test(p) && p !== "/reports")).toBe(false);
   });
 
-  it("includes the core BCBA workflow surfaces", () => {
-    const paths = menu!.sections.flatMap((s) => s.items.map((i) => i.path));
-    for (const required of [
-      "/bcba",
-      "/bcba/clients",
-      "/bcba/workspace",
-      "/bcba/supervision",
-      "/bcba/parent-training",
-      "/bcba/scheduling",
-      "/bcba/authorizations",
-      "/evaluations",
-    ]) {
-      expect(paths).toContain(required);
+  it("mounts every BCBA menu path in App.tsx", () => {
+    for (const p of REQUIRED_BCBA_MENU_PATHS) {
+      expect(APP_TSX, `App.tsx missing route for ${p}`).toContain(`path="${p}"`);
     }
   });
 
-  it("BCBA pages never link back to root operational paths", () => {
-    const bannedInline = [
-      'to="/clients"',
-      'to="/supervision"',
-      'to="/parent-training"',
-      'to="/scheduling"',
-      'to="/authorizations"',
-    ];
-    for (const file of BCBA_PAGES) {
-      const contents = readFileSync(path.join(OS_DIR, file), "utf8");
-      for (const banned of bannedInline) {
-        expect(
-          contents.includes(banned),
-          `${file} still contains ${banned} (should route to /bcba/... instead)`,
-        ).toBe(false);
-      }
-    }
-  });
-
-  it("BCBA pages do not surface AI Operational Insights as navigation", () => {
-    for (const file of BCBA_PAGES) {
-      const contents = readFileSync(path.join(OS_DIR, file), "utf8");
-      expect(
-        /to="\/ai[^"]*"[^>]*Operational Insights/.test(contents),
-        `${file} still surfaces an AI Operational Insights link`,
-      ).toBe(false);
+  it("redirects legacy /bcba/* paths to the current experience", () => {
+    for (const [from, to] of [
+      ["/bcba/workspace", "/bcba/home"],
+      ["/bcba/clients", "/bcba/caseload"],
+      ["/bcba/scheduling", "/bcba/home"],
+      ["/bcba/authorizations", "/bcba/progress-reports"],
+    ] as const) {
+      const re = new RegExp(`path="${from}"[\\s\\S]{0,180}Navigate to="${to}"`);
+      expect(APP_TSX, `expected ${from} → ${to} redirect`).toMatch(re);
     }
   });
 });
