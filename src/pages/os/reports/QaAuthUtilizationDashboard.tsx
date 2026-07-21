@@ -633,31 +633,23 @@ export default function QaAuthUtilizationDashboard() {
           "PendingHours", "RemainingHours", "StartDate", "ExpirationDate",
           "BCBA (optional)", "State (optional)",
         ]}
-        filterNote="Powers both Authorization Analysis and Authorization Utilization — Hour Based. Uses the shared admin authorization dataset by default — upload a file below only if you want a one-off view."
+        filterNote="Powers both Authorization Analysis and Authorization Utilization — Hour Based. Uses the shared admin authorization dataset by default — upload a file below only for a one-off view."
         adminUploadsHref="/system/authorization-uploads"
-        adminSourceLabel={sharedAvailable ? "Auto-loads from Admin Uploads" : "No admin dataset yet"}
+        adminSourceLabel={sharedResult.status === "ready" ? "Auto-loads from Admin Uploads" : "No admin dataset yet"}
       />
 
       <SourceCoverageBanner reportKey={["authorization", "hour-based-utilization"]} />
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card p-4">
-        <div className="text-[12px] text-muted-foreground">
-          {sharedAvailable === false
-            ? "No admin-uploaded authorization dataset found. Ask an admin to upload the CentralReach authorization export via Admin → Authorization Uploads, or upload one below for a one-off view."
-            : sharedAvailable
-              ? "Shared admin authorization dataset is active for every user."
-              : "Checking for shared admin authorization dataset…"}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => loadSharedAdminDataset(false)}
-          disabled={sharedLoading}
-        >
-          <Database className="mr-1.5 h-3.5 w-3.5" />
-          {sharedLoading ? "Loading…" : "Reload Admin Dataset"}
-        </Button>
-      </div>
+      <SharedDatasetStatusPanel
+        title="Authorization Shared Source"
+        result={sharedResult}
+        loading={sharedLoading}
+        sourceMode={sourceMode}
+        adminUploadsHref="/system/authorization-uploads"
+        onReload={() => loadSharedAdminDataset(false)}
+        onResetToShared={resetToShared}
+        required
+      />
 
       {/* Upload */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">
