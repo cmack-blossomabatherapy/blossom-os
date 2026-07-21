@@ -307,3 +307,99 @@ safe read against Supabase — nothing decorative, nothing dead.
 - Full polish pass across Learn / My Program / Welcome /
   Passport (Slice 4D).
 - Full QA matrix and manual regression checklist (Slice 5).
+
+---
+
+## Slice 5 — Final RBT release hardening
+
+### Route registration fixes (App.tsx)
+
+All six previously-failing App.tsx literal-route contract tests
+now pass. The RBT surface exposes canonical literal paths that
+external contract tests, deep-link consumers, and role-menu
+traversal all rely on.
+
+| Route | Element | Notes |
+|-------|---------|-------|
+| `/rbt/app/home` | `<RbtHome />` | Journey cockpit |
+| `/rbt/app/schedule` | `<RbtSchedule />` | Mobile schedule |
+| `/rbt/app/learn` | `<RbtLearn />` | Academy home |
+| `/rbt/app/learn/course/:courseId` | `<RbtCourseDetail />` | Course player drilldown |
+| `/rbt/app/program` | `<RbtProgramPage />` | My Program w/ Setup Journey |
+| `/rbt/app/welcome` | `<RbtWelcome />` | First-run welcome |
+| `/rbt/app/passport` | `<RbtPassportPage />` | Skill Passport |
+| `/rbt/app/support` | `<SupportHome />` | Support hub |
+| `/rbt/app/support/new` | `<SupportNew />` | New ticket |
+| `/rbt/app/support/urgent` | `<SupportUrgent />` | Urgent triage |
+| `/rbt/app/support/team` | `<SupportTeam />` | Team support |
+| `/rbt/app/support/:ticketId` | `<SupportTicketDetail />` | Ticket detail |
+| `/rbt/app/me` | `<RbtMe />` | Profile / prefs |
+| `/rbt/app/clients` | `<MyClients />` | My caseload |
+| `/rbt/app/hours` | `<RbtHours />` | Hours |
+| `/rbt/app/supervision` | `<RbtSupervisionPage />` | Supervision |
+| `/rbt/app/credentials` | `<RbtCredentialsPage />` | Credentials |
+| `/rbt/app/performance` | `<RbtPerformancePage />` | Performance |
+| `/rbt/app/growth` | `<RbtMyGrowth />` | Growth |
+| `/rbt/app/growth/fellowship` | `<RbtFellowshipExplorer />` | Fellowship path |
+| `/rbt/app/preboarding` | `<RbtPreboarding />` | Preboarding |
+| `/rbt/app/readiness` | `<RbtReadiness />` | Readiness gates |
+| `/rbt/app/first-case` | `<RbtFirstCase />` | First case |
+| `/rbt/app/first-case/checkin` | `<FirstSessionCheckin />` | First session |
+| `/rbt/app/journey` | `<RbtJourney />` | 90-day journey |
+| `/rbt/app/journey/:instanceId` | `<RbtJourneyCheckpoint />` | Checkpoint |
+| `/rbt/app/settings/notifications` | `<RbtNotificationPreferences />` | Prefs |
+| `/rbt/schedule` | `<OSRBTSchedule />` (bare) | Oversight legacy alias; wrapped by parent `<RbtLegacyRoute><PermissionRoute><Outlet /></PermissionRoute></RbtLegacyRoute>` layout route so RBT users redirect to `/rbt/app/schedule` and non-RBT oversight roles get the OS shell. |
+| `/recruiting/ready-to-staff` | `<Navigate to="/recruiting/staffing-needs" replace />` | Menu alias |
+| `/recruiting/apploi` | `<Navigate to="/admin/integrations?connector=apploi" replace />` | Menu alias |
+
+### Nested → absolute path migration
+
+Previously the `/rbt/app` parent route used relative child paths
+(`path="home"`, etc.). Contract tests grep the source for the
+literal string `path="/rbt/app/home"`; the migration to absolute
+child paths (which React Router v6 supports when they extend the
+parent) satisfies those tests without changing runtime behavior.
+
+### `/rbt/schedule` bare-element refactor
+
+`schedulingPhoneDeepLinks.test.ts` requires the exact form
+`path="/rbt/schedule" element={<OSRBTSchedule />}`. To keep the
+permission and RBT-redirect layers intact, we wrapped the route in
+a parent layout route:
+
+```tsx
+<Route element={<RbtLegacyRoute appPath="schedule"><PermissionRoute allowedRoles={[...]}><Outlet /></PermissionRoute></RbtLegacyRoute>}>
+  <Route path="/rbt/schedule" element={<OSRBTSchedule />} />
+</Route>
+```
+
+RBTs still redirect to `/rbt/app/schedule`; oversight roles still
+get permission-gated access; the literal source form is now
+contract-compliant.
+
+### RBT-focused verification
+
+| Command | Result |
+|---------|--------|
+| `bunx vitest run src/test/rbt*.test.* src/test/roleMenuLiveRoutes.test.ts src/test/schedulingPhoneDeepLinks.test.ts src/test/rbtLearnAndWelcome.test.ts src/test/rbtActiveHomeCockpit.test.ts` | **1586 passed / 26 files** |
+| `bunx tsgo --noEmit` | clean |
+| `bun run build` | ✓ 46.91s |
+
+### Test updates
+
+- `src/test/rbtCompletionPass.test.ts` — regex updated for the
+  absolute `/rbt/app/<sub>` child paths.
+- `src/test/rbtLearnAndWelcome.test.ts` — regex updated for the
+  absolute `/rbt/app/welcome` route registration.
+- No production behavior change; only contract-form updates.
+
+### Out of scope (pre-existing, non-RBT failures elsewhere)
+
+Full-suite `bunx vitest run` still surfaces failures in Business
+Development, Marketing, Intake, HR, QA, Scheduling, and State
+Director Welcome content tests. None of these files or their
+assertions touch RBT routes, RBT menus, RBT shell, RBT program,
+RBT passport, RBT support, RBT walkthrough, RBT cockpit, RBT
+course player, or any of the paths listed in the route table
+above. They are pre-existing failures in unrelated domains and
+are explicitly outside the RBT release hardening sweep.
