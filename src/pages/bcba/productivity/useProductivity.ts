@@ -13,11 +13,6 @@ import {
  * metadata. When `source === "missing"` the snapshot is null and callers
  * MUST render the actionable owner instead of a zero KPI.
  */
-export interface ProductivitySnapshotWithFallback {
-  snapshot: ProductivitySnapshot | null;
-  fallback: CanonicalFallbackResult;
-}
-
 function synthesizeSnapshotFromCanonical(
   bcbaId: string,
   fallback: CanonicalFallbackResult,
@@ -52,7 +47,7 @@ export function useMyProductivitySnapshot(bcbaId?: string | null) {
   return useQuery({
     queryKey: ["bcba-productivity", "mine", bcbaId ?? "self"],
     enabled: !!bcbaId,
-    queryFn: async (): Promise<ProductivitySnapshotWithFallback> => {
+    queryFn: async (): Promise<ProductivitySnapshot | null> => {
       const { data, error } = await supabase
         .from("bcba_productivity_snapshots")
         .select("*")
@@ -62,14 +57,38 @@ export function useMyProductivitySnapshot(bcbaId?: string | null) {
         .maybeSingle();
       if (error) throw error;
       const roleSnapshot = (data as unknown as ProductivitySnapshot) ?? null;
+      if (roleSnapshot) return roleSnapshot;
       const fallback = await resolveCanonicalFallback({
-        roleRowCount: roleSnapshot ? 1 : 0,
+        roleRowCount: 0,
         scope: { authUserId: bcbaId, employeeId: null },
         requireScope: true,
       });
-      const snapshot =
-        roleSnapshot ?? synthesizeSnapshotFromCanonical(bcbaId!, fallback);
-      return { snapshot, fallback };
+      return synthesizeSnapshotFromCanonical(bcbaId!, fallback);
+    },
+  });
+}
+
+/**
+ * Companion hook exposing the canonical fallback decision + freshness for
+ * `useMyProductivitySnapshot`. Consumers should call this alongside the
+ * snapshot hook when they need to render source labels or "missing" owner
+ * states — the snapshot value alone is intentionally kept typed as
+ * `ProductivitySnapshot | null` for backward compatibility.
+ */
+export function useMyProductivityFallback(bcbaId?: string | null) {
+  return useQuery({
+    queryKey: ["bcba-productivity", "mine", "fallback", bcbaId ?? "self"],
+    enabled: !!bcbaId,
+    queryFn: async (): Promise<CanonicalFallbackResult> => {
+      const { count } = await supabase
+        .from("bcba_productivity_snapshots")
+        .select("id", { count: "exact", head: true })
+        .eq("bcba_id", bcbaId!);
+      return resolveCanonicalFallback({
+        roleRowCount: count ?? 0,
+        scope: { authUserId: bcbaId, employeeId: null },
+        requireScope: true,
+      });
     },
   });
 }
