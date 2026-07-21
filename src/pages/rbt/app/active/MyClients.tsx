@@ -117,10 +117,30 @@ export default function MyClients() {
                     <AlertTriangle className="h-3.5 w-3.5" /> {openIssues} open discrepancy report{openIssues === 1 ? "" : "s"}
                   </p>
                 )}
-                <a href={crClientUrl(c.centralreach_client_id)} target="_blank" rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-1 text-xs rounded-full bg-muted px-3 py-1.5 hover:bg-muted/70">
-                  <ExternalLink className="h-3.5 w-3.5" /> Open in CentralReach
-                </a>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {/* Phase 1b: prefer the internal canonical detail. The
+                      resolver alias handles both real UUIDs (from
+                      rbt_client_assignments) and raw CR ids (from the
+                      canonical fallback) without the RBT needing to know
+                      which system owns the record. */}
+                  {c.client_id && !String(c.client_id).startsWith("canon:") && (
+                    <a
+                      href={
+                        /^[0-9a-f-]{36}$/i.test(String(c.client_id))
+                          ? `/clients/${c.client_id}`
+                          : `/clients/cr/${encodeURIComponent(String(c.client_id))}`
+                      }
+                      className="inline-flex items-center gap-1 text-xs rounded-full bg-primary/10 text-primary px-3 py-1.5 hover:bg-primary/20"
+                      data-testid="rbt-open-client-blossom"
+                    >
+                      Open in Blossom
+                    </a>
+                  )}
+                  <a href={crClientUrl(c.centralreach_client_id)} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs rounded-full bg-muted px-3 py-1.5 hover:bg-muted/70">
+                    <ExternalLink className="h-3.5 w-3.5" /> Open in CentralReach
+                  </a>
+                </div>
               </li>
             );
           })}
