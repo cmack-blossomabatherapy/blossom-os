@@ -1028,7 +1028,7 @@ export default function CancellationCommandCenter() {
             sourceMode={sourceModeByKind["cancellation-scheduling"]}
             adminUploadsHref="/system/cancellation-uploads"
             onReload={() => loadSharedKind("cancellation-scheduling", false)}
-            onResetToShared={() => { resetSchedule(); loadSharedKind("cancellation-scheduling", false); }}
+            onResetToShared={() => { setScheduleRaws([]); setScheduleFileName(""); loadSharedKind("cancellation-scheduling", false); }}
             required
           />
           <SharedDatasetStatusPanel
@@ -1038,7 +1038,7 @@ export default function CancellationCommandCenter() {
             sourceMode={sourceModeByKind["cancellation-billing"]}
             adminUploadsHref="/system/cancellation-uploads"
             onReload={() => loadSharedKind("cancellation-billing", false)}
-            onResetToShared={() => { resetBilling(); loadSharedKind("cancellation-billing", false); }}
+            onResetToShared={() => { setBillingRaws([]); setBillingFileName(""); loadSharedKind("cancellation-billing", false); }}
           />
           <SharedDatasetStatusPanel
             title="Cancellation — Authorization (optional)"
@@ -1047,7 +1047,7 @@ export default function CancellationCommandCenter() {
             sourceMode={sourceModeByKind["cancellation-authorization"]}
             adminUploadsHref="/system/cancellation-uploads"
             onReload={() => loadSharedKind("cancellation-authorization", false)}
-            onResetToShared={() => { resetAuths(); loadSharedKind("cancellation-authorization", false); }}
+            onResetToShared={() => { setAuthRecords([]); setAuthFileNames([]); loadSharedKind("cancellation-authorization", false); }}
           />
         </div>
 
