@@ -188,6 +188,26 @@ Deno.serve(async (req) => {
           normalizationError = up.error ?? "normalize_failed";
         } else {
           processingStatus = "normalized";
+          // Post-normalization: promote provider-neutral inbound lead-shaped
+          // records into Lead Captured via the shared RPC. Only eligible
+          // kinds are promoted; non-lead events (assessment_completed,
+          // benefits_returned, etc.) never mint a lead.
+          const eligible = new Set([
+            "lead", "inquiry", "form_submission", "inbound_call", "call",
+          ]);
+          if (up.id && eligible.has(norm.record.recordKind)) {
+            const { data: prom, error: promErr } = await supabase
+              .rpc("promote_normalized_record", { _record_id: up.id });
+            if (promErr) {
+              // Do not lose the normalized record on promotion errors —
+              // surface via processing_status so ops can retry.
+              processingStatus = "promotion_error";
+              normalizationError = promErr.message;
+            } else if (Array.isArray(prom) && prom.length) {
+              const row = prom[0] as { state?: string };
+              processingStatus = `promoted:${row.state ?? "unknown"}`;
+            }
+          }
         }
       } else {
         processingStatus = "normalized_unknown";

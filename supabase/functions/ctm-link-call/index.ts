@@ -1,23 +1,15 @@
 // Re-links a CTM call event to the matching intake lead, client, employee,
 // and dial-intent (agent). Idempotent — safe to invoke multiple times.
+// INGEST_ONLY-safe: never creates intake_communications or intake_tasks;
+// lead creation/linking is delegated to the shared normalizer/linker
+// (external-id first, then unique E.164, ambiguous => review queue).
 // Callable from ctm-webhook (fire-and-forget) or admin backfill.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { normalizePhoneE164, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-function digitsOnly(v: string | null | undefined): string {
-  if (!v) return "";
-  return String(v).replace(/[^\d]/g, "");
-}
-function variants(v: string | null | undefined): string[] {
-  const d = digitsOnly(v);
-  if (d.length < 10) return [];
-  const bare = d.length === 11 && d.startsWith("1") ? d.slice(1) : d;
-  const e164 = `+1${bare}`;
-  return Array.from(new Set([e164, bare, `1${bare}`, `+${bare}`]));
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -28,7 +20,7 @@ Deno.serve(async (req) => {
 
   let query = supabase
     .from("ctm_call_events")
-    .select("id,ctm_call_id,direction,from_number,to_number,called_at,matched_lead_id,matched_client_id,matched_employee_id,matched_agent_user_id,intake_lead_id,status");
+    .select("id,ctm_call_id,ctm_account_id,direction,from_number,to_number,tracking_number,caller_name,called_at,matched_lead_id,matched_client_id,matched_employee_id,matched_agent_user_id,intake_lead_id,status,source_name,resolved_state");
   if (body.call_event_id) query = query.eq("id", body.call_event_id);
   else if (body.ctm_call_id) query = query.eq("ctm_call_id", body.ctm_call_id);
   else query = query.is("linked_at", null).order("called_at", { ascending: false, nullsFirst: false }).limit(body.limit ?? 100);
@@ -42,34 +34,54 @@ Deno.serve(async (req) => {
   }
 
   let linked = 0;
-  let missedTasks = 0;
+  let ambiguous = 0;
+  let incomplete = 0;
   for (const ev of events ?? []) {
     const isOutbound = ev.direction?.toLowerCase().startsWith("out");
     const externalNumber = isOutbound ? ev.to_number : ev.from_number;
-    const nums = variants(externalNumber);
-    if (nums.length === 0) continue;
+    const phone = normalizePhoneE164(externalNumber);
 
     const update: Record<string, unknown> = { linked_at: new Date().toISOString() };
 
-    if (!ev.matched_lead_id) {
-      const or = nums.flatMap((n) => [`phone.eq.${n}`, `parent_cell_phone.eq.${n}`, `home_phone.eq.${n}`]).join(",");
-      const { data: lead } = await supabase.from("intake_leads").select("id").or(or).limit(1).maybeSingle();
-      if (lead?.id) update.matched_lead_id = lead.id;
+    // Delegate lead resolution to the shared linker (external-id first,
+    // then unique E.164 phone; ambiguous => review queue). Only run for
+    // inbound calls — outbound calls are placed by employees.
+    if (!ev.matched_lead_id && !isOutbound && phone) {
+      const outcome = await linkOrCreateLeadForCall(supabase as any, {
+        ctm_call_id: ev.ctm_call_id,
+        ctm_account_id: ev.ctm_account_id ?? null,
+        direction: ev.direction ?? null,
+        status: ev.status ?? null,
+        from_number: ev.from_number ?? null,
+        to_number: ev.to_number ?? null,
+        tracking_number: ev.tracking_number ?? null,
+        caller_name: ev.caller_name ?? null,
+        caller_city: null, caller_state: null, caller_zip: null,
+        duration_seconds: null, talk_time_seconds: null,
+        recording_url: null, transcript: null,
+        tags: [], source_name: ev.source_name ?? null, campaign_name: null,
+        called_at: ev.called_at ?? null, ended_at: null, raw: {},
+      }, { resolvedState: ev.resolved_state ?? null });
+      if (outcome.state === "ambiguous_review") ambiguous++;
+      else if (outcome.state === "incomplete_review") incomplete++;
+      else if (outcome.lead_id) update.matched_lead_id = outcome.lead_id;
     }
 
-    if (!ev.matched_client_id) {
+    const nums = phone ? [phone] : [];
+
+    if (!ev.matched_client_id && nums.length) {
       const or = nums.map((n) => `phone.eq.${n}`).join(",");
       const { data: client } = await supabase.from("clients").select("id").or(or).limit(1).maybeSingle();
       if (client?.id) update.matched_client_id = client.id;
     }
 
-    if (!ev.matched_employee_id) {
+    if (!ev.matched_employee_id && nums.length) {
       const or = nums.map((n) => `phone.eq.${n}`).join(",");
       const { data: emp } = await supabase.from("employees").select("id,user_id").or(or).limit(1).maybeSingle();
       if (emp?.id) update.matched_employee_id = emp.id;
     }
 
-    if (isOutbound && !ev.matched_agent_user_id) {
+    if (isOutbound && !ev.matched_agent_user_id && nums.length) {
       const windowStart = ev.called_at ? new Date(new Date(ev.called_at).getTime() - 120_000).toISOString() : null;
       const windowEnd = ev.called_at ? new Date(new Date(ev.called_at).getTime() + 60_000).toISOString() : null;
       let dq = supabase
@@ -88,41 +100,21 @@ Deno.serve(async (req) => {
     }
 
     await supabase.from("ctm_call_events").update(update).eq("id", ev.id);
-
-    const leadId = (update.matched_lead_id as string | undefined) ?? ev.matched_lead_id ?? ev.intake_lead_id;
-    if (leadId) {
-      const { data: exists } = await supabase
-        .from("intake_communications")
-        .select("id").eq("lead_id", leadId).ilike("preview", `%CTM:${ev.ctm_call_id}%`).limit(1).maybeSingle();
-      if (!exists) {
-        await supabase.from("intake_communications").insert({
-          lead_id: leadId,
-          communication_type: "phone",
-          direction: ev.direction ?? "inbound",
-          subject: `CTM call ${isOutbound ? "→" : "←"} ${externalNumber ?? ""}`,
-          preview: `Status: ${ev.status ?? "unknown"} · CTM:${ev.ctm_call_id}`,
-        });
-      }
-
-      const missed = ev.status?.toLowerCase().includes("miss") || ev.status?.toLowerCase().includes("voicemail");
-      if (missed) {
-        const { data: taskExists } = await supabase
-          .from("intake_tasks").select("id").eq("lead_id", leadId).ilike("title", `%CTM:${ev.ctm_call_id}%`).limit(1).maybeSingle();
-        if (!taskExists) {
-          await supabase.from("intake_tasks").insert({
-            lead_id: leadId,
-            title: `Return missed call · CTM:${ev.ctm_call_id}`,
-            status: "Open",
-          });
-          missedTasks++;
-        }
-      }
-    }
+    // INGEST_ONLY: no intake_communications / intake_tasks writes here.
+    // Provenance is captured by the shared linker via
+    // intake_lead_source_events; missed-call follow-ups are surfaced in
+    // the Review Queues UI, not auto-created here.
 
     linked++;
   }
 
-  return new Response(JSON.stringify({ ok: true, processed: events?.length ?? 0, linked, missed_tasks: missedTasks }), {
+  return new Response(JSON.stringify({
+    ok: true,
+    processed: events?.length ?? 0,
+    linked,
+    ambiguous,
+    incomplete,
+  }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

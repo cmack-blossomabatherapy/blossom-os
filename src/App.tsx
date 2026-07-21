@@ -54,6 +54,8 @@ import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
 import MissingInformation from "./pages/os/intake/MissingInformation";
 import CentralReachPacketPrep from "./pages/os/intake/CentralReachPacketPrep";
 import ParentCommunication from "./pages/os/intake/ParentCommunication";
+import LeadToActivePipeline from "./pages/os/intake/LeadToActivePipeline";
+import IntakePromotionReviewQueues from "./pages/os/intake/IntakePromotionReviewQueues";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
@@ -1199,7 +1201,8 @@ const App = () => (
                     }
                   />
                   <Route path="/intake/dashboard" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><IntakeWorkspaceLanding /></PermissionRoute>} />
-                  <Route path="/intake/lead-to-active" element={<Navigate to="/leads?view=pipeline" replace />} />
+                  <Route path="/intake/lead-to-active" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><LeadToActivePipeline /></PermissionRoute>} />
+                  <Route path="/intake/review-queues" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "operations_leadership"]}><IntakePromotionReviewQueues /></PermissionRoute>} />
                   <Route path="/intake/referral-queue" element={<Navigate to="/intake/dashboard" replace />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
                   <Route path="/intake/benefits-cheat-sheets" element={<LeadBenefitsCheatSheets />} />
