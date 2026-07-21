@@ -5,11 +5,13 @@ import { FreshnessPill, freshness } from "./freshness";
 import { crClientUrl } from "./cr";
 import { ExternalLink, AlertTriangle } from "lucide-react";
 import { useRbtIdentity } from "../useRbtIdentity";
+import { deriveMyClientsFromCanonical } from "@/lib/os/reporting/canonicalRoleBridge";
 
 export default function MyClients() {
   const { employeeId, loading: idLoading } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
   const [alerts, setAlerts] = useState<Record<string, any[]>>({});
+  const [sourceLabel, setSourceLabel] = useState<"role" | "canonical" | null>(null);
 
   useEffect(() => {
     if (idLoading) return;
@@ -19,7 +21,35 @@ export default function MyClients() {
       .eq("rbt_employee_id", employeeId)
       .eq("status", "active")
       .order("client_name")
-      .then(({ data }) => setRows((data as any[]) ?? []));
+      .then(async ({ data }) => {
+        const roleRows = (data as any[]) ?? [];
+        if (roleRows.length > 0) {
+          setRows(roleRows);
+          setSourceLabel("role");
+          return;
+        }
+        // Canonical fallback — derive distinct clients this RBT served from
+        // v_cr_canonical_sessions. Scheduled fields are declared unavailable
+        // rather than fabricated.
+        const canon = await deriveMyClientsFromCanonical({ employeeId });
+        setRows(
+          canon.map((c) => ({
+            id: `canon:${c.crClientId}`,
+            client_id: c.crClientId,
+            client_name: c.clientName,
+            clinic: null,
+            assigned_bcba_id: null,
+            schedule_summary: null, // unavailable_from_canonical
+            centralreach_client_id: c.crClientId,
+            centralreach_last_synced_at: c.lastServiceDate,
+            status: "active",
+            __canonical: true,
+            __hours: c.totalHours,
+            __rowCount: c.rowCount,
+          })),
+        );
+        setSourceLabel(canon.length > 0 ? "canonical" : null);
+      });
 
     // operational alerts scoped to this RBT's clients
     supabase.from("rbt_shift_discrepancies" as any)
@@ -42,6 +72,11 @@ export default function MyClients() {
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground px-1">
         Showing only your active assigned clients. Full clinical information stays in CentralReach.
+        {sourceLabel === "canonical" && (
+          <span className="ml-1 text-amber-700 dark:text-amber-400">
+            Derived from CentralReach billing export — weekly schedule &amp; BCBA assignment aren&apos;t in this export.
+          </span>
+        )}
       </p>
       <CardFrame title="My clients" state={state} emptyLabel="You have no active client assignments right now.">
         <ul className="space-y-2">
@@ -54,7 +89,7 @@ export default function MyClients() {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{c.client_name ?? "Client"}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {c.clinic ?? "Location TBD"}
+                      {c.clinic ?? (c.__canonical ? "Location not in export" : "Location TBD")}
                     </p>
                   </div>
                   <FreshnessPill f={fresh} />
@@ -62,11 +97,19 @@ export default function MyClients() {
                 <dl className="grid grid-cols-2 gap-2 mt-3 text-sm">
                   <div>
                     <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">BCBA</dt>
-                    <dd className="text-sm truncate">{c.assigned_bcba_id ? "Assigned" : "—"}</dd>
+                    <dd className="text-sm truncate">
+                      {c.assigned_bcba_id ? "Assigned" : c.__canonical ? "Not in export" : "—"}
+                    </dd>
                   </div>
                   <div>
-                    <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">Weekly schedule</dt>
-                    <dd className="text-sm truncate">{c.schedule_summary ?? "See CentralReach"}</dd>
+                    <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      {c.__canonical ? "Delivered hours (all time)" : "Weekly schedule"}
+                    </dt>
+                    <dd className="text-sm truncate">
+                      {c.__canonical
+                        ? `${(c.__hours ?? 0).toFixed(1)}h · ${c.__rowCount} rows`
+                        : (c.schedule_summary ?? "See CentralReach")}
+                    </dd>
                   </div>
                 </dl>
                 {openIssues > 0 && (

@@ -6,6 +6,7 @@ import type {
   UtilizationRisk,
   CancellationPattern,
 } from "./pipeline";
+import { derivePtRecordsFromCanonical } from "@/lib/os/reporting/canonicalRoleBridge";
 
 export interface ParentTrainingRecord {
   id: string;
@@ -31,6 +32,9 @@ export interface ParentTrainingRecord {
   last_sync_at: string | null;
   created_at: string;
   updated_at: string;
+  /** "role" (bcba_parent_training_records) or "canonical" (derived from v_cr_canonical_sessions 97156 rows). */
+  source?: "role" | "canonical";
+  unavailable_from_canonical?: readonly string[];
 }
 
 export interface SupportRequest {
@@ -108,7 +112,47 @@ export function useParentTrainingRecords(opts?: { onlyMine?: boolean; scopedAuth
       }
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as ParentTrainingRecord[];
+      const roleRows = (data ?? []) as ParentTrainingRecord[];
+      if (roleRows.length > 0) return roleRows.map((r) => ({ ...r, source: "role" }));
+
+      // Canonical fallback — synthesize one PT record per client with 97156
+      // hours in the export. `onlyMine` provides the BCBA scope; without a
+      // uid we return [] rather than showing another BCBA's data.
+      let uid = scoped;
+      if (!uid) {
+        const { data: u } = await supabase.auth.getUser();
+        uid = u?.user?.id ?? null;
+      }
+      if (!uid) return [];
+      const canon = await derivePtRecordsFromCanonical({ authUserId: uid });
+      const now = new Date().toISOString();
+      return canon.map<ParentTrainingRecord>((c) => ({
+        id: c.syntheticId,
+        client_id: c.crClientId || null,
+        client_identifier: c.clientIdentifier,
+        assigned_bcba_id: uid,
+        assigned_bcba_name: null,
+        payer: null,
+        state: null,
+        required_frequency: "monthly",
+        required_per_month: 0,
+        scheduled_sessions: 0,
+        completed_sessions: c.ptRowCount,
+        cancelled_sessions: 0,
+        reschedule_needed: false,
+        documentation_pending: false,
+        last_completed_date: c.lastPtServiceDate,
+        next_scheduled_date: null,
+        barrier: null,
+        status: (c.ptHours > 0 ? "on_track" : "not_started") as ParentTrainingStatus,
+        centralreach_url: null,
+        centralreach_source_date: c.lastPtServiceDate,
+        last_sync_at: c.lastPtServiceDate,
+        created_at: c.firstPtServiceDate ?? now,
+        updated_at: c.lastPtServiceDate ?? now,
+        source: "canonical",
+        unavailable_from_canonical: c.unavailableFromCanonical,
+      }));
     },
   });
 }

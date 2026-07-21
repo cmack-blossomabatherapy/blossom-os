@@ -165,12 +165,20 @@ export default function ActiveSchedule() {
       </CardFrame>
 
       {employeeId && rows !== null && rows.length === 0 && (
-        <CanonicalSessionsCard
-          title="Imported CentralReach sessions for you"
-          scope={{ employeeId }}
-          highlightKinds={["direct", "supervision"]}
-          showClients
-        />
+        <>
+          <div className="rounded-xl bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs p-3">
+            No scheduled sessions found in this range. What follows is your
+            <strong> delivered service history</strong> from the CentralReach billing
+            export. Scheduled start/end times, location, and live status
+            are not carried in this export — only what was billed.
+          </div>
+          <CanonicalSessionsCard
+            title="Delivered service history (from CentralReach billing export)"
+            scope={{ employeeId }}
+            highlightKinds={["direct", "supervision"]}
+            showClients
+          />
+        </>
       )}
     </div>
   );
