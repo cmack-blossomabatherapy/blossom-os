@@ -1,20 +1,30 @@
-import { useState } from "react";
-import { ChevronDown, Shield, MapPin, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Shield, MapPin, Eye, User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOSRole, OS_STATES } from "@/contexts/OSRoleContext";
 import { ROLE_PREVIEW_LIST } from "@/lib/os/roleMenus";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { displayNameFor } from "@/lib/os/clinicianIdentity";
 
 /** Demo control for switching the active OS role + state scope. */
 export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
-  const { role, scope, activeState, setRole, setActiveState } = useOSRole();
+  const {
+    role, scope, activeState, setRole, setActiveState,
+    previewSubjectEmployeeId, setPreviewSubjectEmployeeId, isPreviewing,
+  } = useOSRole();
   const { isAdmin, loading } = useAuth();
   const [open, setOpen] = useState(false);
+  const [subjectQuery, setSubjectQuery] = useState("");
+  const [subjectResults, setSubjectResults] = useState<Array<{ id: string; first_name: string|null; last_name: string|null; email: string|null; credential: string|null }>>([]);
+  const [subjectLabel, setSubjectLabel] = useState<string | null>(null);
   const current =
     ROLE_PREVIEW_LIST.find((r) => r.role === role) ?? ROLE_PREVIEW_LIST[0];
 
   // Only super admins can impersonate other roles.
   if (loading || !isAdmin) return null;
+
+  const showPreviewPicker = role === "rbt" || role === "bcba";
 
   return (
     <div className="relative">
