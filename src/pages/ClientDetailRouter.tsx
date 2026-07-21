@@ -183,7 +183,7 @@ export default function ClientDetailRouter() {
           </div>
         </div>
         {row.active_service_status && (
-          <StatusBadge status={row.active_service_status} variant="active" />
+          <StatusBadge status={row.active_service_status} variant="success" />
         )}
       </div>
 
