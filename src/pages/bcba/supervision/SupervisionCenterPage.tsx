@@ -6,6 +6,7 @@ import { Loader2, ShieldCheck, ClipboardList, Search, ExternalLink, AlertTriangl
 import { useSupervisionMonth, type SupervisionRow } from "./useSupervisionMonth";
 import { useBcbaIdentity } from "../useBcbaIdentity";
 import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 import { STATUS_LABELS, STATUS_STYLES } from "./supervisionLogic";
 import { PostSupervisionDialog } from "./PostSupervisionDialog";
 import { SupervisionBriefDrawer } from "./SupervisionBriefDrawer";
@@ -70,6 +71,16 @@ export default function SupervisionCenterPage() {
       </div>
 
       <BcbaMappingDiagnostic onRetry={() => refetch()} />
+
+      <div className="my-4">
+        <CanonicalSessionsCard
+          title="Imported CentralReach supervision (97155) — my scope"
+          scope={{ authUserId: identity.scopedAuthUserId }}
+          roleRowCount={rows.length}
+          highlightKinds={["supervision"]}
+          showClients
+        />
+      </div>
 
       {(identity.loading || (isLoading && identity.scopedAuthUserId)) ? (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
