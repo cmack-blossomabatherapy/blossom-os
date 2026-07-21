@@ -1,21 +1,22 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { FreshnessPill, freshness } from "./freshness";
 import { crClientUrl } from "./cr";
 import { ExternalLink, AlertTriangle } from "lucide-react";
+import { useRbtIdentity } from "../useRbtIdentity";
 
 export default function MyClients() {
-  const { user } = useAuth();
+  const { employeeId, loading: idLoading } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
   const [alerts, setAlerts] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
-    if (!user) return;
+    if (idLoading) return;
+    if (!employeeId) { setRows([]); setAlerts({}); return; }
     supabase.from("rbt_client_assignments" as any)
       .select("id,client_id,client_name,clinic,assigned_bcba_id,schedule_summary,centralreach_client_id,centralreach_last_synced_at,status")
-      .eq("rbt_employee_id", user.id)
+      .eq("rbt_employee_id", employeeId)
       .eq("status", "active")
       .order("client_name")
       .then(({ data }) => setRows((data as any[]) ?? []));
@@ -23,7 +24,7 @@ export default function MyClients() {
     // operational alerts scoped to this RBT's clients
     supabase.from("rbt_shift_discrepancies" as any)
       .select("id,shift_event_id,session_date,discrepancy_type,description,status")
-      .eq("employee_id", user.id)
+      .eq("employee_id", employeeId)
       .eq("status", "open")
       .then(({ data }) => {
         const grouped: Record<string, any[]> = {};
@@ -33,7 +34,7 @@ export default function MyClients() {
         });
         setAlerts(grouped);
       });
-  }, [user?.id]);
+  }, [employeeId, idLoading]);
 
   const state = rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
 
