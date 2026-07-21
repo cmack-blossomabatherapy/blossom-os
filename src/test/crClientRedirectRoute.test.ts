@@ -13,4 +13,8 @@ describe("Phase 1a P0-1 — CR client redirect route", () => {
   it("keeps the canonical /clients route intact", () => {
     expect(appSrc).toMatch(/path="\/clients"\s+element=\{<ClientsRouter/);
   });
+
+  it("registers /clients/:id → ClientDetailRouter for Phase 1b", () => {
+    expect(appSrc).toMatch(/path="\/clients\/:id"\s+element=\{<ClientDetailRouter/);
+  });
 });

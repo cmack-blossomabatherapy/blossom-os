@@ -206,6 +206,20 @@ export function CaseDetailDrawer({
   if (!row) return null;
   const h = row.health;
 
+  // Wire the drawer to Phase 1b's canonical resolver. If the caseload row was
+  // built from `rbt_client_assignments`, `clientId` is already the internal
+  // `public.clients.id` UUID and we can jump straight there. Rows derived
+  // from `v_cr_canonical_sessions` carry the raw CR client id — the alias
+  // `/clients/cr/:crId` resolves it. Rows with no mapping (`canon:` prefix)
+  // are left without a link so we never send the BCBA to an unresolved page.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const fullDetailHref = (() => {
+    const rawId = row.clientId ?? "";
+    if (!rawId || rawId.startsWith("canon:")) return null;
+    if (UUID_RE.test(rawId)) return `/clients/${rawId}`;
+    return `/clients/cr/${encodeURIComponent(rawId)}`;
+  })();
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
@@ -224,6 +238,15 @@ export function CaseDetailDrawer({
               </Badge>
             ))}
           </div>
+          {fullDetailHref && (
+            <a
+              href={fullDetailHref}
+              className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              data-testid="caseload-open-full-detail"
+            >
+              Open full client record →
+            </a>
+          )}
         </SheetHeader>
 
         <div className="pt-4">
