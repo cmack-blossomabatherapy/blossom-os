@@ -3,6 +3,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import BcbaMobileShell from "./BcbaMobileShell";
 import { OSRoleProvider } from "@/contexts/OSRoleContext";
 import { OSShell } from "@/pages/os/OSShell";
+import { BcbaPreviewBanner } from "./BcbaPreviewBanner";
 
 /**
  * Responsive shell for /bcba/*.
@@ -17,12 +18,17 @@ export default function BcbaShell() {
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    return <BcbaMobileShell />;
+    return (
+      <OSRoleProvider>
+        <BcbaMobileShell />
+      </OSRoleProvider>
+    );
   }
 
   return (
     <OSRoleProvider>
       <OSShell>
+        <BcbaPreviewBanner />
         <Outlet />
       </OSShell>
     </OSRoleProvider>
