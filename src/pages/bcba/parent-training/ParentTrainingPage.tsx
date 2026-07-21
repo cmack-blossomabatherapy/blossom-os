@@ -58,6 +58,7 @@ export default function ParentTrainingPage() {
         <CanonicalSessionsCard
           title="Imported CentralReach parent training (97156) — my scope"
           scope={{ authUserId: identity.scopedAuthUserId }}
+          roleRowCount={0}
           highlightKinds={["parent_training"]}
           showClients
         />

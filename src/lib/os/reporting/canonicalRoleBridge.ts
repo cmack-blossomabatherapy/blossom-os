@@ -389,3 +389,159 @@ export function assertNoCrossProviderLeakage(
     return !(empOk && authOk);
   });
 }
+
+/* -------------------------------------------------------------------------- */
+/* RBT worked-hours snapshot — synthesized from delivered canonical rows       */
+/* -------------------------------------------------------------------------- */
+
+export interface CanonicalDailyHours {
+  direct: number;
+  supervision: number;
+  parent_training: number;
+  assessment: number;
+  cancellation: number;
+  other: number;
+}
+
+export interface CanonicalHoursSnapshot {
+  periodStart: string;
+  periodEnd: string;
+  /** Not carried by the billing export — always null; surfaces must label. */
+  scheduledHours: null;
+  completedHours: number;
+  cancelledHours: number;
+  importedHours: number;
+  lastImportAt: string | null;
+  source: CanonicalOriginSource;
+  unavailableFromCanonical: readonly string[];
+  byDate: Record<string, CanonicalDailyHours>;
+  distinctClients: number;
+  rowCount: number;
+  windowLabel: "month_to_date";
+}
+
+function isoDateOnly(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Derive an hours snapshot for the current calendar month from canonical
+ * delivered-service rows. Returns null when the scope is unmapped or the
+ * canonical view has nothing for the subject in the window — never fabricates.
+ *
+ * The billing export does NOT carry scheduled times or pay-period boundaries;
+ * `scheduledHours` is always null and the window is labelled `month_to_date`
+ * so surfaces do not misrepresent this as a payroll-accurate pay period.
+ */
+export async function deriveHoursSnapshotFromCanonical(
+  scope: CanonicalScope,
+  window?: { start?: string; end?: string },
+): Promise<CanonicalHoursSnapshot | null> {
+  if (!requireMapped(scope)) return null;
+  const now = new Date();
+  const start = window?.start ?? isoDateOnly(new Date(now.getFullYear(), now.getMonth(), 1));
+  const end = window?.end ?? isoDateOnly(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  let rows: CanonicalSessionRow[];
+  try {
+    rows = await fetchCanonicalSessionRows({ ...scope, start, end, limit: 5000 });
+  } catch {
+    return null;
+  }
+  if (rows.length === 0) return null;
+  const byDate: Record<string, CanonicalDailyHours> = {};
+  const clients = new Set<string>();
+  let completed = 0;
+  let cancelled = 0;
+  let lastImport = "";
+  for (const r of rows) {
+    const d = r.serviceDate ?? "unknown";
+    const bucket =
+      byDate[d] ??
+      { direct: 0, supervision: 0, parent_training: 0, assessment: 0, cancellation: 0, other: 0 };
+    if (r.sessionKind === "direct") bucket.direct += r.hours;
+    else if (r.sessionKind === "supervision") bucket.supervision += r.hours;
+    else if (r.sessionKind === "parent_training") bucket.parent_training += r.hours;
+    else if (r.sessionKind === "assessment") bucket.assessment += r.hours;
+    else if (r.sessionKind === "cancellation") bucket.cancellation += r.hours;
+    else bucket.other += r.hours;
+    if (r.sessionKind === "cancellation") cancelled += r.hours;
+    else completed += r.hours;
+    if (r.crClientId) clients.add(r.crClientId);
+    if (r.batchUploadedAt && r.batchUploadedAt > lastImport) lastImport = r.batchUploadedAt;
+    byDate[d] = bucket;
+  }
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return {
+    periodStart: start,
+    periodEnd: end,
+    scheduledHours: null,
+    completedHours: round(completed),
+    cancelledHours: round(cancelled),
+    importedHours: round(completed),
+    lastImportAt: lastImport || null,
+    source: "canonical",
+    unavailableFromCanonical: [
+      ...CANONICAL_UNAVAILABLE_FIELDS,
+      "scheduled_hours",
+      "pay_period_boundaries",
+    ],
+    byDate,
+    distinctClients: clients.size,
+    rowCount: rows.length,
+    windowLabel: "month_to_date",
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* RBT performance totals — derived only, no attendance denominators           */
+/* -------------------------------------------------------------------------- */
+
+export interface CanonicalPerformanceTotals {
+  totalHours: number;
+  directHours: number;
+  supervisionHours: number;
+  parentTrainingHours: number;
+  cancellationHours: number;
+  distinctClients: number;
+  rowCount: number;
+  firstServiceDate: string | null;
+  lastServiceDate: string | null;
+  source: CanonicalOriginSource;
+  /**
+   * Attendance % and productivity-target % have no denominator in the billing
+   * export (no scheduled sessions). Callers must render these as
+   * "not available from CentralReach billing export".
+   */
+  unavailableFromCanonical: readonly string[];
+}
+
+export async function derivePerformanceTotalsFromCanonical(
+  scope: CanonicalScope,
+): Promise<CanonicalPerformanceTotals | null> {
+  if (!requireMapped(scope)) return null;
+  try {
+    const rows = await fetchCanonicalProviderSummary(scope);
+    if (rows.length === 0) return null;
+    const t = summarizeProviderRows(rows);
+    return {
+      totalHours: t.totalHours,
+      directHours: t.directHours,
+      supervisionHours: t.supervisionHours,
+      parentTrainingHours: t.parentTrainingHours,
+      cancellationHours: t.cancellationHours,
+      distinctClients: t.distinctClients,
+      rowCount: t.rowCount,
+      firstServiceDate: t.minServiceDate,
+      lastServiceDate: t.maxServiceDate,
+      source: "canonical",
+      unavailableFromCanonical: [
+        ...CANONICAL_UNAVAILABLE_FIELDS,
+        "scheduled_sessions",
+        "attendance_denominator",
+        "productivity_target",
+      ],
+    };
+  } catch {
+    return null;
+  }
+}

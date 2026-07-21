@@ -3,11 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { FreshnessPill, freshness } from "./freshness";
 import { useRbtIdentity } from "../useRbtIdentity";
-import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
+import {
+  deriveHoursSnapshotFromCanonical,
+  type CanonicalHoursSnapshot,
+} from "@/lib/os/reporting/canonicalRoleBridge";
 
 export default function Hours() {
   const { employeeId, writableEmployeeId, loading: idLoading, isPreviewing } = useRbtIdentity();
   const [snap, setSnap] = useState<any | null | undefined>(undefined);
+  const [canonicalSnap, setCanonicalSnap] = useState<CanonicalHoursSnapshot | null>(null);
   const [issues, setIssues] = useState<any[] | null>(null);
   const [form, setForm] = useState({ issue_type: "missing_hours", expected: "", reported: "", description: "" });
   const [sent, setSent] = useState(false);
@@ -21,7 +25,17 @@ export default function Hours() {
       .eq("employee_id", employeeId)
       .order("period_end", { ascending: false })
       .limit(1)
-      .then(({ data }) => setSnap((data as any[])?.[0] ?? null));
+      .then(async ({ data }) => {
+        const row = (data as any[])?.[0] ?? null;
+        setSnap(row);
+        if (!row) {
+          // Role table has no snapshot — fold in canonical delivered rows.
+          const canon = await deriveHoursSnapshotFromCanonical({ employeeId });
+          setCanonicalSnap(canon);
+        } else {
+          setCanonicalSnap(null);
+        }
+      });
     supabase.from("rbt_hours_issues" as any)
       .select("id,issue_type,description,status,created_at,resolution_note,resolved_at")
       .eq("employee_id", employeeId)
@@ -50,26 +64,44 @@ export default function Hours() {
     load();
   };
 
-  const discrepancy = snap
-    ? Math.abs((snap.completed_hours ?? 0) - (snap.imported_hours ?? 0)) > 0.25
+  const usingCanonical = snap === null && !!canonicalSnap;
+  const activeSnap = snap ?? (canonicalSnap
+    ? {
+        period_start: canonicalSnap.periodStart,
+        period_end: canonicalSnap.periodEnd,
+        scheduled_hours: null,
+        completed_hours: canonicalSnap.completedHours,
+        cancelled_hours: canonicalSnap.cancelledHours,
+        imported_hours: canonicalSnap.importedHours,
+        last_import_at: canonicalSnap.lastImportAt,
+        source: "canonical",
+      }
+    : null);
+  const discrepancy = activeSnap && !usingCanonical
+    ? Math.abs((activeSnap.completed_hours ?? 0) - (activeSnap.imported_hours ?? 0)) > 0.25
     : false;
-  const fresh = freshness(snap?.last_import_at, 72);
+  const fresh = freshness(activeSnap?.last_import_at, 72);
 
   return (
     <div className="space-y-3">
       <CardFrame
-        title="Current pay period"
-        subtitle={snap ? `${snap.period_start} → ${snap.period_end}` : undefined}
-        state={snap === undefined ? "loading" : snap === null ? "empty" : "success"}
+        title={usingCanonical ? "Month to date · from CentralReach billing" : "Current pay period"}
+        subtitle={activeSnap ? `${activeSnap.period_start} → ${activeSnap.period_end}` : undefined}
+        state={snap === undefined ? "loading" : activeSnap === null ? "empty" : "success"}
         emptyLabel="No hours have been imported yet."
       >
-        {snap && (
+        {activeSnap && (
           <>
             <div className="grid grid-cols-2 gap-3">
-              <Stat label="Scheduled" value={snap.scheduled_hours} />
-              <Stat label="Completed" value={snap.completed_hours} />
-              <Stat label="Cancelled" value={snap.cancelled_hours} tone="muted" />
-              <Stat label="Imported" value={snap.imported_hours} />
+              <Stat
+                label="Scheduled"
+                value={activeSnap.scheduled_hours}
+                unavailable={usingCanonical}
+                unavailableHint="Not in CentralReach billing export"
+              />
+              <Stat label="Completed" value={activeSnap.completed_hours} />
+              <Stat label="Cancelled" value={activeSnap.cancelled_hours} tone="muted" />
+              <Stat label="Imported" value={activeSnap.imported_hours} />
             </div>
             <div className="mt-3 flex items-center justify-between">
               <FreshnessPill f={fresh} />
@@ -79,6 +111,13 @@ export default function Hours() {
                 </span>
               )}
             </div>
+            {usingCanonical && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Source: v_cr_canonical_sessions · {canonicalSnap!.rowCount.toLocaleString()} rows ·
+                {" "}{canonicalSnap!.distinctClients} client{canonicalSnap!.distinctClients === 1 ? "" : "s"}.
+                Pay-period boundaries and scheduled hours aren't carried in the billing export.
+              </p>
+            )}
           </>
         )}
       </CardFrame>
@@ -134,25 +173,38 @@ export default function Hours() {
         </ul>
       </CardFrame>
 
-      {employeeId && snap === null && (
-        <CanonicalSessionsCard
-          title="CentralReach imported hours for you"
-          scope={{ employeeId }}
-          highlightKinds={["direct", "supervision", "cancellation"]}
-          showClients={false}
-        />
-      )}
     </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: "muted" }) {
+function Stat({
+  label,
+  value,
+  tone,
+  unavailable,
+  unavailableHint,
+}: {
+  label: string;
+  value: number | null | undefined;
+  tone?: "muted";
+  unavailable?: boolean;
+  unavailableHint?: string;
+}) {
   return (
     <div className="rounded-xl bg-muted/40 p-3">
       <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className={`text-xl font-semibold tabular-nums mt-0.5 ${tone === "muted" ? "text-muted-foreground" : ""}`}>
-        {(Number(value) || 0).toFixed(2)}
-      </p>
+      {unavailable ? (
+        <>
+          <p className="text-xl font-semibold tabular-nums mt-0.5 text-muted-foreground">—</p>
+          {unavailableHint && (
+            <p className="text-[10px] text-muted-foreground mt-0.5">{unavailableHint}</p>
+          )}
+        </>
+      ) : (
+        <p className={`text-xl font-semibold tabular-nums mt-0.5 ${tone === "muted" ? "text-muted-foreground" : ""}`}>
+          {(Number(value) || 0).toFixed(2)}
+        </p>
+      )}
     </div>
   );
 }
