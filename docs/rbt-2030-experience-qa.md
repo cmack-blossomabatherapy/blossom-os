@@ -210,3 +210,100 @@ BCBA Fellowship path. Replay controls on Home, Learn, and Me.
 - Coherent premium polish pass across Home / Learn / My Program /
   Welcome / Passport (Slice 4D).
 - Full QA matrix and manual regression checklist (Slice 5).
+
+---
+
+## Slice 4B — RBT Home cockpit
+
+### Scope
+Redesigned Active RBT Home (`src/pages/rbt/app/active/ActiveHome.tsx`)
+into a polished 2030 journey cockpit. Every card/button on Home
+either navigates to a real `/rbt/app/*` route or performs a real,
+safe read against Supabase — nothing decorative, nothing dead.
+
+### Cockpit sections
+1. **Hero** — personalized greeting, current path + stage pill,
+   percent-complete counter, and progress bar.
+2. **Next-best-action** — the *single* prominent primary CTA on
+   Home. Derived by `deriveCockpit()` from the current pathway
+   rows; navigates to `/rbt/app/program`, `/rbt/app/support`,
+   `/rbt/app/welcome`, or `/rbt/app/growth` depending on stage.
+3. **Milestone timeline** — horizontally scrolling row of clickable
+   milestone pills. Every pill routes to `/rbt/app/program` and is
+   labelled with `aria-label`; the current step gets the primary
+   ring.
+4. **Needs your attention** — real outstanding supervision /
+   session-confirmation items, each deep-linking to the correct
+   destination.
+5. **Today & Next session** — real `rbt_shift_events` data with
+   Open-Schedule links.
+6. **Confidence & help tiles** — 6-tile grid: Supervision, Get
+   Support, Credentials, My Clients, Performance, Academy. Support
+   tile shows open-request count.
+7. **Recognition + Growth** — real `rbt_performance_notes` with
+   "View performance" deep link.
+8. **Path to BCBA** — Fellowship CTA to `/rbt/app/growth/fellowship`.
+
+### Experience Lab behaviour
+- The cockpit reads pathway data via `useProgram`, which already
+  short-circuits Supabase and returns the synthesised projection
+  when `lab.active`.
+- `ActiveHome` additionally guards its own Supabase effects behind
+  `if (lab.active) { … return; }`, so previewing an admin never
+  triggers writes or leaks the admin's own live data into the
+  preview.
+- All 3 pathways × 4 presets = 12 lab combinations are covered by
+  the pure-logic test suite.
+
+### Placeholder removal
+- Rickroll YouTube link and `(919) 555-0100` fake phone removed
+  from `src/pages/rbt/app/preboarding/PreboardingHomeCards.tsx`;
+  replaced with a `/rbt/app/welcome` link and a real support email
+  contact.
+- No CentralReach / sync / source-health language anywhere in
+  the Home components (asserted by regex in the test suite).
+
+### Pure derivation module
+`src/lib/rbt/homeCockpit.ts`
+- `deriveCockpit(pathwayName, rows)` returns `{ stats, nextAction,
+  timeline }`. Pure, deterministic, no React/Supabase deps.
+- `COCKPIT_ROUTES` — canonical route table used by both the
+  component and its tests.
+
+### Accessibility & responsive
+- `aria-label`s on the milestone timeline and its pills.
+- `motion-reduce:transition-none` on the progress bar.
+- `grid gap-3 sm:grid-cols-2` layout on Today/Next and tile grid.
+- Every icon is `aria-hidden`; every interactive control is a
+  `<Link>` with a discoverable name.
+
+### Tests
+`src/test/rbtActiveHomeCockpit.test.ts` — 23 tests:
+- 12 lab-combination derivations (3 pathways × 4 presets).
+- Awaiting-setup / no-pathway derivation.
+- All `COCKPIT_ROUTES` are real `/rbt/app/*` paths.
+- `ActiveHome` uses `deriveCockpit` and the shared route table.
+- `ActiveHome` guards Supabase reads behind `lab.active`.
+- Exactly one primary next-best-action CTA on Home.
+- Fellowship CTA + route wired.
+- Milestone timeline has `aria-label`.
+- Responsive `sm:grid-cols-2` present.
+- `motion-reduce:transition-none` present.
+- No rickroll, fake 555-phones, `example.com`, CentralReach,
+  source-health, or `stale` copy in the Home components.
+- Preboarding cards no longer contain rickroll or fake phone.
+
+### Verification
+- `bunx vitest run src/test/rbtActiveHomeCockpit.test.ts`:
+  **23 passed**, 2.12s.
+- `bunx tsgo --noEmit`: clean.
+- Broader RBT suite: **844 passed** (6 pre-existing failures in
+  `roleMenuLiveRoutes.test.ts` / `schedulingPhoneDeepLinks.test.ts`
+  inspect `App.tsx` route literals unrelated to Home).
+
+### Not in scope for 4B (deferred)
+- Removal of placeholder / decorative copy outside Home
+  components (Slice 4C).
+- Full polish pass across Learn / My Program / Welcome /
+  Passport (Slice 4D).
+- Full QA matrix and manual regression checklist (Slice 5).
