@@ -8,6 +8,7 @@ import {
   requiredSupervisionMinutes, daysLeftInMonth,
   type SupervisionStatus, type EscalationLevel,
 } from "./supervisionLogic";
+import { deriveRbtServiceHoursMap } from "@/lib/os/reporting/canonicalRoleBridge";
 
 export interface SupervisionRow {
   rbtEmployeeId: string;
@@ -116,6 +117,24 @@ export function useSupervisionMonth(
         hoursMap.set(id, (hoursMap.get(id) ?? 0) + mins);
       }
 
+      // Canonical fallback — for any assigned RBT with ZERO minutes derived
+      // from rbt_sessions in this window, source direct-service hours from
+      // `v_cr_canonical_sessions` scoped to that RBT's employee id. Never
+      // fabricates: unmapped RBTs and RBTs with no canonical rows keep 0.
+      const rbtsWithoutHours = rbtIds.filter((id) => (hoursMap.get(id) ?? 0) === 0);
+      const canonicalHours = new Map<string, { hours: number; source: "canonical" }>();
+      if (rbtsWithoutHours.length > 0) {
+        const canonMap = await deriveRbtServiceHoursMap(rbtsWithoutHours, {
+          start: startDate,
+          end: endDate,
+        });
+        for (const [empId, v] of canonMap.entries()) {
+          const mins = Math.round(v.directHours * 60);
+          hoursMap.set(empId, mins);
+          canonicalHours.set(empId, { hours: v.directHours, source: "canonical" });
+        }
+      }
+
       // Supervision aggregates
       const supAgg = new Map<string, {
         minutes: number; individual: number; group: number; observation: boolean;
@@ -194,6 +213,7 @@ export function useSupervisionMonth(
           actionRequired: action,
           hasSupervisionPlan: meta.hasPlan,
           openEscalationLevel: escMap.get(id) ?? null,
+          hoursSource: canonicalHours.has(id) ? "canonical" : "role",
         };
       });
 
