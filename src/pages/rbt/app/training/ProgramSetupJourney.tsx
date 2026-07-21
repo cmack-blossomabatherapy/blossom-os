@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 
 /**
  * Interactive "Program setup" experience shown when an RBT does not yet have
- * an active pathway assignment. Replaces the previous dead-end empty state
- * ("No pathway assigned yet"). Users always have something they can do:
+ * an active pathway assignment. Replaces the previous dead-end empty state.
+ * Users always have something they can do:
  *   • Start Welcome to Blossom (no pathway required)
  *   • Open Skill Passport
  *   • Retry loading (in case recruiting just linked them)
