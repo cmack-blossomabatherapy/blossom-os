@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { useRbtIdentity } from "../useRbtIdentity";
 import { Sparkles, CheckCircle2, AlertCircle, Target, GraduationCap, Award } from "lucide-react";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 
 const SECTIONS: {
   key: string; title: string; icon: any; empty: string;
@@ -62,6 +63,16 @@ export default function Performance() {
           </CardFrame>
         );
       })}
+
+      {employeeId && (
+        <CanonicalSessionsCard
+          title="Session activity — imported CentralReach"
+          scope={{ employeeId }}
+          roleRowCount={rows?.length ?? 0}
+          highlightKinds={["direct", "supervision"]}
+          showClients
+        />
+      )}
     </div>
   );
 }
