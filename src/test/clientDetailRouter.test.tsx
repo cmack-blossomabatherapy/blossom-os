@@ -34,7 +34,7 @@ vi.mock("@/contexts/ClientsContext", () => ({
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: H.from },
 }));
-const { maybeSingle, eq, from, getClientMock } = H;
+const { maybeSingle, eq, select, from, getClientMock } = H;
 
 import ClientDetailRouter from "@/pages/ClientDetailRouter";
 
@@ -58,7 +58,7 @@ beforeEach(() => {
   select.mockClear();
   eq.mockClear();
   maybeSingle.mockReset();
-  clientsLoading = false;
+  H.clientsLoading.value = false;
 });
 
 describe("ClientDetailRouter — Phase 1b resolver wiring", () => {
