@@ -24,6 +24,9 @@ import ReportDiscrepancyDialog from "./ReportDiscrepancyDialog";
 import MetricDrilldownDialog from "./MetricDrilldownDialog";
 import ScenarioPlannerDialog from "./ScenarioPlannerDialog";
 import DiscrepanciesPanel from "./DiscrepanciesPanel";
+import { useBcbaIdentity } from "../useBcbaIdentity";
+import { BcbaPreviewBanner } from "../BcbaPreviewBanner";
+import { BcbaMappingDiagnostic } from "../BcbaMappingDiagnostic";
 
 function MetricLabel({ metricKey, children }: { metricKey: string; children: React.ReactNode }) {
   const def = findDefinition(metricKey);
@@ -100,10 +103,13 @@ function CapacityBadge({ status }: { status: CapacityStatus }) {
   );
 }
 
-function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null }) {
+function MyProductivity({ snapshot, readOnly }: { snapshot: ProductivitySnapshot | null; readOnly: boolean }) {
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagMetric, setFlagMetric] = useState<string | undefined>();
-  const openFlag = (k: string) => { setFlagMetric(k); setFlagOpen(true); };
+  const openFlag = (k: string) => {
+    if (readOnly) return;
+    setFlagMetric(k); setFlagOpen(true);
+  };
   const [drillMetric, setDrillMetric] = useState<string | null>(null);
   const openDrill = (k: string) => setDrillMetric(k);
 
@@ -240,7 +246,13 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
       </div>
 
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={() => { setFlagMetric(undefined); setFlagOpen(true); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={readOnly}
+          title={readOnly ? "Read-only in preview mode" : undefined}
+          onClick={() => { setFlagMetric(undefined); setFlagOpen(true); }}
+        >
           <Flag className="h-3.5 w-3.5 mr-1.5" /> Report a data discrepancy
         </Button>
       </div>
@@ -264,7 +276,7 @@ function MyProductivity({ snapshot }: { snapshot: ProductivitySnapshot | null })
   );
 }
 
-function MyCapacity({ snapshot }: { snapshot: CapacitySnapshot | null }) {
+function MyCapacity({ snapshot, readOnly }: { snapshot: CapacitySnapshot | null; readOnly: boolean }) {
   const [drillMetric, setDrillMetric] = useState<string | null>(null);
   const openDrill = (k: string) => setDrillMetric(k);
   const [scenarioOpen, setScenarioOpen] = useState(false);
@@ -285,7 +297,13 @@ function MyCapacity({ snapshot }: { snapshot: CapacitySnapshot | null }) {
               <TrendingUp className="h-4 w-4 text-primary" /> Capacity view
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setScenarioOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={readOnly}
+                title={readOnly ? "Read-only in preview mode" : undefined}
+                onClick={() => setScenarioOpen(true)}
+              >
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Plan a scenario
               </Button>
               <CapacityBadge status={snapshot.capacity_status} />
@@ -476,13 +494,13 @@ function LeadershipView() {
 
 export default function ProductivityPage() {
   const [params, setParams] = useSearchParams();
-  const [uid, setUid] = useState<string | null>(null);
+  const identity = useBcbaIdentity();
+  const uid = identity.scopedAuthUserId;
   const [canLead, setCanLead] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUid(user?.id ?? null);
       if (!user) return;
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       const roleSet = new Set((roles ?? []).map((r: any) => r.role));
@@ -503,12 +521,15 @@ export default function ProductivityPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      <BcbaPreviewBanner />
       <div className="mb-6">
         <h1 className="text-3xl font-semibold tracking-tight">Productivity & Capacity</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Transparent, explainable views of your work. Metrics show their source and update dates. Capacity is advisory — never used to auto-assign cases.
         </p>
       </div>
+
+      <div className="mb-4"><BcbaMappingDiagnostic onRetry={() => { productivity.refetch(); capacity.refetch(); }} /></div>
 
       <Tabs value={initialTab} onValueChange={setTab}>
         <TabsList>
@@ -522,7 +543,7 @@ export default function ProductivityPage() {
           {productivity.isLoading ? (
             <Card><CardContent className="p-8 text-center text-muted-foreground">Loading…</CardContent></Card>
           ) : (
-            <MyProductivity snapshot={productivity.data ?? null} />
+            <MyProductivity snapshot={productivity.data ?? null} readOnly={identity.readOnly} />
           )}
         </TabsContent>
 
@@ -530,7 +551,7 @@ export default function ProductivityPage() {
           {capacity.isLoading ? (
             <Card><CardContent className="p-8 text-center text-muted-foreground">Loading…</CardContent></Card>
           ) : (
-            <MyCapacity snapshot={capacity.data ?? null} />
+            <MyCapacity snapshot={capacity.data ?? null} readOnly={identity.readOnly} />
           )}
         </TabsContent>
 
