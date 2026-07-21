@@ -134,7 +134,7 @@ export function TrainingProgressCard({ card }: { card: DashboardCard }) {
   useEffect(() => {
     if (!user) return;
     supabase.from("user_training_progress" as any)
-      .select("course_id,progress_percent,updated_at")
+      .select("training_id,progress_percent,updated_at")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(1)

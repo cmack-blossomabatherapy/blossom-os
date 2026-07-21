@@ -111,7 +111,7 @@ export default function ActiveHome() {
 
     // Training due
     supabase.from("user_training_progress" as any)
-      .select("course_id,progress_percent,status,updated_at")
+      .select("training_id,progress_percent,status,updated_at")
       .eq("user_id", uid)
       .neq("status", "completed")
       .order("updated_at", { ascending: false })

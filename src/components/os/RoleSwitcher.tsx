@@ -21,9 +21,6 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
   const current =
     ROLE_PREVIEW_LIST.find((r) => r.role === role) ?? ROLE_PREVIEW_LIST[0];
 
-  // Only super admins can impersonate other roles.
-  if (loading || !isAdmin) return null;
-
   const showPreviewPicker = role === "rbt" || role === "bcba";
 
   // Search employees by name when picker is open.
@@ -58,6 +55,9 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
       .then(({ data }) => { if (!cancelled) setSubjectLabel(data ? displayNameFor(data as any) : null); });
     return () => { cancelled = true; };
   }, [previewSubjectEmployeeId]);
+
+  // Only super admins can impersonate other roles. Kept after hooks to preserve hook order.
+  if (loading || !isAdmin) return null;
 
   return (
     <div className="relative">
