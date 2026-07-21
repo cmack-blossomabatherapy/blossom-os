@@ -31406,6 +31406,13 @@ export type Database = {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
       }
+      promote_canonical_clients: {
+        Args: never
+        Returns: {
+          inserted_count: number
+          skipped_count: number
+        }[]
+      }
       promote_normalized_record: {
         Args: { _record_id: string }
         Returns: {
@@ -31472,6 +31479,7 @@ export type Database = {
           warning_offset_hours: number
         }[]
       }
+      resolve_client_by_cr_id: { Args: { _cr_id: string }; Returns: string }
       resolve_rbt_pathway_key: {
         Args: {
           _cert_status: Database["public"]["Enums"]["rbt_certification_status"]
