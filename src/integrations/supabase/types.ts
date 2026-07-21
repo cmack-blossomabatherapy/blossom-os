@@ -13739,6 +13739,64 @@ export type Database = {
           },
         ]
       }
+      intake_lead_source_events: {
+        Row: {
+          created_at: string
+          event_kind: string
+          id: string
+          integration_id: string
+          lead_id: string
+          metadata: Json
+          normalized_record_id: string | null
+          provider_event_id: string | null
+          raw_event_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_kind: string
+          id?: string
+          integration_id: string
+          lead_id: string
+          metadata?: Json
+          normalized_record_id?: string | null
+          provider_event_id?: string | null
+          raw_event_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_kind?: string
+          id?: string
+          integration_id?: string
+          lead_id?: string
+          metadata?: Json
+          normalized_record_id?: string | null
+          provider_event_id?: string | null
+          raw_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_lead_source_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_lead_source_events_normalized_record_id_fkey"
+            columns: ["normalized_record_id"]
+            isOneToOne: false
+            referencedRelation: "integration_normalized_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_lead_source_events_raw_event_id_fkey"
+            columns: ["raw_event_id"]
+            isOneToOne: false
+            referencedRelation: "integration_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intake_leads: {
         Row: {
           assigned_intake_coordinator: string | null
@@ -13760,6 +13818,7 @@ export type Database = {
           dob: string | null
           dx_needed: boolean
           email: string
+          email_lower: string | null
           email_sent: boolean
           estimated_client_responsibility: number
           estimated_insurance_coverage_percent: number
@@ -13774,6 +13833,7 @@ export type Database = {
           form_review_status: Database["public"]["Enums"]["intake_form_review_status"]
           form_status: Database["public"]["Enums"]["intake_form_status"]
           home_phone: string | null
+          home_phone_e164: string | null
           id: string
           in_network: boolean
           initial_form_link: string | null
@@ -13797,6 +13857,7 @@ export type Database = {
           parent_2_email: string | null
           parent_2_name: string | null
           parent_cell_phone: string | null
+          parent_cell_phone_e164: string | null
           parent_first_name: string | null
           parent_last_name: string | null
           parent_name: string
@@ -13808,6 +13869,7 @@ export type Database = {
           payment_plan_signed: boolean
           payment_plan_status: Database["public"]["Enums"]["payment_plan_status"]
           phone: string
+          phone_e164: string | null
           pipeline_stage: Database["public"]["Enums"]["intake_pipeline_stage"]
           preferred_contact_method: string | null
           primary_insurance: string | null
@@ -13849,6 +13911,7 @@ export type Database = {
           dob?: string | null
           dx_needed?: boolean
           email: string
+          email_lower?: string | null
           email_sent?: boolean
           estimated_client_responsibility?: number
           estimated_insurance_coverage_percent?: number
@@ -13863,6 +13926,7 @@ export type Database = {
           form_review_status?: Database["public"]["Enums"]["intake_form_review_status"]
           form_status?: Database["public"]["Enums"]["intake_form_status"]
           home_phone?: string | null
+          home_phone_e164?: string | null
           id?: string
           in_network?: boolean
           initial_form_link?: string | null
@@ -13886,6 +13950,7 @@ export type Database = {
           parent_2_email?: string | null
           parent_2_name?: string | null
           parent_cell_phone?: string | null
+          parent_cell_phone_e164?: string | null
           parent_first_name?: string | null
           parent_last_name?: string | null
           parent_name: string
@@ -13897,6 +13962,7 @@ export type Database = {
           payment_plan_signed?: boolean
           payment_plan_status?: Database["public"]["Enums"]["payment_plan_status"]
           phone: string
+          phone_e164?: string | null
           pipeline_stage?: Database["public"]["Enums"]["intake_pipeline_stage"]
           preferred_contact_method?: string | null
           primary_insurance?: string | null
@@ -13938,6 +14004,7 @@ export type Database = {
           dob?: string | null
           dx_needed?: boolean
           email?: string
+          email_lower?: string | null
           email_sent?: boolean
           estimated_client_responsibility?: number
           estimated_insurance_coverage_percent?: number
@@ -13952,6 +14019,7 @@ export type Database = {
           form_review_status?: Database["public"]["Enums"]["intake_form_review_status"]
           form_status?: Database["public"]["Enums"]["intake_form_status"]
           home_phone?: string | null
+          home_phone_e164?: string | null
           id?: string
           in_network?: boolean
           initial_form_link?: string | null
@@ -13975,6 +14043,7 @@ export type Database = {
           parent_2_email?: string | null
           parent_2_name?: string | null
           parent_cell_phone?: string | null
+          parent_cell_phone_e164?: string | null
           parent_first_name?: string | null
           parent_last_name?: string | null
           parent_name?: string
@@ -13986,6 +14055,7 @@ export type Database = {
           payment_plan_signed?: boolean
           payment_plan_status?: Database["public"]["Enums"]["payment_plan_status"]
           phone?: string
+          phone_e164?: string | null
           pipeline_stage?: Database["public"]["Enums"]["intake_pipeline_stage"]
           preferred_contact_method?: string | null
           primary_insurance?: string | null
@@ -14074,6 +14144,60 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      intake_promotion_state: {
+        Row: {
+          candidate_lead_ids: string[]
+          created_at: string
+          id: string
+          integration_id: string
+          lead_id: string | null
+          metadata: Json
+          normalized_record_id: string
+          reason: string | null
+          state: Database["public"]["Enums"]["intake_promotion_state_kind"]
+          updated_at: string
+        }
+        Insert: {
+          candidate_lead_ids?: string[]
+          created_at?: string
+          id?: string
+          integration_id: string
+          lead_id?: string | null
+          metadata?: Json
+          normalized_record_id: string
+          reason?: string | null
+          state?: Database["public"]["Enums"]["intake_promotion_state_kind"]
+          updated_at?: string
+        }
+        Update: {
+          candidate_lead_ids?: string[]
+          created_at?: string
+          id?: string
+          integration_id?: string
+          lead_id?: string | null
+          metadata?: Json
+          normalized_record_id?: string
+          reason?: string | null
+          state?: Database["public"]["Enums"]["intake_promotion_state_kind"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_promotion_state_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_promotion_state_normalized_record_id_fkey"
+            columns: ["normalized_record_id"]
+            isOneToOne: true
+            referencedRelation: "integration_normalized_records"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       intake_tasks: {
         Row: {
@@ -29457,6 +29581,14 @@ export type Database = {
       }
     }
     Views: {
+      ctm_unmatched_tracking_numbers: {
+        Row: {
+          call_count: number | null
+          last_seen_at: string | null
+          tracking_number: string | null
+        }
+        Relationships: []
+      }
       employee_directory: {
         Row: {
           avatar_url: string | null
@@ -30908,6 +31040,7 @@ export type Database = {
         }
       }
       normalize_person_name: { Args: { _name: string }; Returns: string }
+      normalize_phone_e164: { Args: { p: string }; Returns: string }
       notify_after_hours_call_fanout: {
         Args: {
           p_call_id: string
@@ -30922,6 +31055,14 @@ export type Database = {
       owns_stage: {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
+      }
+      promote_normalized_record: {
+        Args: { _record_id: string }
+        Returns: {
+          lead_id: string
+          reason: string
+          state: Database["public"]["Enums"]["intake_promotion_state_kind"]
+        }[]
       }
       rbt_academy_ready_for_fellowship: {
         Args: { _employee: string }
@@ -31477,6 +31618,14 @@ export type Database = {
         | "Staffing Match"
         | "Ready to Start Services"
       intake_priority: "Hot" | "Warm" | "Cold"
+      intake_promotion_state_kind:
+        | "staged"
+        | "promoted"
+        | "linked_existing"
+        | "incomplete_review"
+        | "ambiguous_review"
+        | "rejected"
+        | "error"
       intake_task_status: "Open" | "In Progress" | "Completed" | "Blocked"
       intake_task_type:
         | "Contact Lead"
@@ -32324,6 +32473,15 @@ export const Constants = {
         "Ready to Start Services",
       ],
       intake_priority: ["Hot", "Warm", "Cold"],
+      intake_promotion_state_kind: [
+        "staged",
+        "promoted",
+        "linked_existing",
+        "incomplete_review",
+        "ambiguous_review",
+        "rejected",
+        "error",
+      ],
       intake_task_status: ["Open", "In Progress", "Completed", "Blocked"],
       intake_task_type: [
         "Contact Lead",

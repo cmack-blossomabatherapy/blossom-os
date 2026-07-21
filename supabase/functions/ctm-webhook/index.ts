@@ -4,22 +4,11 @@
 // The token must match the CTM_WEBHOOK_TOKEN secret in Lovable Cloud.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { normalizeCtmPayload, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WEBHOOK_TOKEN = Deno.env.get("CTM_WEBHOOK_TOKEN") ?? "";
-
-function pickString(...vals: unknown[]): string | null {
-  for (const v of vals) if (typeof v === "string" && v.length) return v;
-  return null;
-}
-function pickNumber(...vals: unknown[]): number | null {
-  for (const v of vals) {
-    if (typeof v === "number" && Number.isFinite(v)) return v;
-    if (typeof v === "string" && v && !Number.isNaN(Number(v))) return Number(v);
-  }
-  return null;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -43,9 +32,8 @@ Deno.serve(async (req) => {
     }
   } catch (_) { /* keep empty */ }
 
-  const call = (payload.call as Record<string, unknown>) ?? payload;
-  const callId = pickString(call.id, call.call_id, payload.id);
-  if (!callId) {
+  const call = normalizeCtmPayload(payload);
+  if (!call) {
     return new Response(JSON.stringify({ error: "missing call id", received: payload }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -53,7 +41,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-  const tracking = pickString(call.tracking_number, call.tracking, payload.tracking_number);
+  const tracking = call.tracking_number;
   let resolved_state: string | null = null;
   let resolved_source_id: string | null = null;
   let resolved_campaign_id: string | null = null;
@@ -70,36 +58,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const fromNumber = pickString(call.caller_number, call.from_number, call.from, payload.caller_number);
-  const toNumber = pickString(call.called_number, call.to_number, call.to, payload.called_number);
-  const callRow = {
-    ctm_call_id: callId,
-    ctm_account_id: pickString(call.account_id, payload.account_id),
-    direction: pickString(call.direction),
-    status: pickString(call.status, call.call_status),
-    from_number: fromNumber,
-    to_number: toNumber,
-    tracking_number: tracking,
-    caller_name: pickString(call.caller_name, (call.caller as Record<string, unknown> | null)?.name),
-    caller_city: pickString(call.caller_city),
-    caller_state: pickString(call.caller_state),
-    caller_zip: pickString(call.caller_zip),
-    duration_seconds: pickNumber(call.duration, call.duration_seconds),
-    talk_time_seconds: pickNumber(call.talk_time, call.talk_time_seconds),
-    recording_url: pickString(call.audio, call.recording, call.recording_url),
-    transcript: pickString(call.transcription, call.transcript),
-    tags: Array.isArray(call.tags)
-      ? (call.tags as unknown[]).map(String)
-      : typeof call.tags === "string" ? String(call.tags).split(",").map((s) => s.trim()).filter(Boolean) : [],
-    source_name: pickString(call.source_name, call.source),
-    campaign_name: pickString(call.campaign_name, call.campaign),
-    called_at: pickString(call.called_at, call.start_time, call.created_at),
-    ended_at: pickString(call.ended_at, call.end_time),
-    resolved_state,
-    resolved_source_id,
-    resolved_campaign_id,
-    raw: payload,
-  };
+  const callRow = { ...call, resolved_state, resolved_source_id, resolved_campaign_id };
 
   const { data: upserted, error: upErr } = await supabase
     .from("ctm_call_events")
@@ -113,46 +72,15 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Enrich intake lead: match by caller number.
-  let leadCreated = false;
-  if (fromNumber && !upserted.intake_lead_id) {
-    const { data: existingLead } = await supabase
-      .from("intake_leads")
-      .select("id")
-      .or(`phone.eq.${fromNumber},parent_cell_phone.eq.${fromNumber},home_phone.eq.${fromNumber}`)
-      .maybeSingle();
-
-    let leadId: string | null = existingLead?.id ?? null;
-    if (!leadId) {
-      const { data: newLead, error: leadErr } = await supabase
-        .from("intake_leads")
-        .insert({
-          phone: fromNumber,
-          parent_name: callRow.caller_name ?? "Unknown caller",
-          lead_source: callRow.source_name ?? "CTM",
-          state: resolved_state,
-          pipeline_stage: "new_lead",
-          ctm_call_id: callId,
-        })
-        .select("id")
-        .single();
-      if (!leadErr && newLead) {
-        leadId = newLead.id;
-        leadCreated = true;
-      } else if (leadErr) {
-        console.warn("intake_lead create failed", leadErr.message);
-      }
-    }
-    if (leadId) {
-      await supabase.from("ctm_call_events").update({ intake_lead_id: leadId }).eq("id", upserted.id);
-      await supabase.from("intake_communications").insert({
-        lead_id: leadId,
-        communication_type: "phone",
-        direction: callRow.direction ?? "inbound",
-        subject: `CTM call · ${callRow.source_name ?? "unknown source"}`,
-        preview: `Inbound call to ${tracking ?? "tracking number"} · ${callRow.duration_seconds ?? 0}s`,
-        duration_seconds: callRow.duration_seconds ?? null,
-      });
+  // INGEST_ONLY: deterministic external-id → phone linking (no comms/tasks).
+  let leadOutcome: Awaited<ReturnType<typeof linkOrCreateLeadForCall>> | null = null;
+  if (!upserted.intake_lead_id) {
+    leadOutcome = await linkOrCreateLeadForCall(supabase as any, call, { resolvedState: resolved_state });
+    if (leadOutcome.lead_id) {
+      await supabase
+        .from("ctm_call_events")
+        .update({ intake_lead_id: leadOutcome.lead_id, matched_lead_id: leadOutcome.lead_id })
+        .eq("id", upserted.id);
     }
   }
 
@@ -162,26 +90,15 @@ Deno.serve(async (req) => {
     finished_at: new Date().toISOString(),
     calls_fetched: 1,
     calls_upserted: 1,
-    leads_created: leadCreated ? 1 : 0,
+    leads_created: leadOutcome?.state === "promoted" ? 1 : 0,
   });
 
-  // Fire-and-forget: run richer matching + timeline write + missed-call task
-  // via the ctm-link-call function.
-  try {
-    const linkUrl = `${SUPABASE_URL}/functions/v1/ctm-link-call`;
-    void fetch(linkUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${SERVICE_KEY}`,
-      },
-      body: JSON.stringify({ call_event_id: upserted.id }),
-    }).catch((err) => console.warn("ctm-link-call trigger failed", err));
-  } catch (err) {
-    console.warn("ctm-link-call dispatch failed", err);
-  }
-
-  return new Response(JSON.stringify({ ok: true, call_id: callId, lead_created: leadCreated }), {
+  return new Response(JSON.stringify({
+    ok: true,
+    call_id: call.ctm_call_id,
+    lead_state: leadOutcome?.state ?? (upserted.intake_lead_id ? "linked_existing" : "unlinked"),
+    lead_id: leadOutcome?.lead_id ?? upserted.intake_lead_id ?? null,
+  }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
