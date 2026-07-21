@@ -15,6 +15,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RBT_PATHS, type RBTPathId } from "@/lib/training/rbtAcademy";
 import { mergeRbtPathProgress } from "@/hooks/useMyRbtAcademyProgress";
+import {
+  fetchCanonicalProviderSummary,
+  summarizeProviderRows,
+} from "@/lib/os/reporting/canonicalConsumer";
 
 export interface RbtReportSummary {
   key:
@@ -173,6 +177,26 @@ export function useRbtReportSummaries(): RbtReportSummaries {
               primary: `${completed}`,
               secondary: cancelled > 0 ? `${cancelled} cancelled` : `${sessionRows.length} total`,
             };
+          } else {
+            // Canonical fallback: use the RBT's rows in the canonical
+            // billing view when rbt_sessions is empty. Never fabricates —
+            // if unmapped or no canonical rows exist, stays on EMPTY state.
+            try {
+              const provRows = await fetchCanonicalProviderSummary({
+                authUserId: uid,
+                employeeId,
+              });
+              const totals = summarizeProviderRows(provRows);
+              if (totals.rowCount > 0) {
+                summaries["rbt-sessions-attendance"] = {
+                  key: "rbt-sessions-attendance",
+                  primary: `${Math.round(totals.directHours)}h`,
+                  secondary: `canonical · ${totals.rowCount} rows · newest ${totals.maxServiceDate ?? "?"}`,
+                };
+              }
+            } catch {
+              /* keep EMPTY */
+            }
           }
 
           if (helpRows.length > 0) {

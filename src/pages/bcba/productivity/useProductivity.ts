@@ -1,12 +1,53 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { ProductivitySnapshot, CapacitySnapshot } from "./pipeline";
+import {
+  resolveCanonicalFallback,
+  type CanonicalFallbackResult,
+} from "@/lib/os/reporting/canonicalFallback";
+
+/**
+ * Composite result: existing role snapshot (if any) plus canonical fallback.
+ * When `source === "canonical"` the `snapshot` value is a synthetic snapshot
+ * derived from the 47k canonical billing rows and carries source/freshness
+ * metadata. When `source === "missing"` the snapshot is null and callers
+ * MUST render the actionable owner instead of a zero KPI.
+ */
+function synthesizeSnapshotFromCanonical(
+  bcbaId: string,
+  fallback: CanonicalFallbackResult,
+): ProductivitySnapshot | null {
+  if (fallback.source !== "canonical" || !fallback.totals) return null;
+  const t = fallback.totals;
+  return {
+    id: `canonical:${bcbaId}:${t.maxServiceDate ?? "current"}`,
+    bcba_id: bcbaId,
+    period_start: t.minServiceDate ?? "",
+    period_end: t.maxServiceDate ?? "",
+    direct_hours: t.directHours,
+    supervision_hours: t.supervisionHours,
+    parent_training_hours: t.parentTrainingHours,
+    assessment_hours: t.assessmentHours,
+    cancellation_hours: t.cancellationHours,
+    admin_hours: t.adminHours,
+    total_hours: t.totalHours,
+    distinct_clients: t.distinctClients,
+    row_count: t.rowCount,
+    source: "canonical",
+    source_dataset: "v_cr_canonical_sessions",
+    // Fields the billing export does not carry — flagged so UI shows
+    // "unavailable from current export" instead of fabricating a value.
+    scheduled_start_time: null,
+    scheduled_end_time: null,
+    location: null,
+  } as unknown as ProductivitySnapshot;
+}
 
 export function useMyProductivitySnapshot(bcbaId?: string | null) {
   return useQuery({
     queryKey: ["bcba-productivity", "mine", bcbaId ?? "self"],
     enabled: !!bcbaId,
-    queryFn: async () => {
+    queryFn: async (): Promise<ProductivitySnapshot | null> => {
       const { data, error } = await supabase
         .from("bcba_productivity_snapshots")
         .select("*")
@@ -15,7 +56,39 @@ export function useMyProductivitySnapshot(bcbaId?: string | null) {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return (data as unknown as ProductivitySnapshot) ?? null;
+      const roleSnapshot = (data as unknown as ProductivitySnapshot) ?? null;
+      if (roleSnapshot) return roleSnapshot;
+      const fallback = await resolveCanonicalFallback({
+        roleRowCount: 0,
+        scope: { authUserId: bcbaId, employeeId: null },
+        requireScope: true,
+      });
+      return synthesizeSnapshotFromCanonical(bcbaId!, fallback);
+    },
+  });
+}
+
+/**
+ * Companion hook exposing the canonical fallback decision + freshness for
+ * `useMyProductivitySnapshot`. Consumers should call this alongside the
+ * snapshot hook when they need to render source labels or "missing" owner
+ * states — the snapshot value alone is intentionally kept typed as
+ * `ProductivitySnapshot | null` for backward compatibility.
+ */
+export function useMyProductivityFallback(bcbaId?: string | null) {
+  return useQuery({
+    queryKey: ["bcba-productivity", "mine", "fallback", bcbaId ?? "self"],
+    enabled: !!bcbaId,
+    queryFn: async (): Promise<CanonicalFallbackResult> => {
+      const { count } = await supabase
+        .from("bcba_productivity_snapshots")
+        .select("id", { count: "exact", head: true })
+        .eq("bcba_id", bcbaId!);
+      return resolveCanonicalFallback({
+        roleRowCount: count ?? 0,
+        scope: { authUserId: bcbaId, employeeId: null },
+        requireScope: true,
+      });
     },
   });
 }
