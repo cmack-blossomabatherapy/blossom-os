@@ -985,6 +985,7 @@ const App = () => (
                   <Route path="/leads/:id" element={<LeadIdRedirect />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<ClientsRouter />} />
+                  <Route path="/clients/cr/:crId" element={<CrClientRedirect />} />
                   <Route path="/intake/clients" element={<OSIntakeClients />} />
                   <Route path="/intake/leads" element={<Navigate to="/leads" replace />} />
                   <Route path="/intake/vob-decision" element={<Navigate to="/vob-decision-center" replace />} />
