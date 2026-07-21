@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Send, Clock, AlertTriangle, Star } from "lucide-react";
+import { ArrowLeft, Send, Clock, AlertTriangle, Star, RefreshCcw } from "lucide-react";
 import { useTicket, postTicketMessage, submitSatisfaction, STATUS_LABEL, URGENCY_LABEL } from "./useSupport";
+import { useRbtIdentity } from "../useRbtIdentity";
 import { toast } from "sonner";
 
 export default function SupportTicketDetail() {
   const { ticketId } = useParams<{ ticketId: string }>();
-  const { ticket, updates, loading, reload } = useTicket(ticketId);
+  const { ticket, updates, loading, reload, error } = useTicket(ticketId);
+  const { isPreviewing } = useRbtIdentity();
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState("");
 
   const send = async () => {
+    if (isPreviewing) { toast.error("Preview mode — messages disabled"); return; }
     if (!ticketId || !msg.trim()) return;
     setSending(true);
     try { await postTicketMessage(ticketId, msg.trim()); setMsg(""); await reload(); }
@@ -21,12 +24,26 @@ export default function SupportTicketDetail() {
   };
 
   const rate = async () => {
+    if (isPreviewing) { toast.error("Preview mode — feedback disabled"); return; }
     if (!ticketId || rating === 0) return;
     try { await submitSatisfaction(ticketId, rating, ratingComment); toast.success("Thanks for the feedback."); await reload(); }
     catch (e: any) { toast.error(e.message ?? "Could not save"); }
   };
 
   if (loading) return <div className="space-y-3">{[0,1,2].map(i => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}</div>;
+  if (error && !ticket) return (
+    <div className="space-y-3">
+      <div className="rounded-xl bg-destructive/10 text-destructive text-sm p-4 flex items-center justify-between gap-3">
+        <span>We couldn't load this ticket.</span>
+        <button onClick={() => void reload()} className="inline-flex items-center gap-1 underline underline-offset-4">
+          <RefreshCcw className="h-3 w-3" /> Retry
+        </button>
+      </div>
+      <Link to="/rbt/app/support" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back to Support
+      </Link>
+    </div>
+  );
   if (!ticket) return <p className="text-sm text-muted-foreground">Ticket not found.</p>;
 
   const closed = ["resolved","closed"].includes(ticket.status);
@@ -97,7 +114,12 @@ export default function SupportTicketDetail() {
           {updates.length === 0 && <li className="text-sm text-muted-foreground">No updates yet.</li>}
         </ol>
 
-        {!closed && (
+        {isPreviewing && !closed && (
+          <p className="mt-4 text-xs text-amber-700 dark:text-amber-400">
+            Preview mode — messaging is disabled for admin view-as sessions.
+          </p>
+        )}
+        {!closed && !isPreviewing && (
           <div className="mt-4 pt-4 border-t border-border/60 flex gap-2">
             <input value={msg} onChange={e => setMsg(e.target.value)}
               placeholder="Add a message…" maxLength={1000}
@@ -111,7 +133,7 @@ export default function SupportTicketDetail() {
         )}
       </section>
 
-      {canRate && (
+      {canRate && !isPreviewing && (
         <section className="rounded-2xl border border-border/70 bg-card p-5">
           <h2 className="text-sm font-semibold">How did we do?</h2>
           <p className="text-xs text-muted-foreground mt-1">Your feedback helps us improve support.</p>

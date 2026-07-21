@@ -31,26 +31,39 @@ function StatusPill({ status, expires }: { status: string; expires?: string | nu
 export default function Credentials() {
   const { employeeId, loading: idLoading } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
+  const [errored, setErrored] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     if (idLoading) return;
     if (!employeeId) { setRows([]); return; }
+    setErrored(false);
     supabase.from("rbt_credentials" as any)
       .select("id,credential_type,label,identifier,status,issued_on,expires_on,state_code,notes,last_verified_at")
       .eq("employee_id", employeeId)
       .order("expires_on", { ascending: true, nullsFirst: false })
-      .then(({ data }) => setRows((data as any[]) ?? []));
-  }, [employeeId, idLoading]);
+      .then(({ data, error }) => {
+        if (error) { setErrored(true); setRows([]); return; }
+        setRows((data as any[]) ?? []);
+      });
+  };
+  useEffect(load, [employeeId, idLoading]);
 
-  const state = rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
+  const state: "loading" | "empty" | "success" | "error" =
+    errored ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
   const groups = ["rbt_cert", "cpr_first_aid", "background_check", "state_requirement", "document"];
   const grouped = groups.map((g) => ({ key: g, items: (rows ?? []).filter((r) => r.credential_type === g) }));
   const renewals = (rows ?? []).filter((r) => r.status !== "active" && r.status !== "complete");
 
   return (
     <div className="space-y-3">
-      <CardFrame title="Credentials" state={state} emptyLabel="No credentials on file yet."
-        subtitle="Your compliance snapshot">
+      <CardFrame title="Credentials" state={state}
+        emptyLabel="No credentials on file yet — your HR team keeps this list in sync."
+        errorLabel="We couldn't load your credentials. HR keeps this data in sync — try again in a moment."
+        subtitle="Your compliance snapshot"
+        action={errored ? (
+          <button onClick={load} className="text-xs underline underline-offset-4 text-muted-foreground">Retry</button>
+        ) : undefined}
+      >
         <div className="space-y-4">
           {grouped.filter((g) => g.items.length > 0).map((g) => {
             const Icon = ICONS[g.key] ?? FileText;
