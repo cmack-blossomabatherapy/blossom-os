@@ -141,7 +141,7 @@ export async function linkOrCreateLeadForCall(
       .or(`phone_e164.eq.${phone},parent_cell_phone_e164.eq.${phone},home_phone_e164.eq.${phone}`);
     if (matchErr) return { state: "error", lead_id: null, reason: matchErr.message };
 
-    const ids = Array.from(new Set((matches ?? []).map((r: any) => r.id as string)));
+    const ids: string[] = Array.from(new Set(((matches ?? []) as Array<{ id: string }>).map((r) => r.id)));
     if (ids.length > 1) {
       return { state: "ambiguous_review", lead_id: null, reason: "multiple_phone_matches", candidates: ids };
     }
