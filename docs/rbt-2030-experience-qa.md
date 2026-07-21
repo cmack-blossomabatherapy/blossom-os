@@ -45,7 +45,71 @@ Result: **6 files, 763 tests passed** (2026-07-21).
 
 ---
 
-## Slice 2 — Learn → Program navigation + pathway content (pending)
+## Slice 2 — Pathway content aligned to the approved Training Program
+
+**Goal:** Realign all three RBT pathways to the approved Blossom Training
+Program source. Every step should be actionable (owner, delivery mode,
+scheduling hint, evidence type). Filter unpublished courses from the RBT
+Learn page. Guarantee safe/idempotent progress writes.
+
+### Approved program → step catalog
+
+**Experienced RBT (2+ years) — orientation then staffed:**
+`orientation_short` → `staffing_ready` → `retention_two_week`.
+
+**Developing RBT (Under 2 years):**
+`orientation_new_hire` → `zoom_learning_day` (session structure / data
+collection / session notes; **no ABA Basics**) → `role_play_in_clinic` →
+`lead_rbt_client_session` → `competency_evaluation_scored` (deterministic
+bands: 0–36 repeat Lead session, 37–47 Lead attends full first session,
+48–60 BCBA supervises first session) → `staffing_first_case` →
+`first_session_support` → `session_note_review` → `retention_two_week`.
+
+**Certification track (Not certified):**
+`intro_welcome_15min` → `paired_roleplay_competency` → `client_demos_three`
+(≥3 in-person) → `bcba_competency_signoff` → `exam_prep` → `exam_attempt`
+→ `zoom_aba_explained` + `zoom_data_collection` + `zoom_session_notes`
+(interactive) → `shadow_lead_rbt_session` → `post_shadow_evaluation`
+(score-branched) → `submit_session_note_for_feedback` →
+`staff_case_first_assignment` → `first_session_lead_full` (traveling Lead
+RBT attends entire first session) → `second_session_bcba` (BCBA attends
+second session) → `retention_two_week`.
+
+### Changes
+
+- **Migration** — forward-only, idempotent:
+  - Ensures unique `(employee_id, pathway_step_id)` index on
+    `rbt_pathway_progress` for safe concurrent upserts (de-dupes existing
+    duplicates by keeping the oldest row).
+  - Upserts the full step catalog above via the existing
+    `public._upsert_rbt_step()` helper.
+  - Retires legacy step keys: deletes when they have no trainee progress,
+    otherwise marks `metadata.retired = true`, sets `required = false`,
+    and pushes `order_index += 900` so historical progress is preserved.
+- **`src/pages/rbt/app/pages.tsx` — Learn page:** unpublished courses are
+  filtered out of the learner list entirely (no more amber "Unpublished"
+  rows). Empty/loading/error states adjust to the filtered count.
+- **`src/pages/rbt/app/training/useProgram.ts`:** defensively filters
+  steps with `metadata.retired === true` or `deprecated === true` so
+  retired steps never appear in the RBT roadmap even if a row lingers.
+
+### Scoped tests
+
+`bunx vitest run src/test/rbtPathwayAlignmentSlice2.test.ts src/test/rbtProgramSetupJourney.test.ts src/test/rbtLearnAndWelcome.test.ts src/test/rbtNoSyncTelemetry.test.ts src/test/rbtUseProgramUnlinked.test.tsx src/test/rbtPathwayRecruitingOwned.test.ts src/test/rbtPathwayForwardCorrection.test.ts`
+
+See "Verification" below for the executed result.
+
+### Production build
+
+See "Verification" below.
+
+### Verification (2026-07-21)
+
+- **Scoped vitest suites:** `7 files, 769 tests passed` in 4.10s.
+- **`bun run build`:** ✓ built in 53.60s, no errors.
+- **Migration applied:** RBT pathway step catalog realigned in-place; unique
+  index `rbt_pathway_progress_employee_step_uniq` created; legacy steps
+  retired (deleted when unused, otherwise flagged `metadata.retired=true`).
 
 ## Slice 3 — Experience Lab (admin-only pathway preview) (pending)
 

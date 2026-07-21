@@ -173,9 +173,6 @@ export function RbtLearn() {
     })();
   }, [authUserId, idLoading]);
 
-  const state: "error" | "loading" | "empty" | "success" =
-    err ? "error" : rows === null ? "loading" : rows.length === 0 ? "empty" : "success";
-
   const isPublished = (c: any | null) => Boolean(c && c.is_active !== false && c.status !== "draft" && c.status !== "archived");
 
   return (
@@ -248,32 +245,30 @@ export function RbtLearn() {
         </Link>
       </div>
       <RetentionSupportPanel />
-      <CardFrame title="Your learning" state={state}
+      <CardFrame title="Your learning" state={
+          err ? "error"
+          : rows === null ? "loading"
+          : (rows.filter((r: any) => isPublished(r.course)).length === 0 ? "empty" : "success")
+        }
         errorLabel="We couldn't load your training right now. Pull to refresh or try again in a moment."
         emptyLabel="Your next training will appear here as your path is set up.">
         <ul className="divide-y divide-border/70">
-          {rows?.map((r: any) => {
+          {rows?.filter((r: any) => isPublished(r.course)).map((r: any) => {
             const c = r.course;
             const label = c?.title ?? c?.name ?? `Course ${String(r.training_id).slice(0, 8)}`;
-            const published = isPublished(c);
             const complete = r.status === "completed" || (r.progress_percent ?? 0) >= 100;
             return (
               <li key={r.training_id} className="py-3">
                 <div className="flex justify-between items-start gap-3 mb-1.5">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{label}</p>
-                    {!published && (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
-                        Unpublished — a coordinator will publish this before you can complete it.
-                      </p>
-                    )}
-                    {published && !complete && (
+                    {!complete && (
                       <Link to={`/rbt/app/learn/course/${r.training_id}`}
                         className="text-[11px] text-primary underline underline-offset-4">
                         Continue course
                       </Link>
                     )}
-                    {published && complete && (
+                    {complete && (
                       <Link to={`/rbt/app/learn/course/${r.training_id}`}
                         className="text-[11px] text-muted-foreground underline underline-offset-4 ml-2">
                         Review

@@ -76,7 +76,10 @@ export function useProgram(employeeId: string | null | undefined) {
     const stepRows = ((stepsRes.data as any[]) ?? []).map((s) => ({
       ...s,
       capabilities: Array.isArray(s.capabilities) ? s.capabilities : [],
-    })) as PathwayStep[];
+    })).filter((s: any) => {
+      const meta = s?.metadata ?? {};
+      return meta.retired !== true && meta.deprecated !== true;
+    }) as PathwayStep[];
 
     const progRows = ((progRes.data as any[]) ?? []) as StepProgress[];
     const existing = new Set(progRows.map((p) => p.pathway_step_id));
