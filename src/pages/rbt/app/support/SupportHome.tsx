@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { AlertTriangle, Plus, LifeBuoy, Users2, ChevronRight, ShieldAlert } from "lucide-react";
 import { CardFrame } from "../CardFrame";
 import { useMyTickets, STATUS_LABEL, URGENCY_LABEL } from "./useSupport";
+import { RetentionSupportPanel } from "./RetentionSupportPanel";
 
 function StatusPill({ status }: { status: string }) {
   const map: Record<string,string> = {
@@ -73,6 +74,8 @@ export default function SupportHome() {
           </ul>
         </CardFrame>
       )}
+
+      <RetentionSupportPanel />
 
       <CardFrame
         title="Open requests"
