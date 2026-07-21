@@ -3,6 +3,7 @@
 // upserts them into ctm_call_events using the same shape as the webhook.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { normalizeCtmPayload, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -60,6 +61,7 @@ Deno.serve(async (req) => {
 
   let fetched = 0;
   let upserted = 0;
+  let linked = 0;
   let page = 1;
   const perPage = 100;
   let err: string | null = null;
@@ -80,25 +82,30 @@ Deno.serve(async (req) => {
       fetched += calls.length;
       if (calls.length === 0) break;
 
-      const rows = calls.map((c) => ({
-        ctm_call_id: String(c.id ?? c.call_id ?? ""),
-        ctm_account_id: String(c.account_id ?? CTM_ACCOUNT_ID),
-        direction: (c.direction as string) ?? null,
-        status: (c.call_status as string) ?? (c.status as string) ?? null,
-        from_number: (c.caller_number as string) ?? null,
-        to_number: (c.called_number as string) ?? null,
-        tracking_number: (c.tracking_number as string) ?? null,
-        caller_name: (c.caller_name as string) ?? null,
-        duration_seconds: Number(c.duration ?? 0) || null,
-        talk_time_seconds: Number(c.talk_time ?? 0) || null,
-        recording_url: (c.audio as string) ?? (c.recording as string) ?? null,
-        transcript: (c.transcription as string) ?? null,
-        tags: Array.isArray(c.tags) ? (c.tags as unknown[]).map(String) : [],
-        source_name: (c.source_name as string) ?? (c.source as string) ?? null,
-        campaign_name: (c.campaign_name as string) ?? (c.campaign as string) ?? null,
-        called_at: (c.called_at as string) ?? (c.start_time as string) ?? null,
-        raw: c,
-      })).filter((r) => r.ctm_call_id);
+      // Shared normalizer — identical shape to ctm-webhook. Never re-derive
+      // fields locally; single source of truth.
+      const normalized = calls
+        .map((c) => normalizeCtmPayload(c))
+        .filter((n): n is NonNullable<typeof n> => n !== null);
+      const rows = normalized.map((n) => ({
+        ctm_call_id: n.ctm_call_id,
+        ctm_account_id: n.ctm_account_id ?? CTM_ACCOUNT_ID,
+        direction: n.direction,
+        status: n.status,
+        from_number: n.from_number,
+        to_number: n.to_number,
+        tracking_number: n.tracking_number,
+        caller_name: n.caller_name,
+        duration_seconds: n.duration_seconds,
+        talk_time_seconds: n.talk_time_seconds,
+        recording_url: n.recording_url,
+        transcript: n.transcript,
+        tags: n.tags,
+        source_name: n.source_name,
+        campaign_name: n.campaign_name,
+        called_at: n.called_at,
+        raw: n.raw,
+      }));
 
       if (rows.length) {
         const { error: upErr, count } = await supabase
@@ -106,6 +113,20 @@ Deno.serve(async (req) => {
           .upsert(rows, { onConflict: "ctm_call_id", count: "exact" });
         if (upErr) { err = upErr.message; break; }
         upserted += count ?? rows.length;
+
+        // INGEST_ONLY-safe linking: shared linker uses provenance table
+        // (external CTM id first) then unique E.164 phone match; never
+        // creates tasks or communications. Ambiguous => review queue.
+        for (const n of normalized) {
+          try {
+            const outcome = await linkOrCreateLeadForCall(supabase as any, n, {
+              resolvedState: null,
+            });
+            if (outcome.lead_id) linked++;
+          } catch (_) {
+            // Never fail the sync run on a single-call link error.
+          }
+        }
       }
       if (!body.next_page) break;
       page = body.next_page;
@@ -125,7 +146,7 @@ Deno.serve(async (req) => {
     }).eq("id", runId);
   }
 
-  return new Response(JSON.stringify({ ok: !err, fetched, upserted, error: err }), {
+  return new Response(JSON.stringify({ ok: !err, fetched, upserted, linked, error: err }), {
     status: err ? 500 : 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
