@@ -629,6 +629,17 @@ export default function QaCancellationDashboard() {
 
       <SourceCoverageBanner reportKey="cancellation-scheduling" />
 
+      <SharedDatasetStatusPanel
+        title="Cancellation Shared Source"
+        result={sharedResult}
+        loading={sharedLoading}
+        sourceMode={sourceMode}
+        adminUploadsHref="/admin/uploads"
+        onReload={() => loadSharedAdminDataset(false)}
+        onResetToShared={resetToShared}
+        required
+      />
+
       {/* Upload */}
       <section className="mt-6 rounded-3xl border border-border/60 bg-card p-6 shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.25)]">
         {!fileName ? (
