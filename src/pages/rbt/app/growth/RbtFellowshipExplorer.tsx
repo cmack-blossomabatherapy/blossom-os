@@ -6,6 +6,7 @@ import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { CardFrame } from "../CardFrame";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
+import { isReadyForFellowship } from "@/lib/os/academy/rbtTrainingAcademy";
 
 type Section = { section_key: string; title: string; body: string | null; order_index: number; published: boolean };
 
@@ -17,6 +18,7 @@ export default function RbtFellowshipExplorer() {
   const [application, setApplication] = useState<any | null>(null);
   const [interestNote, setInterestNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [ready, setReady] = useState<boolean | null>(null);
 
   useEffect(() => {
     void supabase.from("rbt_fellowship_content" as any)
@@ -27,6 +29,7 @@ export default function RbtFellowshipExplorer() {
       void supabase.from("rbt_fellowship_applications" as any)
         .select("*").eq("employee_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle()
         .then(({ data }) => setApplication(data ?? null));
+      void isReadyForFellowship(user.id).then(setReady).catch(() => setReady(false));
     }
   }, [user?.id]);
 
@@ -35,6 +38,7 @@ export default function RbtFellowshipExplorer() {
   const expressInterest = async () => {
     if (!user) return;
     if (isPreviewing) { toast.info("Read-only in preview mode."); return; }
+    if (!ready) { toast.error("You aren't eligible to express interest yet — finish the required Academy milestones first."); return; }
     setSubmitting(true);
     const { data, error } = await supabase.from("rbt_fellowship_applications" as any)
       .insert({
@@ -97,16 +101,21 @@ export default function RbtFellowshipExplorer() {
 
       {interestForm && !application && (
         <CardFrame title="Express interest" subtitle="Submitting interest does not start or guarantee acceptance." state="success">
+          {ready === false && (
+            <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
+              Not yet eligible — complete the required Academy milestones (competency exam, first-session sign-off, and 2-week retention) to express interest.
+            </p>
+          )}
           {interestForm.body && (
             <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">{interestForm.body}</p>
           )}
           <textarea value={interestNote} onChange={e => setInterestNote(e.target.value)}
             placeholder="What draws you to the Fellowship? (optional)"
             className="w-full text-sm p-3 rounded-xl bg-muted/40 border border-border/70 min-h-24 mb-2" />
-          <button onClick={expressInterest} disabled={submitting}
-            aria-disabled={isPreviewing || submitting}
+          <button onClick={expressInterest} disabled={submitting || ready === false}
+            aria-disabled={isPreviewing || submitting || ready === false}
             className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition disabled:opacity-50">
-            {submitting ? "Submitting…" : isPreviewing ? "Read-only in preview" : "Express interest"}
+            {submitting ? "Submitting…" : isPreviewing ? "Read-only in preview" : ready === false ? "Not eligible yet" : "Express interest"}
           </button>
         </CardFrame>
       )}
