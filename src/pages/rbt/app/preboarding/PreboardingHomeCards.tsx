@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CardFrame } from "../CardFrame";
 import { usePreboarding } from "./usePreboarding";
-import { Sparkles, Calendar, Users, Phone, Mail, ChevronRight, PlayCircle } from "lucide-react";
+import { Sparkles, Calendar, Users, Mail, ChevronRight } from "lucide-react";
 import { STATUS_META } from "./types";
 
 const SUPPORT_TEAM = [
@@ -43,10 +43,10 @@ export function PreboardingHomeCards() {
           <p className="text-[15px] leading-relaxed">
             {stage?.employee_message ?? "You've been set up with Blossom OS — your home for everything you need before your first day. Take it one step at a time; we'll guide you the whole way."}
           </p>
-          <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noreferrer"
+          <Link to="/rbt/app/welcome"
              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-secondary text-secondary-foreground border border-border/70 h-10 px-4 text-sm font-medium hover:bg-muted transition">
-            <PlayCircle className="h-4 w-4" /> Watch welcome video
-          </a>
+            <Sparkles className="h-4 w-4" /> Open Welcome to Blossom
+          </Link>
         </CardFrame>
       </div>
 
@@ -116,8 +116,8 @@ export function PreboardingHomeCards() {
       {/* Contacts */}
       <CardFrame title="Important contacts" state="success">
         <ul className="space-y-2 text-sm">
-          <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> Main office <span className="ml-auto text-muted-foreground">(919) 555-0100</span></li>
           <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> Support <a className="ml-auto text-primary" href="mailto:support@blossomabatherapy.com">support@blossomabatherapy.com</a></li>
+          <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> Recruiting <a className="ml-auto text-primary" href="mailto:recruiting@blossomabatherapy.com">recruiting@blossomabatherapy.com</a></li>
         </ul>
       </CardFrame>
 
