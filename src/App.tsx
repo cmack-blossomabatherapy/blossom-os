@@ -25,7 +25,6 @@ import MileageCenter from "./pages/os/mapsly/MileageCenter";
 import BDTerritories from "./pages/os/mapsly/BDTerritories";
 import RecruitingMap from "./pages/os/mapsly/RecruitingMap";
 import Clients from "./pages/Clients";
-import ClientDetail from "./pages/ClientDetail";
 import ClientDetailRouter from "./pages/ClientDetailRouter";
 import CrClientRedirect from "./pages/CrClientRedirect";
 import Pipeline from "./pages/Pipeline";
