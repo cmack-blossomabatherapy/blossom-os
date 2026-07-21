@@ -389,11 +389,17 @@ export async function fetchAllCanonicalReportBillingRows(
       limit: pageSize,
       offset,
     });
-    total = page.totalCount;
+    // The RPC only returns total_count on the first page (offset=0) to keep
+    // subsequent pages fast. Preserve the initial total across iterations —
+    // overwriting it with 0 on later pages would trip the stop condition
+    // below and truncate the dataset.
+    if (offset === 0) total = page.totalCount;
     if (!page.rows.length) break;
     out.push(...page.rows);
     opts.onProgress?.(out.length, total);
-    if (out.length >= total || out.length >= hardCap) break;
+    if (page.rows.length < pageSize) break;
+    if (total > 0 && out.length >= total) break;
+    if (out.length >= hardCap) break;
     offset += pageSize;
   }
   return dedupeBillingRows(out);
