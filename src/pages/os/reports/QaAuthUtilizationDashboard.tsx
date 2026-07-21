@@ -18,6 +18,7 @@ import { ChartCard } from "@/components/dashboards/ChartCard";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import type { KpiSpec, ChartSpec, DrilldownSpec } from "@/lib/os/dashboardEngine/types";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
+import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 import {
   getActiveSharedReportDataset,
   downloadSharedReportDatasetFile,
@@ -582,6 +583,8 @@ export default function QaAuthUtilizationDashboard() {
         adminUploadsHref="/system/authorization-uploads"
         adminSourceLabel={sharedAvailable ? "Auto-loads from Admin Uploads" : "No admin dataset yet"}
       />
+
+      <SourceCoverageBanner reportKey={["authorization", "hour-based-utilization"]} />
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card p-4">
         <div className="text-[12px] text-muted-foreground">
