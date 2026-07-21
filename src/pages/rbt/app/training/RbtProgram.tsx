@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle2, Circle, Clock, AlertTriangle, LifeBuoy, ArrowRight } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useRbtIdentity } from "../useRbtIdentity";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,19 +11,24 @@ import { useProgram } from "./useProgram";
 import { STEP_META, type StepRow } from "./types";
 
 export default function RbtProgram() {
-  const { user } = useAuth();
-  const { pathway, rows, remediation, stats, loading, reload } = useProgram(user?.id);
+  const { employeeId, writableEmployeeId, isPreviewing, loading: idLoading } = useRbtIdentity();
+  const { pathway, rows, remediation, stats, loading, reload } = useProgram(employeeId);
   const [selected, setSelected] = useState<StepRow | null>(null);
 
-  if (loading) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
+  if (loading || idLoading) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
 
   if (!pathway) {
     return (
-      <section className="rounded-3xl border border-border/70 bg-card p-6 text-center">
-        <p className="text-lg font-semibold tracking-tight">Your program is being set up</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          A training coordinator is assigning your pathway. Check back soon.
+      <section className="rounded-3xl border border-border/70 bg-card p-6 text-center space-y-3">
+        <p className="text-lg font-semibold tracking-tight">No pathway assigned yet</p>
+        <p className="text-sm text-muted-foreground">
+          Your training coordinator hasn't assigned a pathway to your record yet.
+          You can still ask a question while you wait.
         </p>
+        <div className="flex justify-center gap-2 pt-1">
+          <Button asChild variant="outline"><Link to="/rbt/app/support/new?category=training">Ask about my pathway</Link></Button>
+          <Button asChild><Link to="/rbt/app/passport">Open Skill Passport</Link></Button>
+        </div>
       </section>
     );
   }
@@ -135,17 +140,20 @@ export default function RbtProgram() {
           row={selected}
           onClose={() => setSelected(null)}
           onSaved={() => { setSelected(null); void reload(); }}
+          canWrite={Boolean(writableEmployeeId) && !isPreviewing}
         />
       )}
     </div>
   );
 }
 
-function StepSheet({ row, onClose, onSaved }: { row: StepRow; onClose: () => void; onSaved: () => void }) {
+function StepSheet({ row, onClose, onSaved, canWrite }:
+  { row: StepRow; onClose: () => void; onSaved: () => void; canWrite: boolean }) {
   const [note, setNote] = useState(row.progress.notes ?? "");
   const [saving, setSaving] = useState(false);
 
   async function update(status: "in_progress" | "submitted" | "needs_support") {
+    if (!canWrite) return;
     setSaving(true);
     const { error } = await supabase.from("rbt_pathway_progress" as any)
       .update({ status, notes: note.trim() || null })
@@ -174,10 +182,15 @@ function StepSheet({ row, onClose, onSaved }: { row: StepRow; onClose: () => voi
             <Textarea rows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reflection, questions, or blockers." />
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <Button variant="outline" onClick={() => update("in_progress")} disabled={saving}>Working on it</Button>
-            <Button onClick={() => update("submitted")} disabled={saving}>Mark ready</Button>
-            <Button variant="outline" onClick={() => update("needs_support")} disabled={saving}>Need help</Button>
+            <Button variant="outline" onClick={() => update("in_progress")} disabled={saving || !canWrite}>Working on it</Button>
+            <Button onClick={() => update("submitted")} disabled={saving || !canWrite}>Mark ready</Button>
+            <Button variant="outline" onClick={() => update("needs_support")} disabled={saving || !canWrite}>Need help</Button>
           </div>
+          {!canWrite && (
+            <p className="text-xs text-amber-700 dark:text-amber-400 text-center">
+              Preview mode — you can review your program but changes are disabled.
+            </p>
+          )}
           <p className="text-xs text-muted-foreground text-center">
             Only your trainer or BCBA can mark a stage complete.
           </p>
