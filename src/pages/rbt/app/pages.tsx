@@ -214,9 +214,15 @@ export function RbtLearn() {
                       </p>
                     )}
                     {published && !complete && (
-                      <Link to={`/academy/course/${r.training_id}`}
+                      <Link to={`/rbt/app/learn/course/${r.training_id}`}
                         className="text-[11px] text-primary underline underline-offset-4">
                         Continue course
+                      </Link>
+                    )}
+                    {published && complete && (
+                      <Link to={`/rbt/app/learn/course/${r.training_id}`}
+                        className="text-[11px] text-muted-foreground underline underline-offset-4 ml-2">
+                        Review
                       </Link>
                     )}
                     {complete && r.completed_at && (

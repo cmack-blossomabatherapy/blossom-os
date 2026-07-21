@@ -220,6 +220,7 @@ import RbtFirst90Dashboard from "./pages/admin/RbtFirst90Dashboard";
 import RbtWorkforceDashboard from "./pages/admin/RbtWorkforceDashboard";
 import RbtAppShell from "./pages/rbt/app/shell";
 import { RbtHome, RbtSchedule, RbtLearn, RbtMe, RbtProgramPage, RbtPassportPage } from "./pages/rbt/app/pages";
+import RbtCourseDetail from "./pages/rbt/app/training/RbtCourseDetail";
 import SupportHome from "./pages/rbt/app/support/SupportHome";
 import SupportNew from "./pages/rbt/app/support/SupportNew";
 import SupportUrgent from "./pages/rbt/app/support/SupportUrgent";
@@ -1504,6 +1505,7 @@ const App = () => (
                   <Route path="journey" element={<RbtJourney />} />
                   <Route path="journey/:instanceId" element={<RbtJourneyCheckpoint />} />
                   <Route path="learn" element={<RbtLearn />} />
+                  <Route path="learn/course/:courseId" element={<RbtCourseDetail />} />
                   <Route path="program" element={<RbtProgramPage />} />
                   <Route path="passport" element={<RbtPassportPage />} />
                   <Route path="support" element={<SupportHome />} />
