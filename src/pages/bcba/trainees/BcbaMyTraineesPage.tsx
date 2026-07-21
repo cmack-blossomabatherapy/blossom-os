@@ -59,10 +59,10 @@ export default function BcbaMyTraineesPage() {
       if (ids.length === 0) { setTrainees([]); return; }
 
       const [{ data: emp }, { data: prog }] = await Promise.all([
-        supabase.from("employees")
+        (supabase.from("employees") as any)
           .select("auth_user_id,email,first_name,last_name")
           .in("auth_user_id", ids),
-        supabase.from("rbt_pathway_progress" as any)
+        (supabase.from("rbt_pathway_progress" as any) as any)
           .select("employee_id,status,support_needed,pathway_step_id,rbt_pathway_steps(title,order_index,pathway_id)")
           .in("employee_id", ids),
       ]);
