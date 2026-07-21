@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOSRoleSafe } from "@/contexts/OSRoleContext";
@@ -48,13 +48,17 @@ export function RbtWalkthroughProvider({ children }: { children: React.ReactNode
  * key navigation and reduced-motion handling on top.
  */
 export function RbtWalkthroughDialog() {
-  const { controller } = { controller: useWalkthroughFromContext() };
+  const { controller } = useContext(RbtWalkthroughContext);
   const navigate = useNavigate();
   const reduced = useReducedMotion();
   const nextBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  if (!controller) return null;
-  const { open, step, index, steps, isFirst, isLast, next, prev, dismiss, finish } = controller;
+  const open = controller?.open ?? false;
+  const step = controller?.step ?? null;
+  const index = controller?.index ?? 0;
+  const steps = controller?.steps ?? [];
+  const isFirst = controller?.isFirst ?? true;
+  const isLast = controller?.isLast ?? false;
 
   // Move focus to the primary "Next"/"Finish" button when the step changes
   // so keyboard users can continue with a single Enter press.
@@ -65,19 +69,22 @@ export function RbtWalkthroughDialog() {
   }, [open, index, reduced]);
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowRight") { e.preventDefault(); next(); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
-  }, [next, prev]);
+    if (!controller) return;
+    if (e.key === "ArrowRight") { e.preventDefault(); controller.next(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); controller.prev(); }
+  }, [controller]);
 
   const handleFinish = useCallback(() => {
-    finish();
-    navigate(step.route);
-  }, [finish, navigate, step.route]);
+    controller?.finish();
+    if (step) navigate(step.route);
+  }, [controller, navigate, step]);
 
-  const handleGo = useCallback(() => { navigate(step.route); }, [navigate, step.route]);
+  const handleGo = useCallback(() => { if (step) navigate(step.route); }, [navigate, step]);
+
+  if (!controller || !step) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) controller.dismiss(); }}>
       <DialogContent
         onKeyDown={onKeyDown}
         aria-describedby="rbt-walkthrough-desc"
@@ -144,7 +151,7 @@ export function RbtWalkthroughDialog() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={dismiss}
+              onClick={controller.dismiss}
               className="rounded-xl px-3 h-9 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition"
             >
               Skip tour
@@ -160,7 +167,7 @@ export function RbtWalkthroughDialog() {
           <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
-              onClick={prev}
+              onClick={controller.prev}
               disabled={isFirst}
               aria-label="Previous step"
               className="inline-flex items-center gap-1.5 rounded-xl px-3 h-9 text-sm border border-border/70 hover:bg-muted transition disabled:opacity-40 disabled:pointer-events-none"
@@ -180,7 +187,7 @@ export function RbtWalkthroughDialog() {
               <button
                 type="button"
                 ref={nextBtnRef}
-                onClick={next}
+                onClick={controller.next}
                 aria-label="Next step"
                 className="inline-flex items-center gap-1.5 rounded-xl px-4 h-9 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition"
               >
@@ -192,13 +199,4 @@ export function RbtWalkthroughDialog() {
       </DialogContent>
     </Dialog>
   );
-}
-
-function useWalkthroughFromContext() {
-  // Extracted to keep the component pure of a top-level context read
-  // when the provider hasn't wrapped it (e.g. Storybook).
-  const { controller } = (require as any)("./useRbtWalkthrough")
-    ? { controller: null }
-    : { controller: null };
-  return controller;
 }
