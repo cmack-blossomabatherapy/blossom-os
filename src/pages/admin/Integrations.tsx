@@ -50,6 +50,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IntegrationReadinessPanel } from "@/components/marketing/IntegrationReadinessPanel";
 import { RecruitingIntegrationHealthPanel } from "@/components/recruiting/RecruitingIntegrationHealthPanel";
+import { IntakeOperatingModePanel } from "@/components/intake/IntakeOperatingModePanel";
 import {
   Sheet,
   SheetContent,
@@ -1517,6 +1518,11 @@ export default function Integrations() {
         {/* Intake Communication Setup - CTM / Jivetel / Mailchimp Email / Mailchimp SMS */}
         <div className="mt-8">
           <IntakeCommunicationSetupPanel />
+        </div>
+
+        {/* Intake Operating Mode — surfaces INGEST_ONLY status and blockers. */}
+        <div className="mt-8">
+          <IntakeOperatingModePanel />
         </div>
 
         {/* Marketing integration readiness — moved here from the Marketing pages
