@@ -207,6 +207,7 @@ export function RbtLearn() {
   return (
     <div className="space-y-4">
       <WelcomeToBlossomCard to="/rbt/app/welcome" />
+      <div className="flex justify-end"><ReplayTourButton variant="inline" /></div>
       {!programLoading && pathway && (
         <div className="rounded-2xl border border-border/70 bg-card p-4">
           <div className="flex items-center justify-between gap-3">
