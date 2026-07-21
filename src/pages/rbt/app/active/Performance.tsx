@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
+import { useRbtIdentity } from "../useRbtIdentity";
 import { Sparkles, CheckCircle2, AlertCircle, Target, GraduationCap, Award } from "lucide-react";
 
 const SECTIONS: {
@@ -16,18 +16,19 @@ const SECTIONS: {
 ];
 
 export default function Performance() {
-  const { user } = useAuth();
+  const { employeeId, loading: idLoading } = useRbtIdentity();
   const [rows, setRows] = useState<any[] | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (idLoading) return;
+    if (!employeeId) { setRows([]); return; }
     supabase.from("rbt_performance_notes" as any)
       .select("id,category,title,detail,source,source_reference,source_date")
-      .eq("employee_id", user.id)
+      .eq("employee_id", employeeId)
       .eq("is_active", true)
       .order("source_date", { ascending: false })
       .then(({ data }) => setRows((data as any[]) ?? []));
-  }, [user?.id]);
+  }, [employeeId, idLoading]);
 
   return (
     <div className="space-y-3">
