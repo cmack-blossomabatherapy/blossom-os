@@ -79,7 +79,7 @@ function initials(n: string) {
 }
 
 export default function OSRecruitingPipeline() {
-  const { candidates, loading, updateStage } = useRecruitingCandidates();
+  const { candidates, loading, updateStage, updateCandidate } = useRecruitingCandidates();
   const { status: apploiStatus } = useApploiIntegrationStatus();
   const handleApploiImport = async () => {
     if (apploiStatus !== "connected") { notifyApploiNotConnected(); return; }
@@ -406,6 +406,11 @@ export default function OSRecruitingPipeline() {
               updateStage(selected.id, stage);
               setSelected({ ...selected, pipeline_stage: stage });
             }
+          }}
+          onClassificationChange={async (patch) => {
+            if (!selected) return;
+            const ok = await updateCandidate(selected.id, patch);
+            if (ok) setSelected({ ...selected, ...patch });
           }}
         />
       </div>
