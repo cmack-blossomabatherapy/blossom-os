@@ -200,13 +200,6 @@ export type Database = {
             foreignKeyName: "academy_checkins_with_employee_id_fkey"
             columns: ["with_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "academy_checkins_with_employee_id_fkey"
-            columns: ["with_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -426,13 +419,6 @@ export type Database = {
             foreignKeyName: "academy_enrollments_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "academy_enrollments_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -463,13 +449,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "academy_enrollments_mentor_employee_id_fkey"
-            columns: ["mentor_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "academy_enrollments_mentor_employee_id_fkey"
@@ -1042,13 +1021,6 @@ export type Database = {
             foreignKeyName: "academy_shadow_sessions_shadowed_employee_id_fkey"
             columns: ["shadowed_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "academy_shadow_sessions_shadowed_employee_id_fkey"
-            columns: ["shadowed_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -1612,13 +1584,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "attendance_exceptions_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "attendance_exceptions_employee_id_fkey"
@@ -5505,13 +5470,6 @@ export type Database = {
             foreignKeyName: "bd_territories_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "bd_territories_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -5603,13 +5561,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "bd_territory_leads_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "bd_territory_leads_owner_id_fkey"
@@ -8912,13 +8863,6 @@ export type Database = {
             foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
             columns: ["matched_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "ctm_call_events_matched_employee_id_fkey"
-            columns: ["matched_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -9681,13 +9625,6 @@ export type Database = {
             foreignKeyName: "employee_bonuses_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employee_bonuses_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -9781,13 +9718,6 @@ export type Database = {
             foreignKeyName: "employee_cases_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employee_cases_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -9867,13 +9797,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employee_devices_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employee_devices_employee_id_fkey"
@@ -9968,13 +9891,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employee_documents_hr_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employee_documents_hr_employee_id_fkey"
@@ -10196,13 +10112,6 @@ export type Database = {
             foreignKeyName: "employee_nfc_tags_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employee_nfc_tags_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -10264,13 +10173,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employee_notes_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employee_notes_employee_id_fkey"
@@ -10379,13 +10281,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employee_onboarding_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employee_onboarding_employee_id_fkey"
@@ -10568,13 +10463,6 @@ export type Database = {
             foreignKeyName: "employee_pay_changes_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employee_pay_changes_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -10680,13 +10568,6 @@ export type Database = {
             foreignKeyName: "employee_relationships_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employee_relationships_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -10717,13 +10598,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employee_relationships_related_employee_id_fkey"
-            columns: ["related_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employee_relationships_related_employee_id_fkey"
@@ -10837,13 +10711,6 @@ export type Database = {
             foreignKeyName: "employee_reviews_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employee_reviews_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -10874,13 +10741,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employee_reviews_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employee_reviews_reviewer_id_fkey"
@@ -10982,13 +10842,6 @@ export type Database = {
             foreignKeyName: "employee_role_assignments_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employee_role_assignments_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -11053,13 +10906,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employee_timeline_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employee_timeline_employee_id_fkey"
@@ -11157,13 +11003,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employee_trainings_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employee_trainings_employee_id_fkey"
@@ -11426,13 +11265,6 @@ export type Database = {
             foreignKeyName: "employees_manager_id_fkey"
             columns: ["manager_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employees_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -11463,13 +11295,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employees_mentor_id_fkey"
-            columns: ["mentor_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employees_mentor_id_fkey"
@@ -12483,13 +12308,6 @@ export type Database = {
             foreignKeyName: "evaluation_staff_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: true
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "evaluation_staff_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: true
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -13267,13 +13085,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "hours_timesheets_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "hours_timesheets_employee_id_fkey"
@@ -14224,13 +14035,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "intake_leads_assigned_intake_coordinator_employee_id_fkey"
-            columns: ["assigned_intake_coordinator_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "intake_leads_assigned_intake_coordinator_employee_id_fkey"
@@ -16453,13 +16257,6 @@ export type Database = {
             foreignKeyName: "mileage_trips_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "mileage_trips_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -17420,13 +17217,6 @@ export type Database = {
             foreignKeyName: "payroll_adjustments_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "payroll_adjustments_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -17518,13 +17308,6 @@ export type Database = {
             foreignKeyName: "payroll_benefits_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "payroll_benefits_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -17604,13 +17387,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "payroll_communications_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "payroll_communications_employee_id_fkey"
@@ -17696,13 +17472,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "payroll_deductions_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "payroll_deductions_employee_id_fkey"
@@ -17801,13 +17570,6 @@ export type Database = {
             foreignKeyName: "payroll_issues_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "payroll_issues_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -17898,13 +17660,6 @@ export type Database = {
             foreignKeyName: "payroll_reminders_target_employee_id_fkey"
             columns: ["target_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "payroll_reminders_target_employee_id_fkey"
-            columns: ["target_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -17984,13 +17739,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "payroll_run_items_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "payroll_run_items_employee_id_fkey"
@@ -18401,13 +18149,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "phone_dial_events_linked_employee_id_fkey"
-            columns: ["linked_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "phone_dial_events_linked_employee_id_fkey"
@@ -19252,13 +18993,6 @@ export type Database = {
             foreignKeyName: "rbt_client_assignments_assigned_bcba_id_fkey"
             columns: ["assigned_bcba_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_client_assignments_assigned_bcba_id_fkey"
-            columns: ["assigned_bcba_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -19294,13 +19028,6 @@ export type Database = {
             foreignKeyName: "rbt_client_assignments_case_manager_id_fkey"
             columns: ["case_manager_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_client_assignments_case_manager_id_fkey"
-            columns: ["case_manager_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -19331,13 +19058,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_client_assignments_rbt_employee_id_fkey"
-            columns: ["rbt_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_client_assignments_rbt_employee_id_fkey"
@@ -19932,13 +19652,6 @@ export type Database = {
             foreignKeyName: "rbt_first_case_bcba_id_fkey"
             columns: ["bcba_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_case_bcba_id_fkey"
-            columns: ["bcba_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -19969,13 +19682,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_case_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_first_case_employee_id_fkey"
@@ -20016,13 +19722,6 @@ export type Database = {
             foreignKeyName: "rbt_first_case_lead_rbt_id_fkey"
             columns: ["lead_rbt_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_case_lead_rbt_id_fkey"
-            columns: ["lead_rbt_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -20053,13 +19752,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_case_support_contact_id_fkey"
-            columns: ["support_contact_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_first_case_support_contact_id_fkey"
@@ -20161,13 +19853,6 @@ export type Database = {
             foreignKeyName: "rbt_first_session_bcba_followups_bcba_id_fkey"
             columns: ["bcba_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_bcba_followups_bcba_id_fkey"
-            columns: ["bcba_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -20198,13 +19883,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_bcba_followups_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_first_session_bcba_followups_employee_id_fkey"
@@ -20308,13 +19986,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_checkins_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_first_session_checkins_employee_id_fkey"
@@ -20424,13 +20095,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_checklist_state_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_first_session_checklist_state_employee_id_fkey"
@@ -20546,13 +20210,6 @@ export type Database = {
             foreignKeyName: "rbt_first_session_lead_evaluations_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_lead_evaluations_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -20583,13 +20240,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_lead_evaluations_evaluator_id_fkey"
-            columns: ["evaluator_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_first_session_lead_evaluations_evaluator_id_fkey"
@@ -20701,13 +20351,6 @@ export type Database = {
             foreignKeyName: "rbt_first_session_outcomes_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_outcomes_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -20750,13 +20393,6 @@ export type Database = {
             foreignKeyName: "rbt_first_session_outcomes_owner_employee_id_fkey"
             columns: ["owner_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_outcomes_owner_employee_id_fkey"
-            columns: ["owner_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -20787,13 +20423,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_first_session_outcomes_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_first_session_outcomes_resolved_by_fkey"
@@ -20991,13 +20620,6 @@ export type Database = {
             foreignKeyName: "rbt_help_requests_assigned_bcba_id_fkey"
             columns: ["assigned_bcba_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_help_requests_assigned_bcba_id_fkey"
-            columns: ["assigned_bcba_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -21033,13 +20655,6 @@ export type Database = {
             foreignKeyName: "rbt_help_requests_rbt_employee_id_fkey"
             columns: ["rbt_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_help_requests_rbt_employee_id_fkey"
-            columns: ["rbt_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -21070,13 +20685,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_help_requests_routed_to_employee_id_fkey"
-            columns: ["routed_to_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_help_requests_routed_to_employee_id_fkey"
@@ -21415,13 +21023,6 @@ export type Database = {
             foreignKeyName: "rbt_journey_instances_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_journey_instances_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -21464,13 +21065,6 @@ export type Database = {
             foreignKeyName: "rbt_journey_instances_owner_employee_id_fkey"
             columns: ["owner_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_journey_instances_owner_employee_id_fkey"
-            columns: ["owner_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -21501,13 +21095,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_journey_instances_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_journey_instances_resolved_by_fkey"
@@ -21607,13 +21194,6 @@ export type Database = {
             foreignKeyName: "rbt_journey_internal_reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_journey_internal_reviews_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -21675,13 +21255,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_journey_outreach_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_journey_outreach_actor_id_fkey"
@@ -21778,13 +21351,6 @@ export type Database = {
             foreignKeyName: "rbt_journey_responses_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_journey_responses_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -21859,13 +21425,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_journey_risk_signals_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_journey_risk_signals_employee_id_fkey"
@@ -22238,13 +21797,6 @@ export type Database = {
             foreignKeyName: "rbt_messages_recipient_employee_id_fkey"
             columns: ["recipient_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_messages_recipient_employee_id_fkey"
-            columns: ["recipient_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -22275,13 +21827,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_messages_sender_employee_id_fkey"
-            columns: ["sender_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_messages_sender_employee_id_fkey"
@@ -23593,13 +23138,6 @@ export type Database = {
             foreignKeyName: "rbt_session_support_logs_rbt_employee_id_fkey"
             columns: ["rbt_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_session_support_logs_rbt_employee_id_fkey"
-            columns: ["rbt_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -23630,13 +23168,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_session_support_logs_routed_to_employee_id_fkey"
-            columns: ["routed_to_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_session_support_logs_routed_to_employee_id_fkey"
@@ -23760,13 +23291,6 @@ export type Database = {
             foreignKeyName: "rbt_sessions_bcba_id_fkey"
             columns: ["bcba_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_sessions_bcba_id_fkey"
-            columns: ["bcba_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -23797,13 +23321,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_sessions_rbt_employee_id_fkey"
-            columns: ["rbt_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_sessions_rbt_employee_id_fkey"
@@ -24260,13 +23777,6 @@ export type Database = {
             foreignKeyName: "rbt_supervision_bcba_id_fkey"
             columns: ["bcba_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_supervision_bcba_id_fkey"
-            columns: ["bcba_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -24297,13 +23807,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_supervision_rbt_employee_id_fkey"
-            columns: ["rbt_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_supervision_rbt_employee_id_fkey"
@@ -24512,13 +24015,6 @@ export type Database = {
             foreignKeyName: "rbt_support_routing_rules_route_to_employee_id_fkey"
             columns: ["route_to_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_support_routing_rules_route_to_employee_id_fkey"
-            columns: ["route_to_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -24603,13 +24099,6 @@ export type Database = {
             foreignKeyName: "rbt_support_team_contacts_contact_employee_id_fkey"
             columns: ["contact_employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_support_team_contacts_contact_employee_id_fkey"
-            columns: ["contact_employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -24640,13 +24129,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_support_team_contacts_scope_employee_id_fkey"
-            columns: ["scope_employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_support_team_contacts_scope_employee_id_fkey"
@@ -28438,13 +27920,6 @@ export type Database = {
             foreignKeyName: "time_clock_punches_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "time_clock_punches_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -29213,13 +28688,6 @@ export type Database = {
             foreignKeyName: "training_track_enrollments_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "training_track_enrollments_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -29852,13 +29320,6 @@ export type Database = {
             foreignKeyName: "employees_manager_id_fkey"
             columns: ["manager_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "employees_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -29939,13 +29400,6 @@ export type Database = {
             foreignKeyName: "rbt_client_assignments_assigned_bcba_id_fkey"
             columns: ["assigned_bcba_id"]
             isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_client_assignments_assigned_bcba_id_fkey"
-            columns: ["assigned_bcba_id"]
-            isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
@@ -29976,13 +29430,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "rbt_client_assignments_rbt_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "rbt_client_assignments_rbt_employee_id_fkey"
@@ -30266,6 +29713,30 @@ export type Database = {
           last_name: string | null
           mapping_status: string | null
         }
+        Insert: {
+          auth_user_id?: string | null
+          candidate_provider_id?: never
+          candidate_provider_name?: never
+          centralreach_id?: string | null
+          credential?: string | null
+          email?: string | null
+          employee_id?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          mapping_status?: never
+        }
+        Update: {
+          auth_user_id?: string | null
+          candidate_provider_id?: never
+          candidate_provider_name?: never
+          centralreach_id?: string | null
+          credential?: string | null
+          email?: string | null
+          employee_id?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          mapping_status?: never
+        }
         Relationships: []
       }
       v_cr_canonical_sessions: {
@@ -30280,8 +29751,11 @@ export type Database = {
           hours: number | null
           procedure_code: string | null
           procedure_code_root: string | null
+          provider_ambiguity_reason: string | null
           provider_auth_user_id: string | null
           provider_employee_id: string | null
+          provider_mapping_confidence: number | null
+          provider_mapping_method: string | null
           provider_mapping_status: string | null
           provider_name: string | null
           provider_name_key: string | null
@@ -30302,6 +29776,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_cr_provider_mapping: {
+        Row: {
+          ambiguity_reason: string | null
+          auth_user_id: string | null
+          employee_id: string | null
+          mapping_confidence: number | null
+          mapping_method: string | null
+          mapping_status: string | null
+          provider_id: string | null
+          provider_name: string | null
+          provider_name_key: string | null
+        }
+        Relationships: []
       }
       v_data_quality_alerts: {
         Row: {
@@ -30388,13 +29876,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_clinician_cr_mapping"
             referencedColumns: ["employee_id"]
-          },
-          {
-            foreignKeyName: "employees_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "v_cr_canonical_sessions"
-            referencedColumns: ["provider_employee_id"]
           },
           {
             foreignKeyName: "employees_manager_id_fkey"
@@ -30833,6 +30314,27 @@ export type Database = {
         }[]
       }
       classify_eval_role: { Args: { _job_title: string }; Returns: string }
+      clinician_mapping_diagnostics: {
+        Args: never
+        Returns: {
+          ambiguous_employee: number
+          ambiguous_id: number
+          ambiguous_provider: number
+          blank_name: number
+          distinct_active_clinicians: number
+          exact_id: number
+          mapped_hours: number
+          mapped_providers: number
+          mapped_rows: number
+          no_employee_match: number
+          total_providers: number
+          unique_name: number
+          unmapped_hours: number
+          unmapped_providers: number
+          unmapped_rows: number
+          unmapped_sample: Json
+        }[]
+      }
       compute_profile_completion: {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }
         Returns: number
