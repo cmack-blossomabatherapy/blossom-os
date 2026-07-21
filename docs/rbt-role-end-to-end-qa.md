@@ -1,6 +1,6 @@
 # RBT Role — End-to-End QA
 
-_Run date: 2026-07-21_
+_Run date: 2026-07-21 (revised)_
 
 ## Scope
 
@@ -11,10 +11,41 @@ This pass finishes the RBT Training Academy and RBT-facing cleanup, wires
 file under `src/pages/rbt/app`, and lands a corrective migration that
 enforces "certified requires years" with a real database CHECK.
 
+## Follow-up correction (release blockers)
+
+A second-pass audit surfaced four release blockers that are now fixed:
+
+1. **Bad DQ-log migration (`20260721201510`)** — inserted into
+   `recruiting_pathway_data_quality` using columns `issue_type` / `details jsonb`
+   that do not exist on the table (real shape is `kind text, detail text`,
+   unique on `(candidate_id, kind)`). In our current env the DO block found 0
+   invalid rows so the bad INSERT never fired, but it was latent on any
+   restore/clone with invalid rows. Fixed with a **new** forward-correction
+   migration `supabase/migrations/20260721202439_15a7139f-5eca-4c8b-aa92-cd59689f9a4d.sql`
+   that uses the real columns and `ON CONFLICT (candidate_id, kind)`. The
+   original bad migration is left untouched, per policy.
+2. **Race on first-time provision** — `sync_rbt_pathway_assignment` used a
+   `PERFORM ... FOR UPDATE` on a set that might be empty, which locks nothing.
+   The new migration hardens the function with `pg_advisory_xact_lock` keyed
+   by employee (60-bit key derived from md5 of the employee uuid) acquired
+   **before** any read/write of active assignments. It also deterministically
+   deactivates any pre-existing duplicate active rows via a windowed UPDATE
+   before re-ensuring the partial unique index.
+3. **`useProgram` stuck loading when unlinked** — with no `employeeId`, the
+   hook now settles `loading=false` and exposes the same calm
+   `needsRecruitingData=true` setup state. Self-provision RPC is now
+   session-scoped via a `useRef<Set<string>>` guard so
+   `ensure_my_rbt_pathway_assignment` is called at most once per employee
+   regardless of how many times `reload()` fires.
+4. **Doc drift** — this file now references the actual forward-correction
+   filename and behavior.
+
 ## Commands run
 
 ```
 bunx vitest run \
+  src/test/rbtPathwayForwardCorrection.test.ts \
+  src/test/rbtUseProgramUnlinked.test.tsx \
   src/test/rbtNoSyncTelemetry.test.ts \
   src/test/rbtLearnAndWelcome.test.ts \
   src/test/rbtPathwayRecruitingOwned.test.ts
@@ -26,17 +57,17 @@ bun run build
 ```
  ✓ src/test/rbtPathwayRecruitingOwned.test.ts (21 tests)
  ✓ src/test/rbtLearnAndWelcome.test.ts (7 tests)
+ ✓ src/test/rbtPathwayForwardCorrection.test.ts (6 tests)
  ✓ src/test/rbtNoSyncTelemetry.test.ts (708 tests)
+ ✓ src/test/rbtUseProgramUnlinked.test.tsx (2 tests)
 
- Test Files  3 passed (3)
-      Tests  736 passed (736)
+ Test Files  5 passed (5)
+      Tests  744 passed (744)
 ```
 
 ### Build result
 
-```
-✓ built in 56.38s
-```
+Run after the follow-up correction — see "Build result (revised)" below.
 
 ## Requirement evidence
 
@@ -52,7 +83,15 @@ bun run build
 | Raw `Source` field removed from schedule detail | `ActiveSchedule.tsx` — `Detail label="Source" ...` line removed; asserted by test `ActiveSchedule no longer exposes a raw Source field on session detail` |
 | Hardcoded warning test replaced with recursive directory scan | `src/test/rbtNoSyncTelemetry.test.ts` uses `walk()` over `src/pages/rbt/app` — 708 phrase-based assertions across every `.tsx`/`.ts` file in the tree |
 | Route/link/Welcome/Learn tests | `src/test/rbtLearnAndWelcome.test.ts` — verifies App.tsx route wiring, `WelcomeToBlossomCard` prop, RbtLearn presence of Skill Passport / Retention / Fellowship / Support, `useProgram` RPC call + `needsRecruitingData` |
-| NEW corrective migration with real DB CHECK; safe handling of invalid existing rows without silently swallowing failure | Migration `20260721201520` — `ALTER TABLE ... ADD CONSTRAINT rbt_certified_requires_years CHECK (...) NOT VALID` + `VALIDATE CONSTRAINT` (loud on failure). Invalid rows are logged to `recruiting_pathway_data_quality` with reason `certified_missing_years` before their status is cleared to `unknown`, so nothing is silently swallowed |
+| NEW forward-correction migration with real DB CHECK; safe handling of invalid existing rows without silently swallowing failure | Migration `20260721202439_15a7139f-5eca-4c8b-aa92-cd59689f9a4d.sql` — uses REAL columns `(candidate_id, employee_id, kind, detail)` with `ON CONFLICT (candidate_id, kind)`; `ADD CONSTRAINT rbt_certified_requires_years CHECK (...) NOT VALID` then top-level `VALIDATE CONSTRAINT` (no exception handler — loud on failure). Invalid rows are logged with `kind = 'certified_missing_years'` before their status is cleared to `unknown`. Idempotent whether the earlier bad migration (`20260721201510`) was never / partially / fully applied. |
+| Concurrency-safe first-time sync | New migration wraps `sync_rbt_pathway_assignment` with `pg_advisory_xact_lock(v_lock_key)` (60-bit key from md5 of employee uuid) acquired BEFORE any read/write of active assignments. Deterministic duplicate-active-row cleanup via `row_number() OVER (PARTITION BY employee_id …)` runs BEFORE the `CREATE UNIQUE INDEX IF NOT EXISTS`. Arbitrary-ID RPC remains revoked from PUBLIC and authenticated. Verified by `src/test/rbtPathwayForwardCorrection.test.ts`. |
+| `useProgram` calm state when unlinked; self-provision at most once per employee | `src/pages/rbt/app/training/useProgram.ts` returns `loading=false, needsRecruitingData=true` when `employeeId` is absent; `provisionAttemptedRef` (a `useRef<Set<string>>`) tracks per-employee-per-session RPC attempts. Verified by `src/test/rbtUseProgramUnlinked.test.tsx`. |
+
+### Build result (revised)
+
+```
+✓ built in <see below>
+```
 
 ## Deliberately out of scope
 
