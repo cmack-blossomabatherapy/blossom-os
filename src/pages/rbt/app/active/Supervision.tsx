@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { useRbtIdentity } from "../useRbtIdentity";
+import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
 
 export default function Supervision() {
   const { employeeId, writableEmployeeId, loading: idLoading, isPreviewing } = useRbtIdentity();
@@ -68,6 +69,16 @@ export default function Supervision() {
           Your BCBA tracks the exact hour requirement in CentralReach.
         </p>
       </CardFrame>
+
+      {employeeId && (
+        <CanonicalSessionsCard
+          title="Imported CentralReach supervision (97155)"
+          scope={{ employeeId }}
+          roleRowCount={rows?.length ?? 0}
+          highlightKinds={["supervision"]}
+          showClients
+        />
+      )}
 
       <CardFrame title="Feedback & follow-ups" state={state} emptyLabel="No supervision notes yet.">
         <ul className="space-y-3">
