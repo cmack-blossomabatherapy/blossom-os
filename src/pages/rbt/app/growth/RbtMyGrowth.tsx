@@ -73,14 +73,14 @@ export default function RbtMyGrowth() {
   };
 
   const submitMentorRequest = async () => {
-    if (!user) return;
+    if (!g.writableEmployeeId) { toast.error("Preview mode — read-only"); return; }
     const { error } = await supabase.from("rbt_mentor_requests" as any).insert({
-      employee_id: user.id, message: mentorNotes, status: "submitted",
+      employee_id: g.writableEmployeeId, message: mentorNotes, status: "submitted",
     } as any);
     if (error) { toast.error("Could not submit request"); return; }
     await g.saveInterests({ mentor_requested: true, mentor_request_notes: mentorNotes });
     await supabase.from("rbt_growth_audit" as any).insert({
-      employee_id: user.id, actor_id: user.id, event_type: "mentor.requested",
+      employee_id: g.writableEmployeeId, actor_id: user?.id, event_type: "mentor.requested",
       payload: { notes: mentorNotes },
     } as any);
     setMentorNotes("");
@@ -88,14 +88,14 @@ export default function RbtMyGrowth() {
   };
 
   const submitOpportunityInterest = async () => {
-    if (!user || !oppType) return;
+    if (!g.writableEmployeeId || !oppType) { if (!g.writableEmployeeId) toast.error("Preview mode — read-only"); return; }
     const { error } = await supabase.from("rbt_internal_opportunity_interest" as any).insert({
-      employee_id: user.id, opportunity_type: oppType, message: oppMessage, status: "submitted",
+      employee_id: g.writableEmployeeId, opportunity_type: oppType, message: oppMessage, status: "submitted",
     } as any);
     if (error) { toast.error("Could not submit"); return; }
     await g.saveInterests({ open_to_internal_opportunities: true });
     await supabase.from("rbt_growth_audit" as any).insert({
-      employee_id: user.id, actor_id: user.id, event_type: "opportunity_interest.submitted",
+      employee_id: g.writableEmployeeId, actor_id: user?.id, event_type: "opportunity_interest.submitted",
       payload: { opportunity_type: oppType, message: oppMessage },
     } as any);
     setOppType(""); setOppMessage("");
