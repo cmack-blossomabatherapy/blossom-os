@@ -440,7 +440,16 @@ export function RbtMe() {
         title={displayName}
         subtitle={[credential, email].filter(Boolean).join(" · ") || "Your Blossom profile"}
         state="success"
-        action={signOut && <button onClick={() => signOut()} className="text-sm text-muted-foreground underline underline-offset-4">Sign out</button>}>
+        action={
+          <div className="flex items-center gap-2">
+            <ReplayTourButton variant="inline" />
+            {signOut && (
+              <button onClick={() => signOut()} className="text-sm text-muted-foreground underline underline-offset-4">
+                Sign out
+              </button>
+            )}
+          </div>
+        }>
         {stage ? (
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Current stage</p>
