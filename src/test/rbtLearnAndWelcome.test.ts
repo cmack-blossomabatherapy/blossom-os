@@ -15,7 +15,7 @@ describe("RBT Welcome route + Learn academy contract", () => {
   it("App.tsx registers /rbt/app/welcome -> RbtWelcome", () => {
     const src = read("src/App.tsx");
     expect(src).toMatch(/import\s+RbtWelcome\s+from\s+"\.\/pages\/rbt\/app\/welcome\/RbtWelcome"/);
-    expect(src).toMatch(/path="welcome"\s+element=\{<RbtWelcome\s*\/>/);
+    expect(src).toMatch(/path="\/rbt\/app\/welcome"\s+element=\{<RbtWelcome\s*\/>/);
   });
 
   it("WelcomeToBlossomCard supports a custom target prop", () => {
