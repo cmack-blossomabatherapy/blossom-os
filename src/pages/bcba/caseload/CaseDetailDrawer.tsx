@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { HEALTH_LABEL, HEALTH_TONE } from "./caseHealth";
 import type { CaseloadRow } from "./useCaseload";
+import { useBcbaIdentity } from "../useBcbaIdentity";
 
 /* -------------------------------------------------------------------------- */
 
