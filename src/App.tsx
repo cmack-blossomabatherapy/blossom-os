@@ -1546,6 +1546,7 @@ const App = () => (
                   <Route path="/bcba/home"     element={<BcbaHome />} />
                   <Route path="/bcba/caseload" element={<BcbaCaseload />} />
                   <Route path="/bcba/rbts"     element={<BcbaMyRbts />} />
+                  <Route path="/bcba/trainees" element={<BcbaMyTraineesPage />} />
                   <Route path="/bcba/clinical" element={<BcbaClinicalWork />} />
                   <Route path="/bcba/learn"    element={<BcbaLearn />} />
                   <Route path="/bcba/support"  element={<BcbaSupport />} />
