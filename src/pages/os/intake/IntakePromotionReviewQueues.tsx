@@ -10,6 +10,12 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useIntakeOperatingMode } from "@/lib/intake/operatingMode";
 import { formatDistanceToNow } from "date-fns";
+import {
+  useCanonicalPromotions,
+  reprocessNormalizedRecord,
+  type PromotionState,
+} from "@/lib/intake/reviewDataLayer";
+import { toast } from "sonner";
 
 /**
  * Blossom OS — Intake Promotion Review Queues
@@ -57,20 +63,12 @@ export default function IntakePromotionReviewQueues() {
   const [tab, setTab] = useState<QueueId>("staged");
   const [filter, setFilter] = useState("");
 
-  const promotion = useQuery({
-    queryKey: ["intake-promotion-state", tab],
-    enabled: tab !== "ctm_unmatched",
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("intake_promotion_state")
-        .select("id,normalized_record_id,state,reason,candidate_lead_ids,lead_id,created_at,updated_at")
-        .eq("state", tab as Exclude<QueueId, "ctm_unmatched">)
-        .order("updated_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return (data ?? []) as unknown as PromotionRow[];
-    },
-  });
+  // All promotion queues read through the canonical review data layer.
+  const promotion = useCanonicalPromotions(
+    tab === "ctm_unmatched"
+      ? { pageSize: 1 }
+      : { state: tab as PromotionState, pageSize: 500, search: filter.trim() || undefined },
+  );
 
   const unmatched = useQuery({
     queryKey: ["ctm-unmatched-tracking"],
@@ -85,14 +83,10 @@ export default function IntakePromotionReviewQueues() {
     },
   });
 
-  const filteredPromotion = useMemo(() => {
-    const rows = promotion.data ?? [];
-    if (!filter.trim()) return rows;
-    const q = filter.toLowerCase();
-    return rows.filter((r) =>
-      [r.reason, r.normalized_record_id, r.lead_id].some((v) => (v ?? "").toString().toLowerCase().includes(q)),
-    );
-  }, [promotion.data, filter]);
+  const filteredPromotion = useMemo(
+    () => (promotion.data?.rows ?? []) as unknown as PromotionRow[],
+    [promotion.data],
+  );
 
   const filteredUnmatched = useMemo(() => {
     const rows = unmatched.data ?? [];
@@ -104,14 +98,15 @@ export default function IntakePromotionReviewQueues() {
   }, [unmatched.data, filter]);
 
   const retry = async (recordId: string) => {
-    const { error } = await supabase.rpc("promote_normalized_record", {
-      _record_id: recordId,
-    });
-    if (error) {
-      alert(`Retry failed: ${error.message}`);
-      return;
+    try {
+      const res = await reprocessNormalizedRecord(recordId);
+      toast.success(
+        `Retry ${res.status}${res.leadId ? ` → lead ${res.leadId.slice(0, 8)}…` : ""}`,
+      );
+      await promotion.refetch();
+    } catch (e) {
+      toast.error(`Retry failed: ${(e as Error).message}`);
     }
-    await promotion.refetch();
   };
 
   return (

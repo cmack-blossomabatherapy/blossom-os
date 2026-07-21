@@ -68,6 +68,7 @@ export interface CanonicalCtmCallRow {
   ended_at: string | null;
   matched_lead_id: string | null;
   intake_lead_id: string | null;
+  resolved_state: string | null;
   linked_at: string | null;
   link_status: "linked" | "unmatched" | "unmatched_short" | "unmatched_no_tracking";
 }
@@ -236,7 +237,7 @@ export async function fetchCanonicalCtmCalls(
     .select(
       "id, ctm_call_id, direction, status, tracking_number, from_number, caller_city, " +
         "caller_state, duration_seconds, source_name, campaign_name, called_at, ended_at, " +
-        "matched_lead_id, intake_lead_id, linked_at, link_status",
+        "matched_lead_id, intake_lead_id, resolved_state, linked_at, link_status",
       { count: "exact" },
     );
   if (opts.linkStatus === "linked") q = q.eq("link_status", "linked");
