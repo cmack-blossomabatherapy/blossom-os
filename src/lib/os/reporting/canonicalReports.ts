@@ -448,3 +448,53 @@ export function deriveSourceState(
   if (ageDays !== null && ageDays > 30) return { kind: "stale", totals, ageDays };
   return { kind: "ready", totals, ageDays };
 }
+
+/* -------- V3 compatibility bridge --------
+ * BcbaProductivityReportV3 assumes a `BcbaSharedBillingRow`-shaped row set
+ * (see `@/lib/os/bcbaProductivityV3/adminUploadStore`). Convert canonical
+ * billing rows to that shape so the existing report can consume the RPC
+ * without a rewrite. The canonical view does NOT carry state/payor/labels
+ * columns; those degrade to empty strings and the state/payor filters
+ * silently collapse to "All" until the ingest pipeline enriches them. */
+
+export interface BcbaSharedBillingRowLike {
+  clientId: string;
+  clientName: string;
+  rbt: string;
+  renderingProvider: string;
+  providerLabels: string;
+  code: string;
+  hours: number;
+  date: string;
+  state: string;
+  payor: string;
+}
+
+export function toBcbaSharedShape(r: CanonicalReportBillingRow): BcbaSharedBillingRowLike {
+  const code = r.procedureCode ?? "";
+  const provider = r.providerName ?? "";
+  const is97153 = /^97153\b/.test(code) || code.startsWith("97153");
+  return {
+    clientId: r.crClientId ?? "",
+    clientName: r.clientName ?? "",
+    rbt: is97153 ? provider : "",
+    renderingProvider: provider,
+    providerLabels: "",
+    code,
+    hours: r.hours,
+    date: r.serviceDate ?? "",
+    state: "",
+    payor: "",
+  };
+}
+
+export async function fetchBcbaBillingRowsAsSharedShape(
+  filter: CanonicalReportFilter & { pageSize?: number; hardCap?: number;
+    onProgress?: (loaded: number, total: number) => void },
+): Promise<BcbaSharedBillingRowLike[]> {
+  const rows = await fetchAllCanonicalReportBillingRows(
+    { start: filter.start ?? null, end: filter.end ?? null, search: filter.search ?? null },
+    { pageSize: filter.pageSize, hardCap: filter.hardCap, onProgress: filter.onProgress },
+  );
+  return rows.map(toBcbaSharedShape);
+}
