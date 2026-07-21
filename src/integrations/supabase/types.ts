@@ -30886,6 +30886,9 @@ export type Database = {
         | "operations_leadership"
         | "qa_team"
         | "ceo"
+        | "lead_rbt"
+        | "floater_rbt"
+        | "traveling_lead_rbt"
       assessment_document_type: "Assessment Notes" | "Treatment Plan"
       assessment_location: "Home" | "School" | "Clinic"
       assessment_status:
@@ -31694,6 +31697,9 @@ export const Constants = {
         "operations_leadership",
         "qa_team",
         "ceo",
+        "lead_rbt",
+        "floater_rbt",
+        "traveling_lead_rbt",
       ],
       assessment_document_type: ["Assessment Notes", "Treatment Plan"],
       assessment_location: ["Home", "School", "Clinic"],
