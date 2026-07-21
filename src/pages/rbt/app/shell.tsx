@@ -4,6 +4,7 @@ import { RbtAppErrorBoundary } from "./RbtAppErrorBoundary";
 import { PreviewBanner } from "./PreviewBanner";
 import { RbtExperienceLabBar } from "./RbtExperienceLabBar";
 import { OSRoleProvider } from "@/contexts/OSRoleContext";
+import { RbtWalkthroughProvider } from "./RbtWalkthrough";
 
 /**
  * RBT app shell now renders inside the standard Blossom OS shell so RBTs
@@ -18,9 +19,11 @@ export default function RbtAppShell() {
       <OSShell>
         <RbtExperienceLabBar />
         <PreviewBanner />
-        <RbtAppErrorBoundary key={location.pathname}>
-          <Outlet />
-        </RbtAppErrorBoundary>
+        <RbtWalkthroughProvider>
+          <RbtAppErrorBoundary key={location.pathname}>
+            <Outlet />
+          </RbtAppErrorBoundary>
+        </RbtWalkthroughProvider>
       </OSShell>
     </OSRoleProvider>
   );
