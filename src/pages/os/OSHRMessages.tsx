@@ -113,9 +113,19 @@ function HeaderBtn({ icon: Icon, children, primary, to = "#" }: { icon: React.El
     </Link>
   );
 }
-function QuickAction({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
+  const disabled = !onClick;
   return (
-    <button className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? "Not available" : undefined}
+      className={cn(
+        "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
+        disabled && "opacity-50 cursor-not-allowed hover:text-muted-foreground hover:bg-transparent",
+      )}
+    >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {label}
     </button>
   );
