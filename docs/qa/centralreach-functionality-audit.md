@@ -273,3 +273,99 @@ SELECT report_key, uploaded_at FROM shared_report_datasets
   client-drilldown. Adding a client-record link there is a Phase 2 concern.
 - The 132 pre-existing test failures across role-menus, route contracts, and
   auth deep-links are unrelated to Phase 1c and were left untouched.
+
+---
+
+## Phase 2 — CentralReach ↔ Employee reconciliation (2026-07-22)
+
+### Baseline (before)
+
+- Canonical CR sessions: **47,533**
+- Mapped to employees: **20,310** (42.73%)
+- Unmapped: **27,223** (57.27%)
+- CR providers observed: **546**
+- Employees with `centralreach_id`: **0 / 366**
+- Mapping method distribution: 128 `unique_name` (via view heuristic) + 418
+  `no_employee_match`.
+
+### Migration
+
+`supabase/migrations/*` (Phase 2 reconciliation):
+
+- `public.cr_identity_mapping_audit` — append-only history of every link,
+  unlink, reject, manual pair, and apply run. Admin-only read via RLS.
+- `public.cr_identity_mapping_queue` — durable review queue keyed by
+  `provider_id`. Admin-only read; writes only via SECURITY DEFINER RPCs.
+- Functions (all `SECURITY DEFINER`, `search_path = public`,
+  admin-gated by `can_reconcile_cr_identity(auth.uid())`):
+  - `preview_cr_employee_reconciliation()` → dry-run classification for every
+    CR provider: `auto_link`, `already_linked`, `already_linked_other`,
+    `conflict`, `ambiguous`, `unmatched`.
+  - `apply_cr_employee_reconciliation(_dry_run boolean)` → writes
+    `employees.centralreach_id` **only** for `auto_link` rows where no other
+    employee already claims that provider and the target has no existing
+    link. Every write is audit-logged; every non-`auto_link` row lands in the
+    queue.
+  - `confirm_cr_provider_mapping(provider_id, employee_id, reason)` — manual
+    pair; refuses if another employee already owns that provider.
+  - `reject_cr_provider_mapping(provider_id, reason)` — parks the provider
+    without writing to `employees`.
+  - `unlink_cr_provider_mapping(employee_id, reason)` — reversible: clears
+    `centralreach_id`, re-opens the queue row.
+
+### Dry-run
+
+```
+auto_link | already_linked | conflict | ambiguous | unmatched | total
+   128    |       0        |    0     |     0     |    418    |  546
+```
+
+### Applied (safe exact-match set only)
+
+- Employees linked: **0 → 128** (`employees_centralreach_id_key` unique
+  index enforces one-to-one).
+- Audit rows written: **129** (128 `auto_link` + 1 `apply_run` batch entry).
+- Queue rows: **546** (128 `auto_linked` + 418 `pending`).
+- CR sessions mapped: **20,310 / 47,533 (42.73%)** — same session totals as
+  before, but now anchored to durable `exact_id` mappings instead of
+  runtime name heuristics.
+- Mapping method distribution after: `exact_id` 128, `no_employee_match` 418,
+  `unique_name` 0.
+- Ambiguous / conflict / manual pairs applied: **0** (not eligible for
+  automatic write — visible in queue only).
+
+### UI / client surfaces
+
+- `src/lib/os/clinicianIdentity.ts` — added `previewCrReconciliation`,
+  `applyCrReconciliation`, `confirm/reject/unlinkCrProviderMapping`,
+  `fetchCrIdentityQueue`, and typed row/summary interfaces.
+- `src/pages/os/system/CentralReachHub.tsx` — Identity tab now surfaces:
+  - dry-run classification counts (button "Preview reconcile"),
+  - "Apply safe matches" that runs only the exact-unique set,
+  - a durable review queue with filters (pending / conflict /
+    auto_linked / manual_paired / rejected / all),
+  - per-row Confirm / Reject / Unlink actions,
+  - legacy counter kept for parity with older telemetry.
+- BCBA / RBT / Clinical / report hooks continue to consume
+  `v_cr_canonical_sessions.provider_employee_id`; unassigned providers keep
+  the explicit "unassigned" bucket. No downstream refactor needed for the
+  reconciled rows (they are already resolved through the mapping view).
+
+### Tests
+
+- New: `src/test/crIdentityReconciliation.test.ts` (4 focused tests) —
+  covers preview/apply argument coercion, confirm/reject/unlink RPC wiring
+  and error propagation, and queue filter behaviour.
+- Typecheck: clean.
+- No regressions in the earlier Phase 1a–1c suites.
+
+### Remaining queue
+
+- **418 unmatched CR providers** with no active employee record. These
+  are surfaced in the CR Hub review queue with `mapping_status = 'pending'`
+  and `mapping_method = 'no_employee_match'`; they cannot be auto-linked
+  without new hires being onboarded or manual pairing to an existing employee
+  via the Hub.
+- **0 ambiguous / conflict** cases in current data.
+
+### Not published
