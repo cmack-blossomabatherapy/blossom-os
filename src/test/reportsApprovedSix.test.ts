@@ -59,7 +59,9 @@ describe("Approved six reports — routing & catalog", () => {
     ] as const) {
       const escFrom = from.replace(/[/]/g, "\\/");
       const escTo = to.replace(/[/]/g, "\\/");
-      const rx = new RegExp(`path="${escFrom}"[^>]*Navigate to="${escTo}"`);
+      // Accept both plain <Navigate to="…"> and Phase 4's query-preserving
+      // <NavigateWithSearch to="…"> — both redirect to the canonical route.
+      const rx = new RegExp(`path="${escFrom}"[^>]*Navigate(?:WithSearch)? to="${escTo}"`);
       expect(rx.test(app), `expected ${from} → ${to} redirect`).toBe(true);
     }
   });
