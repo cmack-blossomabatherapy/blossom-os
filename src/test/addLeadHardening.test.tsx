@@ -4,6 +4,13 @@ import React from "react";
 
 /* ----------------------------- Supabase mock ------------------------------ */
 
+// LeadsProvider calls useAuth() to stamp lead ownership. Stub AuthContext so
+// these unit tests don't require a full <AuthProvider> wrapper.
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({ displayName: "Test User", user: { email: "test@example.com", user_metadata: { full_name: "Test User" } } }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 type Mode = {
   intakeLeadsFails?: boolean;
   intakeTasksFails?: boolean;
@@ -71,9 +78,15 @@ vi.mock("@/integrations/supabase/client", () => {
 });
 
 import { LeadsProvider, useLeads } from "@/contexts/LeadsContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return <LeadsProvider>{children}</LeadsProvider>;
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return (
+    <QueryClientProvider client={qc}>
+      <LeadsProvider>{children}</LeadsProvider>
+    </QueryClientProvider>
+  );
 }
 
 const baseInput = {
