@@ -638,6 +638,15 @@ const GROWTH_SNAPSHOT_ROLES = [
   "operations_manager",
   "marketing_director",
   "marketing_manager",
+  // Growth roles whose menus link to /marketing/state-growth. Without
+  // these entries the item is visible in their sidebar but the route
+  // guard falls through to <Unauthorized/> — a dead click from their
+  // own menu (Growth/BD/Intake role-cluster audit).
+  "business_development",
+  "clinic_growth",
+  "state_director",
+  "assistant_state_director",
+  "regional_state_director",
 ] as const;
 // Canonical Business Development access model. `/business-development`
 // must be reachable by BD as well as marketing_growth_lead (which has
@@ -1190,7 +1199,7 @@ const App = () => (
                   <Route path="/marketing-dashboard" element={<Navigate to="/marketing" replace />} />
                   <Route path="/marketing" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingDashboard /></PermissionRoute>} />
                   <Route path="/marketing/training" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingTraining /></PermissionRoute>} />
-                  <Route path="/marketing/campaigns" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingCampaigns /></PermissionRoute>} />
+                  <Route path="/marketing/campaigns" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES_WITH_BD]}><MarketingCampaigns /></PermissionRoute>} />
                   <Route path="/marketing/lead-sources" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingLeadSources /></PermissionRoute>} />
                   <Route path="/marketing/lead-source-inbox" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><LeadSourceInbox /></PermissionRoute>} />
                   <Route path="/marketing/email-marketing" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><EmailMarketing /></PermissionRoute>} />
