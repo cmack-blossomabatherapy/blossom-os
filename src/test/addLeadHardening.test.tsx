@@ -78,9 +78,15 @@ vi.mock("@/integrations/supabase/client", () => {
 });
 
 import { LeadsProvider, useLeads } from "@/contexts/LeadsContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return <LeadsProvider>{children}</LeadsProvider>;
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return (
+    <QueryClientProvider client={qc}>
+      <LeadsProvider>{children}</LeadsProvider>
+    </QueryClientProvider>
+  );
 }
 
 const baseInput = {
