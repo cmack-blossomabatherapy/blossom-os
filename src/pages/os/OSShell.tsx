@@ -780,6 +780,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     { to: "/resource-library", label: "Resources", icon: BookOpen },
     { to: "/reports", label: "Reports", icon: BarChart3 },
   ];
+  const collapsedIconColor = "hsl(var(--primary))";
+  const collapsedDisabledIconColor = "hsl(var(--muted-foreground))";
 
   const renderNavItem = (item: NavEntry, onClick?: () => void) => {
     // Menu items are live when their base path is in the global staged set
@@ -802,6 +804,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         >
           <item.icon
             className={cn("shrink-0", collapsed ? "h-[18px] w-[18px] text-muted-foreground" : "h-[16px] w-[16px] text-current")}
+            color={collapsed ? collapsedDisabledIconColor : "currentColor"}
             strokeWidth={collapsed ? 2.25 : 2}
           />
           {!collapsed && (
@@ -846,6 +849,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       >
         <item.icon
           className={cn("shrink-0", collapsed ? "h-[18px] w-[18px] text-current" : "h-[16px] w-[16px] text-current")}
+          color={collapsed ? collapsedIconColor : "currentColor"}
           strokeWidth={collapsed ? 2.25 : 2}
         />
         {!collapsed && <span className="truncate">{item.label}</span>}
@@ -999,7 +1003,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             )}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <ChevronLeft className={cn("h-3.5 w-3.5 transition-transform", collapsed && "rotate-180")} /> {!collapsed && "Collapse"}
+            <ChevronLeft
+              className={cn("h-3.5 w-3.5 transition-transform", collapsed && "rotate-180")}
+              color={collapsed ? collapsedIconColor : "currentColor"}
+            /> {!collapsed && "Collapse"}
           </button>
         </aside>
 
