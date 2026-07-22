@@ -12,6 +12,7 @@ import {
   Plug, MonitorSmartphone, XCircle, CheckCircle2, ListTodo,
   Phone, FileText, LogOut,
   UploadCloud, Sparkles, Mail, Home,
+  LifeBuoy, User as UserIcon,
   type LucideIcon,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
