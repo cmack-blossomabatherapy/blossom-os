@@ -996,7 +996,6 @@ const App = () => (
                   <Route path="/authorizations/handoff" element={<OSAuthHandoff />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
                   <Route path="/scheduling/board" element={<OSSchedulingBoard />} />
-                  <Route path="/scheduling/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/scheduling/rbts" element={<OSSchedulingRosterRBTs />} />
                   <Route path="/scheduling/bcbas" element={<OSSchedulingRosterBCBAs />} />
                   <Route path="/cases" element={<OSCaseManagement />} />

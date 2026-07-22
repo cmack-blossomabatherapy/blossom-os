@@ -624,9 +624,14 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   ]),
 };
 
-export function isPathLiveForRole(role: string, basePath: string): boolean {
-  if (STAGED_ROLE_LIVE_PATHS.has(basePath)) return true;
-  return ROLE_SPECIFIC_LIVE_PATHS[role]?.has(basePath) ?? false;
+export function isPathLiveForRole(_role: string, _basePath: string): boolean {
+  // Stabilization pass: every ROLE_MENUS entry now targets a mounted route
+  // (verified by the generated regression test in
+  // src/test/roleMenusAllMounted.test.ts). The old staged "Soon" gating is
+  // retired — menu items are always clickable. STAGED_ROLE_LIVE_PATHS and
+  // ROLE_SPECIFIC_LIVE_PATHS are kept in place for existing structural tests
+  // and future re-gating, but no longer control visibility.
+  return true;
 }
 
 function buildSectionsForRole(role: string): NavSection[] {
