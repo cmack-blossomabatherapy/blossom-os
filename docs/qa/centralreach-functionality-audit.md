@@ -717,3 +717,86 @@ What the smoke run **did** verify, per route:
 - `src/test/businessDevelopmentCompletionPass2.test.ts` — `/patient-journey` assertion updated to GROWTH_SNAPSHOT_ROLES + BD-exclusion.
 - `docs/qa/centralreach-functionality-audit.md` — this section.
 
+
+---
+
+## Reports Remediation Pass (2026-07-22)
+
+### Failure symptoms (before)
+- `/reports/bcba-productivity-report-v3`, `/reports/bcba-supervision`, `/reports/parent-training` — source coverage READY (47,533-row upload detected) but canonical RPC returned "Failed to load canonical data" for RBT/BCBA users. Root cause: prior security-hardening migration flipped `v_cr_canonical_sessions` to `security_invoker=on`, and the four `canonical_sessions_*` RPCs were `SECURITY INVOKER`, so their reads were blocked by `bcba_billable_sessions` RLS for non-leadership callers.
+- `/reports/authorization-analysis` rejected dataset `62da96d3…-2.csv` (3,315 rows) as missing `authorized_hours`/`worked_hours`.
+- `/reports/cancellation-command-center` rejected datasets `c0488ad0…-2.csv` (7,142 rows) + `2719b9e8…-2.csv` (3,757 rows) as missing `client_name`.
+- RBT scope could open BCBA productivity / supervision / authorization / cancellation dashboards.
+
+### Fixes shipped
+
+1. **RPC security model rewritten (migration `20260722-025922`)** — All four canonical reporting functions converted to `SECURITY DEFINER` with fixed `search_path=public`, `REVOKE ALL … FROM PUBLIC, anon`, `GRANT EXECUTE … TO authenticated, service_role`. RLS enforcement now happens **inside** each function via `can_report_canonical_wide(auth.uid())`:
+   - **Wide roles** (admin, super_admin, systems_admin, exec/executive/coo/director_of_operations/operations_manager/ops_manager, qa/qa_director/qa_specialist, auth_team/authorization_manager/authorization_coordinator, scheduling*, staffing*, state_director/assistant_state_director, clinical_director/clinical_lead/clinic_director/behavioral_support, hr/hr_admin/hr_manager/hr_lead/hr_admin_assistant, finance/billing_lead/payroll_admin/payroll_lead/payroll_coordinator, credentialing/credentialing_lead/credentialing_team, dept_manager) → company-wide.
+   - **Narrow roles** (RBT, BCBA, everyone else) → filters auto-clamped to caller's own `provider_auth_user_id` / `provider_employee_id`; any attempt to pass a different id short-circuits to empty rows.
+   - `canonical_sessions_unmapped_providers` is leadership-only.
+2. **CentralReach header alias mapper (`src/lib/os/reportEngine/mapper.ts`)** — Added concatenated-header patterns: `AuthorizedHoursMonth|Week|Year|All|Total|Remaining`, `WorkedHours`, `TimeWorkedInHours`, `TimeWorkedInMins`, `RemainingHours`, `PendingHours`, `ClientName`, `ProviderName`, `ProcedureCode`, `DateOfService`, `ServiceCode`, `BillingCode`, `ClientId`, plus `Client Full/Display/Legal Name`. The three previously invalid uploads now validate without re-upload.
+3. **Least-privilege reports catalog (`src/lib/os/reportsCatalog.ts`)**
+   - `visibleReportsForRole("rbt")` → only self-scoped RBT entries; no BCBA productivity/supervision, no cancellation, no authorization, no hour-based utilization.
+   - `visibleReportsForRole("bcba")` → clinical subset of the approved six (productivity, supervision, parent training) + BCBA-scoped catalog entries only. Cancellation, authorization analysis, and hour-based utilization removed.
+   - `visibleDepartmentDashboardsForRole("rbt")` → empty. `("bcba")` → clinical/qa/training only.
+   - Admin/exec/ops/QA/HR/finance/state director unchanged (full six + department shelf).
+4. **`bcba_supervision_escalations` RLS hardened (migration `20260722-031358`)** — dropped `USING (true)` / `WITH CHECK (true)` policies; scoped SELECT/INSERT/UPDATE to leadership + owning BCBA + subject RBT via `bcba_workflow_leadership_can_read(auth.uid())` and `employees.user_id`. Clears the standalone `MISSING_RLS_PROTECTION` scanner error.
+
+### Live parity verification (service-role probe against production DB)
+
+| Metric | Expected | Observed |
+| --- | --- | --- |
+| Total sessions | 47,533 | **47,533** ✓ |
+| Distinct providers | 546 | **546** ✓ |
+| Distinct clients | 879 | **879** ✓ |
+| Mapped rows | 20,310 | **20,310** ✓ |
+| Unassigned rows | 27,223 | **27,223** ✓ |
+| June 2026 mapped rows | 3,604 | **3,604** ✓ |
+| June 2026 hours | 11,642.69 | **11,642.69** ✓ |
+| June 2026 units | 45,703 | **45,703.00** ✓ |
+| June 2026 providers | 127 | **127** ✓ |
+| June 2026 clients | 282 | **282** ✓ |
+
+### Sample scoped-RPC verification
+For `Julia Pinder` (employee `daaff825-6778-4fed-9c27-aee05ff429fb`, user `87cb14d2-…`, CR provider `3333375`, 319 sessions), the equivalent scoped predicates return exactly:
+
+| session_kind | rows | hours |
+| --- | ---: | ---: |
+| supervision | 157 | 307.50 |
+| assessment | 90 | 146.00 |
+| admin | 45 | 53.92 |
+| parent_training | 27 | 18.50 |
+
+Total: **319** sessions — matches the raw canonical view row count for this provider.
+
+### Role visibility matrix (post-fix)
+
+| Role | Approved six | Cancellation / Auth / Utilization | Department shelf |
+| --- | --- | --- | --- |
+| RBT | none | none | none |
+| BCBA | productivity, supervision, parent training | none | clinical/qa/training only |
+| admin, exec, ops, qa, state_director, hr, finance, credentialing, clinical_director | all six | all | full |
+
+### Upload validation (post-fix)
+
+| File | Concept | Detected header | Status |
+| --- | --- | --- | --- |
+| `62da96d3…-2.csv` | `authorized_hours` | `AuthorizedHoursMonth` | ✓ mapped |
+| `62da96d3…-2.csv` | `worked_hours` | `WorkedHours` | ✓ mapped |
+| `c0488ad0…-2.csv` | `client_name` | `ClientName` | ✓ mapped |
+| `2719b9e8…-2.csv` | `client_name` | `ClientName` | ✓ mapped |
+
+### Release gate results
+- **Typecheck**: `bunx tsgo` → 0 errors.
+- **Production build**: `bun run build` → success (40.84s, chunk-size warning only, pre-existing).
+- **Unit tests**: `bunx vitest run` → **5,731 passed / 122 failed / 5,853 total**. The 122 failures are pre-existing test-harness drift (LeadsProvider requires AuthProvider wrapper; `src/App.tsx` literal-route greps drifted from HEAD across intake/HR/authorization sprints; not introduced or worsened by this remediation).
+- **New remediation tests**: `src/test/reportsRemediationPass.test.ts` → **7 / 7 pass**. Cover: CR authorization header aliases; CR billing header aliases; CR scheduling header aliases; RBT can never see any of the 5 forbidden company-wide reports; RBT sees zero department dashboards; BCBA sees clinical approved subset only; admin/exec keeps full six.
+- **Security scan** (fresh, post-remediation): **0 error-level findings** (down from 1 before). 282 warn-level findings remain — all pre-existing (Function Search Path Mutable, RLS Policy Always True on unrelated tables, Public Bucket Allows Listing on public asset buckets, and Public Can Execute SECURITY DEFINER Function; the last is architecturally required by Blossom OS RBAC).
+- **Signed-in preview smoke (RBT / BCBA)**: **NOT completed for click-level interaction** — Blossom OS layered MFA is intentional; sandbox cannot complete the email-code step for the injected session. All seven Reports routes navigated cleanly to `/mfa/verify` with 0 page/console errors. Role scoping is enforced by unit tests + database-level RPC gates that cannot be bypassed by client code.
+- **End-to-end export checks**: exports go through the same shared-dataset loader that now validates the three previously rejected files; direct e2e run of CSV/PDF export routines is blocked by the same MFA ceiling and code-verified only.
+
+### Honest remaining blockers
+1. **MFA ceiling for click-level QA** — unchanged since the June release; documented above.
+2. **Pre-existing test-harness failures (122)** — unrelated to Reports remediation; tracked separately.
+3. **CR provider coverage (57.3% unassigned)** — unchanged from prior audit; reports label these Unassigned and suppress drilldowns.
+4. **`SUPA_materialized_view_in_api` warn** on `mv_cr_provider_mapping` — intentional (avoids 47.5k-row canonical-join timeout), warn-level only, contains no PHI.
