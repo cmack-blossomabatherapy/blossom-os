@@ -797,7 +797,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           title="Coming soon"
           className={cn(
             "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-foreground/45 cursor-not-allowed select-none",
-            collapsed && "h-10 w-10 justify-center px-0 rounded-xl border border-primary/25 bg-primary/10 text-primary shadow-[0_8px_18px_-12px_hsl(var(--primary)/0.85)] opacity-80",
+            collapsed && "h-10 w-10 justify-center px-0 rounded-xl border border-primary bg-primary text-primary-foreground shadow-[0_12px_24px_-14px_hsl(var(--primary)/0.95)] opacity-70",
           )}
         >
           <item.icon
@@ -839,7 +839,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 ? "bg-primary text-primary-foreground border-transparent shadow-[0_10px_24px_-14px_hsl(var(--primary)/0.7)]"
                 : "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
               : collapsed
-              ? "bg-primary/10 text-primary border-primary/30 shadow-[0_8px_18px_-12px_hsl(var(--primary)/0.85)] hover:bg-primary/15 hover:text-primary hover:border-primary/45"
+              ? "bg-primary text-primary-foreground border-primary shadow-[0_12px_24px_-14px_hsl(var(--primary)/0.95)] hover:bg-primary/90 hover:text-primary-foreground hover:border-primary"
               : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
           )
         }
@@ -994,7 +994,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             className={cn(
               "mb-3 flex items-center gap-2 text-[11.5px] font-medium text-muted-foreground transition hover:text-foreground",
               collapsed
-                ? "mx-auto h-10 w-10 justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-[0_8px_18px_-12px_hsl(var(--primary)/0.85)] hover:bg-primary/15 hover:text-primary hover:border-primary/45"
+                ? "mx-auto h-10 w-10 justify-center rounded-xl border border-primary bg-primary text-primary-foreground shadow-[0_12px_24px_-14px_hsl(var(--primary)/0.95)] hover:bg-primary/90 hover:text-primary-foreground hover:border-primary"
                 : "mx-3 rounded-lg px-3 py-2 hover:bg-foreground/[0.04]",
             )}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
