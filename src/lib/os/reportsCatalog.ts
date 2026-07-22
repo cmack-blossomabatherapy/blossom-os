@@ -362,15 +362,31 @@ export const REPORTS: ReportDef[] = [
 ];
 
 export function visibleReportsForRole(role: OSRole): ReportDef[] {
-  // Reports consolidation: every Blossom OS role sees the six approved
-  // report cards as a baseline. On top of that, role-scoped catalog
-  // entries (visibleTo contains this specific role) are included so
-  // role-specific reporting (BD referral sources, Behavioral Support
-  // supervision, State Director reports, etc.) surfaces on /reports for
-  // the roles that own them. Department dashboards (visibleTo === "all")
-  // are intentionally excluded here and rendered by
-  // visibleDepartmentDashboardsForRole on a separate shelf.
-  const APPROVED_IDS = [
+  // Reports consolidation with least-privilege scoping:
+  //  - RBTs get ONLY their personal, self-scoped catalog entries. They must
+  //    never see BCBA productivity, supervision, cancellation, authorization
+  //    or company-wide provider-identifying dashboards.
+  //  - BCBAs get the clinical subset of the six approved reports plus their
+  //    own scoped entries. They do not see HR / payroll / authorization
+  //    analysis / hour-based utilization / cancellation.
+  //  - Every other Blossom OS role (admin/exec/ops/QA/HR/finance/state
+  //    director/etc.) sees the full six approved reports plus catalog entries
+  //    that explicitly list them in visibleTo.
+  //
+  // Department dashboards (visibleTo === "all") remain on a separate shelf.
+  if (role === "rbt") {
+    return REPORTS.filter(
+      (r) =>
+        Array.isArray(r.visibleTo) &&
+        (r.visibleTo as readonly string[]).includes("rbt"),
+    );
+  }
+  const BCBA_APPROVED_IDS = new Set([
+    "bcba-productivity-report-v3",
+    "parent-training",
+    "bcba-supervision",
+  ]);
+  const FULL_APPROVED_IDS = [
     "bcba-productivity-report-v3",
     "cancellation-command-center",
     "authorization-analysis",
@@ -378,7 +394,11 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
     "parent-training",
     "bcba-supervision",
   ];
-  const approved = APPROVED_IDS
+  const approvedIdList =
+    role === "bcba"
+      ? FULL_APPROVED_IDS.filter((id) => BCBA_APPROVED_IDS.has(id))
+      : FULL_APPROVED_IDS;
+  const approved = approvedIdList
     .map((id) => REPORTS.find((r) => r.id === id))
     .filter((r): r is ReportDef => Boolean(r));
   const approvedIds = new Set(approved.map((r) => r.id));
