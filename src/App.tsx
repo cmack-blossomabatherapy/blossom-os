@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { NavigateWithSearch } from "@/lib/os/reporting/NavigateWithSearch";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -1020,15 +1021,15 @@ const App = () => (
                   <Route path="/reports/landing" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/bcba-performance" element={<ReportRoleGuard reportId="bcba-performance"><OSReportBcbaPerformance /></ReportRoleGuard>} />
                   {/* Legacy QA report routes redirect to the approved-six replacements. */}
-                  <Route path="/reports/qa-supervision-pt" element={<Navigate to="/reports/bcba-supervision" replace />} />
-                  <Route path="/reports/qa-auth-utilization" element={<Navigate to="/reports/authorization-utilization-hour-based" replace />} />
-                  <Route path="/reports/qa-cancellation" element={<Navigate to="/reports/cancellation-command-center" replace />} />
+                  <Route path="/reports/qa-supervision-pt" element={<NavigateWithSearch to="/reports/bcba-supervision" />} />
+                  <Route path="/reports/qa-auth-utilization" element={<NavigateWithSearch to="/reports/authorization-utilization-hour-based" />} />
+                  <Route path="/reports/qa-cancellation" element={<NavigateWithSearch to="/reports/cancellation-command-center" />} />
                   <Route path="/reports/hr-payroll-command" element={<ReportRoleGuard reportId="hr-payroll-command"><HrPayrollCommandCenter /></ReportRoleGuard>} />
                   <Route path="/reports/hr-recruiting-pipeline" element={<Navigate to="/reports?report=hr-recruiting-pipeline" replace />} />
                   <Route path="/reports/hr-employee-compliance" element={<ReportRoleGuard reportId="hr-employee-compliance"><HrEmployeeComplianceDashboard /></ReportRoleGuard>} />
                   <Route path="/reports/hr-employee-onboarding" element={<ReportRoleGuard reportId="hr-employee-onboarding"><HrEmployeeOnboardingCommandCenter /></ReportRoleGuard>} />
                   <Route path="/reports/hr-bcba-productivity" element={<ReportRoleGuard reportId="hr-bcba-productivity"><HrBcbaProductivityDashboard /></ReportRoleGuard>} />
-                 <Route path="/reports/bcba-productivity-report" element={<Navigate to="/reports/bcba-productivity-report-v3" replace />} />
+                 <Route path="/reports/bcba-productivity-report" element={<NavigateWithSearch to="/reports/bcba-productivity-report-v3" />} />
                  <Route path="/reports/bcba-productivity-report-v3" element={<ReportRoleGuard reportId="bcba-productivity-report-v3"><BcbaProductivityReportV3 /></ReportRoleGuard>} />
                   <Route path="/reports/cancellation-command-center" element={<ReportRoleGuard reportId="cancellation-command-center"><CancellationCommandCenter /></ReportRoleGuard>} />
                   {/* Approved-Six aliases: Authorization Analysis + Hour-Based Utilization share the CR auth
@@ -1160,9 +1161,9 @@ const App = () => (
                   <Route path="/system/authorization-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
                   <Route path="/system/cancellation-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
                   {/* Legacy redirects for old QA report cards → canonical approved routes */}
-                  <Route path="/reports/qa-supervision" element={<Navigate to="/reports/bcba-supervision" replace />} />
-                  <Route path="/reports/qa-parent-training" element={<Navigate to="/reports/parent-training" replace />} />
-                  <Route path="/reports/auth-utilization" element={<Navigate to="/reports/authorization-utilization-hour-based" replace />} />
+                  <Route path="/reports/qa-supervision" element={<NavigateWithSearch to="/reports/bcba-supervision" />} />
+                  <Route path="/reports/qa-parent-training" element={<NavigateWithSearch to="/reports/parent-training" />} />
+                  <Route path="/reports/auth-utilization" element={<NavigateWithSearch to="/reports/authorization-utilization-hour-based" />} />
                   <Route path="/system/integration-registry" element={<Navigate to="/admin/integrations" replace />} />
                   <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
                   <Route path="/system/email-command-center" element={<AdminRoute><EmailCommandCenter /></AdminRoute>} />

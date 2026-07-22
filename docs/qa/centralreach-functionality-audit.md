@@ -372,6 +372,162 @@ auto_link | already_linked | conflict | ambiguous | unmatched | total
 
 ---
 
+## Phase 4 — Non-dashboard reports on CentralReach data (2026-07-22)
+
+### Live baseline (before Phase 4 fixes)
+
+`v_cr_canonical_sessions`:
+
+- Rows: **47,533** sessions
+- Distinct clients: **879** (matches `public.clients`, promoted in Phase 1a)
+- Distinct providers (name): **546**
+- Provider mapping status:
+  - `mapped` (via `cr_provider_id` + Phase 2 reconciliation): **20,310 (42.7%)**
+  - `unmapped`: **27,223 (57.3%)** — labelled in-UI as "Unassigned"; never silently coerced onto a live employee.
+- Service date range: **2026-01-01 → 2026-06-30**
+- Total hours: **149,229.80** • Total units: **589,731**
+- Employees linked to `auth.users`: **32** • Employees linked to CR: **128**
+- Active `shared_report_datasets`: **4** across **4** report keys
+- `report_saved_snapshots`: **0** (no expired snapshots to age out yet)
+
+### Report route / component / data-source matrix
+
+All under `/reports`; excludes dashboard-only KPI cards.
+
+| Route | Component | Canonical source | Filter → total → export parity | Drilldown | Shared/saved | Legacy alias | Status |
+|---|---|---|---|---|---|---|---|
+| `/reports/bcba-productivity-report-v3` | `BcbaProductivityReportV3` | `canonicalReports.ts` → `v_cr_canonical_sessions` (via `mv_cr_provider_mapping`) | ✅ single filtered array feeds KPIs, table, drilldown, CSV | `buildClientDetailHref` → `/clients/:uuid` \|\| `/clients/cr/:crId` | `bcbaSavedReports` (per-user, RLS) | `/reports/bcba-productivity-report` → V3 (query-string preserved) | Live |
+| `/reports/bcba-supervision` \| `/reports/parent-training` | `QaSupervisionPtDashboard` | `canonicalReports.ts` + optional shared dataset override | ✅ canonical rows drive table + export | Canonical client route builder | `shared_report_datasets` + saved views | `qa-supervision-pt`, `qa-supervision`, `qa-parent-training` → canonical (query preserved) | Live |
+| `/reports/authorization-analysis` \| `/reports/authorization-utilization-hour-based` | `QaAuthUtilizationDashboard` | `sharedDatasetLoader` (auth-utilization CSV) + resolved client identity | ✅ | Canonical client route builder | Shared dataset by `report_key` | `qa-auth-utilization`, `auth-utilization` → canonical (query preserved) | Live |
+| `/reports/cancellation-command-center` | `CancellationCommandCenter` | `sharedDatasetLoader` + `reportPersistence` | ✅ | Canonical client route builder | `cancellationSavedReports` (per-user, RLS) + shared dataset | `qa-cancellation` → canonical (query preserved) | Live |
+| `/reports/bcba-performance` | `OSReportBcbaPerformance` | `canonicalReports.ts` | ✅ | Provider drilldown uses `employees.id` when linked, else `provider_name_key` badge (Unassigned) | Saved views | — | Live |
+| `/reports/progress-reports` | `OSQAProgressReports` | `bcba_progress_reports` + `client_authorizations` (Phase 3 identities) | ✅ | Canonical client route builder | Saved views | — | Live |
+| `/reports/hr-payroll-command` | `HrPayrollCommandCenter` | `employees` + `payroll_run_items` (not CR-derived by design) | ✅ | `employees.id` | Saved views | — | Live |
+| `/reports/hr-employee-compliance` | `HrEmployeeComplianceDashboard` | `employees` + `credentialing_records` | ✅ | `employees.id` | Saved views | — | Live |
+| `/reports/hr-employee-onboarding` | `HrEmployeeOnboardingCommandCenter` | `employee_onboarding` | ✅ | `employees.id` | Saved views | — | Live |
+| `/reports/hr-bcba-productivity` | `HrBcbaProductivityDashboard` | `canonicalReports.ts` (mirrors V3, HR filter set) | ✅ | Canonical route builder | Saved views | — | Live |
+| `/reports/:reportId` (catalog fallback) | `ReportDetail` | `reportsCatalog` | catalog metadata only | — | — | — | Live |
+| `/reports/catalog`, `/reports/landing` | `Navigate → /reports` | — | — | — | — | — | Redirect |
+| `/reports/intake-perf`, `/reports/intake-performance` | `Navigate → /reports` | — | — | — | — | — | Legacy redirect |
+| `/reports/hr-recruiting-pipeline` | `Navigate → /reports?report=hr-recruiting-pipeline` | — | — | — | — | — | Redirect |
+| `/reports/ai/new`, `/reports/ai/:id` | `Navigate` / `AiReportRedirect` | — | — | — | — | — | Redirect |
+
+No `MOCK_`, `PLACEHOLDER_`, `seed*`, or `sample*` datasets remain in `src/pages/os/reports/*` (grep confirmed only input `placeholder=` props). No report route serves demo data.
+
+### Legacy redirect query-param preservation
+
+`<Navigate to="…" />` drops `search` + `hash`, so any bookmarked filter link
+like
+`/reports/bcba-productivity-report?state=NC&saved=weekly-ops#tab=providers`
+would land on the new route stripped of filters and saved-view refs.
+
+**Fix**: `src/lib/os/reporting/NavigateWithSearch.tsx` — a `useLocation()`
+wrapper around `<Navigate>` that forwards `search` and `hash`. Applied to
+every legacy report redirect in `src/App.tsx`:
+
+- `/reports/bcba-productivity-report` → `/reports/bcba-productivity-report-v3`
+- `/reports/qa-supervision-pt` → `/reports/bcba-supervision`
+- `/reports/qa-supervision` → `/reports/bcba-supervision`
+- `/reports/qa-parent-training` → `/reports/parent-training`
+- `/reports/qa-auth-utilization` → `/reports/authorization-utilization-hour-based`
+- `/reports/auth-utilization` → `/reports/authorization-utilization-hour-based`
+- `/reports/qa-cancellation` → `/reports/cancellation-command-center`
+
+### Filter / aggregation / drilldown / export parity (live sample)
+
+BCBA Productivity V3 filter: `service_date ∈ [2026-06-01, 2026-07-01)` and
+`provider_mapping_status = 'mapped'`. Same filtered rows must back every
+visible surface.
+
+| Surface | Rows | Hours | Units | Distinct providers | Distinct clients |
+|---|---:|---:|---:|---:|---:|
+| Filtered canonical rows | **3,604** | **11,642.69** | **45,703** | **127** | **282** |
+| KPI header (sum over filtered array) | 3,604 | 11,642.69 | 45,703 | 127 | 282 |
+| Provider table (group by `provider_employee_id`) | Σ = 3,604 | Σ = 11,642.69 | Σ = 45,703 | 127 rows | — |
+| CSV export (`filteredRows.map(...)`) | 3,604 rows | Σ = 11,642.69 | Σ = 45,703 | — | — |
+
+Top procedure codes in the filtered window (used as a sanity check):
+`97153: 2,448 rows / 9,660.55 h`, `97155: 537 / 1,057.58 h`, `97151: 311 /
+582.50 h`, `97156: 113 / 76.75 h` — matches the V3 table's category
+breakdown 1:1. Unmapped rows (27,223 for the full range) are excluded from
+"By provider" tables and shown explicitly under an "Unassigned providers"
+banner; they are never coerced onto a real employee.
+
+### Shared / saved reports
+
+- 4 active `shared_report_datasets` across 4 distinct report keys — every
+  active row still resolves to a live report route above. RLS on the base
+  table restricts writes to admins; readers hit signed URLs through
+  `downloadSharedReportDatasetFile()`. Expired / denied / not-found states
+  are already handled in `sharedDatasetLoader.ts` (returns typed `error`
+  cases; UI shows a safe banner and never dumps raw JSON).
+- 0 `report_saved_snapshots` currently — the persistence path in
+  `reportPersistence.ts` was verified in prior phases and re-tested here
+  via the redirect probe (query string / saved-view id survives the hop).
+
+### Drilldowns
+
+Every client / provider drilldown routes through:
+
+- `src/lib/os/reporting/clientRouteBuilder.ts` → returns `/clients/:uuid`
+  when a durable UUID is available (Phase 1a), `/clients/cr/:crId` when
+  only a CR id is known, and **`null` when the row is a synthetic
+  `canon:` / `name:` key** (Phase 1c) — call sites suppress the link in
+  that case rather than routing to a dead alias.
+- Provider drilldowns use `employees.id` when
+  `provider_employee_id IS NOT NULL`, otherwise render a non-clickable
+  "Unassigned" badge.
+
+### Tests added / green this pass
+
+- New: `src/test/reportsLegacyRedirectQueryParams.test.tsx` (5) — proves
+  every legacy report alias preserves `search` + `hash` and passes
+  through empty-query cases unchanged.
+- Green regression set (already covering report-scope contracts):
+  `reportsApprovedSix`, `reportsLiveCatalog`, `bcbaProductivityAdminUploads`,
+  `operationsLeadershipReportsPersistence`, `bcbaCompletionPass4/5/6`,
+  `clinicalDirectorPass2/3/4`, `crIdentityReconciliation`,
+  `userLinkReconciliation`, `canonicalClientResolver`,
+  `clientDetailRouter`, `clinicianMapping`, `authorizationRoleMenuSprint16`,
+  `intakeRoleMenuSprint15`.
+- Typecheck: clean.
+- Production build: succeeded in 42.5s.
+
+### Known non-Phase-4 legacy test failures (untouched — not caused by this pass)
+
+`businessDevelopmentCompletionPass5.test.ts` has 4 pre-existing failing
+assertions from earlier reports-hardening work (BD `bd-referral-sources`
+catalog id, `ReportRoleGuard` regex, V1-element expectation instead of
+redirect, and `/patient-journey` allowedRoles shape). These sit outside
+the Phase 4 scope of "make every non-dashboard report work on uploaded
+CentralReach data" and are logged here so future BD passes can pick them
+up. No new failures were introduced by this pass.
+
+### Honest blockers (post-Phase-4)
+
+- **57.3% of canonical sessions remain provider-unmapped.** Every report
+  labels this cohort as "Unassigned" and excludes them from
+  provider-owned aggregates, which is correct — but the CR-side data
+  quality (missing/renamed providers) needs a Recruiting/HR pass. 418
+  provider names are already parked in `cr_identity_mapping_queue` from
+  Phase 2 awaiting review.
+- **127 CR-linked employees still lack `auth.users` accounts** — their
+  reports will resolve to `employees.id` for drilldown but the
+  BCBA/RBT signed-in view stays inaccessible until they sign in.
+- **0 saved snapshots** in production yet — expired/denied UX is
+  code-verified but has no live rows to age out.
+
+### Files changed / added
+
+- `src/lib/os/reporting/NavigateWithSearch.tsx` — new query-string-preserving redirect.
+- `src/App.tsx` — swap 7 legacy `<Navigate>` redirects for `<NavigateWithSearch>`.
+- `src/test/reportsLegacyRedirectQueryParams.test.tsx` — new (5 tests).
+- `docs/qa/centralreach-functionality-audit.md` — this section.
+
+### Not published
+
+---
+
 ## Phase 3 — Employee ↔ authenticated user reconciliation (2026-07-22)
 
 ### Baseline (before)
