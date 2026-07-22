@@ -1161,9 +1161,9 @@ const App = () => (
                   <Route path="/system/authorization-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
                   <Route path="/system/cancellation-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
                   {/* Legacy redirects for old QA report cards → canonical approved routes */}
-                  <Route path="/reports/qa-supervision" element={<Navigate to="/reports/bcba-supervision" replace />} />
-                  <Route path="/reports/qa-parent-training" element={<Navigate to="/reports/parent-training" replace />} />
-                  <Route path="/reports/auth-utilization" element={<Navigate to="/reports/authorization-utilization-hour-based" replace />} />
+                  <Route path="/reports/qa-supervision" element={<NavigateWithSearch to="/reports/bcba-supervision" />} />
+                  <Route path="/reports/qa-parent-training" element={<NavigateWithSearch to="/reports/parent-training" />} />
+                  <Route path="/reports/auth-utilization" element={<NavigateWithSearch to="/reports/authorization-utilization-hour-based" />} />
                   <Route path="/system/integration-registry" element={<Navigate to="/admin/integrations" replace />} />
                   <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
                   <Route path="/system/email-command-center" element={<AdminRoute><EmailCommandCenter /></AdminRoute>} />
