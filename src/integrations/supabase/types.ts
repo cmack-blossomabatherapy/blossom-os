@@ -7996,6 +7996,167 @@ export type Database = {
         }
         Relationships: []
       }
+      cr_identity_mapping_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          details: Json
+          employee_id: string | null
+          id: string
+          method: string | null
+          provider_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          details?: Json
+          employee_id?: string | null
+          id?: string
+          method?: string | null
+          provider_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          details?: Json
+          employee_id?: string | null
+          id?: string
+          method?: string | null
+          provider_id?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      cr_identity_mapping_queue: {
+        Row: {
+          ambiguity_reason: string | null
+          created_at: string
+          mapping_method: string
+          mapping_status: string
+          notes: string | null
+          provider_id: string
+          provider_name: string | null
+          provider_name_key: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_employee_id: string | null
+          suggested_employee_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ambiguity_reason?: string | null
+          created_at?: string
+          mapping_method: string
+          mapping_status: string
+          notes?: string | null
+          provider_id: string
+          provider_name?: string | null
+          provider_name_key?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_employee_id?: string | null
+          suggested_employee_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ambiguity_reason?: string | null
+          created_at?: string
+          mapping_method?: string
+          mapping_status?: string
+          notes?: string | null
+          provider_id?: string
+          provider_name?: string | null
+          provider_name_key?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_employee_id?: string | null
+          suggested_employee_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_identity_mapping_queue_resolved_employee_id_fkey"
+            columns: ["resolved_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_resolved_employee_id_fkey"
+            columns: ["resolved_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_resolved_employee_id_fkey"
+            columns: ["resolved_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_resolved_employee_id_fkey"
+            columns: ["resolved_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_resolved_employee_id_fkey"
+            columns: ["resolved_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_suggested_employee_id_fkey"
+            columns: ["suggested_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_suggested_employee_id_fkey"
+            columns: ["suggested_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_suggested_employee_id_fkey"
+            columns: ["suggested_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_suggested_employee_id_fkey"
+            columns: ["suggested_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "cr_identity_mapping_queue_suggested_employee_id_fkey"
+            columns: ["suggested_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cr_sync_audit: {
         Row: {
           action: string
@@ -30699,6 +30860,17 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      apply_cr_employee_reconciliation: {
+        Args: { _dry_run?: boolean }
+        Returns: {
+          already_linked: number
+          ambiguous: number
+          auto_linked: number
+          conflicts: number
+          queue_rows: number
+          unmatched: number
+        }[]
+      }
       bcba_caseload_activation_status: {
         Args: { _bcba_user_id: string }
         Returns: {
@@ -30856,6 +31028,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_reconcile_cr_identity: { Args: { _uid: string }; Returns: boolean }
       can_view_clinical_work: { Args: { _user_id: string }; Returns: boolean }
       can_write_scheduling_ops: { Args: { _user_id: string }; Returns: boolean }
       canonical_report_billing_rows: {
@@ -31068,6 +31241,10 @@ export type Database = {
       compute_profile_completion: {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }
         Returns: number
+      }
+      confirm_cr_provider_mapping: {
+        Args: { _employee_id: string; _provider_id: string; _reason?: string }
+        Returns: boolean
       }
       cr_rollback_run: { Args: { _run_id: string }; Returns: Json }
       cr_sync_freshness: {
@@ -31406,6 +31583,20 @@ export type Database = {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
       }
+      preview_cr_employee_reconciliation: {
+        Args: never
+        Returns: {
+          action: string
+          ambiguity_reason: string
+          currently_linked_employee_id: string
+          mapping_method: string
+          mapping_status: string
+          provider_id: string
+          provider_name: string
+          provider_name_key: string
+          suggested_employee_id: string
+        }[]
+      }
       promote_canonical_clients: {
         Args: never
         Returns: {
@@ -31465,6 +31656,10 @@ export type Database = {
       regenerate_staff_evaluations: {
         Args: { _staff_id: string }
         Returns: number
+      }
+      reject_cr_provider_mapping: {
+        Args: { _provider_id: string; _reason?: string }
+        Returns: boolean
       }
       report_source_coverage: { Args: never; Returns: Json }
       resolve_alert_sla: {
@@ -31543,6 +31738,10 @@ export type Database = {
       sync_rbt_pathway_assignment: {
         Args: { _candidate_id: string }
         Returns: string
+      }
+      unlink_cr_provider_mapping: {
+        Args: { _employee_id: string; _reason?: string }
+        Returns: boolean
       }
       upsert_knowledge_chunk: {
         Args: {

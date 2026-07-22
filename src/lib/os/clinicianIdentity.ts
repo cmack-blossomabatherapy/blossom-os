@@ -152,3 +152,94 @@ export async function reconcileEmployeeCentralreachIds(): Promise<{
     total_employees: Number(row?.total_employees ?? 0),
   };
 }
+
+// =========================================================
+// Phase 2 — Admin reconciliation APIs
+// =========================================================
+export interface CrReconcilePreviewRow {
+  provider_id: string;
+  provider_name: string | null;
+  provider_name_key: string | null;
+  suggested_employee_id: string | null;
+  mapping_method: string;
+  mapping_status: string;
+  ambiguity_reason: string | null;
+  currently_linked_employee_id: string | null;
+  action: "auto_link" | "already_linked" | "already_linked_other" | "conflict" | "ambiguous" | "unmatched";
+}
+
+export interface CrReconcileSummary {
+  auto_linked: number;
+  already_linked: number;
+  conflicts: number;
+  ambiguous: number;
+  unmatched: number;
+  queue_rows: number;
+}
+
+export async function previewCrReconciliation(): Promise<CrReconcilePreviewRow[]> {
+  const { data, error } = await supabase.rpc("preview_cr_employee_reconciliation" as any);
+  if (error) throw error;
+  return (data ?? []) as CrReconcilePreviewRow[];
+}
+
+export async function applyCrReconciliation(dryRun = false): Promise<CrReconcileSummary> {
+  const { data, error } = await supabase.rpc("apply_cr_employee_reconciliation" as any, { _dry_run: dryRun });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    auto_linked: Number(row?.auto_linked ?? 0),
+    already_linked: Number(row?.already_linked ?? 0),
+    conflicts: Number(row?.conflicts ?? 0),
+    ambiguous: Number(row?.ambiguous ?? 0),
+    unmatched: Number(row?.unmatched ?? 0),
+    queue_rows: Number(row?.queue_rows ?? 0),
+  };
+}
+
+export async function confirmCrProviderMapping(providerId: string, employeeId: string, reason?: string) {
+  const { error } = await supabase.rpc("confirm_cr_provider_mapping" as any, {
+    _provider_id: providerId, _employee_id: employeeId, _reason: reason ?? null,
+  });
+  if (error) throw error;
+  return true;
+}
+
+export async function rejectCrProviderMapping(providerId: string, reason?: string) {
+  const { error } = await supabase.rpc("reject_cr_provider_mapping" as any, {
+    _provider_id: providerId, _reason: reason ?? null,
+  });
+  if (error) throw error;
+  return true;
+}
+
+export async function unlinkCrProviderMapping(employeeId: string, reason?: string) {
+  const { error } = await supabase.rpc("unlink_cr_provider_mapping" as any, {
+    _employee_id: employeeId, _reason: reason ?? null,
+  });
+  if (error) throw error;
+  return true;
+}
+
+export interface CrIdentityQueueRow {
+  provider_id: string;
+  provider_name: string | null;
+  provider_name_key: string | null;
+  suggested_employee_id: string | null;
+  mapping_method: string;
+  mapping_status: "pending" | "confirmed" | "rejected" | "manual_paired" | "auto_linked" | "conflict";
+  ambiguity_reason: string | null;
+  resolved_employee_id: string | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  notes: string | null;
+  updated_at: string;
+}
+
+export async function fetchCrIdentityQueue(status?: CrIdentityQueueRow["mapping_status"]): Promise<CrIdentityQueueRow[]> {
+  let q = supabase.from("cr_identity_mapping_queue" as any).select("*").order("updated_at", { ascending: false }).limit(1000);
+  if (status) q = q.eq("mapping_status", status);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as unknown as CrIdentityQueueRow[];
+}
