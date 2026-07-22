@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useOSRole } from "@/contexts/OSRoleContext";
+import { buildClientDetailHref } from "@/lib/os/reporting/clientRouteBuilder";
 
 type ClientRow = {
   id: string;
@@ -231,9 +232,19 @@ export default function OSCaseManagement() {
                     </div>
                   </td>
                   <td className="px-4 py-2.5 text-right">
-                    <Button asChild size="sm" variant="ghost" className="h-7">
-                      <Link to={`/clients?focus=${c.id}`}>Open <ChevronRight className="ml-0.5 h-3.5 w-3.5" /></Link>
-                    </Button>
+                    {(() => {
+                      const href = buildClientDetailHref(c.id);
+                      if (!href) {
+                        return (
+                          <span className="text-[11px] text-muted-foreground">—</span>
+                        );
+                      }
+                      return (
+                        <Button asChild size="sm" variant="ghost" className="h-7">
+                          <Link to={href}>Open <ChevronRight className="ml-0.5 h-3.5 w-3.5" /></Link>
+                        </Button>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}

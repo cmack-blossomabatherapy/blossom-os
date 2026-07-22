@@ -223,3 +223,53 @@ SELECT report_key, uploaded_at FROM shared_report_datasets
   in `src/test/crClientRedirectRoute.test.ts` (Phase 1b assertion),
   `src/test/canonicalClientResolver.test.ts` (unchanged, still green). 15
   focused tests pass; typecheck clean.
+
+## Phase 1c — Full client-drilldown consolidation (2026-07-21)
+
+### Shared resolver
+
+- New helper: `src/lib/os/reporting/clientRouteBuilder.ts` exposes
+  `buildClientDetailHref(id)` and `buildClientDetailHrefFromCandidates(...)`.
+  It centralizes the UUID-vs-CR-id-vs-canon logic that Phase 1b had inlined
+  in two files with divergent regexes. Rules:
+  1. Real UUIDs → `/clients/<uuid>` (rendered by `ClientDetailRouter`).
+  2. Anything else → `/clients/cr/<encoded>` (resolved by `CrClientRedirect`).
+  3. `canon:*` / `name:*` synthetic ids and empty/null → `null` (no link),
+     so callers can suppress the affordance rather than emit a dead route.
+- The old loose `/^[0-9a-f-]{36}$/i` shape in `MyClients.tsx` is gone; all
+  callers now use the strict UUID check from `canonicalClientResolver.ts`.
+
+### Route/call-site matrix (audited this pass)
+
+| Surface | File | Client id source | Action after Phase 1c |
+| --- | --- | --- | --- |
+| BCBA caseload drawer | `src/pages/bcba/caseload/CaseDetailDrawer.tsx` | `row.clientId` | Refactored to use `buildClientDetailHref` |
+| RBT MyClients | `src/pages/rbt/app/active/MyClients.tsx` | `client_id` or `centralreach_client_id` | Refactored; loose regex removed |
+| OS Case Management "Open" | `src/pages/os/OSCaseManagement.tsx` | `c.id` | **Fixed broken `/clients?focus=` route** → helper |
+| OS Scheduling "Open Client" | `src/pages/os/OSScheduling.tsx` | `client.id` | **Fixed broken `/clients?id=` route** → helper |
+| Reports · QA Supervision & PT dashboard | `src/pages/os/reports/QaSupervisionPtDashboard.tsx` | `ClientSummary.clientId` (CR id) | Added inline "Open" link per row via helper |
+| Reports · BCBA Productivity V3 (Unassigned Audit) | `src/pages/os/reports/BcbaProductivityReportV3.tsx` | `UnassignedAuditRow.clientId` | Client-name cell now links to canonical detail |
+| Other `/clients/${uuid}` navigations (`ClinicDetail`, `Assessments`, `ActiveServices`, `ReauthLoop`, `Authorizations`, `AuthDetail`, `QA`, `Scheduling`, `Pipeline`, `RBTDetail`, `ClientOnboarding`, `TaskDetailPanel`, `DocumentDetailPanel`, `CallDetailPanel`, `StaffingQueueView`, `OSQAReviewBoard`, `OSStaffingQueue`, `OSSchedulingBoard`, `OSSchedulingWorkspace`, `useMobileAlerts`, `data/operations.ts`) | multiple | UUID from `public.clients` | **Verified** — already route to `/clients/:uuid`; UUID rows resolve directly through `ClientDetailRouter`, so the helper is optional here. No change needed. |
+| Clinical Leadership command centers | `src/pages/clinical-leadership/**` | none | **Verified** — every "Open" action routes to a feature-scoped page (`/bcba/progress-reports?report=…`, etc.), not a client page. Out of scope for the client-drilldown pass; flagged as a product gap in section 4. |
+| BCBA drawer CR external links (`centralreach_client_url`, `centralreach_url` from DB) | `src/pages/bcba/**` | DB-provided absolute URL | **Verified** — intentionally external, not routed. Left as-is. |
+
+### Tests
+
+- New: `src/test/clientRouteBuilder.test.ts` (9 tests) — UUIDs, CR ids,
+  URL-encoded CR ids, `canon:` / `name:` synthetics, empty/null/whitespace,
+  and the 36-char pathological cases the old regex accepted.
+- Green from Phase 1b, still passing: `canonicalClientResolver.test.ts` (6),
+  `crClientRedirectRoute.test.ts` (3), `clientDetailRouter.test.tsx` (6).
+- Combined: **24 focused tests pass**; typecheck clean.
+- Full suite: 5260 tests pass, 132 pre-existing failures. Zero failures in
+  files touched by Phase 1c (verified via grep on the FAIL list).
+
+### Known remaining gaps (deferred out of scope)
+
+- `centralreach_client_url` / `centralreach_url` on BCBA drawer records
+  bypass `crClientUrl()` (they're server-supplied absolute links). Whether
+  to standardize on the helper is a product decision, not a code issue.
+- Clinical Leadership pages surface record-level actions but no
+  client-drilldown. Adding a client-record link there is a Phase 2 concern.
+- The 132 pre-existing test failures across role-menus, route contracts, and
+  auth deep-links are unrelated to Phase 1c and were left untouched.

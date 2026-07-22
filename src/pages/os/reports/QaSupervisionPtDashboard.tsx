@@ -31,6 +31,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { KpiTile } from "@/components/dashboards/KpiTile";
 import { ChartCard } from "@/components/dashboards/ChartCard";
+import { buildClientDetailHref } from "@/lib/os/reporting/clientRouteBuilder";
+import { ExternalLink } from "lucide-react";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import type { KpiSpec, ChartSpec, DrilldownSpec } from "@/lib/os/dashboardEngine/types";
 
@@ -972,8 +974,26 @@ export default function QaSupervisionPtDashboard() {
                     <tr key={c.clientId + c.clientName}
                         onClick={() => openClientDrill(c)}
                         className="cursor-pointer border-b border-border/40 transition hover:bg-secondary/40">
-                      <td className="px-2 py-2 font-medium">{c.clientName}</td>
-                      <td className="px-2 py-2 text-muted-foreground">{c.clientId || "—"}</td>
+                       <td className="px-2 py-2 font-medium">
+                         <div className="flex items-center gap-2">
+                           <span>{c.clientName}</span>
+                           {(() => {
+                             const href = buildClientDetailHref(c.clientId);
+                             if (!href) return null;
+                             return (
+                               <Link
+                                 to={href}
+                                 onClick={(e) => e.stopPropagation()}
+                                 className="inline-flex items-center gap-0.5 text-[10px] text-primary hover:underline"
+                                 data-testid="qa-open-client-record"
+                               >
+                                 Open <ExternalLink className="h-2.5 w-2.5" />
+                               </Link>
+                             );
+                           })()}
+                         </div>
+                       </td>
+                       <td className="px-2 py-2 text-muted-foreground">{c.clientId || "—"}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{fmtHrs(c.hours97153)}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{fmtHrs(c.hours97155)}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{fmtPct(c.supervisionPct)}</td>

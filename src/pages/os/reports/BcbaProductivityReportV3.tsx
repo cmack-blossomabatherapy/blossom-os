@@ -37,6 +37,7 @@ import {
 } from "@/lib/os/reporting/canonicalReports";
 import { normalizeUsState, resolveRowState } from "@/lib/os/bcbaProductivityV3/stateNormalization";
 import { Link } from "react-router-dom";
+import { buildClientDetailHref } from "@/lib/os/reporting/clientRouteBuilder";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import blossomLogo from "@/assets/blossom-logo-color.png";
@@ -1319,22 +1320,34 @@ export default function BcbaProductivityReportV3() {
                       </tr>
                     </thead>
                     <tbody>
-                      {unassignedAudit.slice(0, 250).map((r, i) => (
-                        <tr key={`${r.clientId}-${r.clientName}-${r.date}-${i}`} className="border-t">
-                          <td className="px-3 py-2 font-medium">{r.clientName}</td><td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
-                          <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
-                          <td className="px-3 py-2">{r.reason}</td>
-                          <td className="px-3 py-2 text-right">
-                            <Button variant="ghost" size="sm" onClick={() => openClientHistory(r)}>
-                              <History className="mr-1.5 h-3.5 w-3.5" /> Open history
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
-                              <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
+                       {unassignedAudit.slice(0, 250).map((r, i) => {
+                         const clientHref = buildClientDetailHref(r.clientId);
+                         return (
+                         <tr key={`${r.clientId}-${r.clientName}-${r.date}-${i}`} className="border-t">
+                           <td className="px-3 py-2 font-medium">
+                             {clientHref ? (
+                               <Link to={clientHref} className="hover:underline" data-testid="bcba-prod-open-client-record">
+                                 {r.clientName}
+                               </Link>
+                             ) : (
+                               r.clientName
+                             )}
+                           </td>
+                           <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.clientId || "—"}</td>
+                           <td className="px-3 py-2">{r.date}</td><td className="px-3 py-2">{r.code}</td><td className="px-3 py-2">{r.renderingProvider || "—"}</td>
+                           <td className="px-3 py-2 text-right tabular-nums">{fmt1(r.hours)}</td><td className="px-3 py-2">{r.state || "—"}</td><td className="px-3 py-2">{r.payor || "—"}</td>
+                           <td className="px-3 py-2">{r.reason}</td>
+                           <td className="px-3 py-2 text-right">
+                             <Button variant="ghost" size="sm" onClick={() => openClientHistory(r)}>
+                               <History className="mr-1.5 h-3.5 w-3.5" /> Open history
+                             </Button>
+                             <Button variant="outline" size="sm" onClick={() => startAssignmentForRow(r)}>
+                               <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Create assignment
+                             </Button>
+                           </td>
+                         </tr>
+                         );
+                       })}
                     </tbody>
                   </table>
                 </div>
