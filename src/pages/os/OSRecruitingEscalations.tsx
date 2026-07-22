@@ -14,6 +14,7 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { toast } from "sonner";
 import { useRecruitingEscalations, type RecruitingEscalation } from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { cn } from "@/lib/utils";
@@ -937,14 +938,44 @@ export default function OSRecruitingEscalations() {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <DAction icon={Flame} label="Escalate to leadership" primary />
-                <DAction icon={UserPlus} label="Assign recruiter" />
-                <DAction icon={Bell} label="Notify staffing" />
-                <DAction icon={Send} label="Resend onboarding" />
-                <DAction icon={Calendar} label="Resend orientation" />
-                <DAction icon={CheckCircle2} label="Resolve escalation" />
-                <DAction icon={Clock} label="Snooze" />
-                <DAction icon={Plus} label="Add note" />
+                {(() => {
+                  const eid = selected.id;
+                  const cid = selected.candidate.id;
+                  const isLive = /^[0-9a-f-]{36}$/i.test(eid);
+                  const logIntent = async (kind: string, extra?: Record<string, unknown>) => {
+                    await mutations.logActivity(cid, "recruiting_escalations", isLive ? eid : null, kind, null, null, extra);
+                    toast.success(`Logged: ${kind.replace(/_/g, " ")}`);
+                  };
+                  return (
+                    <>
+                      <DAction icon={Flame} label="Escalate to leadership" primary onClick={async () => {
+                        if (isLive) await mutations.updateEscalation(eid, { severity: "High", leadership_notified: true } as any);
+                        else await logIntent("escalated_to_leadership");
+                        toast.success("Leadership notified");
+                      }} />
+                      <DAction icon={UserPlus} label="Assign recruiter" onClick={async () => {
+                        const recruiter = window.prompt("Assign to recruiter (name or email)");
+                        if (!recruiter) return;
+                        if (isLive) await mutations.updateEscalation(eid, { assigned_to: recruiter } as any);
+                        await logIntent("recruiter_assigned", { recruiter });
+                      }} />
+                      <DAction icon={Bell} label="Notify staffing" onClick={() => logIntent("staffing_notified")} />
+                      <DAction icon={Send} label="Resend onboarding" onClick={() => logIntent("onboarding_resend")} />
+                      <DAction icon={Calendar} label="Resend orientation" onClick={() => logIntent("orientation_resend")} />
+                      <DAction icon={CheckCircle2} label="Resolve escalation" onClick={async () => {
+                        if (isLive) await mutations.resolveEscalation(eid);
+                        else await logIntent("escalation_resolved");
+                        toast.success("Escalation resolved");
+                      }} />
+                      <DAction icon={Clock} label="Snooze" onClick={() => logIntent("escalation_snoozed")} />
+                      <DAction icon={Plus} label="Add note" onClick={async () => {
+                        const note = window.prompt("Add note");
+                        if (!note) return;
+                        await logIntent("note_added", { note });
+                      }} />
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </aside>
@@ -1030,12 +1061,20 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DAction({ icon: Icon, label, primary }: { icon: any; label: string; primary?: boolean }) {
+function DAction({ icon: Icon, label, primary, onClick }: { icon: any; label: string; primary?: boolean; onClick?: () => void }) {
+  const disabled = !onClick;
   return (
-    <button className={cn(
-      "h-10 rounded-xl border text-xs font-medium inline-flex items-center justify-center gap-2 transition",
-      primary ? "bg-primary text-primary-foreground border-primary hover:opacity-90" : "bg-muted/40 border-border/60 hover:bg-muted"
-    )}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? "Not available" : undefined}
+      className={cn(
+        "h-10 rounded-xl border text-xs font-medium inline-flex items-center justify-center gap-2 transition",
+        primary ? "bg-primary text-primary-foreground border-primary hover:opacity-90" : "bg-muted/40 border-border/60 hover:bg-muted",
+        disabled && "opacity-50 cursor-not-allowed",
+      )}
+    >
       <Icon className="size-3.5" /> {label}
     </button>
   );
