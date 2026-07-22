@@ -797,10 +797,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           title="Coming soon"
           className={cn(
             "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-foreground/45 cursor-not-allowed select-none",
-            collapsed && "h-10 w-10 justify-center px-0 ring-1 ring-border/50 bg-card/60",
+            collapsed && "h-10 w-10 justify-center px-0 rounded-xl border border-border/70 bg-background text-muted-foreground shadow-sm",
           )}
         >
-          <item.icon className="h-[16px] w-[16px] shrink-0 text-current" strokeWidth={collapsed ? 2.35 : 2} />
+          <item.icon
+            className={cn("shrink-0 text-current", collapsed ? "h-[18px] w-[18px]" : "h-[16px] w-[16px]")}
+            strokeWidth={collapsed ? 2.25 : 2}
+          />
           {!collapsed && (
             <>
               <span className="truncate">{item.label}</span>
@@ -830,18 +833,21 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         className={({ isActive }) =>
           cn(
             "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all text-foreground",
-            collapsed && "h-10 w-10 justify-center px-0 ring-1",
+            collapsed && "h-10 w-10 justify-center px-0 rounded-xl border",
             isActive
               ? collapsed
-                ? "bg-primary/10 text-primary ring-primary/25 shadow-[0_10px_24px_-18px_hsl(var(--primary)/0.7)]"
+                ? "bg-primary text-primary-foreground border-transparent shadow-[0_10px_24px_-14px_hsl(var(--primary)/0.7)]"
                 : "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
               : collapsed
-              ? "bg-card/80 text-primary ring-border/70 hover:bg-primary/10 hover:text-primary hover:ring-primary/25"
+              ? "bg-background text-foreground border-border/70 shadow-sm hover:bg-primary/10 hover:text-primary hover:border-primary/30"
               : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
           )
         }
       >
-        <item.icon className="h-[16px] w-[16px] shrink-0 text-current" strokeWidth={collapsed ? 2.35 : 2} />
+        <item.icon
+          className={cn("shrink-0 text-current", collapsed ? "h-[18px] w-[18px]" : "h-[16px] w-[16px]")}
+          strokeWidth={collapsed ? 2.25 : 2}
+        />
         {!collapsed && <span className="truncate">{item.label}</span>}
       </NavLink>
     );
@@ -924,7 +930,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         <aside
           className={cn(
             "os-glass-panel sticky top-3 hidden h-[calc(100vh-1.5rem)] shrink-0 flex-col md:flex transition-[width] duration-300",
-            collapsed ? "w-[78px]" : "w-[252px]",
+            collapsed ? "w-[72px]" : "w-[252px]",
           )}
         >
           <NavLink
@@ -985,7 +991,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
 
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="mx-3 mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-[11.5px] font-medium text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
+            className={cn(
+              "mb-3 flex items-center gap-2 text-[11.5px] font-medium text-muted-foreground transition hover:text-foreground",
+              collapsed
+                ? "mx-auto h-10 w-10 justify-center rounded-xl border border-border/70 bg-background shadow-sm hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                : "mx-3 rounded-lg px-3 py-2 hover:bg-foreground/[0.04]",
+            )}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft className={cn("h-3.5 w-3.5 transition-transform", collapsed && "rotate-180")} /> {!collapsed && "Collapse"}
           </button>

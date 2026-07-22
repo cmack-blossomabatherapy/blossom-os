@@ -1,40 +1,30 @@
-## Goal
-Get the BCBA Productivity Report V3 actually loading the live CentralReach rows into the report table, not just showing source coverage as ready.
+## Fix: Collapsed sidebar shows no icons on `/home`
 
-## Verified current issue
-- The page successfully calls `canonical_report_totals` and gets `47,533` rows.
-- The browser never calls `canonical_report_billing_rows`, so the detailed rows are not being fetched.
-- In `BcbaProductivityReportV3.tsx`, the mount-time auto-load is gated by legacy upload dataset status before loading canonical rows. This lets the coverage banner show “ready” while the report body remains empty.
-- The canonical-to-V3 bridge also sends blank `providerLabels`, but the V3 ownership inference requires non-97153 BCBA anchor rows to have a BCBA label. Without this, even loaded rows cannot infer BCBA ownership correctly.
+### Root cause
+`OSShell.tsx` renders a collapsed rail (`w-[78px]`) but the rail contents are barely visible / effectively missing:
 
-## Implementation plan
-1. **Fix the auto-load gate**
-   - Update `src/pages/os/reports/BcbaProductivityReportV3.tsx` so mount-time loading calls `loadSharedDataset({ silent: true })` directly when there is no saved report param.
-   - Keep legacy upload status as diagnostics only; it must not block canonical row loading.
+1. When items are `disabled` (Coming Soon), the collapsed inert tile uses `text-foreground/45` on the light glass panel — icons blend into the background and read as empty whitespace.
+2. `Company Home` + `Blossom AI` (or BCBA `Caseload Copilot`) render with their normal collapsed style, but they use `bg-card/80` on `os-glass-panel` — nearly invisible against the same near-white surface.
+3. The `<nav>` scroller has no explicit min-width, so icons that do render appear cramped and are hard to spot at the current dpr.
 
-2. **Make refresh resilient**
-   - In `loadSharedDataset`, fetch canonical totals first.
-   - Wrap `getBcbaProductivityDatasetStatus()` in a non-blocking `try/catch` so a legacy upload-status failure cannot stop the canonical detail-row fetch.
-   - Preserve the visible error only for actual canonical load failures.
+Result: the collapsed sidebar looks like an empty white strip between the logo and the expand chevron, exactly matching the screenshot.
 
-3. **Restore V3 BCBA ownership inference from canonical rows**
-   - Update `src/lib/os/reporting/canonicalReports.ts` so `toBcbaSharedShape()` reconstructs `providerLabels: "BCBA"` for non-97153 rows with a provider.
-   - Keep 97153 rows labeled as RBT rows and set `rbt` from the rendering provider.
-   - Leave state/payor blank for now because the canonical RPC does not expose those columns yet.
+### Changes (frontend only, `src/pages/os/OSShell.tsx`)
 
-4. **Add regression coverage**
-   - Update `src/test/canonicalReportsEngines.test.ts` to verify the canonical-to-V3 bridge labels 97155/non-97153 rows as BCBA anchors and 97153 rows as RBT rows.
-   - Update the BCBA productivity route/dataset test to assert the page auto-loads canonical rows directly instead of only checking legacy upload status.
+1. **Collapsed rail item style** — rebuild the collapsed variant so every item is unmistakably a visible icon button:
+   - Solid pill: `h-10 w-10 rounded-xl border border-border/70 bg-background shadow-sm`
+   - Active: `bg-primary text-primary-foreground border-transparent`
+   - Hover: `hover:bg-primary/10 hover:text-primary`
+   - Icon: bump to `h-[18px] w-[18px]` with `strokeWidth={2.25}` so it reads clearly at small sizes.
+2. **Disabled (Coming Soon) collapsed tile** — swap `text-foreground/45` for `text-muted-foreground` and keep the same solid pill background so the icon is still legible; keep the tooltip.
+3. **Home / Blossom AI / Copilot pinned entries** — same pill treatment, always rendered at the top of the collapsed rail so users always see at least the Home + AI icons.
+4. **Rail width** — increase collapsed width from `w-[78px]` to `w-[72px]` centered padding (`px-2`) so pills sit cleanly with breathing room; keep expanded width `w-[252px]`.
+5. **Collapse toggle button** — give it the same pill style (`h-10 w-10 rounded-xl border`) so the bottom `>` control matches the rail and is obviously an icon button.
+6. **Divider** — keep the short horizontal divider between the pinned pair and the section items so the rail has a visible rhythm.
 
-5. **Verify**
-   - Run focused tests for canonical report engines and BCBA productivity uploads.
-   - Run a browser check on `/reports/bcba-productivity-report-v3` and confirm network requests include both:
-     - `canonical_report_totals`
-     - `canonical_report_billing_rows`
-   - Confirm the report renders non-zero rows/KPIs after load.
+### Verification
+- Playwright: sign in, load `/home`, collapse sidebar, take element screenshot of the `<aside>` and confirm ≥ 4 visible icon pills between the logo and the toggle.
+- Repeat with an expanded state to confirm nothing changed there.
+- Confirm no regressions to mobile shell (mobile drawer path untouched).
 
-## Out of scope
-- No publishing.
-- No outbound actions or automation changes.
-- No CentralReach write-back.
-- No broad redesign of the report UI.
+No business logic, routing, permissions, or data changes. Purely visual repair of the collapsed rail.
