@@ -31168,6 +31168,7 @@ export type Database = {
         Returns: boolean
       }
       can_reconcile_cr_identity: { Args: { _uid: string }; Returns: boolean }
+      can_report_canonical_wide: { Args: { _uid: string }; Returns: boolean }
       can_view_clinical_work: { Args: { _user_id: string }; Returns: boolean }
       can_write_scheduling_ops: { Args: { _user_id: string }; Returns: boolean }
       canonical_report_billing_rows: {
