@@ -17,6 +17,7 @@ import {
   CoverageCaseDialog, CoverageNoteDialog, CRSyncBadge,
 } from "@/components/scheduling/SchedulingDialogs";
 import { useSchedulingActions } from "@/hooks/useSchedulingActions";
+import { buildClientDetailHref } from "@/lib/os/reporting/clientRouteBuilder";
 
  /* ---------------- helpers ---------------- */
 
@@ -438,7 +439,7 @@ import { useSchedulingActions } from "@/hooks/useSchedulingActions";
              <p className="text-sm text-muted-foreground mt-1">{client.stage}{client.activeServiceStatus ? ` · ${client.activeServiceStatus}` : ""}</p>
            </div>
            <div className="flex flex-wrap items-center gap-2">
-             <Link to={`/clients?id=${client.id}`} className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><ArrowUpRight className="size-3.5" /> Open Client</Link>
+             <Link to={buildClientDetailHref(client.id) ?? "#"} className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><ArrowUpRight className="size-3.5" /> Open Client</Link>
              <Link to="/ops/staffing?tab=open-cases" className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><Users className="size-3.5" /> Staffing Queue</Link>
              <Link to="/staff" className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5" /> BCBA / RBT</Link>
              <Link to="/authorizations" className="h-9 px-3 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted text-xs font-medium inline-flex items-center gap-1.5"><Activity className="size-3.5" /> Auths</Link>

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CardFrame } from "../CardFrame";
 import { FreshnessPill, freshness } from "./freshness";
 import { crClientUrl } from "./cr";
+import { buildClientDetailHref } from "@/lib/os/reporting/clientRouteBuilder";
 import { ExternalLink, AlertTriangle } from "lucide-react";
 import { useRbtIdentity } from "../useRbtIdentity";
 import { deriveMyClientsFromCanonical } from "@/lib/os/reporting/canonicalRoleBridge";
@@ -123,19 +124,24 @@ export default function MyClients() {
                       rbt_client_assignments) and raw CR ids (from the
                       canonical fallback) without the RBT needing to know
                       which system owns the record. */}
-                  {c.client_id && !String(c.client_id).startsWith("canon:") && (
-                    <a
-                      href={
-                        /^[0-9a-f-]{36}$/i.test(String(c.client_id))
-                          ? `/clients/${c.client_id}`
-                          : `/clients/cr/${encodeURIComponent(String(c.client_id))}`
-                      }
-                      className="inline-flex items-center gap-1 text-xs rounded-full bg-primary/10 text-primary px-3 py-1.5 hover:bg-primary/20"
-                      data-testid="rbt-open-client-blossom"
-                    >
-                      Open in Blossom
-                    </a>
-                  )}
+                  {(() => {
+                    // Prefer the row's own client_id; fall back to the CR id
+                    // for canonical-derived rows whose client_id is a
+                    // synthetic `canon:*` value.
+                    const href =
+                      buildClientDetailHref(c.client_id) ||
+                      buildClientDetailHref(c.centralreach_client_id);
+                    if (!href) return null;
+                    return (
+                      <a
+                        href={href}
+                        className="inline-flex items-center gap-1 text-xs rounded-full bg-primary/10 text-primary px-3 py-1.5 hover:bg-primary/20"
+                        data-testid="rbt-open-client-blossom"
+                      >
+                        Open in Blossom
+                      </a>
+                    );
+                  })()}
                   <a href={crClientUrl(c.centralreach_client_id)} target="_blank" rel="noreferrer"
                     className="inline-flex items-center gap-1 text-xs rounded-full bg-muted px-3 py-1.5 hover:bg-muted/70">
                     <ExternalLink className="h-3.5 w-3.5" /> Open in CentralReach
