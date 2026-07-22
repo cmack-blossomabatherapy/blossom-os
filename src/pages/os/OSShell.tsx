@@ -797,11 +797,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           title="Coming soon"
           className={cn(
             "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-foreground/45 cursor-not-allowed select-none",
-            collapsed && "h-10 w-10 justify-center px-0 rounded-xl border border-primary bg-primary text-primary-foreground shadow-[0_12px_24px_-14px_hsl(var(--primary)/0.95)] opacity-70",
+            collapsed && "h-10 w-10 justify-center px-0 rounded-xl border border-border/80 bg-muted/80 text-muted-foreground opacity-100 shadow-[0_10px_22px_-16px_hsl(var(--foreground)/0.35)]",
           )}
         >
           <item.icon
-            className={cn("shrink-0 text-current", collapsed ? "h-[18px] w-[18px]" : "h-[16px] w-[16px]")}
+            className={cn("shrink-0", collapsed ? "h-[18px] w-[18px] text-muted-foreground" : "h-[16px] w-[16px] text-current")}
             strokeWidth={collapsed ? 2.25 : 2}
           />
           {!collapsed && (
@@ -836,16 +836,16 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             collapsed && "h-10 w-10 justify-center px-0 rounded-xl border",
             isActive
               ? collapsed
-                ? "bg-primary text-primary-foreground border-transparent shadow-[0_10px_24px_-14px_hsl(var(--primary)/0.7)]"
+                ? "bg-primary/15 text-primary border-primary/50 shadow-[0_10px_24px_-16px_hsl(var(--primary)/0.55)] ring-1 ring-primary/20"
                 : "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
               : collapsed
-              ? "bg-primary text-primary-foreground border-primary shadow-[0_12px_24px_-14px_hsl(var(--primary)/0.95)] hover:bg-primary/90 hover:text-primary-foreground hover:border-primary"
+              ? "bg-background text-primary border-primary/35 shadow-[0_10px_22px_-16px_hsl(var(--foreground)/0.35)] hover:bg-primary/10 hover:text-primary hover:border-primary/60"
               : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
           )
         }
       >
         <item.icon
-          className={cn("shrink-0 text-current", collapsed ? "h-[18px] w-[18px]" : "h-[16px] w-[16px]")}
+          className={cn("shrink-0", collapsed ? "h-[18px] w-[18px] text-current" : "h-[16px] w-[16px] text-current")}
           strokeWidth={collapsed ? 2.25 : 2}
         />
         {!collapsed && <span className="truncate">{item.label}</span>}
@@ -994,7 +994,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             className={cn(
               "mb-3 flex items-center gap-2 text-[11.5px] font-medium text-muted-foreground transition hover:text-foreground",
               collapsed
-                ? "mx-auto h-10 w-10 justify-center rounded-xl border border-primary bg-primary text-primary-foreground shadow-[0_12px_24px_-14px_hsl(var(--primary)/0.95)] hover:bg-primary/90 hover:text-primary-foreground hover:border-primary"
+                ? "mx-auto h-10 w-10 justify-center rounded-xl border border-primary/35 bg-background text-primary shadow-[0_10px_22px_-16px_hsl(var(--foreground)/0.35)] hover:bg-primary/10 hover:text-primary hover:border-primary/60"
                 : "mx-3 rounded-lg px-3 py-2 hover:bg-foreground/[0.04]",
             )}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
