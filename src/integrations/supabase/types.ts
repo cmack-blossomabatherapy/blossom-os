@@ -30939,6 +30939,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_apply_employee_user_reconciliation: {
+        Args: { _actor: string; _dry_run?: boolean }
+        Returns: {
+          already_linked: number
+          ambiguous: number
+          auto_linked: number
+          conflicts: number
+          queue_rows: number
+          unmatched: number
+        }[]
+      }
       admin_rollback_onboarding: {
         Args: {
           clear_certificate?: boolean
