@@ -773,14 +773,25 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   // Blossom AI is hidden for RBT and scoped to a dedicated copilot for BCBA.
   const hideGlobalAi = role === "rbt" || role === "bcba";
   const bcbaCopilotEntry: NavEntry = { to: "/bcba/copilot", label: "Caseload Copilot", icon: Sparkles };
-  const bottomNav: NavEntry[] = [
-    { to: "/home", label: "Home", icon: Home, end: true },
-    ...(hideGlobalAi ? [] : [{ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles } as NavEntry]),
-    { to: "/tasks", label: "Tasks", icon: CheckSquare },
-    { to: trainingPath, label: "Training", icon: GraduationCap },
-    { to: "/resource-library", label: "Resources", icon: BookOpen },
-    { to: "/reports", label: "Reports", icon: BarChart3 },
-  ];
+  // RBTs are hard-scoped to /rbt/app/* by AppLayout, so their mobile bottom
+  // nav must only reference RBT routes — otherwise every tap bounces back
+  // to /rbt/app/home.
+  const bottomNav: NavEntry[] = role === "rbt"
+    ? [
+        { to: "/rbt/app/home", label: "Home", icon: Home, end: true },
+        { to: "/rbt/app/schedule", label: "Schedule", icon: CalendarDays },
+        { to: "/rbt/app/learn", label: "Learn", icon: GraduationCap },
+        { to: "/rbt/app/support", label: "Support", icon: LifeBuoy },
+        { to: "/rbt/app/me", label: "Me", icon: UserIcon },
+      ]
+    : [
+        { to: "/home", label: "Home", icon: Home, end: true },
+        ...(hideGlobalAi ? [] : [{ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles } as NavEntry]),
+        { to: "/tasks", label: "Tasks", icon: CheckSquare },
+        { to: trainingPath, label: "Training", icon: GraduationCap },
+        { to: "/resource-library", label: "Resources", icon: BookOpen },
+        { to: "/reports", label: "Reports", icon: BarChart3 },
+      ];
   const collapsedIconColor = "hsl(var(--primary))";
   const collapsedDisabledIconColor = "hsl(var(--muted-foreground))";
 
