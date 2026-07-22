@@ -23,7 +23,8 @@ import {
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 import { IntegrationsHubPointer } from "@/components/integrations/IntegrationsHubPointer";
-import { useRecruitingActivity } from "@/hooks/useRecruitingMutations";
+import { useRecruitingActivity, useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { toast } from "sonner";
 
 type Tone = "ok" | "warn" | "crit";
 type QueueKey = "today" | "followup" | "offers" | "onboarding" | "escalation";
@@ -579,10 +580,7 @@ function CandidateSlideout({
           </section>
 
           <div className="grid grid-cols-2 gap-2">
-            <QuickAction icon={Send} label="Message" />
-            <QuickAction icon={Phone} label="Call" />
-            <QuickAction icon={CalendarClock} label="Schedule" />
-            <QuickAction icon={Eye} label="Open profile" />
+            <WorkspaceQuickActions candidate={c} />
           </div>
 
           <section className="space-y-2">
@@ -662,11 +660,45 @@ function Meta({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-function QuickAction({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
+  const disabled = !onClick;
   return (
-    <button className="inline-flex items-center justify-center gap-1.5 h-9 rounded-xl border border-border/70 bg-card text-xs font-medium text-foreground hover:bg-muted/40 transition">
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? "Not available" : undefined}
+      className={cn(
+        "inline-flex items-center justify-center gap-1.5 h-9 rounded-xl border border-border/70 bg-card text-xs font-medium text-foreground hover:bg-muted/40 transition",
+        disabled && "opacity-50 cursor-not-allowed",
+      )}
+    >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
       {label}
     </button>
+  );
+}
+
+function WorkspaceQuickActions({ candidate }: { candidate: RecruitingCandidate }) {
+  const mut = useRecruitingMutations();
+  const log = async (kind: string, extra?: Record<string, unknown>) => {
+    await mut.logActivity(candidate.id, "recruiting_candidates", candidate.id, kind, null, null, extra);
+    toast.success(`Logged: ${kind.replace(/_/g, " ")}`);
+  };
+  return (
+    <>
+      <QuickAction icon={Send} label="Message" onClick={() => {
+        const email = (candidate as any).email;
+        if (email) window.location.href = `mailto:${email}`;
+        void log("message_sent");
+      }} />
+      <QuickAction icon={Phone} label="Call" onClick={() => {
+        const phone = (candidate as any).phone;
+        if (phone) window.location.href = `tel:${phone}`;
+        void log("call_placed");
+      }} />
+      <QuickAction icon={CalendarClock} label="Schedule" onClick={() => log("schedule_requested")} />
+      <QuickAction icon={Eye} label="Open profile" onClick={() => log("profile_opened")} />
+    </>
   );
 }

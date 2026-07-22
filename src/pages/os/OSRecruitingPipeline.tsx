@@ -16,6 +16,8 @@ import {
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
+import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { toast } from "sonner";
 import {
   useApploiIntegrationStatus,
   importApploiNormalizedRecords,
@@ -582,12 +584,7 @@ function CandidateSlideout({
 
           {/* Quick actions */}
           <div className="grid grid-cols-2 gap-2">
-            <QuickAction icon={Send} label="Send interview link" />
-            <QuickAction icon={GraduationCap} label="Send 40-hour link" />
-            <QuickAction icon={ShieldCheck} label="Verify BACB" />
-            <QuickAction icon={MessageSquare} label="Message" />
-            <QuickAction icon={Phone} label="Call" />
-            <QuickAction icon={Eye} label="Open profile" />
+            <PipelineQuickActions candidate={c} />
           </div>
 
           {/* Lifecycle progress */}
@@ -737,11 +734,49 @@ function Meta({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-function QuickAction({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
+  const disabled = !onClick;
   return (
-    <button className="inline-flex items-center justify-center gap-1.5 h-9 rounded-xl border border-border/70 bg-card text-xs font-medium text-foreground hover:bg-muted/40 transition">
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? "Not available" : undefined}
+      className={cn(
+        "inline-flex items-center justify-center gap-1.5 h-9 rounded-xl border border-border/70 bg-card text-xs font-medium text-foreground hover:bg-muted/40 transition",
+        disabled && "opacity-50 cursor-not-allowed",
+      )}
+    >
       <Icon className="h-3.5 w-3.5" />
       <span className="truncate">{label}</span>
     </button>
+  );
+}
+
+function PipelineQuickActions({ candidate }: { candidate: RecruitingCandidate }) {
+  const mut = useRecruitingMutations();
+  const log = async (kind: string, extra?: Record<string, unknown>) => {
+    await mut.logActivity(candidate.id, "recruiting_candidates", candidate.id, kind, null, null, extra);
+    toast.success(`Logged: ${kind.replace(/_/g, " ")}`);
+  };
+  const call = () => {
+    const phone = (candidate as any).phone;
+    if (phone) window.location.href = `tel:${phone}`;
+    void log("call_placed");
+  };
+  const message = () => {
+    const email = (candidate as any).email;
+    if (email) window.location.href = `mailto:${email}`;
+    void log("message_sent");
+  };
+  return (
+    <>
+      <QuickAction icon={Send} label="Send interview link" onClick={() => log("interview_link_sent")} />
+      <QuickAction icon={GraduationCap} label="Send 40-hour link" onClick={() => log("training_link_sent")} />
+      <QuickAction icon={ShieldCheck} label="Verify BACB" onClick={() => log("bacb_verified")} />
+      <QuickAction icon={MessageSquare} label="Message" onClick={message} />
+      <QuickAction icon={Phone} label="Call" onClick={call} />
+      <QuickAction icon={Eye} label="Open profile" onClick={() => log("profile_opened")} />
+    </>
   );
 }
