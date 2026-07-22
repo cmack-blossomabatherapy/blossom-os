@@ -81,9 +81,14 @@ describe("Business Development — Completion Pass", () => {
     expect(dashboard).toMatch(/useMarketingSourceSignals/);
   });
 
-  it("12. /patient-journey route is Marketing-only (BD is not in MARKETING_ROLES)", () => {
-    expect(app).toMatch(/path="\/patient-journey"[\s\S]*allowedRoles=\{\[\.\.\.MARKETING_ROLES\]\}/);
-    expect(app).not.toMatch(/path="\/patient-journey"[\s\S]*business_development/);
+  it("12. /patient-journey route is BD-excluded (Growth Snapshot: marketing + exec/ops, never business_development)", () => {
+    // Patient Lifetime Journey is a growth analytics surface — leadership and
+    // ops must have read access, so the route uses GROWTH_SNAPSHOT_ROLES
+    // (marketing + exec/ops) which explicitly excludes business_development.
+    expect(app).toMatch(/path="\/patient-journey"[\s\S]{0,300}allowedRoles=\{\[\.\.\.GROWTH_SNAPSHOT_ROLES\]\}/);
+    const growth = app.match(/GROWTH_SNAPSHOT_ROLES\s*=\s*\[[\s\S]*?\]\s*as const/);
+    expect(growth, "GROWTH_SNAPSHOT_ROLES declaration not found").not.toBeNull();
+    expect(growth![0]).not.toMatch(/business_development/);
   });
 
   it("13. /marketing/referral-crm allows Business Development", () => {

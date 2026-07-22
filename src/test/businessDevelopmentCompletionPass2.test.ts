@@ -25,8 +25,12 @@ describe("Business Development — Completion Pass 2", () => {
   });
 
   it("BD is not added to /patient-journey, /phone, or broad marketing admin routes", () => {
-    // /patient-journey should remain gated by MARKETING_ROLES (no BD, no marketing_growth_lead-only override).
-    expect(app).toMatch(/path="\/patient-journey"[\s\S]{0,160}\[\.\.\.MARKETING_ROLES\]/);
+    // /patient-journey uses GROWTH_SNAPSHOT_ROLES (marketing + exec/ops), which
+    // must remain BD-excluded. The BD-exclusion invariant is what matters here.
+    expect(app).toMatch(/path="\/patient-journey"[\s\S]{0,300}\[\.\.\.GROWTH_SNAPSHOT_ROLES\]/);
+    const growth = app.match(/GROWTH_SNAPSHOT_ROLES\s*=\s*\[[\s\S]*?\]\s*as const/);
+    expect(growth, "GROWTH_SNAPSHOT_ROLES declaration not found").not.toBeNull();
+    expect(growth![0]).not.toMatch(/business_development/);
     // BD role should never appear in /phone or /marketing admin route guards.
     const phone = app.match(/path="\/phone"[\s\S]{0,200}\/>/);
     if (phone) expect(phone[0]).not.toMatch(/business_development/);

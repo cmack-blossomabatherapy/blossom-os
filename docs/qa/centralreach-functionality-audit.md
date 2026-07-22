@@ -649,3 +649,71 @@ by `useBcbaIdentity` / `useRbtIdentity`:
   experiences remain unreachable for those employees until they sign in.
 
 ### Not published
+
+---
+
+## Phase 5 — Final release gate (2026-07-22)
+
+### Report-contract failures repaired (BD Pass 5)
+
+| # | Test | Prior failure | Decision | Fix location |
+|---|------|---------------|----------|--------------|
+| 1 | `BD visible reports include bd-referral-sources …` | `visibleReportsForRole` had been consolidated to return only the six approved reports for every role, so BD's own catalog entries no longer surfaced on /reports. | **Fix implementation.** Restored role-scoped inclusion: approved six baseline **plus** any `REPORTS` entry whose `visibleTo` array contains the caller's role. `visibleTo: "all"` (department dashboards) remains excluded — they render on the separate department shelf via `visibleDepartmentDashboardsForRole`. | `src/lib/os/reportsCatalog.ts` |
+| 2 | `direct HR/QA/credentialing report routes are wrapped in ReportRoleGuard` | Test asserted `ReportRoleGuard` on `/reports/qa-supervision-pt`, `/reports/qa-auth-utilization`, `/reports/qa-cancellation`. Those legacy IDs now redirect to canonical routes (`bcba-supervision`, `authorization-utilization-hour-based`, `cancellation-command-center`) as of Phase 4. | **Fix test to canonical route behavior.** Now asserts `ReportRoleGuard` on the ten canonical guarded routes **and** asserts each legacy alias uses `NavigateWithSearch` (query/hash preserved). No guard weakening — the guard is verified on the actual live route. | `src/test/businessDevelopmentCompletionPass5.test.ts` |
+| 3 | `BCBA Productivity Reports remain reachable (V1 element)` | Test asserted V1 renders `<BcbaProductivityReport>` at `/reports/bcba-productivity-report`. Phase 4 consolidated V1 → V3 via `NavigateWithSearch` to eliminate dual-surface drift. | **Fix test to canonical route behavior.** Now asserts V1 route uses `NavigateWithSearch to="/reports/bcba-productivity-report-v3"` (redirect preserves state) and V3 route is `ReportRoleGuard`-wrapped. | `src/test/businessDevelopmentCompletionPass5.test.ts` |
+| 4 | `/patient-journey allowedRoles MARKETING_ROLES` | Route was widened to `GROWTH_SNAPSHOT_ROLES` (marketing + executive_leadership + operations_leadership + coo + ceo + marketing_director + marketing_manager) so leadership can read the Patient Lifetime Journey growth analytics. BD remains excluded from `GROWTH_SNAPSHOT_ROLES`. | **Fix test to canonical route behavior.** Test now asserts `allowedRoles={[...GROWTH_SNAPSHOT_ROLES]}` **and** grep-asserts `business_development` is not a member of `GROWTH_SNAPSHOT_ROLES`. BD-exclusion — the invariant the test cares about — is preserved and strengthened. Same fix applied to `businessDevelopmentCompletionPass.test.ts` (item 12) and `businessDevelopmentCompletionPass2.test.ts` (BD-not-added). | `src/test/businessDevelopmentCompletionPass*.test.ts` |
+
+Sixth adjustment (implicit dependency of #1): the role-scoped inclusion change made `assistant_state_director` correctly mirror `state_director` in the report catalog. Batch-added `"assistant_state_director"` to `visibleTo` on every `REPORTS` entry that already granted `"state_director"` (28 catalog entries touched). This is the intended access model per `mem://features/role-based-visibility` — Assistant State Director sees the same reports as State Director for their assigned state. Verified via `assistantStateDirectorCompletion.test.ts`.
+
+### Release-scope test run
+
+```
+bunx vitest run \
+  businessDevelopmentCompletionPass{,2,5,6}.test.ts \
+  bcbaCompletionPass{4,5,6}.test.ts \
+  behavioralSupportCompletionPass.test.ts \
+  reportsApprovedSix.test.ts reportsLiveCatalog.test.ts \
+  reportsLegacyRedirectQueryParams.test.tsx \
+  operationsLeadershipReportsPersistence.test.ts \
+  assistantStateDirectorCompletion.test.ts \
+  crIdentityReconciliation.test.ts userLinkReconciliation.test.ts \
+  canonicalClientResolver.test.ts clientDetailRouter.test.tsx \
+  clinicianMapping.test.ts bcbaProductivityAdminUploads.test.ts
+```
+
+Result: **19 files, 1050 tests, 0 failures**. `tsgo --noEmit` clean. Production build succeeded (`bun run build` → 43.7s, chunk-size warnings only).
+
+Pre-existing failures **out of release scope** (Sprint 03/04 Intake re-persistence assertions on `useIntakeCommsLive` / `useIntakeTasksLive` / "Log Call" label): left untouched, documented. No new failures introduced.
+
+### Signed-in preview smoke
+
+Playwright script: `/tmp/browser/final-smoke/run.py`. Session restored via `LOVABLE_BROWSER_SUPABASE_*` env vars (auth status: `injected`, storage key + cookies present).
+
+Result: every navigation (`/home`, 6 RBT routes, 6 BCBA routes, 19 report routes including 3 legacy aliases with query/hash and 1 not-found probe) was intercepted by the app's own MFA verify gate (`/mfa/verify`). This is an intentional layered security posture — the injected Supabase session authenticates the user but MFA email-code verification runs in-app on every fresh browser context. The gate cannot be bypassed from the sandbox (no user email access), so interaction-level QA past MFA verify is not possible in this environment.
+
+What the smoke run **did** verify, per route:
+- All 32 routes reached the app shell without 500s, blank pages, or console errors (single flake at last request excluded — no repro on rerun).
+- MFA verify screen rendered consistently for every protected route → routing/auth chain intact, no route crashed pre-MFA.
+- `/reports/shared/does-not-exist-xyz` correctly hit the app-wide 404 page ("Page not found. We couldn't find /reports/shared/does-not-exist-xyz.") — safe not-found state, no crash, no leak.
+- Legacy report URLs with `?state=…#tab=…` reached MFA gate cleanly; the actual query/hash preservation is proven by `src/test/reportsLegacyRedirectQueryParams.test.tsx` (5 tests, all pass) which drives `NavigateWithSearch` through MemoryRouter and asserts `useLocation()` returns the original `search`/`hash`.
+
+### Honest live limitations after this release
+
+1. **MFA-gated interaction QA** — Blossom OS layered MFA is intentional; sandbox cannot complete the email-code step. Route-level, code-contract, and unit/integration test verification stands in for click-level interaction verification for this release.
+2. **CentralReach provider coverage** — 57.3% of `v_cr_canonical_sessions` rows remain unmapped to a canonical provider identity. 418 rows sit in `cr_identity_mapping_queue` awaiting Recruiting/HR review. Reports label these as **Unassigned** and suppress drilldown links for synthetic keys; there is no leakage.
+3. **User → employee links** — 127 CR-linked employees still lack `auth.users` accounts. Their signed-in reports/RBT/BCBA workspaces will remain empty until the user link queue is processed.
+4. **Saved snapshots** — 0 live rows in `report_saved_snapshots`; the expired/denied/not-found UX is code-verified (`sharedDatasetLoader.ts`) but no aged data exists to observe in production.
+5. **Notifications & automations** — intentionally NOT enabled in this release. `bcba_notification_rules`, RBT alert engines, and `phone_ai_call_routing` remain paused.
+
+### Security scan (from `security--get_scan_results`)
+
+- `SUPA_security_definer_view` (level: `error`) — long-standing finding first recorded **2026-06-17**, well before this release scope. This flags Blossom OS's `has_role`/`is_admin`-style `SECURITY DEFINER` views used throughout the RBAC architecture (canonical role checks, canonical sessions view, provider mapping resolver). These are architecturally intentional and predate every phase in this document. No new SECURITY DEFINER views were introduced in Phases 1-4.
+- `SUPA_materialized_view_in_api` (level: `warn`) — `mv_cr_provider_mapping`, created in the BCBA productivity fix to avoid Supabase timeouts on the 47.5k-row CR canonical join. Read via `supabase-js` by design; contains no PHI (name-key + provider-id mapping only).
+
+### Files touched this phase
+- `src/lib/os/reportsCatalog.ts` — `visibleReportsForRole` restored to approved+role-scoped; +28 `assistant_state_director` additions.
+- `src/test/businessDevelopmentCompletionPass5.test.ts` — canonical-route ReportRoleGuard assertions; V1→V3 redirect assertion; `/patient-journey` GROWTH_SNAPSHOT_ROLES + BD-exclusion assertion.
+- `src/test/businessDevelopmentCompletionPass.test.ts` — item 12 updated to GROWTH_SNAPSHOT_ROLES + BD-exclusion.
+- `src/test/businessDevelopmentCompletionPass2.test.ts` — `/patient-journey` assertion updated to GROWTH_SNAPSHOT_ROLES + BD-exclusion.
+- `docs/qa/centralreach-functionality-audit.md` — this section.
+
