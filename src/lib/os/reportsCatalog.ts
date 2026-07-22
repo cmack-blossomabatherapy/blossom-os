@@ -415,10 +415,17 @@ export function visibleReportsForRole(role: OSRole): ReportDef[] {
  * visibleReportsForRole so /reports only ever renders the approved six.
  */
 export function visibleDepartmentDashboardsForRole(role: OSRole): ReportDef[] {
-  // Department dashboards on the /reports surface are intentionally visible
-  // to every Blossom OS role — leadership asked for a single company-wide
-  // dashboard shelf that anyone can browse regardless of department.
-  void role;
+  // Least privilege: RBTs never see company-wide department dashboards
+  // (staffing, HR, executive, etc.). BCBAs see the clinical-adjacent ones
+  // only. Everyone else keeps the full shelf.
+  if (role === "rbt") return [];
+  if (role === "bcba") {
+    return REPORTS.filter(
+      (r) =>
+        DEPARTMENT_DASHBOARD_IDS.has(r.id) &&
+        ["clinical", "qa", "training"].includes(r.category),
+    );
+  }
   return REPORTS.filter((r) => DEPARTMENT_DASHBOARD_IDS.has(r.id));
 }
 
