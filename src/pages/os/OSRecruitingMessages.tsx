@@ -14,6 +14,7 @@ import {
 } from "@/data/recruitingDashboard";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
+import { toast } from "sonner";
 import {
   useRecruitingMessages,
   type RecruitingMessage,
@@ -863,14 +864,37 @@ export default function OSRecruitingMessages() {
 
               {/* Actions */}
               <div className="grid grid-cols-2 gap-2">
-                <DAction icon={Send} label="Send message" primary />
-                <DAction icon={MailWarning} label="Resend onboarding" />
-                <DAction icon={Bell} label="Resend orientation" />
-                <DAction icon={Flame} label="Escalate" />
-                <DAction icon={UserPlus} label="Notify staffing" />
-                <DAction icon={CheckCircle2} label="Complete follow-up" />
-                <DAction icon={Clock} label="Snooze reminder" />
-                <DAction icon={Plus} label="Add internal note" />
+                {(() => {
+                  const cid = selected.candidate.id;
+                  const isLiveMsg = /^[0-9a-f-]{36}$/i.test(selected.id);
+                  const logIntent = async (kind: string, extra?: Record<string, unknown>) => {
+                    await mutations.logActivity(cid, "recruiting_messages", isLiveMsg ? selected.id : null, kind, null, null, extra);
+                    toast.success(`Logged: ${kind.replace(/_/g, " ")}`);
+                  };
+                  return (
+                    <>
+                      <DAction icon={Send} label="Send message" primary onClick={() => logIntent("message_send_intent")} />
+                      <DAction icon={MailWarning} label="Resend onboarding" onClick={() => logIntent("onboarding_resend")} />
+                      <DAction icon={Bell} label="Resend orientation" onClick={() => logIntent("orientation_resend")} />
+                      <DAction icon={Flame} label="Escalate" onClick={async () => {
+                        await mutations.createEscalation(cid, { title: `Escalation from Messages: ${selected.candidate.name}`, severity: "High" } as any);
+                        toast.success("Escalation opened");
+                      }} />
+                      <DAction icon={UserPlus} label="Notify staffing" onClick={() => logIntent("staffing_notified")} />
+                      <DAction icon={CheckCircle2} label="Complete follow-up" onClick={async () => {
+                        if (isLiveMsg) await mutations.markMessageHandled(selected.id);
+                        else await logIntent("followup_completed");
+                        toast.success("Follow-up marked complete");
+                      }} />
+                      <DAction icon={Clock} label="Snooze reminder" onClick={() => logIntent("reminder_snoozed")} />
+                      <DAction icon={Plus} label="Add internal note" onClick={async () => {
+                        const note = window.prompt("Internal note");
+                        if (!note) return;
+                        await logIntent("note_added", { note });
+                      }} />
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </aside>
@@ -949,12 +973,20 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DAction({ icon: Icon, label, primary }: { icon: any; label: string; primary?: boolean }) {
+function DAction({ icon: Icon, label, primary, onClick }: { icon: any; label: string; primary?: boolean; onClick?: () => void }) {
+  const disabled = !onClick;
   return (
-    <button className={cn(
-      "h-10 rounded-xl border text-xs font-medium inline-flex items-center justify-center gap-2 transition",
-      primary ? "bg-primary text-primary-foreground border-primary hover:opacity-90" : "bg-muted/40 border-border/60 hover:bg-muted"
-    )}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? "Not available" : undefined}
+      className={cn(
+        "h-10 rounded-xl border text-xs font-medium inline-flex items-center justify-center gap-2 transition",
+        primary ? "bg-primary text-primary-foreground border-primary hover:opacity-90" : "bg-muted/40 border-border/60 hover:bg-muted",
+        disabled && "opacity-50 cursor-not-allowed",
+      )}
+    >
       <Icon className="size-3.5" /> {label}
     </button>
   );
