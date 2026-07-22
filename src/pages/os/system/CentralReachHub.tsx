@@ -11,7 +11,19 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import CentralReachUploads from "./CentralReachUploads";
 import CrSyncCenter from "@/pages/admin/CrSyncCenter";
-import { fetchCrMappingDiagnostics, reconcileEmployeeCentralreachIds, type CrMappingDiagnosticRow } from "@/lib/os/clinicianIdentity";
+import {
+  fetchCrMappingDiagnostics,
+  reconcileEmployeeCentralreachIds,
+  previewCrReconciliation,
+  applyCrReconciliation,
+  fetchCrIdentityQueue,
+  confirmCrProviderMapping,
+  rejectCrProviderMapping,
+  unlinkCrProviderMapping,
+  type CrMappingDiagnosticRow,
+  type CrReconcilePreviewRow,
+  type CrIdentityQueueRow,
+} from "@/lib/os/clinicianIdentity";
 import { toast } from "@/hooks/use-toast";
 
 type HubTab =
