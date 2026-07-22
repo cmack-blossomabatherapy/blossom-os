@@ -65,11 +65,16 @@ describe("Business Development — Completion Pass 5 (Reports hardening)", () =>
     }
   });
 
-  it("direct HR/QA/credentialing report routes are wrapped in ReportRoleGuard", () => {
+  it("direct HR/credentialing/canonical QA report routes are wrapped in ReportRoleGuard", () => {
+    // Legacy QA report IDs (qa-supervision-pt, qa-auth-utilization,
+    // qa-cancellation) now redirect to canonical routes; the canonical
+    // routes below are the ones that must be ReportRoleGuard-wrapped.
     for (const id of [
-      "qa-supervision-pt",
-      "qa-auth-utilization",
-      "qa-cancellation",
+      "bcba-supervision",
+      "parent-training",
+      "authorization-utilization-hour-based",
+      "authorization-analysis",
+      "cancellation-command-center",
       "hr-payroll-command",
       "hr-employee-compliance",
       "hr-employee-onboarding",
@@ -77,22 +82,42 @@ describe("Business Development — Completion Pass 5 (Reports hardening)", () =>
       "bcba-performance",
     ]) {
       const re = new RegExp(`path="\\/reports\\/${id}"[\\s\\S]{0,200}ReportRoleGuard reportId="${id}"`);
-      expect(app).toMatch(re);
+      expect(app, `expected ReportRoleGuard on /reports/${id}`).toMatch(re);
+    }
+    // Legacy aliases must redirect (query/hash preserved via NavigateWithSearch).
+    for (const [legacy, canonical] of [
+      ["qa-supervision-pt", "bcba-supervision"],
+      ["qa-auth-utilization", "authorization-utilization-hour-based"],
+      ["qa-cancellation", "cancellation-command-center"],
+    ] as const) {
+      const rx = new RegExp(`path="\\/reports\\/${legacy}"[\\s\\S]{0,120}NavigateWithSearch to="\\/reports\\/${canonical}"`);
+      expect(app, `expected legacy ${legacy} → ${canonical} redirect`).toMatch(rx);
     }
   });
 
-  it("BCBA Productivity Reports remain reachable (no guard needed — visibleTo: all)", () => {
-    expect(app).toMatch(/path="\/reports\/bcba-productivity-report"\s+element=\{<BcbaProductivityReport/);
-    expect(app).toMatch(/path="\/reports\/bcba-productivity-report-v3"\s+element=\{<BcbaProductivityReportV3/);
+  it("BCBA Productivity V1 redirects to V3 (query/hash preserved), V3 remains guarded", () => {
+    // V1 was consolidated into V3 to eliminate dual-surface drift; the
+    // legacy URL must still resolve for saved links and use
+    // NavigateWithSearch so query params & hash survive the redirect.
+    expect(app).toMatch(
+      /path="\/reports\/bcba-productivity-report"[\s\S]{0,160}NavigateWithSearch to="\/reports\/bcba-productivity-report-v3"/,
+    );
+    expect(app).toMatch(
+      /path="\/reports\/bcba-productivity-report-v3"[\s\S]{0,200}ReportRoleGuard reportId="bcba-productivity-report-v3"[\s\S]{0,80}<BcbaProductivityReportV3/,
+    );
   });
 
   it("BD completion invariants: /business-development gated, referral-crm allows BD, phone/patient-journey exclude BD", () => {
     expect(app).toMatch(/path="\/business-development"/);
     expect(app).toMatch(/path="\/marketing\/referral-crm"[\s\S]*MARKETING_ROLES_WITH_BD/);
-    // /phone must not list business_development in its allowedRoles
+    // /phone must not list business_development in its allowedRoles.
     const phoneMatch = app.match(/path="\/phone"[\s\S]{0,400}\/>/);
     if (phoneMatch) expect(phoneMatch[0]).not.toMatch(/business_development/);
-    // /patient-journey must be MARKETING_ROLES only
-    expect(app).toMatch(/path="\/patient-journey"[\s\S]*allowedRoles=\{\[\.\.\.MARKETING_ROLES\]\}/);
+    // /patient-journey is a growth analytics surface — it uses
+    // GROWTH_SNAPSHOT_ROLES (marketing + exec/ops) and must exclude BD.
+    expect(app).toMatch(/path="\/patient-journey"[\s\S]{0,300}allowedRoles=\{\[\.\.\.GROWTH_SNAPSHOT_ROLES\]\}/);
+    const growthDecl = app.match(/GROWTH_SNAPSHOT_ROLES\s*=\s*\[[\s\S]*?\]\s*as const/);
+    expect(growthDecl, "GROWTH_SNAPSHOT_ROLES declaration not found").not.toBeNull();
+    expect(growthDecl![0]).not.toMatch(/business_development/);
   });
 });
