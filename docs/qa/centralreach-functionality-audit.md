@@ -369,3 +369,127 @@ auto_link | already_linked | conflict | ambiguous | unmatched | total
 - **0 ambiguous / conflict** cases in current data.
 
 ### Not published
+
+---
+
+## Phase 3 — Employee ↔ authenticated user reconciliation (2026-07-22)
+
+### Baseline (before)
+
+- Employees total: **366**
+- With `user_id` (linked to `auth.users`): **31** (8.47%)
+- With `centralreach_id`: **128** (35.0%)
+- Intersection (both linked): **1**
+- Employees with an email on file: **366 / 366** — all unique normalized.
+- No prior employee↔user link function existed; onboarding was manual.
+
+### Migration
+
+- `public.user_link_audit` — append-only history keyed by employee; admin-only
+  read via `can_reconcile_cr_identity(auth.uid())`, direct inserts blocked.
+- `public.user_link_queue` — durable review queue (PK on `employee_id`);
+  admin-only read, `USING(false)/WITH CHECK(false)` for direct writes; only
+  SECURITY DEFINER RPCs mutate it.
+- Functions (all `SECURITY DEFINER`, `SET search_path = public`):
+  - `preview_employee_user_reconciliation()` — dry-run classification
+    (`auto_link` / `already_linked` / `ambiguous` / `conflict` / `unmatched`),
+    gated on `can_reconcile_cr_identity(auth.uid())`.
+  - `apply_employee_user_reconciliation(_dry_run boolean)` — writes
+    `employees.user_id` **only** for `auto_link` rows where (a) the employee
+    has no existing link and (b) the target auth user is not already claimed
+    by another employee. Every write is audit-logged; every non-`already_linked`
+    case is upserted into the queue. Existing `manual_paired` / `rejected`
+    queue rows are never overwritten by a re-apply.
+  - `confirm_employee_user_link(employee_id, user_id, reason)` — manual pair;
+    refuses if the auth user is already linked elsewhere.
+  - `reject_employee_user_link(employee_id, reason)` — parks the employee
+    without touching `employees.user_id`.
+  - `unlink_employee_user(employee_id, reason)` — reversible: clears
+    `user_id` and re-opens the queue row.
+  - `admin_apply_employee_user_reconciliation(_actor, _dry_run)` — service-role
+    only wrapper for scripted runs; re-verifies the supplied actor has an
+    admin role. Revoked from `authenticated` and `anon`.
+
+### Dry-run
+
+```
+auto_link | already_linked | conflict | ambiguous | unmatched
+    1     |       31       |    0     |     0     |    334
+```
+
+### Applied (safe exact-email set only)
+
+- Employees linked: **31 → 32** (+1 via unique exact-email).
+- Intersection with CR-linked employees: **1 / 128**. 127 CR-linked employees
+  still have no `auth.users` account (nobody's signed in yet).
+- Queue rows written: **335** (1 `auto_linked`, 334 `unmatched`); 0 conflicts,
+  0 ambiguous.
+- Audit rows: **2** (1 `auto_link` + 1 `apply_run` batch envelope).
+- Role coverage among linked employees (spot-check):
+  `state_director` 12, `qa` 3, `exec` 3, `admin` 2, `payroll_admin` 2,
+  `staff` 2, `marketing` 2, `clinic` 2, `bcba` 1, `rbt` 1, …19 roles.
+- **No ambiguous or fuzzy links applied.** 334 unmatched cases sit in the
+  queue for future signups or manual pairing via the CR Hub UI.
+
+### Identity chain (RBT / BCBA / Clinical)
+
+Consumer path is unchanged and now consistently anchored:
+
+```
+auth.users.id  ──►  employees.user_id  ──►  employees.id  ──►  employees.centralreach_id
+                                                                       │
+                                                                       ▼
+                                                          v_cr_provider_mapping
+                                                                       │
+                                                                       ▼
+                                                          v_cr_canonical_sessions
+```
+
+- `resolveClinicianIdentity()` (used by `useBcbaIdentity` and
+  `useRbtIdentity`) queries `employees` by `user_id` first, falls back to
+  `email` **only** when a resolver-driven fallback is safe, and never
+  overwrites or infers `centralreach_id` client-side.
+- Unassigned / unresolved subjects surface as an explicit
+  `identitySource: "none"` state; every BCBA/RBT hook scopes on
+  `scopedAuthUserId` or `employeeId` so a signed-in user cannot see another
+  subject's data.
+
+### QA role viewer
+
+Super-admin-only "view-as" already exists via `OSRoleContext`
+(`isSuperAdmin` gate, `previewSubjectEmployeeId`, `isPreviewing`), consumed
+by `useBcbaIdentity` / `useRbtIdentity`:
+
+- Preview mode forces `writableAuthUserId = null` and
+  `writableEmployeeId = null`, so every mutation guarded by these values is
+  a no-op while previewing.
+- `readOnly` is true in preview, and BCBA hooks scope queries on
+  `scopedAuthUserId` derived from the preview subject's real `user_id` —
+  no cross-user leakage.
+- Nothing about this pass changes real employee data or role assignments
+  when previewing.
+
+### Client / UI surfaces
+
+- New: `src/lib/os/userLinkReconciliation.ts` — typed wrappers for the five
+  RPCs (`preview`, `apply`, `confirm`, `reject`, `unlink`) plus queue reader.
+
+### Tests
+
+- New: `src/test/userLinkReconciliation.test.ts` (5 focused tests) — preview
+  argument shape, apply dry-run flag + count coercion, confirm/reject/unlink
+  RPC wiring and error propagation, queue-filter behaviour, and an identity
+  chain contract snapshot.
+- Green: `src/test/crIdentityReconciliation.test.ts` (4).
+- Typecheck: clean.
+
+### Remaining queue
+
+- **334 unmatched** — no `auth.users` row shares the employee email; these
+  will link automatically at signup (email-based auth) or via manual pair
+  from the Hub once a user account exists.
+- **0 ambiguous / conflict** in current data.
+- **127 CR-linked employees still lack `auth.users` accounts**; RBT/BCBA
+  experiences remain unreachable for those employees until they sign in.
+
+### Not published
