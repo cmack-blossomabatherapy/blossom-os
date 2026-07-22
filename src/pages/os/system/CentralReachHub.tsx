@@ -418,14 +418,60 @@ function IdentityTab() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState<"all" | "linked" | "ambiguous" | "candidate" | "unmatched">("all");
+  const [preview, setPreview] = useState<CrReconcilePreviewRow[] | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [queueRows, setQueueRows] = useState<CrIdentityQueueRow[]>([]);
+  const [queueFilter, setQueueFilter] = useState<CrIdentityQueueRow["mapping_status"] | "all">("pending");
 
   const load = async () => {
     setLoading(true); setError(null);
-    try { setRows(await fetchCrMappingDiagnostics()); }
+    try {
+      const [diag, queue] = await Promise.all([
+        fetchCrMappingDiagnostics(),
+        fetchCrIdentityQueue().catch(() => [] as CrIdentityQueueRow[]),
+      ]);
+      setRows(diag);
+      setQueueRows(queue);
+    }
     catch (e: any) { setError(e?.message ?? String(e)); }
     finally { setLoading(false); }
   };
   useEffect(() => { void load(); }, []);
+
+  const loadPreview = async () => {
+    setPreviewLoading(true);
+    try { setPreview(await previewCrReconciliation()); }
+    catch (e: any) { toast({ title: "Preview failed", description: e?.message ?? String(e), variant: "destructive" }); }
+    finally { setPreviewLoading(false); }
+  };
+
+  const runApply = async () => {
+    setBusy(true);
+    try {
+      const s = await applyCrReconciliation(false);
+      toast({
+        title: "Reconciliation applied",
+        description: `Auto-linked ${s.auto_linked}, ambiguous ${s.ambiguous}, unmatched ${s.unmatched}, conflicts ${s.conflicts}.`,
+      });
+      await load();
+      setPreview(null);
+    } catch (e: any) {
+      toast({ title: "Apply failed", description: e?.message ?? String(e), variant: "destructive" });
+    } finally { setBusy(false); }
+  };
+
+  const doReject = async (providerId: string) => {
+    try { await rejectCrProviderMapping(providerId, "Rejected via CR Hub"); await load(); }
+    catch (e: any) { toast({ title: "Reject failed", description: e?.message ?? String(e), variant: "destructive" }); }
+  };
+  const doConfirm = async (providerId: string, employeeId: string) => {
+    try { await confirmCrProviderMapping(providerId, employeeId, "Confirmed via CR Hub"); await load(); }
+    catch (e: any) { toast({ title: "Confirm failed", description: e?.message ?? String(e), variant: "destructive" }); }
+  };
+  const doUnlink = async (employeeId: string) => {
+    try { await unlinkCrProviderMapping(employeeId, "Unlinked via CR Hub"); await load(); }
+    catch (e: any) { toast({ title: "Unlink failed", description: e?.message ?? String(e), variant: "destructive" }); }
+  };
 
   const totals = useMemo(() => {
     const t = { linked: 0, ambiguous: 0, candidate: 0, unmatched: 0 };
@@ -434,6 +480,13 @@ function IdentityTab() {
   }, [rows]);
 
   const visible = filter === "all" ? rows : rows.filter((r) => r.mapping_status === filter);
+  const visibleQueue = queueFilter === "all" ? queueRows : queueRows.filter((r) => r.mapping_status === queueFilter);
+  const previewCounts = useMemo(() => {
+    if (!preview) return null;
+    const g: Record<string, number> = {};
+    preview.forEach((r) => { g[r.action] = (g[r.action] ?? 0) + 1; });
+    return g;
+  }, [preview]);
 
   const runReconcile = async () => {
     setBusy(true);
@@ -453,8 +506,96 @@ function IdentityTab() {
           <h3 className="text-sm font-semibold">Clinician ↔ CentralReach identity</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Employees are linked to imported CentralReach providers by stable ID first. Name-only matches remain marked so admins can verify before RBT/BCBA experiences trust them.</p>
         </div>
-        <Button size="sm" onClick={runReconcile} disabled={busy}>{busy ? "Reconciling…" : "Run reconcile"}</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={loadPreview} disabled={previewLoading}>
+            {previewLoading ? "Previewing…" : "Preview reconcile (dry run)"}
+          </Button>
+          <Button size="sm" onClick={runApply} disabled={busy}>{busy ? "Applying…" : "Apply safe matches"}</Button>
+          <Button size="sm" variant="ghost" onClick={runReconcile} disabled={busy}>Legacy counters</Button>
+        </div>
       </div>
+
+      {preview && previewCounts && (
+        <div className="rounded-lg border border-border/60 p-3 space-y-2">
+          <div className="text-xs font-medium text-muted-foreground">Dry-run classification ({preview.length} CR providers)</div>
+          <div className="flex flex-wrap gap-2">
+            {(["auto_link","already_linked","conflict","ambiguous","unmatched","already_linked_other"] as const).map((k) => (
+              <Badge key={k} variant="outline" className="text-xs">{k}: {previewCounts[k] ?? 0}</Badge>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">Only <span className="font-medium">auto_link</span> rows are written on Apply. Conflicts, ambiguous, and unmatched require manual review below.</p>
+        </div>
+      )}
+
+      <div className="rounded-lg border border-border/60 p-3 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-sm font-medium">Reconciliation review queue</div>
+          <div className="flex flex-wrap gap-1">
+            {(["pending","conflict","auto_linked","manual_paired","rejected","all"] as const).map((k) => (
+              <button
+                key={k}
+                onClick={() => setQueueFilter(k)}
+                className={`rounded-full border px-2.5 py-0.5 text-xs ${queueFilter === k ? "bg-foreground text-background border-foreground" : "border-border/70 text-muted-foreground hover:text-foreground"}`}
+              >
+                {k} ({k === "all" ? queueRows.length : queueRows.filter((r) => r.mapping_status === k).length})
+              </button>
+            ))}
+          </div>
+        </div>
+        {visibleQueue.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nothing in this queue bucket.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground border-b">
+                <tr>
+                  <th className="text-left py-2">CR provider</th>
+                  <th className="text-left">Method</th>
+                  <th className="text-left">Status</th>
+                  <th className="text-left">Reason</th>
+                  <th className="text-left">Suggested employee</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleQueue.slice(0, 400).map((r) => (
+                  <tr key={r.provider_id} className="border-b border-border/40 align-top">
+                    <td className="py-2">
+                      <div className="font-medium">{r.provider_name ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">{r.provider_id}</div>
+                    </td>
+                    <td className="text-muted-foreground">{r.mapping_method}</td>
+                    <td>{r.mapping_status}</td>
+                    <td className="text-xs text-muted-foreground max-w-[240px]">{r.ambiguity_reason ?? "—"}</td>
+                    <td className="text-xs text-muted-foreground">{r.suggested_employee_id ?? r.resolved_employee_id ?? "—"}</td>
+                    <td className="text-right space-x-2 whitespace-nowrap">
+                      {r.mapping_status === "pending" && r.suggested_employee_id && (
+                        <button className="text-xs text-primary hover:underline"
+                          onClick={() => doConfirm(r.provider_id, r.suggested_employee_id!)}>
+                          Confirm
+                        </button>
+                      )}
+                      {r.mapping_status === "pending" && (
+                        <button className="text-xs text-muted-foreground hover:underline"
+                          onClick={() => doReject(r.provider_id)}>
+                          Reject
+                        </button>
+                      )}
+                      {(r.mapping_status === "auto_linked" || r.mapping_status === "manual_paired") && r.resolved_employee_id && (
+                        <button className="text-xs text-destructive hover:underline"
+                          onClick={() => doUnlink(r.resolved_employee_id!)}>
+                          Unlink
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {(["all","linked","candidate","ambiguous","unmatched"] as const).map((k) => (
           <button
