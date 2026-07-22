@@ -29590,6 +29590,123 @@ export type Database = {
         }
         Relationships: []
       }
+      user_link_audit: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          employee_id: string | null
+          id: string
+          matched_email: string | null
+          method: string | null
+          reason: string | null
+          user_id_after: string | null
+          user_id_before: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          matched_email?: string | null
+          method?: string | null
+          reason?: string | null
+          user_id_after?: string | null
+          user_id_before?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          matched_email?: string | null
+          method?: string | null
+          reason?: string | null
+          user_id_after?: string | null
+          user_id_before?: string | null
+        }
+        Relationships: []
+      }
+      user_link_queue: {
+        Row: {
+          ambiguity_reason: string | null
+          candidate_email: string | null
+          candidate_user_id: string | null
+          employee_email: string | null
+          employee_id: string
+          match_method: string
+          notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ambiguity_reason?: string | null
+          candidate_email?: string | null
+          candidate_user_id?: string | null
+          employee_email?: string | null
+          employee_id: string
+          match_method: string
+          notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          ambiguity_reason?: string | null
+          candidate_email?: string | null
+          candidate_user_id?: string | null
+          employee_email?: string | null
+          employee_id?: string
+          match_method?: string
+          notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_link_queue_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_link_queue_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "user_link_queue_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_link_queue_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "user_link_queue_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           action_label: string | null
@@ -30871,6 +30988,17 @@ export type Database = {
           unmatched: number
         }[]
       }
+      apply_employee_user_reconciliation: {
+        Args: { _dry_run?: boolean }
+        Returns: {
+          already_linked: number
+          ambiguous: number
+          auto_linked: number
+          conflicts: number
+          queue_rows: number
+          unmatched: number
+        }[]
+      }
       bcba_caseload_activation_status: {
         Args: { _bcba_user_id: string }
         Returns: {
@@ -31246,6 +31374,10 @@ export type Database = {
         Args: { _employee_id: string; _provider_id: string; _reason?: string }
         Returns: boolean
       }
+      confirm_employee_user_link: {
+        Args: { _employee_id: string; _reason?: string; _user_id: string }
+        Returns: boolean
+      }
       cr_rollback_run: { Args: { _run_id: string }; Returns: Json }
       cr_sync_freshness: {
         Args: never
@@ -31597,6 +31729,20 @@ export type Database = {
           suggested_employee_id: string
         }[]
       }
+      preview_employee_user_reconciliation: {
+        Args: never
+        Returns: {
+          action: string
+          ambiguity_reason: string
+          candidate_email: string
+          candidate_user_id: string
+          employee_email: string
+          employee_id: string
+          first_name: string
+          last_name: string
+          match_method: string
+        }[]
+      }
       promote_canonical_clients: {
         Args: never
         Returns: {
@@ -31659,6 +31805,10 @@ export type Database = {
       }
       reject_cr_provider_mapping: {
         Args: { _provider_id: string; _reason?: string }
+        Returns: boolean
+      }
+      reject_employee_user_link: {
+        Args: { _employee_id: string; _reason?: string }
         Returns: boolean
       }
       report_source_coverage: { Args: never; Returns: Json }
@@ -31740,6 +31890,10 @@ export type Database = {
         Returns: string
       }
       unlink_cr_provider_mapping: {
+        Args: { _employee_id: string; _reason?: string }
+        Returns: boolean
+      }
+      unlink_employee_user: {
         Args: { _employee_id: string; _reason?: string }
         Returns: boolean
       }
