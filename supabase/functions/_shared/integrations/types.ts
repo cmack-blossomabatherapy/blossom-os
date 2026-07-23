@@ -9,6 +9,9 @@ export type ProviderStatus =
   | "configured_pending_probe"
   | "configured_pending_probe_path"
   | "configured_pending_vendor_endpoint"
+  | "vendor_docs_required"
+  | "needs_credentials"
+  | "manual_local_setup"
   | "not_configured"
   | "error";
 
