@@ -41,7 +41,6 @@ import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
 import { FloatingEscalationChat } from "@/components/escalation/FloatingEscalationChat";
 import { TrainingProgressCloudBridge } from "@/components/training/TrainingProgressCloudBridge";
-import { BlossomAIProvider } from "@/components/ai/BlossomAIAssistant";
 
 /* ------------------------------------------------------------------ */
 /* Section / item types                                               */
