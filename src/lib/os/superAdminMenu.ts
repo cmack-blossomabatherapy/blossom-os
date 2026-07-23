@@ -162,8 +162,6 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "Billing & Finance",         to: "/billing-finance",                icon: IdCard },
       { label: "Revenue",                   to: "/revenue",                        icon: TrendingUp },
       { label: "Payroll Benefits",          to: "/payroll/benefits",               icon: Wallet },
-      { label: "No OON Benefits",           to: "/ops/no-oon-benefits",            icon: ShieldCheck },
-      { label: "Lead Benefits Cheat Sheets",to: "/intake/benefits-cheat-sheets",   icon: ShieldCheck },
     ],
   },
   {
