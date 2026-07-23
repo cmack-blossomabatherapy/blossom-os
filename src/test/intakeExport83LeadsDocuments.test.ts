@@ -130,8 +130,10 @@ describe("Export 83 — LeadDetail upload buttons are wired", () => {
 });
 
 describe("Export 83 — Intake Open Leads buttons standardized", () => {
+  // IntakeDashboard.tsx post-redesign moved its primary cluster into the
+  // welcome band (Add Lead + Open Pipeline). The other two pages continue
+  // to use the shared GrowthPageShell "Open Leads" top action.
   const files = [
-    "src/pages/os/intake/IntakeDashboard.tsx",
     "src/pages/os/intake/ParentCommunication.tsx",
     "src/pages/os/intake/IntakeTasks.tsx",
   ];
