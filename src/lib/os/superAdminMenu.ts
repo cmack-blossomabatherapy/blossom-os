@@ -206,6 +206,7 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
     defaultCollapsed: true,
     items: [
       { label: "Integrations",              to: "/admin/integrations",                 icon: Plug },
+      { label: "CTM Operations",            to: "/admin/ctm",                          icon: Phone },
       { label: "Email Command Center",      to: "/system/email-command-center",        icon: Mail },
       { label: "Automated Emails",          to: "/admin/automated-emails",             icon: Mail },
       { label: "CentralReach Uploads",      to: "/system/centralreach-uploads",        icon: UploadCloud },
