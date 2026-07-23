@@ -31,9 +31,10 @@ const CTM_SECRET = Deno.env.get("CTM_API_SECRET") ?? "";
 const CTM_ACCOUNT_ID = Deno.env.get("CTM_ACCOUNT_ID") ?? "";
 
 const PER_PAGE = 100;
-const WORK_BUDGET_PAGES = 20;      // real import: ~2000 calls per invocation.
+const WORK_BUDGET_PAGES = 8;       // real import: bounded, resumable chunks.
 const DRY_RUN_BUDGET_PAGES = 3;    // preview: fast probe, never long-runs.
-const FETCH_TIMEOUT_MS = 12_000;   // hard cap per CTM page fetch.
+const FETCH_TIMEOUT_MS = 8_000;    // hard cap per CTM page fetch.
+const RUN_BUDGET_MS = 16_000;      // always return before worker limits.
 
 const ALLOWED_ROLES = [
   "super_admin","admin","operations_leadership","intake_lead","intake_coordinator",
@@ -44,6 +45,72 @@ function jsonResp(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function safeMessage(value: unknown): string {
+  return String(value instanceof Error ? value.message : value ?? "unknown_error")
+    .replace(/CTM_API_(KEY|SECRET)=[^\s&]+/gi, "CTM_API_$1=[redacted]")
+    .replace(/Authorization:\s*Basic\s+[^\s]+/gi, "Authorization: Basic [redacted]")
+    .replace(/[\r\n]+/g, " ")
+    .slice(0, 700);
+}
+
+function toNumber(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() && !Number.isNaN(Number(v))) return Number(v);
+  return null;
+}
+
+function getNested(obj: any, path: string): unknown {
+  return path.split(".").reduce((acc, key) => (acc && typeof acc === "object" ? acc[key] : undefined), obj);
+}
+
+function extractCtmCallsPage(body: unknown, currentPage: number, perPage: number) {
+  const raw = (body ?? {}) as any;
+  const calls = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw.calls)
+      ? raw.calls
+      : Array.isArray(raw.data)
+        ? raw.data
+        : Array.isArray(raw.results)
+          ? raw.results
+          : Array.isArray(raw.records)
+            ? raw.records
+            : [];
+  const explicitNext =
+    toNumber(raw.next_page) ??
+    toNumber(raw.nextPage) ??
+    toNumber(getNested(raw, "pagination.next_page")) ??
+    toNumber(getNested(raw, "pagination.nextPage")) ??
+    toNumber(getNested(raw, "meta.next_page")) ??
+    toNumber(getNested(raw, "meta.nextPage"));
+  const totalPages =
+    toNumber(raw.total_pages) ??
+    toNumber(raw.totalPages) ??
+    toNumber(getNested(raw, "pagination.total_pages")) ??
+    toNumber(getNested(raw, "pagination.totalPages")) ??
+    toNumber(getNested(raw, "meta.total_pages")) ??
+    toNumber(getNested(raw, "meta.totalPages"));
+  const page =
+    toNumber(raw.page) ??
+    toNumber(raw.current_page) ??
+    toNumber(getNested(raw, "pagination.page")) ??
+    toNumber(getNested(raw, "pagination.current_page")) ??
+    currentPage;
+  const nextPage = explicitNext ?? (totalPages && page < totalPages ? page + 1 : calls.length === perPage ? page + 1 : null);
+  const shape = Array.isArray(raw)
+    ? "array"
+    : Array.isArray(raw.calls)
+      ? "object.calls"
+      : Array.isArray(raw.data)
+        ? "object.data"
+        : Array.isArray(raw.results)
+          ? "object.results"
+          : Array.isArray(raw.records)
+            ? "object.records"
+            : "unknown";
+  return { calls: calls as Array<Record<string, unknown>>, nextPage, totalPages, page, shape };
 }
 
 async function requireAllowedUser(req: Request) {
@@ -79,7 +146,9 @@ async function fetchPage(startIso: string, endIso: string, page: number) {
 }
 
 async function processJob(service: ReturnType<typeof createClient>, jobId: string) {
-  const { data: job } = await service.from("ctm_import_jobs").select("*").eq("id", jobId).maybeSingle();
+  const startedAt = Date.now();
+  const { data: job, error: readErr } = await service.from("ctm_import_jobs").select("*").eq("id", jobId).maybeSingle();
+  if (readErr) return { done: true, job: null, error: safeMessage(readErr.message), ok: false };
   if (!job) return { error: "job_not_found" };
   if (job.status === "completed" || job.status === "cancelled") return { done: true, job };
 
@@ -90,6 +159,8 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
   let fetched = job.calls_fetched || 0;
   let upserted = job.calls_upserted || 0;
   let duplicate = job.calls_duplicate || 0;
+  let normalizedTotal = Number((job.summary as Record<string, unknown> | null)?.normalized ?? 0) || 0;
+  let invalidTotal = Number((job.summary as Record<string, unknown> | null)?.invalid ?? 0) || 0;
   let linked = job.leads_linked || 0;
   let created = job.leads_created || 0;
   let review = job.review_queued || 0;
@@ -97,15 +168,19 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
   let lastErr: string | null = null;
   let pagesInThisRun = 0;
   let exhausted = false;
+  const responseShapes = new Set<string>(Array.isArray((job.summary as any)?.response_shapes) ? (job.summary as any).response_shapes : []);
   const pageBudget = job.dry_run ? DRY_RUN_BUDGET_PAGES : WORK_BUDGET_PAGES;
 
-  await service.from("ctm_import_jobs").update({
+  const startUpdate = await service.from("ctm_import_jobs").update({
     status: "running",
     started_at: job.started_at ?? new Date().toISOString(),
   }).eq("id", jobId);
+  if (startUpdate.error) {
+    return { done: true, job, error: safeMessage(startUpdate.error.message), ok: false };
+  }
 
   try {
-    while (pagesInThisRun < pageBudget) {
+    while (pagesInThisRun < pageBudget && Date.now() - startedAt < RUN_BUDGET_MS) {
       const resp = await fetchPage(startIso, endIso, page);
       if (resp.status === 429) {
         rateHits += 1;
@@ -115,17 +190,21 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
         continue;
       }
       if (!resp.ok) {
-        lastErr = `CTM ${resp.status}: ${(await resp.text()).slice(0, 500)}`;
+        lastErr = `CTM ${resp.status}: ${safeMessage(await resp.text())}`;
         break;
       }
-      const body = await resp.json() as { calls?: Array<Record<string, unknown>>; next_page?: number | null };
-      const calls = body.calls ?? [];
+      const body = await resp.json().catch(() => ({}));
+      const parsed = extractCtmCallsPage(body, page, PER_PAGE);
+      const calls = parsed.calls;
+      responseShapes.add(parsed.shape);
       fetched += calls.length;
       pagesInThisRun += 1;
 
       if (calls.length === 0) { exhausted = true; break; }
 
       const normalized = calls.map((c) => normalizeCtmPayload(c)).filter((n): n is NonNullable<typeof n> => !!n);
+      normalizedTotal += normalized.length;
+      invalidTotal += Math.max(0, calls.length - normalized.length);
 
       if (!job.dry_run && normalized.length) {
         const rows = normalized.map((n) => ({
@@ -177,20 +256,39 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
       }
 
       // Persist checkpoint every page.
-      await service.from("ctm_import_jobs").update({
-        cursor_page: (body.next_page ?? page + 1),
+      const nextPage = parsed.nextPage ?? page + 1;
+      const checkpoint = await service.from("ctm_import_jobs").update({
+        cursor_page: nextPage,
         pages_processed: (job.pages_processed || 0) + pagesInThisRun,
         calls_fetched: fetched, calls_upserted: upserted,
         calls_duplicate: duplicate, leads_linked: linked,
         leads_created: created, review_queued: review,
         rate_limit_hits: rateHits,
+        summary: {
+          ...(job.summary ?? {}),
+          dry_run: job.dry_run,
+          fetched,
+          normalized: normalizedTotal,
+          invalid: invalidTotal,
+          duplicates: duplicate,
+          pages_in_last_run: pagesInThisRun,
+          cursor_page: nextPage,
+          checkpoint: nextPage,
+          response_shapes: Array.from(responseShapes),
+          truncated_by_budget: false,
+          error: null,
+        },
       }).eq("id", jobId);
+      if (checkpoint.error) {
+        lastErr = safeMessage(checkpoint.error.message);
+        break;
+      }
 
-      if (!body.next_page) { exhausted = true; break; }
-      page = body.next_page;
+      if (!parsed.nextPage) { exhausted = true; break; }
+      page = parsed.nextPage;
     }
   } catch (e) {
-    lastErr = e instanceof Error ? e.message : String(e);
+    lastErr = safeMessage(e);
   }
 
   // Dry-run terminates as "completed" whether we exhausted or hit the small
@@ -202,23 +300,48 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
       : job.dry_run
         ? "completed"
         : "paused";
-  const { data: updated } = await service.from("ctm_import_jobs").update({
+  const finalSummary = {
+    dry_run: job.dry_run,
+    pages_in_last_run: pagesInThisRun,
+    pages_processed: (job.pages_processed || 0) + pagesInThisRun,
+    fetched,
+    normalized: normalizedTotal,
+    duplicates: duplicate,
+    invalid: invalidTotal,
+    cursor_page: page,
+    checkpoint: page,
+    exhausted,
+    truncated_by_budget: !exhausted && !lastErr && job.dry_run,
+    response_shapes: Array.from(responseShapes),
+    error: lastErr,
+  };
+
+  const { data: updated, error: updateErr } = await service.from("ctm_import_jobs").update({
     status: finalStatus,
     cursor_page: page,
     calls_fetched: fetched, calls_upserted: upserted, calls_duplicate: duplicate,
     leads_linked: linked, leads_created: created, review_queued: review,
     rate_limit_hits: rateHits, last_error: lastErr,
     finished_at: (finalStatus !== "paused") ? new Date().toISOString() : null,
-    summary: {
-      dry_run: job.dry_run,
-      pages_in_last_run: pagesInThisRun,
-      exhausted,
-      truncated_by_budget: !exhausted && !lastErr && job.dry_run,
-      error: lastErr,
-    },
+    summary: finalSummary,
   }).eq("id", jobId).select("*").single();
 
-  return { done: finalStatus !== "paused", job: updated };
+  if (updateErr || !updated) {
+    const msg = safeMessage(updateErr?.message ?? "failed_to_finalize_import_job");
+    const { data: fallback } = await service.from("ctm_import_jobs")
+      .update({
+        status: "failed",
+        last_error: msg,
+        finished_at: new Date().toISOString(),
+        summary: { ...finalSummary, error: msg, finalize_failed: true },
+      })
+      .eq("id", jobId)
+      .select("*")
+      .maybeSingle();
+    return { done: true, job: fallback ?? null, error: msg, ok: false };
+  }
+
+  return { done: finalStatus !== "paused", job: updated, error: lastErr, ok: !lastErr };
 }
 
 Deno.serve(async (req) => {
@@ -275,10 +398,15 @@ Deno.serve(async (req) => {
     return jsonResp({ job_id: created.id, ...res });
   } catch (e) {
     // Never leave the client without a job to inspect.
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = safeMessage(e);
     const { data: fallback } = await service.from("ctm_import_jobs")
-      .update({ status: "failed", last_error: msg, finished_at: new Date().toISOString() })
+      .update({
+        status: "failed",
+        last_error: msg,
+        finished_at: new Date().toISOString(),
+        summary: { dry_run, error: msg, failed_before_summary: true },
+      })
       .eq("id", created.id).select("*").single();
-    return jsonResp({ job_id: created.id, done: true, job: fallback, error: msg }, 200);
+    return jsonResp({ job_id: created.id, done: true, job: fallback ?? null, error: msg, ok: false }, 200);
   }
 });

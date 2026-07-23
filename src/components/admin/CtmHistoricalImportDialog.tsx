@@ -40,7 +40,28 @@ type Job = {
   review_queued: number;
   rate_limit_hits: number;
   last_error: string | null;
-  summary: Record<string, unknown>;
+  summary: {
+    pages_in_last_run?: number;
+    pages_processed?: number;
+    fetched?: number;
+    normalized?: number;
+    duplicates?: number;
+    invalid?: number;
+    cursor_page?: number;
+    checkpoint?: number;
+    exhausted?: boolean;
+    truncated_by_budget?: boolean;
+    response_shapes?: string[];
+    error?: string | null;
+  } | null;
+};
+
+type ImportResponse = {
+  job?: Job | null;
+  job_id?: string;
+  error?: string | null;
+  ok?: boolean;
+  done?: boolean;
 };
 
 function isoDaysAgo(days: number): string {
@@ -61,10 +82,13 @@ export function CtmHistoricalImportDialog({ open, onOpenChange }: {
 
   const invoke = useCallback(async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("ctm-historical-import", { body });
-    const d = (data ?? {}) as { job?: Job; job_id?: string; error?: string };
+    const d = (data ?? {}) as ImportResponse;
     // Supabase invoke sets `error` on non-2xx, but the response body may
     // still carry our structured `{ error, job }` payload. Prefer the body.
     const msg = d?.error ?? (error ? error.message : null);
+    if (!d?.job && !msg) {
+      throw new Error(`Import function returned no job result${d?.job_id ? ` for job ${d.job_id}` : ""}`);
+    }
     if (msg && !d?.job) throw new Error(msg);
     if (msg && d?.job) {
       // Surface non-fatal errors but still return the job for the UI.
@@ -79,9 +103,10 @@ export function CtmHistoricalImportDialog({ open, onOpenChange }: {
       const res = await invoke({ action: "start", start_date: start, end_date: end, dry_run: true });
       const j = (res.job ?? null) as Job | null;
       setPreview(j);
-      if (j?.last_error) {
-        setErrorMsg(j.last_error);
-        toast.error(`Preview finished with error: ${j.last_error}`);
+      const safeError = j?.last_error ?? j?.summary?.error ?? res.error ?? null;
+      if (safeError) {
+        setErrorMsg(safeError);
+        toast.error(`Preview finished with error: ${safeError}`);
       } else {
         toast.success("Dry-run complete — no data written");
       }
@@ -144,9 +169,15 @@ export function CtmHistoricalImportDialog({ open, onOpenChange }: {
   // Confirm becomes available whenever we have a preview job that finished
   // without a fatal error — including zero-result dry runs.
   const showConfirm = useMemo(
-    () => !!preview && !job && !preview.last_error,
+    () => !!preview && !job && preview.status !== "failed" && !preview.last_error && !preview.summary?.error,
     [preview, job],
   );
+
+  const previewSummary = preview?.summary ?? null;
+  const previewNormalized = previewSummary?.normalized ?? Math.max(0, preview?.calls_fetched ?? 0);
+  const previewInvalid = previewSummary?.invalid ?? 0;
+  const previewDuplicates = previewSummary?.duplicates ?? preview?.calls_duplicate ?? 0;
+  const previewCheckpoint = previewSummary?.checkpoint ?? preview?.cursor_page ?? 1;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,21 +208,33 @@ export function CtmHistoricalImportDialog({ open, onOpenChange }: {
 
           {preview && !job && (
             <div className="rounded-md border p-3 text-xs space-y-1 bg-muted/40">
-              <div className="font-medium text-sm">Dry-run summary</div>
-              <div>Fetched: <strong>{preview.calls_fetched}</strong></div>
-              <div>Would duplicate (already in Blossom): <strong>{preview.calls_duplicate}</strong></div>
-              <div>New: <strong>{Math.max(0, preview.calls_fetched - preview.calls_duplicate)}</strong></div>
-              <div>Pages processed: {preview.pages_processed} · Rate-limit hits: {preview.rate_limit_hits}</div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="font-medium text-sm">Dry-run summary</div>
+                <Badge variant={preview.status === "failed" ? "destructive" : "outline"}>{preview.status}</Badge>
+              </div>
+              <div>Job: <strong>{preview.id}</strong></div>
+              <div>Pages processed: <strong>{preview.pages_processed}</strong> · Checkpoint: <strong>{previewCheckpoint}</strong></div>
+              <div>Fetched: <strong>{preview.calls_fetched}</strong> · Normalized: <strong>{previewNormalized}</strong></div>
+              <div>Would duplicate (already in Blossom): <strong>{previewDuplicates}</strong> · Invalid: <strong>{previewInvalid}</strong></div>
+              <div>New: <strong>{Math.max(0, previewNormalized - previewDuplicates)}</strong> · Rate-limit hits: <strong>{preview.rate_limit_hits}</strong></div>
+              {previewSummary?.truncated_by_budget && (
+                <div className="text-muted-foreground">Preview truncated by safety budget; Confirm import will resume from checkpointed pages.</div>
+              )}
+              {!!previewSummary?.response_shapes?.length && (
+                <div className="text-muted-foreground">CTM response shape: {previewSummary.response_shapes.join(", ")}</div>
+              )}
               {preview.calls_fetched === 0 && (
                 <div className="text-muted-foreground">
                   No calls in this window. Confirm import will be a safe no-op.
                 </div>
               )}
-              {preview.last_error && <div className="text-destructive">Error: {preview.last_error}</div>}
+              {(preview.last_error || previewSummary?.error) && (
+                <div className="text-destructive break-words">Error: {preview.last_error ?? previewSummary?.error}</div>
+              )}
             </div>
           )}
 
-          {errorMsg && !preview && !job && (
+          {errorMsg && !job && (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
               <div className="font-medium">Preview error</div>
               <div className="mt-1 break-words">{errorMsg}</div>

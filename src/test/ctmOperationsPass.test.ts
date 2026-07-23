@@ -68,4 +68,32 @@ describe("CTM end-to-end operations pass", () => {
     const src = read("src/pages/admin/CTMAdmin.tsx");
     expect(src).toMatch(/CtmOperationsPanel/);
   });
+
+  it("ctm-historical-import always returns a visible job outcome", () => {
+    const src = read("supabase/functions/ctm-historical-import/index.ts");
+    expect(src).toMatch(/RUN_BUDGET_MS/);
+    expect(src).toMatch(/extractCtmCallsPage/);
+    expect(src).toMatch(/safeMessage/);
+    expect(src).toMatch(/normalizedTotal/);
+    expect(src).toMatch(/invalidTotal/);
+    expect(src).toMatch(/truncated_by_budget/);
+    expect(src).toMatch(/checkpoint/);
+    expect(src).toMatch(/failed_to_finalize_import_job/);
+    expect(src).toMatch(/job_id: created\.id/);
+    expect(src).toMatch(/job: fallback \?\? null/);
+    expect(src).not.toMatch(/ctm_call_events"\)[\s\S]{0,120}upsert[\s\S]{0,120}else if \(job\.dry_run\)/);
+  });
+
+  it("historical import dialog renders dry-run metrics and keeps successful zero-call previews confirmable", () => {
+    const src = read("src/components/admin/CtmHistoricalImportDialog.tsx");
+    expect(src).toMatch(/Import function returned no job result/);
+    expect(src).toMatch(/Dry-run summary/);
+    expect(src).toMatch(/Normalized:/);
+    expect(src).toMatch(/Invalid:/);
+    expect(src).toMatch(/Checkpoint:/);
+    expect(src).toMatch(/truncated_by_budget/);
+    expect(src).toMatch(/No calls in this window/);
+    expect(src).toMatch(/preview\.status !== "failed"/);
+    expect(src).toMatch(/!preview\.summary\?\.error/);
+  });
 });
