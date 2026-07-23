@@ -36,7 +36,7 @@ export async function checkCTMReadiness(): Promise<CTMReadiness> {
       message: "No CTM sync has run yet — waiting on first ingestion.",
     };
   }
-  const ready = data.status === "ok";
+  const ready = data.status === "ok" || data.status === "partial";
   return {
     ready,
     lastSyncAt: (data.finished_at as string | null) ?? null,

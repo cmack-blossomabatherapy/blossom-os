@@ -60,6 +60,10 @@ interface WebhookEventRow {
   received_at: string;
 }
 
+interface CtmOperationsPanelProps {
+  refreshKey?: number;
+}
+
 function VerdictBadge({ status }: { status: Verdict }) {
   const map: Record<Verdict, { label: string; cls: string }> = {
     connected:    { label: "Connected",    cls: "bg-emerald-100 text-emerald-800" },
@@ -71,7 +75,7 @@ function VerdictBadge({ status }: { status: Verdict }) {
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${v.cls}`}>{v.label}</span>;
 }
 
-export function CtmOperationsPanel() {
+export function CtmOperationsPanel({ refreshKey = 0 }: CtmOperationsPanelProps) {
   const [result, setResult] = useState<ConnectionResult>({ status: "unknown", reason: null });
   const [testing, setTesting] = useState(false);
   const [runs, setRuns] = useState<SyncRunRow[]>([]);
@@ -140,10 +144,11 @@ export function CtmOperationsPanel() {
   useEffect(() => {
     void loadHealth();
     void testConnection();
-  }, [loadHealth, testConnection]);
+  }, [loadHealth, testConnection, refreshKey]);
 
-  const lastOk = runs.find((r) => r.status === "ok");
+  const lastOk = runs.find((r) => r.status === "ok" || r.status === "partial");
   const okCount = runs.filter((r) => r.status === "ok").length;
+  const partialCount = runs.filter((r) => r.status === "partial").length;
   const errCount = runs.filter((r) => r.status === "error").length;
   const running  = runs.filter((r) => r.status === "running").length;
   const totalFetched  = runs.reduce((n, r) => n + (r.calls_fetched ?? 0), 0);
@@ -185,7 +190,7 @@ export function CtmOperationsPanel() {
             <div className="text-xs uppercase text-muted-foreground">Sync runs</div>
             <div className="mt-1 text-xl font-semibold">{runs.length}</div>
             <div className="mt-1 text-xs text-muted-foreground">
-              {okCount} ok · {errCount} error · {running} running
+              {okCount} ok · {partialCount} partial · {errCount} error · {running} running
             </div>
           </div>
           <div className="rounded-lg border p-3">

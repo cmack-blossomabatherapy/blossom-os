@@ -85,8 +85,10 @@ describe("Intake INGEST_ONLY hardening", () => {
     const nested = normalizeCtmPayload({ call: { id: "c1", caller_number: "5550102000", tracking_number: "800-000-0001", direction: "inbound" } });
     expect(nested?.ctm_call_id).toBe("c1");
     expect(nested?.from_number).toBe("5550102000");
-    const flat = normalizeCtmPayload({ id: "c2", caller_number: "5550102001" });
-    expect(flat?.ctm_call_id).toBe("c2");
+    const flat = normalizeCtmPayload({ id: 2002, caller_number: "5550102001" });
+    expect(flat?.ctm_call_id).toBe("2002");
+    const uuid = normalizeCtmPayload({ uuid: "call-uuid", caller_number: "5550102002" });
+    expect(uuid?.ctm_call_id).toBe("call-uuid");
     expect(normalizeCtmPayload({})).toBeNull();
   });
 
