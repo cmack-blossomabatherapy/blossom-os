@@ -29,7 +29,7 @@ export const apploiAdapter: ProviderAdapter = {
     pullSync: true,
     webhook: true,
     outboundDisabled: true,
-    documentationUrl: "https://developers.apploi.com/",
+    documentationUrl: "https://integrate.apploi.com/",
     operationalState: "read_only",
   },
 

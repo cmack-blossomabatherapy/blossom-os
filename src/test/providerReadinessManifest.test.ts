@@ -66,14 +66,48 @@ describe("provider readiness manifest — Slice 3", () => {
     expect(deriveReadiness(nava, {}).label).toBe("manual_local");
   });
 
-  it("Solum / Eligipro / Bloomgrowth report vendor_docs_required honestly", () => {
-    for (const id of ["solum", "eligipro", "bloomgrowth"]) {
+  it("Solum / Eligipro report vendor_docs_required honestly", () => {
+    for (const id of ["solum", "eligipro"]) {
       const entry = manifestById.get(id)!;
       expect(entry.capabilities.operationalState).toBe("vendor_docs_required");
       const { label, nextAction } = deriveReadiness(entry, {});
       expect(label).toBe("vendor_docs_required");
       expect(nextAction.toLowerCase()).toContain("vendor");
     }
+  });
+
+  it("Fathom AI mirrors developers.fathom.ai and drops FATHOM_SITE_ID", () => {
+    const f = manifestById.get("fathom")!;
+    expect(f.displayName).toBe("Fathom AI");
+    expect(f.classification).toBe("meeting_intelligence");
+    expect(f.capabilities.documentationUrl).toBe("https://developers.fathom.ai/");
+    expect(f.capabilities.webhook).toBe(false);
+    expect(f.requiredSecrets).toEqual(["FATHOM_API_KEY"]);
+    expect(f.optionalSecrets).not.toContain("FATHOM_SITE_ID");
+  });
+
+  it("Bloom Growth mirrors the documented bearer token adapter (ingest_only)", () => {
+    const b = manifestById.get("bloomgrowth")!;
+    expect(b.capabilities.operationalState).toBe("ingest_only");
+    expect(b.requiredSecrets).toEqual(["BLOOMGROWTH_ACCESS_TOKEN"]);
+    expect(b.optionalSecrets).toContain("BLOOMGROWTH_API_KEY");
+    expect(b.capabilities.documentationUrl).toBe(
+      "https://help.bloomgrowth.com/en/all-about-the-bloom-growth-api",
+    );
+  });
+
+  it("Google Ads is ingest_only in the manifest (credential blocker, not docs)", () => {
+    const g = manifestById.get("google-ads")!;
+    expect(g.capabilities.operationalState).toBe("ingest_only");
+  });
+
+  it("Apploi + CentralReach carry the official docs URLs", () => {
+    expect(manifestById.get("apploi")!.capabilities.documentationUrl).toBe(
+      "https://integrate.apploi.com/",
+    );
+    expect(manifestById.get("centralreach")!.capabilities.documentationUrl).toBe(
+      "https://centralreach.com/resources/api/requests/",
+    );
   });
 
   it("CTM remains registered as ingest_only (live behavior preserved)", () => {

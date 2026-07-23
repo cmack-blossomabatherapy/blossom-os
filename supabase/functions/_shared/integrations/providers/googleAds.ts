@@ -7,10 +7,11 @@ import { getEnv, hasAll } from "../secrets.ts";
  * Auth: OAuth2 refresh token + Developer Token (server-side only).
  * Requests are POSTed to `googleads.googleapis.com/v18/customers/{customerId}/googleAds:searchStream`.
  *
- * Live sync is disabled until a `basic` or `standard` developer-token
- * access level is proven for this account — a test-account token cannot
- * query production customer resources. Until then, the adapter reports
- * `vendor_docs_required` honestly and NEVER `connected`.
+ * Google Ads publishes full public docs, so this adapter's operational
+ * state is `ingest_only` — the outstanding blocker is credential/approval
+ * (developer-token access level + refresh token), not documentation. Live
+ * sync still refuses to claim `connected` until a real read-only API call
+ * against `googleAds:searchStream` succeeds.
  *
  * Docs:
  *   - https://developers.google.com/google-ads/api/docs/start
@@ -37,7 +38,7 @@ export const googleAdsAdapter: ProviderAdapter = {
     oauth: true,
     outboundDisabled: true,
     documentationUrl: "https://developers.google.com/google-ads/api/docs/start",
-    operationalState: "vendor_docs_required",
+    operationalState: "ingest_only",
   },
 
   async probe() {
@@ -50,9 +51,9 @@ export const googleAdsAdapter: ProviderAdapter = {
     if (!customer || level !== "basic" && level !== "standard") {
       return {
         ok: true,
-        status: "vendor_docs_required",
+        status: "needs_credentials",
         message:
-          "Google Ads credentials present but developer-token access level is not proven `basic`/`standard` and/or GOOGLE_ADS_CUSTOMER_ID is missing. Refusing to claim `connected` without a real API call.",
+          "Google Ads credentials present but developer-token access level is not proven `basic`/`standard` and/or GOOGLE_ADS_CUSTOMER_ID is missing. Refusing to claim `connected` without a real read-only API call.",
         details: { developerTokenAccessLevel: level || "unknown" },
       };
     }
@@ -69,7 +70,7 @@ export const googleAdsAdapter: ProviderAdapter = {
       ok: false,
       status: "failed",
       message:
-        "vendor_docs_required: Google Ads pull sync requires proven `basic`/`standard` developer-token access + customer id. Report-only until confirmed.",
+        "needs_credentials: Google Ads pull sync requires proven `basic`/`standard` developer-token access + customer id. Read-only until confirmed.",
     };
   },
 

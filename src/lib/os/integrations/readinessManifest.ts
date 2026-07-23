@@ -82,7 +82,7 @@ export const PROVIDER_READINESS_MANIFEST: ProviderReadinessEntry[] = [
     classification: "recruiting_ats",
     requiredSecrets: ["APPLOI_API_KEY"],
     optionalSecrets: ["APPLOI_API_BASE_URL", "APPLOI_PROBE_PATH", "APPLOI_CANDIDATES_PATH"],
-    capabilities: {"probe": true, "pullSync": true, "webhook": true, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://developers.apploi.com/", "operationalState": "read_only"},
+    capabilities: {"probe": true, "pullSync": true, "webhook": true, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://integrate.apploi.com/", "operationalState": "read_only"},
   },
   {
     id: "centralreach",
@@ -90,7 +90,7 @@ export const PROVIDER_READINESS_MANIFEST: ProviderReadinessEntry[] = [
     classification: "clinical_emr",
     requiredSecrets: ["CENTRALREACH_CLIENT_ID", "CENTRALREACH_CLIENT_SECRET", "CENTRALREACH_API_BASE_URL"],
     optionalSecrets: ["CENTRALREACH_TOKEN_URL", "CENTRALREACH_PROBE_PATH", "CENTRALREACH_SCOPE"],
-    capabilities: {"probe": true, "pullSync": true, "webhook": false, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://developers.centralreach.com/", "operationalState": "ingest_only"},
+    capabilities: {"probe": true, "pullSync": true, "webhook": false, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://centralreach.com/resources/api/requests/", "operationalState": "ingest_only"},
   },
   {
     id: "solum",
@@ -170,7 +170,7 @@ export const PROVIDER_READINESS_MANIFEST: ProviderReadinessEntry[] = [
     classification: "marketing_ads",
     requiredSecrets: ["GOOGLE_ADS_DEVELOPER_TOKEN", "GOOGLE_ADS_CLIENT_ID", "GOOGLE_ADS_CLIENT_SECRET", "GOOGLE_ADS_REFRESH_TOKEN"],
     optionalSecrets: ["GOOGLE_ADS_LOGIN_CUSTOMER_ID", "GOOGLE_ADS_CUSTOMER_ID", "GOOGLE_ADS_ACCESS_LEVEL"],
-    capabilities: {"probe": true, "pullSync": true, "webhook": false, "oauth": true, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://developers.google.com/google-ads/api/docs/start", "operationalState": "vendor_docs_required"},
+    capabilities: {"probe": true, "pullSync": true, "webhook": false, "oauth": true, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://developers.google.com/google-ads/api/docs/start", "operationalState": "ingest_only"},
   },
   {
     id: "meta-ads",
@@ -182,19 +182,19 @@ export const PROVIDER_READINESS_MANIFEST: ProviderReadinessEntry[] = [
   },
   {
     id: "fathom",
-    displayName: "Fathom Analytics",
-    classification: "web_analytics",
+    displayName: "Fathom AI",
+    classification: "meeting_intelligence",
     requiredSecrets: ["FATHOM_API_KEY"],
-    optionalSecrets: ["FATHOM_SITE_ID"],
-    capabilities: {"probe": true, "pullSync": true, "webhook": false, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://usefathom.com/api", "operationalState": "ingest_only"},
+    optionalSecrets: [],
+    capabilities: {"probe": true, "pullSync": true, "webhook": false, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://developers.fathom.ai/", "operationalState": "ingest_only"},
   },
   {
     id: "bloomgrowth",
     displayName: "Bloom Growth",
     classification: "operations_l10",
-    requiredSecrets: ["BLOOMGROWTH_API_KEY"],
-    optionalSecrets: ["BLOOMGROWTH_ORG_ID", "BLOOMGROWTH_API_BASE_URL"],
-    capabilities: {"probe": true, "pullSync": false, "webhook": false, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://www.bloomgrowth.com/", "operationalState": "vendor_docs_required"},
+    requiredSecrets: ["BLOOMGROWTH_ACCESS_TOKEN"],
+    optionalSecrets: ["BLOOMGROWTH_API_KEY", "BLOOMGROWTH_ORG_ID", "BLOOMGROWTH_API_BASE_URL"],
+    capabilities: {"probe": true, "pullSync": true, "webhook": false, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://help.bloomgrowth.com/en/all-about-the-bloom-growth-api", "operationalState": "ingest_only"},
   },
   {
     id: "leadtrap",
