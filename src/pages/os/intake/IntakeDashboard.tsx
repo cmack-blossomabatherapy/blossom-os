@@ -198,7 +198,7 @@ export default function IntakeDashboard() {
     <GrowthPageShell
       eyebrow="Growth & Admissions"
       title="Intake Dashboard"
-      description="A calm workspace for the families in your care — surface who needs you now, where they are in the journey, and what to do next."
+      description="A calm workspace for the families in your care — surface who needs you now, where they are in the journey, and movement from lead capture through ready to start services."
       headerRight={
         <div className="flex items-center gap-2">
           <IntakeStateFilterToggle />
@@ -251,6 +251,26 @@ export default function IntakeDashboard() {
           </div>
         </div>
       </section>
+
+      {/* Quick links — keep parity with the Intake Communications and
+          Lead to Ready-to-Start Pipeline entry points used elsewhere in
+          the operational surface. */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          to="/intake/parent-communication"
+          title="Intake Communications"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
+        >
+          <MessageSquare className="h-3.5 w-3.5" /> Intake Communications
+        </Link>
+        <Link
+          to="/leads?view=pipeline"
+          title="Lead to Ready-to-Start Pipeline"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
+        >
+          <TrendingUp className="h-3.5 w-3.5" /> Lead to Ready-to-Start Pipeline
+        </Link>
+      </div>
 
       <StateDirectorSnapshotBanner
         ownerDepartment="Intake"
@@ -417,7 +437,7 @@ export default function IntakeDashboard() {
       <section>
         <SectionHeader
           title="Family journey"
-          subtitle="Where every open family sits in the canonical intake pipeline."
+          subtitle="Open Family Pipeline — where every family sits across the canonical intake journey."
           right={
             <Link
               to="/leads?view=pipeline"
