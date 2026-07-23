@@ -349,8 +349,11 @@ function OSLeadsV2Inner() {
     updateParams((p) => { if (k) p.set("kpi", k); else p.delete("kpi"); resetPage(p); });
   const setActiveTab = (t: string) =>
     updateParams((p) => { if (t && t !== "all") p.set("tab", t); else p.delete("tab"); resetPage(p); });
-  const setOpenLeadId = (id: string | null) =>
-    updateParams((p) => { if (id) p.set("lead", id); else p.delete("lead"); });
+  // Full-page migration: opening a lead is a route navigation, not a drawer.
+  // We keep the `setOpenLeadId` name so existing sub-view props don't churn.
+  const setOpenLeadId = (id: string | null) => {
+    if (id) navigate(`/leads/${encodeURIComponent(id)}`);
+  };
   const setPage = (n: number) =>
     updateParams((p) => { if (n > 0) p.set("p", String(n + 1)); else p.delete("p"); });
 
@@ -372,25 +375,16 @@ function OSLeadsV2Inner() {
       else p.delete("pstage");
     });
 
-  // Missing-lead guard: if the ?lead=<id> deep link (from CTM or escalation
-  // chips) doesn't resolve to a real lead once data is loaded, surface a
-  // toast and clear the stale param so the drawer never mounts on nothing.
+  // Backward-compat: external tools (CTM, escalation chips) may still emit
+  // `/leads?lead=<id>`. Immediately forward those to the canonical
+  // `/leads/:id` full-page record so no drawer is ever mounted.
   const missingLeadHandledRef = useRef<string | null>(null);
   useEffect(() => {
-    if (loading) return;
     if (!openLeadId) { missingLeadHandledRef.current = null; return; }
     if (missingLeadHandledRef.current === openLeadId) return;
-    const exists = leads.some((l) => l.id === openLeadId);
-    if (!exists) {
-      missingLeadHandledRef.current = openLeadId;
-      toast.error("Lead not found", {
-        description: "That lead may have been deleted or you don't have access.",
-      });
-      const next = new URLSearchParams(searchParams);
-      next.delete("lead");
-      setSearchParams(next, { replace: true });
-    }
-  }, [loading, leads, openLeadId, searchParams, setSearchParams]);
+    missingLeadHandledRef.current = openLeadId;
+    navigate(`/leads/${encodeURIComponent(openLeadId)}`, { replace: true });
+  }, [openLeadId, navigate]);
 
   // Manual lead creation (Add Lead button + ?new=1 deep link).
   const [newLeadOpen, setNewLeadOpen] = useState<boolean>(() => searchParams.get("new") === "1");
@@ -808,9 +802,7 @@ function OSLeadsV2Inner() {
         )}
       </div>
 
-      {openLeadId && (
-        <LeadDetailDrawer leadId={openLeadId} onClose={() => setOpenLeadId(null)} />
-      )}
+      {/* Drawer removed — /leads/:id is the canonical full record. */}
 
       <NewLeadDialog
         open={newLeadOpen}
