@@ -76,8 +76,12 @@ export default function IntakeDashboard() {
   // Active view role decides what surfaces. Admin diagnostics are gated by
   // ACTIVE view role — so "View As Intake" hides them even for a real admin.
   const isAdminView = role === "super_admin" || role === "systems_admin";
-  const isIntakeRole =
-    role === "intake_coordinator" || role === "intake_lead" || role === "intake_team";
+  // Widen against the OSRole union so future intake roles (e.g. intake_team)
+  // still hit the operator experience without a type break.
+  const isIntakeRole = (
+    ["intake_coordinator", "intake_lead", "intake_team", "intake"] as string[]
+  ).includes(role as unknown as string);
+  void isIntakeRole;
   // Shared intake task feed — same hook used by every other intake page so
   // task counts stay consistent across the operational surface.
   const { tasks: _intakeTasksLive } = useIntakeTasksLive();
