@@ -7,6 +7,7 @@ import type {
   EmailTemplateKey,
   LeadCommunicationContext,
 } from "./communicationTypes";
+import { resolveTemplate } from "./templateRegistry";
 
 export function isMailchimpEmailConfigured(): boolean {
   const envFlag = (import.meta as unknown as { env?: Record<string, string> }).env;
@@ -41,12 +42,25 @@ export async function sendEmailViaMailchimp(
       message: "No email on file for this lead.",
     };
   }
+  const resolved = await resolveTemplate("email", templateKey);
+  if (!resolved || !resolved.approvedForAutomation) {
+    return {
+      success: false,
+      provider: "mailchimp-email",
+      action: baseAction as CommunicationResult["action"],
+      leadId: lead.leadId,
+      timestamp,
+      message: `Email template "${templateKey}" is inactive or unavailable; contact Admin.`,
+      needsConfiguration: false,
+    };
+  }
+  const subject = resolved.subject ?? "";
   return {
     success: true,
     provider: "mailchimp-email",
     action: baseAction as CommunicationResult["action"],
     leadId: lead.leadId,
     timestamp,
-    message: `Email "${templateKey}" sent to ${lead.email}.`,
+    message: `Email "${resolved.displayName}"${subject ? ` (${subject})` : ""} sent to ${lead.email}.`,
   };
 }
