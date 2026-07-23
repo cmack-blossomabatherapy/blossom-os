@@ -10,7 +10,7 @@ const listMigrations = () =>
 
 const REQUIRED_PROVIDERS = [
   "mailchimp", "resend", "retell", "ctm", "apploi", "centralreach", "solum",
-  "eligipro", "ms365", "jivetel", "make", "pandadoc", "leadtrap", "calendly",
+  "eligipro", "ms365", "jivetel", "make", "jotform", "calendly",
   "go-integrate-nava",
 ];
 
@@ -42,8 +42,7 @@ describe("Pass 4 — adapter module files exist", () => {
     "supabase/functions/_shared/integrations/providers/ms365.ts",
     "supabase/functions/_shared/integrations/providers/jivetel.ts",
     "supabase/functions/_shared/integrations/providers/make.ts",
-    "supabase/functions/_shared/integrations/providers/pandadoc.ts",
-    "supabase/functions/_shared/integrations/providers/leadtrap.ts",
+    "supabase/functions/_shared/integrations/providers/jotform.ts",
     "supabase/functions/_shared/integrations/providers/calendly.ts",
     "supabase/functions/_shared/integrations/providers/goIntegrateNava.ts",
   ];
@@ -120,19 +119,24 @@ describe("Pass 4 — adapter behavior contracts", () => {
     const src = read("supabase/functions/_shared/integrations/providers/make.ts");
     expect(src).toMatch(/migration_bridge/);
   });
-  it("pandadoc adapter is labeled esignature_only", () => {
-    const src = read("supabase/functions/_shared/integrations/providers/pandadoc.ts");
-    expect(src).toMatch(/esignature_only/);
+  it("jotform adapter is labeled forms_intake_documents and enforces base URL allowlist", () => {
+    const src = read("supabase/functions/_shared/integrations/providers/jotform.ts");
+    expect(src).toMatch(/forms_intake_documents/);
+    expect(src).toMatch(/hipaa-api\.jotform\.com/);
+    expect(src).toMatch(/APIKEY/);
   });
   it("centralreach adapter is labeled emr and does not touch BCBA Productivity uploads", () => {
     const src = read("supabase/functions/_shared/integrations/providers/centralreach.ts");
     expect(src).toMatch(/classification: "emr"/);
     expect(src).toMatch(/BCBA Productivity/i);
   });
-  it("leadtrap adapter is webhook-first", () => {
-    const src = read("supabase/functions/_shared/integrations/providers/leadtrap.ts");
-    expect(src).toMatch(/webhookOnly: true/);
-    expect(src).toMatch(/webhook_ready/);
+  it("leadtrap and pandadoc are retired from active provider registry", () => {
+    const reg = read("supabase/functions/_shared/integrations/providerRegistry.ts");
+    expect(reg).toMatch(/RETIRED_PROVIDERS/);
+    // Source files may persist for historical migration/tests but must not
+    // be imported into the active ADAPTERS list.
+    expect(reg).not.toMatch(/leadtrapAdapter,/);
+    expect(reg).not.toMatch(/pandadocAdapter,/);
   });
 });
 

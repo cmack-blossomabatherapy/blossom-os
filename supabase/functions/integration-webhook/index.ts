@@ -8,6 +8,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getAdapter } from "../_shared/integrations/providerRegistry.ts";
 import { upsertNormalizedRecord, recordIntegrationEvent } from "../_shared/integrations/normalizers.ts";
+import { verifyJotformToken } from "../_shared/integrations/providers/jotform.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,8 +22,7 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Map integration_id -> env var name holding shared webhook secret.
 const WEBHOOK_SECRET_ENV: Record<string, string> = {
   ctm: "CTM_WEBHOOK_SECRET",
-  leadtrap: "LEADTRAP_WEBHOOK_SECRET",
-  pandadoc: "PANDADOC_WEBHOOK_SECRET",
+  jotform: "JOTFORM_WEBHOOK_TOKEN",
   calendly: "CALENDLY_WEBHOOK_SIGNING_KEY",
   make: "MAKE_WEBHOOK_SECRET",
   retell: "RETELL_WEBHOOK_SECRET",
@@ -60,12 +60,31 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const url = new URL(req.url);
-  const rawBody = await req.text();
+  const contentType = (req.headers.get("content-type") ?? "").toLowerCase();
+  let rawBody = "";
   let parsed: any = {};
-  try {
-    parsed = JSON.parse(rawBody);
-  } catch (_) {
-    parsed = { _raw: rawBody };
+
+  // Jotform posts as multipart/form-data or application/x-www-form-urlencoded
+  // with a `rawRequest` JSON string. Handle both, plus JSON.
+  if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
+    try {
+      const form = await req.formData();
+      const obj: Record<string, unknown> = {};
+      for (const [k, v] of form.entries()) {
+        obj[k] = typeof v === "string" ? v : `[file:${(v as File).name ?? "upload"}]`;
+      }
+      parsed = obj;
+      rawBody = JSON.stringify(obj);
+    } catch (e) {
+      parsed = { _raw: `form_parse_error: ${e instanceof Error ? e.message : String(e)}` };
+    }
+  } else {
+    rawBody = await req.text();
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch (_) {
+      parsed = { _raw: rawBody };
+    }
   }
   const integrationId: string | null =
     url.searchParams.get("integration") ??
@@ -94,15 +113,23 @@ Deno.serve(async (req) => {
   const secretEnv = WEBHOOK_SECRET_ENV[integrationId];
   const secret = secretEnv ? Deno.env.get(secretEnv) : undefined;
   const requiresSecret = !!secretEnv;
-  if (secret) {
+  if (integrationId === "jotform") {
+    // Jotform: constant-time token compare from query param or header.
+    // We do NOT fall back to unverified if the provider is jotform and a
+    // token env var is configured — a missing/wrong token must reject.
+    const provided =
+      url.searchParams.get("token") ??
+      req.headers.get("x-jotform-token") ??
+      req.headers.get("x-webhook-token") ??
+      null;
+    verification = verifyJotformToken(provided) ? "verified" : "failed";
+  } else if (secret) {
     const sig =
       req.headers.get("x-signature") ??
       req.headers.get("x-hub-signature-256") ??
       req.headers.get("calendly-webhook-signature") ??
-      req.headers.get("x-pandadoc-signature") ??
       req.headers.get("x-retell-signature") ??
       req.headers.get("x-ctm-signature") ??
-      req.headers.get("x-leadtrap-signature") ??
       req.headers.get("x-make-signature") ??
       null;
     verification = (await verifyHmac(rawBody, sig, secret)) ? "verified" : "failed";
