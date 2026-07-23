@@ -77,14 +77,33 @@ export const fathomAdapter: ProviderAdapter = {
       return { ok: false, status: "failed", message: `Missing: ${need.missing.join(", ")}` };
     }
     const dryRun = options.dryRun === true;
-    // Read-only paginated scaffold: meetings + summaries + action items.
-    // We deliberately do NOT hit /transcripts to avoid pulling PHI unless
-    // an explicit override is ever added by the operator.
-    const surfaces = ["/meetings", "/summaries", "/action-items"] as const;
-    const sampled: Record<string, number> = {};
-    let totalPagesProbed = 0;
-    for (const path of surfaces) {
-      const res = await fetchJson<any>(`${FATHOM_BASE_URL}${path}?limit=25`, {
+
+    // Fathom AI exposes summaries + action items as INCLUDES on the single
+    // documented endpoint `GET /external/v1/meetings` (include_summary,
+    // include_action_items). No separate summary or action-item endpoints
+    // exist. Transcripts are intentionally never requested (PHI guardrail).
+    // Cursor pagination via `response.next_cursor`. Bounded page cap + small
+    // inter-page delay to stay well under vendor rate limits.
+    const PAGE_LIMIT = 50;
+    const MAX_PAGES = dryRun ? 1 : 20;
+    const INTER_PAGE_DELAY_MS = 250;
+
+    let cursor: string | null = null;
+    let pages = 0;
+    let meetingsSeen = 0;
+    let summariesSeen = 0;
+    let actionItemsSeen = 0;
+
+    while (pages < MAX_PAGES) {
+      const params = new URLSearchParams({
+        limit: String(PAGE_LIMIT),
+        include_summary: "true",
+        include_action_items: "true",
+        include_transcript: "false",
+      });
+      if (cursor) params.set("cursor", cursor);
+
+      const res = await fetchJson<any>(`${FATHOM_BASE_URL}/meetings?${params.toString()}`, {
         headers: authHeaders(),
         timeoutMs: 10_000,
       });
@@ -92,24 +111,54 @@ export const fathomAdapter: ProviderAdapter = {
         return {
           ok: false,
           status: "failed",
-          message: `Fathom pull failed at ${path}: ${res.error ?? `HTTP ${res.status}`}`,
+          message: `Fathom /meetings pull failed: ${res.error ?? `HTTP ${res.status}`}`,
         };
       }
-      const items = (res.data as any)?.items ?? (res.data as any)?.data ?? [];
-      sampled[path] = Array.isArray(items) ? items.length : 0;
-      totalPagesProbed += 1;
-      // Dry-run: only probe first page per surface; do not paginate.
-      if (dryRun) continue;
-      // Non-dry-run: still read-only. Real writes to `integration_normalized_records`
-      // will land once the meeting-normalizer contract is finalized.
+      const body: any = res.data ?? {};
+      const items: any[] = Array.isArray(body.items)
+        ? body.items
+        : Array.isArray(body.data)
+        ? body.data
+        : Array.isArray(body.meetings)
+        ? body.meetings
+        : [];
+      meetingsSeen += items.length;
+      for (const m of items) {
+        if (m && (m.summary || m.summary_text || m.ai_summary)) summariesSeen += 1;
+        const ai = m?.action_items ?? m?.actionItems;
+        if (Array.isArray(ai)) actionItemsSeen += ai.length;
+      }
+      pages += 1;
+
+      const next = typeof body.next_cursor === "string" && body.next_cursor.length > 0
+        ? body.next_cursor
+        : null;
+      if (!next || dryRun) break;
+      cursor = next;
+      if (INTER_PAGE_DELAY_MS > 0) {
+        await new Promise((r) => setTimeout(r, INTER_PAGE_DELAY_MS));
+      }
     }
+
     return {
       ok: true,
-      status: dryRun ? "success" : "partial",
+      status: "success",
       message: dryRun
-        ? `Fathom dry-run: probed ${totalPagesProbed} surface(s) read-only; transcripts skipped by design.`
-        : `Fathom read-only pull scaffold complete (transcripts intentionally skipped).`,
-      details: { sampled, transcriptsRequested: false },
+        ? `Fathom dry-run: read 1 page of /meetings (include_summary,include_action_items; transcripts omitted).`
+        : `Fathom read-only pull scaffold: ${pages} page(s) of /meetings (normalization not yet persisted).`,
+      details: {
+        endpoint: "/meetings",
+        pages,
+        pageLimit: PAGE_LIMIT,
+        maxPages: MAX_PAGES,
+        meetingsSeen,
+        summariesSeen,
+        actionItemsSeen,
+        include_summary: true,
+        include_action_items: true,
+        include_transcript: false,
+        persisted: false,
+      },
     };
   },
 
