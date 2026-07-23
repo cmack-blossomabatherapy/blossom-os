@@ -943,7 +943,7 @@ function OutreachDialog({ open, onOpenChange, partners, onSave, defaultCompanyId
   const initial = { activity_type: "Email", outcome: "Sent Email" as string | null, date: new Date().toISOString().slice(0, 10) };
   const [form, setForm] = useState<{ company_id?: string; activity_type: string; outcome: string | null; subject?: string; notes?: string; date: string }>({ ...initial, company_id: defaultCompanyId });
   // Prefill company/subject/notes when the dialog opens. This is a side-effect
-  // (setForm) driven by prop changes, so useEffect is the correct hook —
+  // (setForm) driven by prop changes, so useEffect is the correct hook -
   // useMemo must remain pure.
   useEffect(() => {
     if (open) setForm((f) => ({
@@ -2015,7 +2015,7 @@ function HandoffQueue({
                       {ev.caller_name && <div><span className="text-muted-foreground">Caller:</span> {ev.caller_name}</div>}
                       {(ev.caller_phone || ev.caller_email) && (
                         <div className="text-muted-foreground">
-                          {ev.caller_phone ?? ""}{ev.caller_phone && ev.caller_email ? " · " : ""}{ev.caller_email ?? ""}
+                          {ev.caller_phone ?? ""}{ev.caller_phone && ev.caller_email ? " . " : ""}{ev.caller_email ?? ""}
                         </div>
                       )}
                       {ev.payload_summary && (
@@ -2028,7 +2028,7 @@ function HandoffQueue({
                     {openTasks.length > 0 && (
                       <div className="mt-1 text-[11px] text-muted-foreground">
                         Open follow-ups: {openTasks.length}
-                        {nearestDue ? ` · next due ${new Date(nearestDue).toLocaleDateString()}` : ""}
+                        {nearestDue ? ` . next due ${new Date(nearestDue).toLocaleDateString()}` : ""}
                       </div>
                     )}
                   </div>
@@ -2122,9 +2122,9 @@ function HandoffQueue({
               className="rounded-2xl border border-dashed border-border/60 bg-card/30 p-3 text-center text-[11px] text-muted-foreground"
             >
               {loadingMoreEvents
-                ? `Fetching older handoffs… (${visibleRows.length} loaded)`
+                ? `Fetching older handoffs... (${visibleRows.length} loaded)`
                 : hasMoreLocal
-                ? `Loading more… (${visibleRows.length} of ${filtered.length})`
+                ? `Loading more... (${visibleRows.length} of ${filtered.length})`
                 : `Older handoffs available (${visibleRows.length} loaded)`}
               <div className="mt-1">
                 <Button
@@ -2139,7 +2139,7 @@ function HandoffQueue({
                     }
                   }}
                 >
-                  {loadingMoreEvents ? "Loading…" : "Load more"}
+                  {loadingMoreEvents ? "Loading..." : "Load more"}
                 </Button>
               </div>
             </div>
@@ -2187,7 +2187,7 @@ function LinkPartnerDialog({
           <DialogTitle>Link source handoff to existing partner</DialogTitle>
         </DialogHeader>
         <div className="text-xs text-muted-foreground mb-2">
-          {event.source_system} · {event.caller_name ?? "no caller name"} · {new Date(event.occurred_at).toLocaleString()}
+          {event.source_system} . {event.caller_name ?? "no caller name"} . {new Date(event.occurred_at).toLocaleString()}
         </div>
         <Select value={companyId} onValueChange={setCompanyId}>
           <SelectTrigger><SelectValue placeholder="Select partner *" /></SelectTrigger>

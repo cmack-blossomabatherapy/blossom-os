@@ -66,7 +66,7 @@ export function TablePagination({
         <span className="tabular-nums">
           {totalRows === 0
             ? "0 rows"
-            : `${start.toLocaleString()}–${end.toLocaleString()} of ${totalRows.toLocaleString()}`}
+            : `${start.toLocaleString()}-${end.toLocaleString()} of ${totalRows.toLocaleString()}`}
         </span>
         <span className="hidden sm:inline tabular-nums">
           Page {clamped} of {totalPages}

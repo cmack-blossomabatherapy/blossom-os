@@ -113,7 +113,7 @@ export function TableFilterBar({
             <Input
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
-              placeholder={search.placeholder ?? "Search…"}
+              placeholder={search.placeholder ?? "Search..."}
               className="pl-8 h-9 text-sm"
             />
           </div>
