@@ -48,9 +48,12 @@ describe("Intake dashboard redesign — role-scoped operator workspace", () => {
     for (const fn of ["callParent", "sendLeadSms", "sendLeadEmail", "notifyCommunicationResult"]) {
       expect(src, `${fn} adapter must remain wired`).toContain(fn);
     }
-    // GrowthPageShell primary actions unchanged for downstream tests.
-    expect(src).toMatch(/label:\s*"Add Lead"/);
-    expect(src).toMatch(/label:\s*"Open Leads",\s*icon:\s*List,\s*to:\s*"\/leads"/);
+    // Single primary action cluster lives in the welcome band — no duplicate
+    // GrowthPageShell top actions. Add Lead opens the NewLeadDialog and
+    // Open Pipeline links to /leads?view=pipeline.
+    expect(src).not.toMatch(/actions=\{\[/);
+    expect(src).toMatch(/onClick=\{\(\)\s*=>\s*setAddOpen\(true\)\}[\s\S]{0,200}Add Lead/);
+    expect(src).toMatch(/to="\/leads\?view=pipeline"[\s\S]{0,120}Open Pipeline/);
     // NewLeadDialog is still mounted.
     expect(src).toMatch(/<NewLeadDialog/);
     // State filter toggle is still present.
