@@ -29,7 +29,11 @@ export function normalizePhoneE164(v: unknown): string | null {
 }
 
 export function pickString(...vals: unknown[]): string | null {
-  for (const v of vals) if (typeof v === "string" && v.length) return v;
+  for (const v of vals) {
+    if (typeof v === "string" && v.length) return v;
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+    if (typeof v === "bigint") return String(v);
+  }
   return null;
 }
 
@@ -67,7 +71,18 @@ export interface CtmNormalizedCall {
 
 export function normalizeCtmPayload(payload: Record<string, unknown>): CtmNormalizedCall | null {
   const call = (payload.call as Record<string, unknown>) ?? payload;
-  const callId = pickString((call as any).id, (call as any).call_id, (payload as any).id);
+  const callId = pickString(
+    (call as any).id,
+    (call as any).call_id,
+    (call as any).sid,
+    (call as any).uuid,
+    (call as any).call_sid,
+    (call as any).call_uuid,
+    (payload as any).id,
+    (payload as any).call_id,
+    (payload as any).sid,
+    (payload as any).uuid,
+  );
   if (!callId) return null;
   return {
     ctm_call_id: callId,

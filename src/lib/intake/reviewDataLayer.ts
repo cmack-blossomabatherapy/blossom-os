@@ -414,6 +414,9 @@ export function classifyProviderReadiness(row: ProviderReadinessRow): {
     return { label: "error", detail: row.last_error ?? "Provider error" };
   }
   if (!row.last_success_at) {
+    if (row.status && ["connected", "ok", "partial"].includes(row.status.toLowerCase())) {
+      return { label: "connected", detail: "Connection verified" };
+    }
     return { label: "unconfigured", detail: "No successful sync yet" };
   }
   if (row.freshness_seconds != null && row.freshness_seconds > 24 * 3600) {

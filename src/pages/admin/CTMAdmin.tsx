@@ -29,6 +29,8 @@ export default function CTMAdmin() {
   const [mappings, setMappings] = useState<Mapping[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [healthRefreshKey, setHealthRefreshKey] = useState(0);
+  const [syncOutcome, setSyncOutcome] = useState<string | null>(null);
   const [draft, setDraft] = useState({ tracking_number: "", friendly_name: "", state_code: "" });
   const projectId = (import.meta.env.VITE_SUPABASE_PROJECT_ID as string) ?? "";
   const webhookBase = projectId ? `https://${projectId}.functions.supabase.co/ctm-webhook` : "";
@@ -40,7 +42,7 @@ export default function CTMAdmin() {
     useCanonicalCtmCalls({ page: 1, pageSize: 50 });
   const calls = callsPage?.rows ?? [];
 
-  const { data: providers, isLoading: provLoading } = useProviderReadiness();
+  const { data: providers, isLoading: provLoading, refetch: refetchProviderReadiness } = useProviderReadiness();
   const ctm = useMemo(
     () => providers?.find((p) => p.integration_id?.toLowerCase().includes("ctm")) ?? null,
     [providers],
@@ -81,12 +83,22 @@ export default function CTMAdmin() {
     setSyncing(true);
     const { data, error } = await supabase.functions.invoke("ctm-sync", { body: {} });
     setSyncing(false);
-    if (error) return toast.error(error.message);
-    const d = data as { ok?: boolean; fetched?: number; upserted?: number; error?: string | null };
-    if (d?.error) return toast.error(d.error);
-    toast.success(`Synced ${d?.upserted ?? 0} calls`);
+    if (error) {
+      setSyncOutcome(`Function error: ${error.message}`);
+      setHealthRefreshKey((k) => k + 1);
+      return toast.error(error.message);
+    }
+    const d = data as {
+      ok?: boolean; status?: string; run_id?: string | null; pages?: number; fetched?: number;
+      normalized?: number; upserted?: number; duplicates?: number; errors?: number; error?: string | null;
+    };
+    const message = `Run ${d?.run_id ?? "—"}: ${d?.status ?? "unknown"} · pages ${d?.pages ?? 0} · fetched ${d?.fetched ?? 0} · normalized ${d?.normalized ?? 0} · upserted ${d?.upserted ?? 0} · duplicates ${d?.duplicates ?? 0} · errors ${d?.errors ?? 0}`;
+    setSyncOutcome(d?.error ? `${message} · ${d.error}` : message);
+    if (d?.error) toast.error(d.error); else toast.success(`CTM sync ${d?.status ?? "completed"}: ${d?.upserted ?? 0} calls processed`);
     void load();
     void refetchCalls();
+    void refetchProviderReadiness();
+    setHealthRefreshKey((k) => k + 1);
   }
 
   return (
@@ -109,7 +121,15 @@ export default function CTMAdmin() {
         </div>
       </header>
 
-      <CtmOperationsPanel />
+      {syncOutcome && (
+        <Card>
+          <CardContent className="py-3 text-sm text-muted-foreground">
+            {syncOutcome}
+          </CardContent>
+        </Card>
+      )}
+
+      <CtmOperationsPanel refreshKey={healthRefreshKey} />
 
       <CtmUnknownCallerReviewPanel />
 

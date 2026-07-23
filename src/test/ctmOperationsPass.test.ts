@@ -42,10 +42,15 @@ describe("CTM end-to-end operations pass", () => {
     expect(src).not.toMatch(/method:\s*"DELETE"/);
     // Pagination + hard cap.
     expect(src).toMatch(/per_page/);
-    expect(src).toMatch(/next_page/);
-    expect(src).toMatch(/page > 50/);
+    expect(src).toMatch(/next_page|nextPage/);
+    expect(src).toMatch(/PAGE_BUDGET/);
     // Checkpoints via ctm_sync_runs.
     expect(src).toMatch(/from\("ctm_sync_runs"\)[\s\S]{0,200}insert/);
+    expect(src).toMatch(/partial_checkpoint/);
+    expect(src).toMatch(/integration_connections/);
+    expect(src).toMatch(/duplicates/);
+    expect(src).toMatch(/detail/);
+    expect(src).toMatch(/extractCtmCallsPage/);
   });
 
   it("Admin CTM operations panel exposes live health without secret values", () => {
@@ -56,6 +61,7 @@ describe("CTM end-to-end operations pass", () => {
     expect(src).toMatch(/Recent sync errors/);
     expect(src).toMatch(/unmapped tracking numbers/i);
     expect(src).toMatch(/INGEST_ONLY/);
+    expect(src).toMatch(/refreshKey/);
   });
 
   it("CTMAdmin page mounts the operations panel", () => {
