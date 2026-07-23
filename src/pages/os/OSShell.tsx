@@ -584,6 +584,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
     "/phone",
     "/academy",
     "/resource-library",
+    "/intake/parent-communication",
   ]),
   operations_leadership: new Set<string>([
     "/operations/command-center",
