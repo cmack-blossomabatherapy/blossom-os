@@ -21,7 +21,9 @@ import type { Lead } from "@/data/leads";
 import { isLeadOutOfPipeline } from "@/lib/intake/intakeWorkflow";
 import {
   sendLeadEmail, sendLeadSms, notifyCommunicationResult,
+  sendIntakePacket, sendMissingInfoReminder, sendVobUpdate,
 } from "@/lib/integrations/communications/communicationAdapters";
+import { useIntakeTasksLive } from "@/hooks/useIntakeTasksLive";
 import {
   PARENT_COMM_TEMPLATES,
   PARENT_COMM_INTERNAL_NOTES,
@@ -130,6 +132,10 @@ export default function ParentCommunication() {
   const [preview, setPreview] = useState<ParentCommTemplate | null>(null);
   const [sendMode, setSendMode] = useState<SendMode | null>(null);
   const [sendTpl, setSendTpl] = useState<ParentCommTemplate | null>(null);
+  // Live intake tasks feed powers the "open follow-ups" badge and keeps this
+  // page aligned with the shared intake operational surface.
+  const { rows: intakeTasks } = useIntakeTasksLive();
+  const openTasks = intakeTasks.filter((t) => t.status !== "Completed").length;
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -150,15 +156,38 @@ export default function ParentCommunication() {
   return (
     <GrowthPageShell
       eyebrow="Resource Library"
-      title="Parent Communication Resources"
-      description="Approved SMS and email templates for every stage of the family journey — including Benefits Verification Update outreach. Search, filter, copy, or send from a lead."
+      title="Intake Communications"
+      description="Approved SMS and email templates for every stage of the family journey — including Intake Packet, Missing Info, and Benefits Verification (VOB) outreach. Search, filter, copy, or send from a lead."
+      actions={[
+        { label: "Open Leads", icon: MessageSquare, to: "/leads" },
+      ]}
     >
+      <div className="text-[11px] text-muted-foreground">
+        {openTasks} open intake follow-up task{openTasks === 1 ? "" : "s"} across the team.
+      </div>
       <div className="rounded-xl border border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 p-3 flex items-start gap-2">
         <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
         <p className="text-xs text-amber-900 dark:text-amber-200">
           Do not include sensitive clinical, insurance, billing, or diagnosis details in SMS.
           Use approved secure processes when detail is required.
         </p>
+      </div>
+      {/* Bulk outreach helpers — these delegate to the shared communication
+          adapters used everywhere else in the intake surface so that quick
+          sends stay auditable. */}
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={async () => {
+          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
+          notifyCommunicationResult(await sendIntakePacket(stub));
+        }}>Send Intake Packet</Button>
+        <Button size="sm" variant="outline" onClick={async () => {
+          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
+          notifyCommunicationResult(await sendMissingInfoReminder(stub));
+        }}>Missing Info Reminder</Button>
+        <Button size="sm" variant="outline" onClick={async () => {
+          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
+          notifyCommunicationResult(await sendVobUpdate(stub));
+        }}>Send VOB Update</Button>
       </div>
 
       <section className="rounded-xl border bg-card p-3 grid grid-cols-1 md:grid-cols-4 gap-2">
