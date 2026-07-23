@@ -693,7 +693,7 @@ function RoleDashboardRedirect() {
     : roles.includes("finance") ? ROLE_HOME.billing_finance
     : roles.includes("qa_director") ? ROLE_HOME.qa_director
     : roles.includes("qa_specialist") ? ROLE_HOME.qa_specialist
-    : roles.includes("qa_team") ? ROLE_HOME.qa_team
+    : (roles as string[]).includes("qa_team") ? ROLE_HOME.qa_team
     : roles.includes("payroll_admin") ? ROLE_HOME.payroll_coordinator
     : roles.includes("bcba") ? ROLE_HOME.bcba
     : roles.includes("rbt") ? ROLE_HOME.rbt
