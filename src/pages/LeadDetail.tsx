@@ -1091,3 +1091,51 @@ function NotFoundState({ message, onBack }: { message: string; onBack: () => voi
     </div>
   );
 }
+
+/* -----------------------------------------------------------------
+ * Ask Blossom AI action button. Rendered INSIDE <OSShell>, which
+ * mounts <BlossomAIProvider>, so useBlossomAI() has a provider in
+ * ancestry regardless of route or direct-load. Keeping the hook in
+ * a subcomponent (rather than at LeadDetail's top level, which
+ * mounts OSShell as a child) is what avoids the provider error.
+ * ---------------------------------------------------------------- */
+function AskBlossomAboutLeadButton({
+  lead,
+  nextStep,
+  blocker,
+}: {
+  lead: { id: string; childName: string; state?: string | null; parentName?: string; status: string; insurance?: string | null };
+  nextStep: string;
+  blocker: { label: string; reasons: string[] } | null;
+}) {
+  const blossom = useBlossomAI();
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="gap-1.5 h-8"
+      onClick={() =>
+        blossom.open({
+          surface: "page-help",
+          title: `Ask Blossom AI · ${lead.childName}`,
+          contextText: [
+            `Lead: ${lead.childName} (${lead.state ?? "—"})`,
+            `Parent: ${lead.parentName ?? "—"}`,
+            `Stage: ${lead.status}`,
+            `Insurance: ${lead.insurance || "—"}`,
+            `Next step: ${nextStep}`,
+            blocker ? `Blocker: ${blocker.label} — ${blocker.reasons.join("; ")}` : null,
+          ].filter(Boolean).join("\n"),
+          initialPrompt: `Give the intake coordinator a concise action plan for ${lead.childName}.`,
+          suggestions: [
+            "What should Intake do next?",
+            "Draft a family message.",
+            "Explain the benefits situation.",
+          ],
+        })
+      }
+    >
+      <Sparkles className="h-3.5 w-3.5" /> Ask Blossom AI
+    </Button>
+  );
+}
