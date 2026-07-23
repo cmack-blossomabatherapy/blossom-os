@@ -12,6 +12,7 @@ export type PatientJourneyEventOrigin =
   | "CTM"
   | "Retell"
   | "LeadTrap"
+  | "Jotform"
   | "Facebook Ads"
   | "Google Ads"
   | "Mailchimp"
