@@ -10,8 +10,7 @@ import { eligiproAdapter } from "./providers/eligipro.ts";
 import { ms365Adapter } from "./providers/ms365.ts";
 import { jivetelAdapter } from "./providers/jivetel.ts";
 import { makeAdapter } from "./providers/make.ts";
-import { pandadocAdapter } from "./providers/pandadoc.ts";
-import { leadtrapAdapter } from "./providers/leadtrap.ts";
+import { jotformAdapter } from "./providers/jotform.ts";
 import { calendlyAdapter } from "./providers/calendly.ts";
 import { goIntegrateNavaAdapter } from "./providers/goIntegrateNava.ts";
 import { viventiumAdapter } from "./providers/viventium.ts";
@@ -28,8 +27,7 @@ const ADAPTERS: ProviderAdapter[] = [
   ms365Adapter,
   jivetelAdapter,
   makeAdapter,
-  pandadocAdapter,
-  leadtrapAdapter,
+  jotformAdapter,
   calendlyAdapter,
   goIntegrateNavaAdapter,
   viventiumAdapter,
@@ -46,3 +44,10 @@ export function listAdapters(): ProviderAdapter[] {
 }
 
 export const REQUIRED_PROVIDERS = ADAPTERS.map((a) => a.id);
+
+/**
+ * Retired adapters — kept as source files for historical migration/tests
+ * only. They must NOT be added back to REQUIRED_PROVIDERS. Jotform is the
+ * canonical replacement for both.
+ */
+export const RETIRED_PROVIDERS = ["leadtrap", "pandadoc"] as const;
