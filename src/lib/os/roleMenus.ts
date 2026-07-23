@@ -324,23 +324,16 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
         id: "intake", label: "Intake", items: [
           { label: "Intake Dashboard",           path: "/intake/dashboard",              icon: LayoutDashboard },
           { label: "Leads",                      path: "/leads",                         icon: List },
-          { label: "Missing Information",        path: "/intake/missing-information",    icon: ShieldCheck },
+          { label: "Ready-to-Start Pipeline",    path: "/leads?view=pipeline",           icon: TrendingUp },
+          { label: "Packet Follow Up / Missing Info", path: "/intake/missing-information", icon: ShieldCheck },
+          { label: "Parent Communication",       path: "/intake/parent-communication",   icon: MessageSquare },
           { label: "After-Hours AI Calls",       path: "/phone/ai-calls",                icon: PhoneCall },
           { label: "Benefits Cheat Sheets",      path: "/intake/benefits-cheat-sheets",  icon: ShieldCheck },
-          { label: "Tasks",                      path: "/tasks",                         icon: ClipboardList },
+          { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
           { label: "CentralReach Packet Prep",   path: "/intake/cr-packet-prep",         icon: FileCheck2 },
         ],
       },
-      {
-        id: "training_resources",
-        label: "Training & Resources",
-        items: [
-          { label: "Training Academy",     path: "/academy",                     icon: GraduationCap },
-          { label: "Resource Library",     path: "/resource-library",            icon: BookOpen },
-          { label: "Parent Communication", path: "/intake/parent-communication", icon: MessageSquare },
-          { label: "Reports",              path: "/reports",                     icon: FileText },
-        ],
-      },
+      TRAINING_AND_RESOURCES,
     ],
   },
 
