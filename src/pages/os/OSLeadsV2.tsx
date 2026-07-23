@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Upload, Download, Filter, Sparkles, X, AlertCircle,
   PhoneCall, Mail, Send, StickyNote, ChevronRight, Users, RefreshCw,
@@ -10,7 +10,6 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeLeadsForUser } from "@/lib/leads/scoping";
-import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { IntakeModalsProvider, useIntakeModals } from "@/components/intake/IntakeModals";
 import { cn } from "@/lib/utils";
