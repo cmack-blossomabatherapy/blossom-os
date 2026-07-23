@@ -454,6 +454,11 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "scheduling", label: "Scheduling", items: [
           { label: "Scheduling Dashboard",       path: "/scheduling",                                    icon: LayoutDashboard },
+          { label: "Scheduling Workspace",       path: "/scheduling-workspace",                          icon: CalendarClock },
+          { label: "Schedule Gaps",              path: "/scheduling-workspace?view=coverage_risk",       icon: AlertTriangle },
+          { label: "RBT Roster",                 path: "/scheduling/rbts",                               icon: Users },
+          { label: "BCBA Roster",                path: "/scheduling/bcbas",                              icon: Users },
+          { label: "Scheduling Resources",       path: "/scheduling/resources",                          icon: BookOpen },
           { label: "Assessment Scheduling",      path: "/scheduling-workspace?view=assessments",         icon: CalendarClock },
           { label: "Client Scheduling Readiness",path: "/scheduling-workspace?view=readiness",           icon: CheckCircle2 },
           { label: "Family Availability",        path: "/scheduling-workspace?view=family-availability", icon: HeartHandshake },
@@ -479,6 +484,7 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Staffing Dashboard",          path: "/ops/staffing",                        icon: LayoutDashboard },
           { label: "Staffing Needed",             path: "/ops/staffing?tab=open-cases",         icon: Briefcase },
           { label: "Match Board",                 path: "/ops/staffing?tab=match-queue",        icon: UserCheck },
+          { label: "Applicant Pool (Apploi)",     path: "/ops/staffing?tab=apploi",             icon: Inbox },
           { label: "RBT Roster",                  path: "/scheduling/rbts",                     icon: Users },
           { label: "BCBA Roster",                 path: "/scheduling/bcbas",                    icon: Users },
           { label: "Family Staffing Preferences", path: "/ops/staffing?tab=preferences",        icon: HeartHandshake },
