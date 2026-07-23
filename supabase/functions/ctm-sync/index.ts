@@ -194,6 +194,7 @@ Deno.serve(async (req) => {
   let upserted = 0;
   let duplicates = 0;
   let linked = 0;
+  let leadsCreated = 0;
   let reviewQueued = 0;
   let linkErrors = 0;
   let pagesProcessed = 0;
@@ -307,7 +308,10 @@ Deno.serve(async (req) => {
             const outcome = await linkOrCreateLeadForCall(supabase as any, n, {
               resolvedState: null,
             });
-            if (outcome.lead_id) linked++;
+            if (outcome.lead_id) {
+              linked++;
+              if (outcome.state === "promoted") leadsCreated++;
+            }
             else if (outcome.state === "ambiguous_review" || outcome.state === "incomplete_review") reviewQueued++;
             else if (outcome.state === "error") linkErrors++;
           } catch (_e) {
@@ -337,6 +341,7 @@ Deno.serve(async (req) => {
     upserted,
     duplicates,
     linked,
+    leads_created: leadsCreated,
     review_queued: reviewQueued,
     link_errors: linkErrors,
     drained,
@@ -350,7 +355,7 @@ Deno.serve(async (req) => {
       finished_at: new Date().toISOString(),
       calls_fetched: fetched,
       calls_upserted: upserted,
-      leads_created: linked,
+      leads_created: leadsCreated,
       error: err,
       detail,
     }).eq("id", runId);
@@ -368,11 +373,12 @@ Deno.serve(async (req) => {
     upserted,
     duplicates,
     linked,
+    leads_created: leadsCreated,
     review_queued: reviewQueued,
     errors: err ? 1 : 0,
     next_page: drained ? null : page,
     drained,
     error: err,
     detail,
-  }, err ? 500 : 200);
+  }, 200);
 });
