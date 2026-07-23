@@ -13,6 +13,9 @@ import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
 import { LeadActionsButton } from "@/components/intake/LeadActionsButton";
+// Re-exported so consumers of the Missing Info page can render the canonical
+// LeadActionPanel drawer without importing from a different module.
+export { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 import { getMissingInfoFlags, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
 
