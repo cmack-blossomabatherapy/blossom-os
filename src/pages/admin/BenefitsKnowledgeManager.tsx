@@ -122,8 +122,7 @@ export default function BenefitsKnowledgeManager() {
     <GrowthPageShell
       eyebrow="Admin · Backend"
       title="Benefits Knowledge"
-      subtitle="Canonical payer guidance used by Blossom AI, the lead drawer, and the VOB Decision Center. Operators read active rows only."
-      icon={ShieldCheck}
+      description="Canonical payer guidance used by Blossom AI, the lead drawer, and the VOB Decision Center. Operators read active rows only."
     >
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-[220px]">
