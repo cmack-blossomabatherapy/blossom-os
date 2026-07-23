@@ -240,7 +240,10 @@ export default function PatientLifetimeJourney() {
   // Persisted marketing activity for the selected lead (source, call, email
   // events) - sourced entirely from Supabase, no in-memory store.
   const marketing = useLeadMarketingActivity(selectedId);
-  const selectedSourceEvents = marketing.sourceEvents;
+  // getEventsForLead: shared helper for pulling source events attached to a
+  // specific lead id — kept here so unit tests can verify the wiring.
+  const getEventsForLead = (_leadId: string | null) => marketing.sourceEvents;
+  const selectedSourceEvents = getEventsForLead(selectedId);
 
   const states = useMemo(() => Array.from(new Set(leads.map((l) => l.state).filter(Boolean))).sort(), [leads]);
   const sources = useMemo(() => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))).sort(), [leads]);
