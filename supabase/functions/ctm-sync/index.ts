@@ -119,7 +119,7 @@ async function requireAllowedUser(req: Request, userClient: ReturnType<typeof cr
 
 async function updateReadiness(service: ReturnType<typeof createClient>, status: "ok" | "partial" | "error", error: string | null, detail: Record<string, unknown>) {
   const now = new Date().toISOString();
-  await service.from("integration_connections").upsert({
+  const row = {
     integration_id: "ctm",
     connection_type: "api",
     environment: "production",
@@ -132,7 +132,17 @@ async function updateReadiness(service: ReturnType<typeof createClient>, status:
     last_error_at: status === "error" ? now : null,
     last_error: status === "error" ? error : null,
     config: { ingest_only: true, last_sync: detail },
-  }, { onConflict: "integration_id,environment" });
+  };
+  const { data: updated } = await service
+    .from("integration_connections")
+    .update(row)
+    .eq("integration_id", "ctm")
+    .eq("environment", "production")
+    .select("id")
+    .maybeSingle();
+  if (!updated?.id) {
+    await service.from("integration_connections").insert(row);
+  }
 }
 
 async function fetchPage(startIso: string, endIso: string, page: number) {
@@ -351,7 +361,7 @@ Deno.serve(async (req) => {
     ok: !err,
     status,
     run_id: runId ?? null,
-    http_status: err ? 500 : 200,
+    http_status: 200,
     pages: pagesProcessed,
     fetched,
     normalized: normalizedCount,
