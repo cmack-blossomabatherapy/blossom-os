@@ -20,7 +20,6 @@ import {
   getReadinessStatus, getBlockers, primaryBlocker, getUrgency,
   READINESS_STAGES, READINESS_TONE, type BlockerKey,
 } from "@/lib/leads/readiness";
-import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
