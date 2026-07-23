@@ -16,13 +16,17 @@ vi.mock("@/integrations/supabase/client", () => {
 const { __mocks } = (await import("@/integrations/supabase/client")) as any;
 const { from, maybeSingle } = __mocks;
 
-import * as EmailMod from "@/lib/integrations/communications/mailchimpEmail";
-import * as SmsMod from "@/lib/integrations/communications/mailchimpSms";
-const { sendEmailViaMailchimp } = EmailMod;
-const { sendSmsViaMailchimp } = SmsMod;
+import {
+  sendEmailViaMailchimp,
+  __setEmailConfiguredForTests,
+} from "@/lib/integrations/communications/mailchimpEmail";
+import {
+  sendSmsViaMailchimp,
+  __setSmsConfiguredForTests,
+} from "@/lib/integrations/communications/mailchimpSms";
 
-vi.spyOn(EmailMod, "isMailchimpEmailConfigured").mockReturnValue(true);
-vi.spyOn(SmsMod, "isMailchimpSmsConfigured").mockReturnValue(true);
+__setEmailConfiguredForTests(true);
+__setSmsConfiguredForTests(true);
 
 const lead = {
   leadId: "lead-1",
