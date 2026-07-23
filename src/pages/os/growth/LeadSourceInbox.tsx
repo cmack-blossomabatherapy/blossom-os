@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+// Integration registry sourced from BLOSSOM_INTEGRATIONS — the inbox surfaces
+// the same integrations catalog that Admin > Integrations consumes so labels
+// and readiness states stay in sync.
+import { BLOSSOM_INTEGRATIONS } from "@/lib/os/integrations/integrationRegistry";
 import {
   Inbox, Plus, Phone, Mail, MessageSquare, Search, Filter, AlertTriangle,
   CheckCircle2, ExternalLink, Link2, FileText, Copy, Radio,
