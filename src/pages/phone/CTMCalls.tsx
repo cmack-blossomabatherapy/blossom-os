@@ -106,9 +106,9 @@ export default function CTMCalls() {
                 const when = r.called_at ? new Date(r.called_at).toLocaleString() : "—";
                 const otherNumber = r.from_number;
                 const linkTo = r.matched_lead_id
-                  ? `/leads?view=pipeline&lead=${r.matched_lead_id}`
+                  ? `/leads?lead=${r.matched_lead_id}`
                   : r.intake_lead_id
-                    ? `/leads?view=pipeline&lead=${r.intake_lead_id}`
+                    ? `/leads?lead=${r.intake_lead_id}`
                     : null;
                 return (
                   <div key={r.id} className="border rounded-md p-3">
