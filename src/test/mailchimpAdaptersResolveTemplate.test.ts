@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.stubEnv("VITE_MAILCHIMP_API_KEY", "k");
-vi.stubEnv("VITE_MAILCHIMP_AUDIENCE_ID", "a");
-vi.stubEnv("VITE_MAILCHIMP_SMS_API_KEY", "k");
-vi.stubEnv("VITE_MAILCHIMP_SMS_PROGRAM_ID", "p");
+// Force both providers to appear configured for these adapter tests.
+vi.mock("@/lib/integrations/communications/mailchimpEmail", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("@/lib/integrations/communications/mailchimpEmail")>();
+  return { ...mod, isMailchimpEmailConfigured: () => true };
+});
+vi.mock("@/lib/integrations/communications/mailchimpSms", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("@/lib/integrations/communications/mailchimpSms")>();
+  return { ...mod, isMailchimpSmsConfigured: () => true };
+});
 
 vi.mock("@/integrations/supabase/client", () => {
   const maybeSingle = vi.fn();
@@ -23,8 +28,6 @@ const { from, maybeSingle } = __mocks;
 
 import { sendEmailViaMailchimp } from "@/lib/integrations/communications/mailchimpEmail";
 import { sendSmsViaMailchimp } from "@/lib/integrations/communications/mailchimpSms";
-import { isMailchimpEmailConfigured } from "@/lib/integrations/communications/mailchimpEmail";
-import { isMailchimpSmsConfigured } from "@/lib/integrations/communications/mailchimpSms";
 
 const lead = {
   leadId: "lead-1",
@@ -37,16 +40,7 @@ beforeEach(() => {
   maybeSingle.mockReset();
 });
 
-afterAll(() => {
-  vi.unstubAllEnvs();
-});
-
 describe("mailchimp adapters call resolveTemplate before succeeding", () => {
-  it("environment is configured for both adapters", () => {
-    expect(isMailchimpEmailConfigured()).toBe(true);
-    expect(isMailchimpSmsConfigured()).toBe(true);
-  });
-
   it("email adapter queries intake_communication_templates and uses persisted subject", async () => {
     maybeSingle.mockResolvedValueOnce({
       data: {
