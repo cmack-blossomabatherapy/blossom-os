@@ -16,6 +16,7 @@ import {
   findBenefitsCheatSheetForLead,
   mapCheatSheetStatusToTone,
 } from "@/lib/intake/leadBenefitsCheatSheets";
+import { useBlossomAI } from "@/components/ai/BlossomAIAssistant";
 import {
   notifyCommunicationResult,
   sendLeadEmail,
