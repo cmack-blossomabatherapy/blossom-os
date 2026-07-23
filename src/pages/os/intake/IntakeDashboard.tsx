@@ -178,47 +178,27 @@ export default function IntakeDashboard() {
   const maxState = Math.max(1, ...stateBreakdown.map(([, n]) => n));
   const maxSource = Math.max(1, ...sourceBreakdown.map(([, n]) => n));
 
-  const pulseTiles: { key: string; label: string; value: number; hint: string; icon: any; tone: Tone; to: string }[] = [
-    { key: "captured",  label: "Lead Captured",        value: counts.newReferrals, hint: "New family leads",                       icon: Inbox,         tone: "sky",     to: "/leads?stage=Lead Captured" },
-    { key: "pipeline",  label: "Open Family Pipeline", value: counts.inPipeline,   hint: "Lead Captured -> Ready to Start Services", icon: TrendingUp,  tone: "indigo",  to: "/leads" },
-    { key: "missing",   label: "Packet Follow Up / Missing Info", value: counts.missing, hint: "Blocked on packet, docs, or family", icon: AlertCircle, tone: "rose",    to: "/intake/missing-information" },
-    { key: "tasks",     label: "Open Follow-Ups",      value: counts.followUps,    hint: "Open tasks across leads",                icon: MessageSquare, tone: "amber",   to: "/intake/tasks" },
-    { key: "benefits",  label: "Benefits Verification",value: counts.awaiting,     hint: "Eligibility and payer review",           icon: ShieldCheck,   tone: "violet",  to: "/vob-decision-center" },
-    { key: "ready",     label: "Ready to Start (30d)", value: counts.converted,    hint: "Reached handoff for active services",    icon: ArrowRightLeft,tone: "emerald", to: "/leads?stage=Ready to Start Services" },
-  ];
-  const pulseTotal = pulseTiles.reduce((s, t) => s + t.value, 0) || 1;
 
-  // Charts data
-  const funnelData = AGING_STAGES.map((stage) => ({
+  // ---------- Journey (canonical stage counts as a single progression) ----------
+  const journey = FAMILY_LEAD_PIPELINE_STAGES.map((stage) => ({
     stage,
-    short: stage.length > 18 ? stage.slice(0, 16) + "…" : stage,
     count: leads.filter((l) => canonicalFamilyLeadStage(l.status) === stage).length,
   }));
-  const maxFunnel = Math.max(1, ...funnelData.map((d) => d.count));
+  const journeyMax = Math.max(1, ...journey.map((j) => j.count));
 
-  const agingChartData = AGING_STAGES.slice(0, 8).map((stage) => {
-    const items = leads.filter((l) => canonicalFamilyLeadStage(l.status) === stage);
-    return {
-      stage,
-      short: stage.split(" ").slice(0, 2).join(" "),
-      Fresh: items.filter((l) => (l.daysInStage ?? 0) <= 1).length,
-      Waiting: items.filter((l) => (l.daysInStage ?? 0) > 1 && (l.daysInStage ?? 0) < 7).length,
-      Overdue: items.filter((l) => (l.daysInStage ?? 0) >= 7).length,
-    };
-  });
-
-  const sourcePieData = sourceBreakdown.map(([name, value]) => ({ name, value }));
-  const PIE_COLORS = [
-    "hsl(265 70% 55%)", "hsl(195 80% 50%)", "hsl(150 65% 45%)",
-    "hsl(30 90% 55%)", "hsl(340 75% 55%)", "hsl(220 70% 55%)",
-    "hsl(180 65% 45%)", "hsl(45 90% 55%)",
-  ];
+  // ---------- Four-metric command strip ----------
+  const commandStrip = [
+    { key: "captured",  label: "New referrals",         value: counts.newReferrals, hint: "Lead Captured this pipeline",             icon: Inbox,         to: "/leads?stage=Lead%20Captured" },
+    { key: "tasks",     label: "Needs follow-up",       value: counts.followUps,    hint: "Open tasks across families",              icon: MessageSquare, to: "/intake/tasks" },
+    { key: "benefits",  label: "Benefits verification", value: counts.awaiting,     hint: "Eligibility and payer review",            icon: ShieldCheck,   to: "/vob-decision-center" },
+    { key: "ready",     label: "Ready to Start (30d)",  value: counts.converted,    hint: "Handed off to active services",           icon: HeartHandshake, to: "/leads?stage=Ready%20to%20Start%20Services" },
+  ] as const;
 
   return (
     <GrowthPageShell
       eyebrow="Growth & Admissions"
       title="Intake Dashboard"
-      description="Manage new referrals, parent communication, missing information, insurance checks, and movement from lead capture to ready to start services."
+      description="A calm workspace for the families in your care — surface who needs you now, where they are in the journey, and what to do next."
       headerRight={
         <div className="flex items-center gap-2">
           <IntakeStateFilterToggle />
@@ -229,23 +209,49 @@ export default function IntakeDashboard() {
         { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
-      {/* Quick links — Lead to Ready-to-Start Pipeline */}
-      <div className="flex flex-wrap gap-2">
-        <Link
-          to="/intake/parent-communication"
-          title="Intake Communications"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
-        >
-          <MessageSquare className="h-3.5 w-3.5" /> Intake Communications
-        </Link>
-        <Link
-          to="/leads?view=pipeline"
-          title="Lead to Ready-to-Start Pipeline"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
-        >
-          <TrendingUp className="h-3.5 w-3.5" /> Lead to Ready-to-Start Pipeline
-        </Link>
-      </div>
+      {/* Warm welcome band — Blossom blush → teal, no rainbow tiles. */}
+      <section
+        className="relative overflow-hidden rounded-3xl border border-border/60 p-6 md:p-7"
+        style={{
+          background:
+            "linear-gradient(135deg, hsl(var(--primary)/0.08) 0%, hsl(var(--background)) 55%, hsl(180 55% 92% / 0.6) 100%)",
+        }}
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <GreetingIcon className="h-3.5 w-3.5" />
+              <span>{greetingLabel}, {displayName?.split(" ")[0] || "there"}.</span>
+              <span aria-hidden>·</span>
+              <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {activeState}</span>
+            </div>
+            <h2 className="mt-1.5 text-2xl md:text-[26px] font-semibold tracking-tight text-foreground leading-tight">
+              {actionRequired.length > 0
+                ? `${actionRequired.length} ${actionRequired.length === 1 ? "family needs" : "families need"} your attention today.`
+                : "Every family is on track today."}
+            </h2>
+            <p className="mt-1.5 text-sm text-muted-foreground max-w-xl">
+              {counts.inPipeline > 0
+                ? `You have ${counts.inPipeline.toLocaleString()} open in the journey — ${counts.awaiting.toLocaleString()} awaiting benefits and ${counts.converted.toLocaleString()} ready to start.`
+                : "New referrals will land here as they come in. Add a family to get started."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Button
+              onClick={() => setAddOpen(true)}
+              className="rounded-xl h-10 px-5 shadow-sm"
+            >
+              <Plus className="h-4 w-4 mr-1.5" /> Add Lead
+            </Button>
+            <Button asChild variant="outline" className="rounded-xl h-10 px-5">
+              <Link to="/leads?view=pipeline">
+                <TrendingUp className="h-4 w-4 mr-1.5" /> Open Pipeline
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       <StateDirectorSnapshotBanner
         ownerDepartment="Intake"
         sourceModule="intake_dashboard"
@@ -257,153 +263,37 @@ export default function IntakeDashboard() {
           counts.inPipeline ? `${counts.inPipeline} open pipeline` : null,
         ].filter(Boolean) as string[]}
       />
-      <IntakeSystemHealthPanel />
-      {/* Intake Pulse */}
+
+      {/* ---------- Today — priority queue ---------- */}
       <section>
-        <SectionHeader icon={Zap} tone="primary" title="Intake Pulse" subtitle="Live snapshot of where families are right now — tap a tile to drill in." />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {pulseTiles.map((p) => {
-            const t = TONE[p.tone];
-            const pct = Math.round((p.value / pulseTotal) * 100);
-            return (
-              <Link
-                key={p.key}
-                to={p.to}
-                className={cn(
-                  "group text-left rounded-2xl border border-border/70 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm",
-                  t.bg,
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className={cn("grid place-items-center h-8 w-8 rounded-xl", t.icon)}>
-                    <p.icon className="h-4 w-4" />
-                  </div>
-                  <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground transition" />
-                </div>
-                <p className="mt-3 text-[11px] uppercase tracking-wide text-muted-foreground">{p.label}</p>
-                <p className={cn("mt-1 text-2xl font-semibold tabular-nums", t.number)}>{loading ? "…" : p.value.toLocaleString()}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground/80 line-clamp-1">{p.hint}</p>
-                <div className="mt-2 h-1 rounded-full bg-muted/60 overflow-hidden">
-                  <div className={cn("h-full rounded-full transition-all", t.bar)} style={{ width: `${Math.max(pct, 4)}%` }} />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Pipeline Insights — charts */}
-      <section>
-        <SectionHeader icon={BarChart3} tone="indigo" title="Pipeline Insights" subtitle="Click a bar or slice to drill into matching families." />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          {/* Readiness Funnel */}
-          <article className="rounded-2xl border border-border/70 bg-card p-4">
-            <div className="flex items-baseline justify-between mb-2">
-              <p className="text-sm font-medium">Readiness Funnel</p>
-              <p className="text-[11px] text-muted-foreground">Families per stage</p>
-            </div>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={funnelData} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 0 }}>
-                  <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
-                  <YAxis type="category" dataKey="short" width={130} tick={{ fontSize: 10 }} interval={0} />
-                  <Tooltip wrapperStyle={{ fontSize: 12 }} cursor={{ fill: "hsl(var(--muted) / 0.6)" }} />
-                  <Bar
-                    dataKey="count"
-                    radius={[0, 6, 6, 0]}
-                    className="cursor-pointer"
-                    onClick={(d: any) => d?.stage && (window.location.href = `/leads?stage=${encodeURIComponent(d.stage)}`)}
-                  >
-                    {funnelData.map((f, i) => (
-                      <Cell key={i} fill={`hsl(${230 + i * 8} 70% ${50 + (f.count === maxFunnel ? 0 : 6)}%)`} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </article>
-
-          {/* Stage Aging */}
-          <article className="rounded-2xl border border-border/70 bg-card p-4">
-            <div className="flex items-baseline justify-between mb-2">
-              <p className="text-sm font-medium">Stage Aging</p>
-              <p className="text-[11px] text-muted-foreground">Fresh · Waiting · Overdue</p>
-            </div>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={agingChartData} margin={{ top: 4, right: 8, left: -16, bottom: 24 }}>
-                  <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                  <XAxis dataKey="short" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={50} />
-                  <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                  <Tooltip wrapperStyle={{ fontSize: 12 }} cursor={{ fill: "hsl(var(--muted) / 0.6)" }} />
-                  <Bar dataKey="Fresh"   stackId="a" fill="hsl(150 65% 50%)" radius={[0, 0, 0, 0]}
-                       onClick={(d: any) => d?.stage && (window.location.href = `/leads?stage=${encodeURIComponent(d.stage)}`)}
-                       className="cursor-pointer" />
-                  <Bar dataKey="Waiting" stackId="a" fill="hsl(38 92% 55%)"  radius={[0, 0, 0, 0]}
-                       onClick={(d: any) => d?.stage && (window.location.href = `/leads?stage=${encodeURIComponent(d.stage)}`)}
-                       className="cursor-pointer" />
-                  <Bar dataKey="Overdue" stackId="a" fill="hsl(0 75% 58%)"   radius={[6, 6, 0, 0]}
-                       onClick={(d: any) => d?.stage && (window.location.href = `/leads?stage=${encodeURIComponent(d.stage)}`)}
-                       className="cursor-pointer" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </article>
-
-          {/* Source Mix */}
-          <article className="rounded-2xl border border-border/70 bg-card p-4">
-            <div className="flex items-baseline justify-between mb-2">
-              <p className="text-sm font-medium">Source Mix</p>
-              <p className="text-[11px] text-muted-foreground">Top referral sources</p>
-            </div>
-            <div className="h-72">
-              {sourcePieData.length === 0 ? (
-                <div className="h-full grid place-items-center text-xs text-muted-foreground">No data yet.</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Tooltip wrapperStyle={{ fontSize: 12 }} />
-                    <Pie data={sourcePieData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={2}>
-                      {sourcePieData.map((_, i) => (
-                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} className="cursor-pointer" />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-            {sourcePieData.length > 0 && (
-              <div className="mt-2 grid grid-cols-2 gap-1.5">
-                {sourcePieData.slice(0, 6).map((s, i) => (
-                  <div key={s.name} className="flex items-center justify-between gap-2 text-[11px]">
-                    <span className="flex items-center gap-1.5 min-w-0 truncate">
-                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                      <span className="truncate">{s.name}</span>
-                    </span>
-                    <span className="tabular-nums text-muted-foreground">{s.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-        </div>
-      </section>
-
-      {/* Action Required */}
-      {actionRequired.length > 0 && (
-        <section>
-          <SectionHeader
-            icon={AlertTriangle}
-            tone="rose"
-            title={`Action Required (${actionRequired.length})`}
-            subtitle="Highest-risk families in your queue right now."
-          />
-          <div className="space-y-2">
+        <SectionHeader
+          title="Today"
+          subtitle={
+            actionRequired.length > 0
+              ? "Families waiting on you — call, text, or open the record to keep them moving."
+              : "You’re caught up. New at-risk families will surface here."
+          }
+          right={
+            <Link
+              to="/intake/tasks"
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            >
+              All follow-ups <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          }
+        />
+        {actionRequired.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 p-8 text-center">
+            <Sparkles className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-sm font-medium">No urgent families right now.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              As families stall in a stage or a task goes overdue, they’ll appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
             {actionRequired.map(({ lead, risk }) => {
               const urgent = risk.level === "urgent";
-              const tone: Tone = urgent ? "rose" : "amber";
-              const t = TONE[tone];
               const hasPhone = Boolean(lead.phone?.trim());
               const hasEmail = Boolean(lead.email?.trim());
               const primaryReason = risk.reasons[0];
@@ -419,42 +309,44 @@ export default function IntakeDashboard() {
               return (
                 <article
                   key={lead.id}
-                  className={cn(
-                    "group relative flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 pl-5 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:border-primary/30",
-                    t.bg,
-                  )}
+                  className="group relative flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 pl-5 transition-all hover:border-primary/30 hover:shadow-sm"
                 >
-                  <span className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl", t.bar)} />
+                  <span
+                    className={cn(
+                      "absolute left-0 top-2 bottom-2 w-[3px] rounded-full",
+                      urgent ? "bg-rose-500" : "bg-amber-500",
+                    )}
+                  />
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3">
-                      <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <LeadNameLink leadId={lead.id} className="font-medium hover:underline truncate">
                         {lead.childName}
                       </LeadNameLink>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {lead.status} · {lead.owner || "Unassigned"} · {lead.daysInStage ?? 0}d waiting
-                        {primaryReason && <span className="text-foreground/80"> · {primaryReason}</span>}
-                      </p>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] px-1.5 py-0 border-transparent",
+                          urgent
+                            ? "bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                            : "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                        )}
+                      >
+                        {urgent ? "Urgent" : "At risk"}
+                      </Badge>
                     </div>
+                    <p className="text-[11.5px] text-muted-foreground mt-0.5 truncate">
+                      {lead.status} · {lead.owner || "Unassigned"} · {lead.daysInStage ?? 0}d waiting
+                      {primaryReason && <span className="text-foreground/80"> · {primaryReason}</span>}
+                    </p>
                   </div>
-                  <div className="flex items-center flex-wrap gap-2 shrink-0">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[10px] border-transparent",
-                        urgent ? "bg-rose-500/15 text-rose-700 dark:text-rose-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-                      )}
-                    >
-                      {urgent ? "Urgent" : "At risk"}
-                    </Badge>
-                    <Button asChild size="sm" variant="default">
-                      <LeadNameLink leadId={lead.id}>Open</LeadNameLink>
-                    </Button>
+                  <div className="flex items-center gap-1 shrink-0">
                     {hasPhone && (
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8"
+                        className="h-8 w-8 rounded-full"
                         title="Call parent"
+                        aria-label={`Call parent of ${lead.childName}`}
                         onClick={async () => notifyCommunicationResult(await callParent(leadContext))}
                       >
                         <Phone className="h-4 w-4" />
@@ -464,8 +356,9 @@ export default function IntakeDashboard() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8"
-                        title="Send SMS"
+                        className="h-8 w-8 rounded-full"
+                        title="Text parent"
+                        aria-label={`Text parent of ${lead.childName}`}
                         onClick={async () => notifyCommunicationResult(await sendLeadSms(leadContext))}
                       >
                         <Send className="h-4 w-4" />
@@ -475,48 +368,141 @@ export default function IntakeDashboard() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8"
-                        title="Send email"
+                        className="h-8 w-8 rounded-full"
+                        title="Email parent"
+                        aria-label={`Email parent of ${lead.childName}`}
                         onClick={async () => notifyCommunicationResult(await sendLeadEmail(leadContext))}
                       >
                         <Mail className="h-4 w-4" />
                       </Button>
                     )}
+                    <Button asChild size="sm" variant="outline" className="rounded-lg h-8 px-3 ml-1">
+                      <LeadNameLink leadId={lead.id}>Open</LeadNameLink>
+                    </Button>
                   </div>
                 </article>
               );
             })}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
-      {/* Handoff Readiness */}
+      {/* ---------- Compact 4-metric command strip ---------- */}
+      <section>
+        <SectionHeader title="At a glance" subtitle="Live counts across the intake queue — tap to drill in." />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {commandStrip.map((m) => (
+            <Link
+              key={m.key}
+              to={m.to}
+              className="group rounded-2xl border border-border/60 bg-card px-4 py-4 transition-all hover:border-primary/30 hover:shadow-sm hover:-translate-y-0.5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="grid place-items-center h-8 w-8 rounded-xl bg-primary/10 text-primary">
+                  <m.icon className="h-4 w-4" />
+                </div>
+                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground transition" />
+              </div>
+              <p className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-foreground">
+                {loading ? "…" : m.value.toLocaleString()}
+              </p>
+              <p className="mt-0.5 text-[13px] font-medium text-foreground">{m.label}</p>
+              <p className="text-[11.5px] text-muted-foreground mt-0.5 line-clamp-1">{m.hint}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------- Family journey ---------- */}
       <section>
         <SectionHeader
-          icon={HeartPulse}
-          tone="emerald"
-          title={`Handoff Readiness (${handoffReady.length})`}
-          subtitle="Ready to Start Services — active patient operations begin here."
+          title="Family journey"
+          subtitle="Where every open family sits in the canonical intake pipeline."
+          right={
+            <Link
+              to="/leads?view=pipeline"
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            >
+              Open pipeline board <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          }
+        />
+        <div className="rounded-2xl border border-border/60 bg-card p-4">
+          <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            {journey.map((j, i) => {
+              const pct = Math.round((j.count / journeyMax) * 100);
+              return (
+                <li key={j.stage}>
+                  <Link
+                    to={`/leads?stage=${encodeURIComponent(j.stage)}`}
+                    className="group block rounded-xl border border-border/50 bg-background/50 p-3 transition-all hover:border-primary/30 hover:bg-background"
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        Step {i + 1}
+                      </span>
+                      <span className="tabular-nums text-lg font-semibold text-foreground">
+                        {loading ? "…" : j.count.toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[13px] font-medium text-foreground line-clamp-1">
+                      {j.stage}
+                    </p>
+                    <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary/70 group-hover:bg-primary transition-all"
+                        style={{ width: `${Math.max(pct, 4)}%` }}
+                      />
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </section>
+
+      {/* ---------- Ready for handoff ---------- */}
+      <section>
+        <SectionHeader
+          title={`Ready for handoff${handoffReady.length ? ` · ${handoffReady.length}` : ""}`}
+          subtitle="Families cleared to start services — pass the baton to Authorizations, Scheduling, and Clinical."
         />
         {handoffReady.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border/70 bg-card/50 p-6 text-xs text-muted-foreground text-center">
+          <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 p-6 text-center text-xs text-muted-foreground">
             No families currently ready for handoff.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {handoffReady.map((lead) => (
-              <article key={lead.id} className={cn("rounded-2xl border border-border/70 p-4", TONE.emerald.bg)}>
+              <article
+                key={lead.id}
+                className="rounded-2xl border border-border/60 bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm"
+              >
                 <div className="flex items-start justify-between gap-2">
-                  <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate">{lead.childName}</LeadNameLink>
-                  <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-transparent">
+                  <LeadNameLink leadId={lead.id} className="font-semibold hover:underline truncate">
+                    {lead.childName}
+                  </LeadNameLink>
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-transparent"
+                  >
                     <HeartHandshake className="h-3 w-3 mr-1" /> Ready
                   </Badge>
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">{lead.state || "—"} · {lead.owner || "Unassigned"}</div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link to="/authorizations" className="text-[11px] text-primary hover:underline">→ Authorizations</Link>
-                  <Link to="/ops/scheduling" className="text-[11px] text-primary hover:underline">→ Scheduling</Link>
-                  <Link to="/qa-team" className="text-[11px] text-primary hover:underline">→ Clinical</Link>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {lead.state || "—"} · {lead.owner || "Unassigned"}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+                  <Link to="/authorizations" className="text-[11.5px] text-primary hover:underline">
+                    → Authorizations
+                  </Link>
+                  <Link to="/ops/scheduling" className="text-[11.5px] text-primary hover:underline">
+                    → Scheduling
+                  </Link>
+                  <Link to="/qa-team" className="text-[11.5px] text-primary hover:underline">
+                    → Clinical
+                  </Link>
                 </div>
               </article>
             ))}
@@ -524,50 +510,13 @@ export default function IntakeDashboard() {
         )}
       </section>
 
-      {/* Workload + Aging */}
+      {/* ---------- Operational insights: aging + workload ---------- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section>
-          <SectionHeader icon={Users} tone="violet" title="Owner Workload" subtitle="In-pipeline leads per owner." />
-          {ownerWorkload.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/70 bg-card/50 p-6 text-xs text-muted-foreground text-center">
-              No active leads in pipeline.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {ownerWorkload.map((o) => (
-                <Link
-                  key={o.owner}
-                  to={`/leads?owner=${encodeURIComponent(o.owner)}`}
-                  className="group block rounded-xl border border-border/60 bg-card p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:border-violet-500/40"
-                >
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 truncate">
-                      <span className={cn("grid place-items-center h-7 w-7 rounded-lg text-[10px] font-semibold ring-1 ring-violet-500/20", TONE.violet.icon)}>
-                        {o.owner.split(" ").map((w) => w[0]).slice(0, 2).join("")}
-                      </span>
-                      <span className="truncate font-medium">{o.owner}</span>
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="tabular-nums text-xs text-muted-foreground">
-                        {o.total}{o.risk > 0 && <span className="text-amber-600 ml-1">· {o.risk} at risk</span>}
-                      </span>
-                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-violet-500 transition" />
-                    </span>
-                  </div>
-                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all"
-                      style={{ width: `${(o.total / maxOwner) * 100}%` }}
-                    />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section>
-          <SectionHeader icon={Clock} tone="amber" title="Aging by Stage" subtitle="Average and oldest days in each canonical stage." />
+          <SectionHeader
+            title="Aging by stage"
+            subtitle="Average and oldest days waiting in each canonical stage."
+          />
           <div className="space-y-1.5">
             {agingByStage.map((s) => {
               const hot = s.oldest >= 14;
@@ -576,28 +525,37 @@ export default function IntakeDashboard() {
                 <Link
                   key={s.stage}
                   to={`/leads?stage=${encodeURIComponent(s.stage)}`}
-                  className={cn(
-                    "group flex items-center justify-between rounded-xl border px-3 py-2 text-sm transition-all hover:-translate-y-0.5 hover:shadow-sm",
-                    hot
-                      ? "bg-rose-500/[0.06] border-rose-500/30 hover:border-rose-500/60"
-                      : warn
-                      ? "bg-amber-500/[0.06] border-amber-500/30 hover:border-amber-500/60"
-                      : "bg-card border-border/60 hover:border-amber-500/40",
-                  )}
+                  className="group flex items-center justify-between rounded-xl border border-border/50 bg-card px-3 py-2 text-sm transition-all hover:border-primary/30 hover:shadow-sm"
                 >
                   <span className="flex items-center gap-2 min-w-0">
-                    <span className={cn(
-                      "grid place-items-center h-7 w-7 rounded-lg shrink-0",
-                      hot ? "bg-rose-500/15 text-rose-600" : warn ? "bg-amber-500/15 text-amber-600" : "bg-muted text-muted-foreground",
-                    )}>
+                    <span
+                      className={cn(
+                        "grid place-items-center h-7 w-7 rounded-lg shrink-0",
+                        hot
+                          ? "bg-rose-500/10 text-rose-600"
+                          : warn
+                          ? "bg-amber-500/10 text-amber-600"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
                       <Clock className="h-3.5 w-3.5" />
                     </span>
                     <span className="truncate font-medium">{s.stage}</span>
                   </span>
                   <span className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs tabular-nums text-muted-foreground">
+                    <span className="text-[11.5px] tabular-nums text-muted-foreground">
                       {s.count} · avg {s.avg}d · oldest{" "}
-                      <span className={hot ? "text-rose-600 font-semibold" : warn ? "text-amber-600 font-semibold" : ""}>{s.oldest}d</span>
+                      <span
+                        className={
+                          hot
+                            ? "text-rose-600 font-semibold"
+                            : warn
+                            ? "text-amber-600 font-semibold"
+                            : ""
+                        }
+                      >
+                        {s.oldest}d
+                      </span>
                     </span>
                     <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground transition" />
                   </span>
@@ -606,38 +564,49 @@ export default function IntakeDashboard() {
             })}
           </div>
         </section>
-      </div>
 
-      {/* States + Sources lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section>
-          <SectionHeader icon={MapPin} tone="sky" title="State Breakdown" subtitle="Active in-pipeline leads by state." />
-          {stateBreakdown.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/70 bg-card/50 p-6 text-xs text-muted-foreground text-center">No data yet.</div>
+          <SectionHeader
+            title="Owner workload"
+            subtitle="Open pipeline families per coordinator."
+          />
+          {ownerWorkload.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 p-6 text-center text-xs text-muted-foreground">
+              No active leads in pipeline.
+            </div>
           ) : (
-            <div className="space-y-2">
-              {stateBreakdown.map(([state, n]) => (
+            <div className="space-y-1.5">
+              {ownerWorkload.map((o) => (
                 <Link
-                  key={state}
-                  to={`/leads?state=${encodeURIComponent(state)}`}
-                  className="group block rounded-xl border border-border/60 bg-card p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:border-sky-500/40"
+                  key={o.owner}
+                  to={`/leads?owner=${encodeURIComponent(o.owner)}`}
+                  className="group block rounded-xl border border-border/50 bg-card px-3 py-2 transition-all hover:border-primary/30 hover:shadow-sm"
                 >
                   <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 font-medium">
-                      <span className="grid place-items-center h-7 w-7 rounded-lg bg-sky-500/15 text-sky-600">
-                        <MapPin className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="grid place-items-center h-7 w-7 rounded-lg text-[10px] font-semibold bg-primary/10 text-primary shrink-0">
+                        {o.owner
+                          .split(" ")
+                          .map((w) => w[0])
+                          .slice(0, 2)
+                          .join("")}
                       </span>
-                      {state}
+                      <span className="truncate font-medium">{o.owner}</span>
                     </span>
-                    <span className="flex items-center gap-2">
-                      <span className="tabular-nums text-xs text-muted-foreground">{n}</span>
-                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-sky-500 transition" />
+                    <span className="flex items-center gap-2 shrink-0">
+                      <span className="tabular-nums text-[11.5px] text-muted-foreground">
+                        {o.total}
+                        {o.risk > 0 && (
+                          <span className="text-amber-600 ml-1">· {o.risk} at risk</span>
+                        )}
+                      </span>
+                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground transition" />
                     </span>
                   </div>
-                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 transition-all"
-                      style={{ width: `${(n / maxState) * 100}%` }}
+                      className="h-full rounded-full bg-primary/70 group-hover:bg-primary transition-all"
+                      style={{ width: `${(o.total / maxOwner) * 100}%` }}
                     />
                   </div>
                 </Link>
@@ -645,43 +614,100 @@ export default function IntakeDashboard() {
             </div>
           )}
         </section>
+      </div>
 
+      {/* ---------- Secondary insights: source + state (restrained) ---------- */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section>
-          <SectionHeader icon={Signal} tone="emerald" title="Lead Source Breakdown" subtitle="Where active leads are coming from." />
+          <SectionHeader
+            title="Where families come from"
+            subtitle="Top referral sources in your active queue."
+          />
           {sourceBreakdown.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/70 bg-card/50 p-6 text-xs text-muted-foreground text-center">No data yet.</div>
+            <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 p-5 text-center text-xs text-muted-foreground">
+              No data yet.
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="rounded-2xl border border-border/60 bg-card p-3 space-y-1">
               {sourceBreakdown.map(([src, n]) => (
                 <Link
                   key={src}
                   to={`/leads?source=${encodeURIComponent(src)}`}
-                  className="group block rounded-xl border border-border/60 bg-card p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:border-emerald-500/40"
+                  className="group flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-muted/60 transition"
                 >
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 font-medium">
-                      <span className="grid place-items-center h-7 w-7 rounded-lg bg-emerald-500/15 text-emerald-600">
-                        <Signal className="h-3.5 w-3.5" />
-                      </span>
-                      {src}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="tabular-nums text-xs text-muted-foreground">{n}</span>
-                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-emerald-500 transition" />
-                    </span>
-                  </div>
-                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <Signal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-[13px] font-medium truncate flex-1">{src}</span>
+                  <div className="w-24 h-1 rounded-full bg-muted overflow-hidden shrink-0">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all"
+                      className="h-full rounded-full bg-primary/60"
                       style={{ width: `${(n / maxSource) * 100}%` }}
                     />
                   </div>
+                  <span className="tabular-nums text-[11.5px] text-muted-foreground w-6 text-right">
+                    {n}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <SectionHeader
+            title="Coverage by state"
+            subtitle="Active families across Blossom’s regions."
+          />
+          {stateBreakdown.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 p-5 text-center text-xs text-muted-foreground">
+              No data yet.
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-border/60 bg-card p-3 space-y-1">
+              {stateBreakdown.map(([state, n]) => (
+                <Link
+                  key={state}
+                  to={`/leads?state=${encodeURIComponent(state)}`}
+                  className="group flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-muted/60 transition"
+                >
+                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-[13px] font-medium truncate flex-1">{state}</span>
+                  <div className="w-24 h-1 rounded-full bg-muted overflow-hidden shrink-0">
+                    <div
+                      className="h-full rounded-full bg-primary/60"
+                      style={{ width: `${(n / maxState) * 100}%` }}
+                    />
+                  </div>
+                  <span className="tabular-nums text-[11.5px] text-muted-foreground w-6 text-right">
+                    {n}
+                  </span>
                 </Link>
               ))}
             </div>
           )}
         </section>
       </div>
+
+      {/* ---------- Admin-only diagnostics (collapsed, does not dominate) ---------- */}
+      {isAdminView && (
+        <details
+          data-testid="intake-admin-diagnostics"
+          className="group rounded-2xl border border-border/50 bg-card/40"
+        >
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-3 px-4 py-3 text-xs font-medium text-muted-foreground hover:text-foreground transition">
+            <span className="inline-flex items-center gap-2">
+              <Settings2 className="h-3.5 w-3.5" />
+              System diagnostics
+              <span className="text-muted-foreground/70 font-normal">
+                · admin-only, not shown to Intake staff
+              </span>
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+          </summary>
+          <div className="border-t border-border/50 p-4">
+            <IntakeSystemHealthPanel />
+          </div>
+        </details>
+      )}
 
       {leads.length === 0 && (
         <ReadyForDataNotice message="This workspace is ready for live data. Create your first lead with Add Lead, or connect a source to populate intake queues automatically." />
