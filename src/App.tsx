@@ -465,7 +465,7 @@ import OSTrainingManage from "./pages/os/OSTrainingManage";
 import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
-import AutomatedEmailsPage from "./pages/admin/AutomatedEmails";
+import IntakeTemplatesManager from "./pages/admin/IntakeTemplatesManager";
 import BenefitsKnowledgeManager from "./pages/admin/BenefitsKnowledgeManager";
 import CTMAdmin from "./pages/admin/CTMAdmin";
 import { AdminRoute } from "./components/auth/AdminRoute";
@@ -1252,7 +1252,7 @@ const App = () => (
                       VOB Decision Center where guidance is now surfaced inline. */}
                   <Route path="/intake/benefits-cheat-sheets" element={<Navigate to="/vob-decision-center" replace />} />
                   <Route path="/admin/benefits-knowledge" element={<AdminRoute><BenefitsKnowledgeManager /></AdminRoute>} />
-                  <Route path="/admin/intake-templates" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
+                  <Route path="/admin/intake-templates" element={<AdminRoute><IntakeTemplatesManager /></AdminRoute>} />
                   {/* --- Live MVP pages backing role menu items that don't have a
                        dedicated workspace yet. Real route, real shell, no
                        /coming-soon. Will be replaced with full workspaces in
@@ -1304,7 +1304,7 @@ const App = () => (
                   <Route path="/admin/onboarding-progress" element={<AdminRoute><AdminOnboardingProgress /></AdminRoute>} />
                   <Route path="/admin/journey-editor" element={<AdminRoute><JourneyEditor /></AdminRoute>} />
                   <Route path="/admin/identity" element={<AdminRoute><IdentityDashboard /></AdminRoute>} />
-                  <Route path="/admin/automated-emails" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
+                  <Route path="/admin/automated-emails" element={<Navigate to="/admin/intake-templates" replace />} />
                   <Route path="/admin/ctm" element={<AdminRoute><CTMAdmin /></AdminRoute>} />
                   <Route path="/admin/rbt-lifecycle" element={<AdminRoute><RbtLifecycle /></AdminRoute>} />
                   <Route path="/admin/bcba-lifecycle" element={<AdminRoute><BcbaLifecycle /></AdminRoute>} />
