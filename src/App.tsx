@@ -836,7 +836,7 @@ const App = () => (
                   <Route path="/assistant-state-director/resources" element={<PermissionRoute allowedRoles={["admin", "assistant_state_director", "state_director", "regional_state_director", "state_va", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "intake_lead", "recruiting_lead", "scheduling_lead", "staffing_lead", "clinical_director", "case_manager", "qa", "qa_director", "authorization_manager", "training_manager"]}><OSAssistantStateDirectorResources /></PermissionRoute>} />
                   <Route path="/intake-coordinator" element={<OSIntakeCoordinator />} />
                   <Route path="/auth-coordinator" element={<OSAuthCoordinator />} />
-                  <Route path="/auth-workspace" element={<OSAuthWorkspace />} />
+                  <Route path="/auth-workspace" element={<PermissionRoute allowedRoles={["admin", "authorization_coordinator", "authorization_manager", "authorization_team", "authorizations", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director", "qa", "qa_director", "clinical_director"]}><OSAuthWorkspace /></PermissionRoute>} />
                   <Route path="/auth-risk-center" element={<OSAuthRiskCenter />} />
                   <Route path="/supervision-tracking" element={<OSSupervisionTracking />} />
                   <Route path="/parent-training-97156" element={<OSParentTraining97156 />} />

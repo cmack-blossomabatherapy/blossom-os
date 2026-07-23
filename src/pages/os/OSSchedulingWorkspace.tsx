@@ -70,6 +70,16 @@ const VIEW_TO_BUCKET: Record<string, WorkBucket> = {
   risks: "coverage_risk",
   availability: "coverage_risk",
   conflicts: "coverage_risk",
+  // Menu aliases surfaced from the Scheduling sidebar. These keep every
+  // sidebar click on a real filtered bucket instead of silently falling
+  // through to the unfiltered "all" view.
+  assessments: "pending_start",
+  readiness: "pending_start",
+  "start-dates": "pending_start",
+  "family-availability": "coverage_risk",
+  clinic: "ready_to_schedule",
+  field: "ready_to_schedule",
+  "cr-entry": "ready_to_schedule",
 };
 
 /* ---------------- page ---------------- */
