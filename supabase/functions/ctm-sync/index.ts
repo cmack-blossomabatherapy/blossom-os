@@ -64,15 +64,30 @@ Deno.serve(async (req) => {
   let linked = 0;
   let page = 1;
   const perPage = 100;
+  const PAGE_BUDGET = 5; // cap pages per invocation to stay under CPU limit
+  const FETCH_TIMEOUT_MS = 15_000;
+  let pagesProcessed = 0;
+  let drained = false;
   let err: string | null = null;
 
   try {
     while (true) {
+      if (pagesProcessed >= PAGE_BUDGET) break;
       const u = new URL(`https://api.calltrackingmetrics.com/api/v1/accounts/${CTM_ACCOUNT_ID}/calls.json`);
       u.searchParams.set("start_date", sinceIso);
       u.searchParams.set("page", String(page));
       u.searchParams.set("per_page", String(perPage));
-      const resp = await fetch(u.toString(), { headers: { Authorization: auth(), Accept: "application/json" } });
+      const ac = new AbortController();
+      const to = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
+      let resp: Response;
+      try {
+        resp = await fetch(u.toString(), {
+          headers: { Authorization: auth(), Accept: "application/json" },
+          signal: ac.signal,
+        });
+      } finally {
+        clearTimeout(to);
+      }
       if (!resp.ok) {
         err = `CTM ${resp.status}: ${await resp.text()}`;
         break;
@@ -80,7 +95,8 @@ Deno.serve(async (req) => {
       const body = await resp.json() as { calls?: Array<Record<string, unknown>>, next_page?: number | null };
       const calls = body.calls ?? [];
       fetched += calls.length;
-      if (calls.length === 0) break;
+      pagesProcessed++;
+      if (calls.length === 0) { drained = true; break; }
 
       // Shared normalizer — identical shape to ctm-webhook. Never re-derive
       // fields locally; single source of truth.
@@ -128,9 +144,8 @@ Deno.serve(async (req) => {
           }
         }
       }
-      if (!body.next_page) break;
+      if (!body.next_page) { drained = true; break; }
       page = body.next_page;
-      if (page > 50) break; // hard cap per run
     }
   } catch (e) {
     err = e instanceof Error ? e.message : String(e);
@@ -138,7 +153,7 @@ Deno.serve(async (req) => {
 
   if (runId) {
     await supabase.from("ctm_sync_runs").update({
-      status: err ? "error" : "ok",
+      status: err ? "error" : (drained ? "ok" : "partial"),
       finished_at: new Date().toISOString(),
       calls_fetched: fetched,
       calls_upserted: upserted,
@@ -146,7 +161,7 @@ Deno.serve(async (req) => {
     }).eq("id", runId);
   }
 
-  return new Response(JSON.stringify({ ok: !err, fetched, upserted, linked, error: err }), {
+  return new Response(JSON.stringify({ ok: !err, fetched, upserted, linked, pagesProcessed, drained, error: err }), {
     status: err ? 500 : 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
