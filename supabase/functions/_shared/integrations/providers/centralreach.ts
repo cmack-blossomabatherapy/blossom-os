@@ -29,7 +29,7 @@ export const centralreachAdapter: ProviderAdapter = {
     pullSync: true,
     webhook: false,
     outboundDisabled: true,
-    documentationUrl: "https://developers.centralreach.com/",
+    documentationUrl: "https://centralreach.com/resources/api/requests/",
     operationalState: "ingest_only",
   },
 
