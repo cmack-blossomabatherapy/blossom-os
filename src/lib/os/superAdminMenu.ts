@@ -175,9 +175,7 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "Employee Records",   to: "/hr/employee-records",  icon: Users },
       { label: "HR Requests",        to: "/hr/requests",          icon: ClipboardList },
       { label: "Compliance Items",   to: "/hr/compliance-items",  icon: ShieldCheck },
-      { label: "Billing",            to: "/billing-finance",      icon: IdCard },
       { label: "Payroll",            to: "/payroll/workspace",    icon: Wallet },
-      { label: "Revenue",            to: "/revenue",              icon: TrendingUp },
     ],
   },
   {
