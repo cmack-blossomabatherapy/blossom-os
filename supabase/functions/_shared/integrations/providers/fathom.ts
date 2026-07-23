@@ -79,9 +79,9 @@ export const fathomAdapter: ProviderAdapter = {
     const dryRun = options.dryRun === true;
 
     // Fathom AI exposes summaries + action items as INCLUDES on the single
-    // documented endpoint `GET /external/v1/meetings`. There are no separate
-    // /summaries or /action-items endpoints. Transcripts are intentionally
-    // never requested (PHI guardrail).
+    // documented endpoint `GET /external/v1/meetings` (include_summary,
+    // include_action_items). No separate summary or action-item endpoints
+    // exist. Transcripts are intentionally never requested (PHI guardrail).
     // Cursor pagination via `response.next_cursor`. Bounded page cap + small
     // inter-page delay to stay well under vendor rate limits.
     const PAGE_LIMIT = 50;
