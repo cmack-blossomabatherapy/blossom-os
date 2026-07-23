@@ -138,7 +138,6 @@ export default function LeadDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { getLead, updateLead, moveStage, deleteLeads } = useLeads();
   const lead = id ? getLead(id) : undefined;
-  const blossom = useBlossomAI();
 
   const isPersisted = !!lead && UUID_RE.test(lead.id);
 
@@ -303,27 +302,6 @@ export default function LeadDetail() {
     insurance: lead.insurance,
   };
 
-  const askBlossomAboutLead = () => {
-    blossom.open({
-      surface: "page-help",
-      title: `Ask Blossom AI · ${lead.childName}`,
-      contextText: [
-        `Lead: ${lead.childName} (${lead.state})`,
-        `Parent: ${lead.parentName}`,
-        `Stage: ${lead.status}`,
-        `Insurance: ${lead.insurance || "—"}`,
-        `Next step: ${nextStep}`,
-        blocker ? `Blocker: ${blocker.label} — ${blocker.reasons.join("; ")}` : null,
-      ].filter(Boolean).join("\n"),
-      initialPrompt: `Give the intake coordinator a concise action plan for ${lead.childName}.`,
-      suggestions: [
-        "What should Intake do next?",
-        "Draft a family message.",
-        "Explain the benefits situation.",
-      ],
-    });
-  };
-
   const setTab = (t: LeadTabKey) => setActiveTab(t);
 
   return (
@@ -335,9 +313,11 @@ export default function LeadDetail() {
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={askBlossomAboutLead}>
-              <Sparkles className="h-3.5 w-3.5" /> Ask Blossom AI
-            </Button>
+            <AskBlossomAboutLeadButton
+              lead={lead}
+              nextStep={nextStep}
+              blocker={blocker}
+            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 w-8 p-0">
