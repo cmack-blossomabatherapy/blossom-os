@@ -5,36 +5,24 @@ import { resolve } from "node:path";
 const read = (rel: string) => readFileSync(resolve(__dirname, "../..", rel), "utf8");
 
 /**
- * When a CTM call row or escalation chip carries a lead id that no longer
- * exists (deleted, out of scope, etc.) the Leads workspace MUST NOT silently
- * mount an empty drawer. It should surface a toast and strip the stale
- * ?lead= param so the URL stays clean.
+ * Legacy `/leads?lead=<id>` URLs are forwarded to the canonical `/leads/:id`
+ * full-page record — no drawer is mounted anywhere. Missing records surface
+ * the "Lead not found" empty state on the record page itself.
  */
-describe("Missing-record deep links show a toast + empty state (never a blank drawer)", () => {
+describe("Legacy ?lead= deep links forward to /leads/:id (no drawer)", () => {
   const leadsV2 = read("src/pages/os/OSLeadsV2.tsx");
-  const drawer = read("src/components/leads/LeadDetailDrawer.tsx");
+  const leadDetail = read("src/pages/LeadDetail.tsx");
 
-  it("LeadDetailDrawer returns null (renders nothing) when the leadId is not found", () => {
-    // Contract: `const lead = leads.find(...) ?? null;` then `if (!lead) return null;`
-    expect(drawer).toMatch(/leads\.find\(\(l\)\s*=>\s*l\.id\s*===\s*leadId\)\s*\?\?\s*null/);
-    expect(drawer).toMatch(/if\s*\(!lead\)\s*return null;/);
+  it("OSLeadsV2 no longer mounts LeadDetailDrawer", () => {
+    expect(leadsV2).not.toMatch(/<LeadDetailDrawer\b/);
   });
 
-  it("OSLeadsV2 guards against a stale ?lead=<id> deep link once data has loaded", () => {
-    // 1) Waits for data (no toast while loading)
-    expect(leadsV2).toMatch(/if\s*\(loading\)\s*return;/);
-    // 2) Checks existence against the loaded leads
-    expect(leadsV2).toMatch(/leads\.some\(\(l\)\s*=>\s*l\.id\s*===\s*openLeadId\)/);
-    // 3) Fires an error toast with a helpful description
-    expect(leadsV2).toMatch(/toast\.error\("Lead not found"/);
-    expect(leadsV2).toMatch(/description:\s*"That lead may have been deleted/);
-    // 4) Strips the stale ?lead= param (replace, not push)
-    expect(leadsV2).toMatch(/next\.delete\("lead"\)/);
-    expect(leadsV2).toMatch(/setSearchParams\(next,\s*\{\s*replace:\s*true\s*\}\)/);
+  it("OSLeadsV2 forwards ?lead=<id> to the canonical /leads/:id record", () => {
+    expect(leadsV2).toMatch(/searchParams\.get\("lead"\)/);
+    expect(leadsV2).toMatch(/navigate\(`\/leads\/\$\{encodeURIComponent\(openLeadId\)\}`/);
   });
 
-  it("guard uses a ref to fire the toast at most once per bad id (no toast storms)", () => {
-    expect(leadsV2).toMatch(/missingLeadHandledRef/);
-    expect(leadsV2).toMatch(/missingLeadHandledRef\.current\s*===\s*openLeadId/);
+  it("LeadDetail renders a Lead-not-found empty state (record page owns the miss)", () => {
+    expect(leadDetail).toMatch(/Lead not found/);
   });
 });
