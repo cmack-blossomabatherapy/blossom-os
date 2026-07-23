@@ -466,6 +466,7 @@ import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
 import AutomatedEmailsPage from "./pages/admin/AutomatedEmails";
+import BenefitsKnowledgeManager from "./pages/admin/BenefitsKnowledgeManager";
 import CTMAdmin from "./pages/admin/CTMAdmin";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { BlockIntakeRoute } from "./components/auth/BlockIntakeRoute";
@@ -1247,8 +1248,10 @@ const App = () => (
                   {/* Benefits knowledge is admin-managed backend content. Old
                       intake bookmarks land on the admin surface (non-admins see
                       the standard admin-only guard). */}
-                  <Route path="/intake/benefits-cheat-sheets" element={<Navigate to="/admin/benefits-knowledge" replace />} />
-                  <Route path="/admin/benefits-knowledge" element={<AdminRoute><LeadBenefitsCheatSheets /></AdminRoute>} />
+                  {/* Retired staff-facing benefits page → route intake users to the
+                      VOB Decision Center where guidance is now surfaced inline. */}
+                  <Route path="/intake/benefits-cheat-sheets" element={<Navigate to="/vob-decision-center" replace />} />
+                  <Route path="/admin/benefits-knowledge" element={<AdminRoute><BenefitsKnowledgeManager /></AdminRoute>} />
                   <Route path="/admin/intake-templates" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
                   {/* --- Live MVP pages backing role menu items that don't have a
                        dedicated workspace yet. Real route, real shell, no
@@ -1257,7 +1260,7 @@ const App = () => (
                   <Route path="/intake/missing-information"  element={<MissingInformation />} />
                   {/* Parent communication became admin-managed template + inline
                       lead-drawer actions. Preserve safe redirect for old bookmarks. */}
-                  <Route path="/intake/parent-communication" element={<Navigate to="/admin/intake-templates" replace />} />
+                  <Route path="/intake/parent-communication" element={<Navigate to="/intake/tasks" replace />} />
                   <Route path="/intake/cr-packet-prep"       element={<PermissionRoute allowedRoles={["admin","super_admin","intake","intake_coordinator","intake_lead","intake_team","operations_leadership"]}><CentralReachPacketPrep /></PermissionRoute>} />
                   <Route path="/ops/expiring-authorizations" element={<OSShellPage><ExpiringAuthorizations /></OSShellPage>} />
                   <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />
