@@ -143,7 +143,7 @@ function daysSince(d?: string) {
 }
 
 function contactDisplayName(c?: Contact): string {
-  if (!c) return "—";
+  if (!c) return "-";
   return fullName(c) || c.email || c.phone || c.mobilePhone || "(No name)";
 }
 
@@ -1208,7 +1208,7 @@ const REFERRAL_STATUS_STYLES: Record<string, string> = {
 };
 
 function ReferralStatusPill({ status }: { status?: string | null }) {
-  const label = status || "—";
+  const label = status || "-";
   const cls = (status && REFERRAL_STATUS_STYLES[status]) || "bg-muted text-muted-foreground ring-border";
   return (
     <span className={cn("inline-flex items-center h-6 px-2 rounded-full text-[11px] font-medium ring-1 ring-inset whitespace-nowrap", cls)}>
@@ -1497,16 +1497,16 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
                       )}
                     </div>
                   </td>
-                  <td className="px-3 align-middle truncate">{companyName(s, r.companyId) || <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 align-middle truncate">{companyName(s, r.companyId) || <span className="text-muted-foreground">-</span>}</td>
                   <td className="px-3 align-middle truncate">
                     {r.contactId ? (
                       <button className="max-w-full truncate text-left font-medium hover:text-primary" onClick={() => onOpenContact(r.contactId!)}>
                         {contactDisplayName(s.contacts.find((c) => c.id === r.contactId))}
                       </button>
-                    ) : <span className="text-muted-foreground">—</span>}
+                    ) : <span className="text-muted-foreground">-</span>}
                   </td>
-                  <td className="px-3 align-middle">{r.state || <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-3 align-middle truncate">{r.serviceType || <span className="text-muted-foreground">—</span>}</td>
+                  <td className="px-3 align-middle">{r.state || <span className="text-muted-foreground">-</span>}</td>
+                  <td className="px-3 align-middle truncate">{r.serviceType || <span className="text-muted-foreground">-</span>}</td>
                   <td className="px-3 align-middle"><ReferralStatusPill status={r.referralStatus} /></td>
                   <td className="px-3 align-middle">
                     <PipelineStagePill
@@ -1514,8 +1514,8 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
                       onClick={lead ? () => { setDrawerFocusStage(stage ?? null); setDrawerLeadId(lead.id); } : undefined}
                     />
                   </td>
-                  <td className="px-3 align-middle text-muted-foreground truncate">{r.insuranceType || "—"}</td>
-                  <td className="px-3 align-middle text-muted-foreground truncate">{userName(s, r.assignedIntakeOwnerId) || "—"}</td>
+                  <td className="px-3 align-middle text-muted-foreground truncate">{r.insuranceType || "-"}</td>
+                  <td className="px-3 align-middle text-muted-foreground truncate">{userName(s, r.assignedIntakeOwnerId) || "-"}</td>
                   <td className="px-3 align-middle text-muted-foreground whitespace-nowrap">{fmtDate(r.referralDate)}</td>
                   <td className="px-3 align-middle">
                     <div className="flex items-center justify-end gap-1">
@@ -5222,7 +5222,7 @@ function PatientPipelineModule({
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">{r.intakeStatus || "-"}</td>
                     <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.referralDate)}</td>
-                    <td className="px-3 py-2 text-right text-muted-foreground tabular-nums" title="Revenue reporting coming soon">-</td>
+                    <td className="px-3 py-2 text-right text-muted-foreground tabular-nums" title="Revenue reporting not yet wired">-</td>
                   </tr>
                 );
               })}
@@ -5330,7 +5330,7 @@ export default function ReferralCRM() {
           <span className="font-medium">Heads up:</span> the following backend tables are unavailable or blocked by access rules - {backendMissing.join(", ")}. Contacts, companies, and imports loaded normally, but those modules will show empty until access is restored.
         </div>
       )}
-      {/* Impersonation switcher — Super Admin only. */}
+      {/* Impersonation switcher - Super Admin only. */}
       {!authLoading && isAdmin && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs">
           <span className="text-muted-foreground">Acting as:</span>

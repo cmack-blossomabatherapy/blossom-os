@@ -215,7 +215,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
                 <Select value={companyId} onValueChange={(v) => { if (v === "__create__") { setCompanyMode("new"); setCompanyId(""); } else setCompanyId(v); }}>
                   <SelectTrigger><SelectValue placeholder="Choose a company" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__create__">+ Create new company…</SelectItem>
+                    <SelectItem value="__create__">+ Create new company...</SelectItem>
                     {sortedCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
