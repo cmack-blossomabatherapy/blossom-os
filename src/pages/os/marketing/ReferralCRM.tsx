@@ -1247,6 +1247,7 @@ function PipelineStagePill({ stage, onClick }: { stage: FamilyLeadPipelineStage 
 function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const { leads } = useLeads();
+  const navigate = useNavigate();
   const leadById = useMemo(() => {
     const m = new Map<string, (typeof leads)[number]>();
     leads.forEach((l) => m.set(l.id, l));
@@ -1255,12 +1256,11 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
   const [logId, setLogId] = useState<ID | null>(null);
-  const [drawerLeadIdRaw, setDrawerLeadIdRaw] = useUrlState("lead", "");
-  const [drawerFocusStageRaw, setDrawerFocusStageRaw] = useUrlState("stage", "");
-  const drawerLeadId = drawerLeadIdRaw || null;
-  const drawerFocusStage = drawerFocusStageRaw || null;
-  const setDrawerLeadId = (v: string | null) => setDrawerLeadIdRaw(v ?? "");
-  const setDrawerFocusStage = (v: string | null) => setDrawerFocusStageRaw(v ?? "");
+  // Full-page migration: opening a lead navigates to the canonical record.
+  const setDrawerLeadId = (v: string | null) => {
+    if (v) navigate(`/leads/${encodeURIComponent(v)}`);
+  };
+  const setDrawerFocusStage = (_v: string | null) => { /* no-op — full page owns tabs */ };
   const [statusFilter, _setStatusFilter] = useUrlState("rs", "all");
   const [stageFilter, _setStageFilter] = useUrlState("rp", "all");
   const [rQuery, _setRQuery] = useUrlState("rq", "", { history: "replace" });
@@ -1547,11 +1547,7 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
       <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
       <LogActivityDialog open={!!logId} onOpenChange={(o) => !o && setLogId(null)} referralId={logId ?? undefined} />
-      <LeadDetailDrawer
-        leadId={drawerLeadId}
-        focusStage={drawerFocusStage}
-        onClose={() => { setDrawerLeadId(null); setDrawerFocusStage(null); }}
-      />
+      {/* Drawer removed — /leads/:id is the canonical full record. */}
       <BulkCreateTaskDialog
         open={bulkTaskOpen}
         onOpenChange={setBulkTaskOpen}
