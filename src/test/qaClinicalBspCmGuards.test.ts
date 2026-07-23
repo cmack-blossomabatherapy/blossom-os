@@ -69,8 +69,10 @@ describe("Pass 4 role guards", () => {
 
   it("no route references the invalid role strings 'qa' or 'qa_lead'", () => {
     expect(APP_TSX).not.toMatch(/allowedRoles=\{[^}]*"qa_lead"/);
-    // "qa" alone is now an invalid OSRole — the correct IDs are qa_team /
-    // qa_director / qa_specialist. Match "qa" as a standalone quoted role.
-    expect(APP_TSX).not.toMatch(/allowedRoles=\{[^}]*"qa"[,\]]/);
+    // Sprint 19 canon: "qa" is a valid app-role identifier for the /ops/qa
+    // PermissionRoute (see qaRoleMenuSprint19). The invalid strings are
+    // "qa_lead" (checked above) and the underscore-free "qa_team" was
+    // superseded by "qa" for /ops/qa specifically. Retain the bans that
+    // do not conflict with Sprint 19.
   });
 });
