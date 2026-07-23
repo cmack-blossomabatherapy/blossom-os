@@ -17,6 +17,7 @@ import { PushNavigationListener } from "@/components/push/PushNavigationListener
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
+import { RouteErrorBoundary } from "@/components/errors/RouteErrorBoundary";
 import { Unauthorized } from "@/components/auth/Unauthorized";
 import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, COURSE_AUTHOR_ROLES, AUTOMATIONS_ROLES } from "@/lib/navigationAccess";
 import { ROLE_HOME } from "@/lib/os/roleHome";
@@ -801,6 +802,7 @@ const App = () => (
               <JourneyOverridesProvider>
                 <PhoneSystemProvider>
                 <PushNavigationListener />
+                <RouteErrorBoundary>
                 <Routes>
                 {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
@@ -1115,7 +1117,7 @@ const App = () => (
                   <Route path="/user-management/:employeeId" element={<EmployeeProfilePage />} />
                   <Route path="/admin/device-inventory" element={<AdminRoute><DeviceInventory /></AdminRoute>} />
                   {/* Phase 5 — People & Access */}
-                  <Route path="/role-management" element={<AdminRoute><RoleManagementPage /></AdminRoute>} />
+                  <Route path="/role-management" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><RoleManagementPage /></PermissionRoute>} />
                   {/* Sprint 21 HR: Login Vault + NFC Badge live INSIDE User Management.
                       Standalone routes kept only as protected redirects for legacy links. */}
                   <Route path="/user-logins-vault" element={<Navigate to="/user-management" replace />} />
@@ -1272,7 +1274,7 @@ const App = () => (
                       used to live under AppLayout which produced a double
                       sidebar/header. Keep them here so the OS shell is the
                       single source of chrome. */}
-                  <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><OSShellPage><Integrations /></OSShellPage></PermissionRoute>} />
+                  <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><OSShellPage><Integrations /></OSShellPage></PermissionRoute>} />
                   <Route path="/admin/integrations/readiness" element={<PermissionRoute allowedRoles={["super_admin"]}><OSShellPage><IntegrationsReadiness /></OSShellPage></PermissionRoute>} />
                   <Route path="/admin/integration-ingest" element={<AdminRoute><OSShellPage><IntegrationIngestAdminPage /></OSShellPage></AdminRoute>} />
                 </Route>
@@ -1607,6 +1609,7 @@ const App = () => (
                 </Route>
                 <Route path="*" element={<NotFound />} />
                 </Routes>
+                </RouteErrorBoundary>
                 </PhoneSystemProvider>
               </JourneyOverridesProvider>
             </ClientsProvider>
