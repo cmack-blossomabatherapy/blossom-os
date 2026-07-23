@@ -1003,12 +1003,12 @@ export function BenefitsCheatSheetMatchPanel({
           >
             Create Intake Task: Review benefits cheat sheet
           </button>
-          <Link
-            to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(searchTerm)}`}
-            className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition inline-flex items-center gap-1"
+          <button
+            onClick={() => askBlossom(match)}
+            className="text-[11px] rounded-md border border-primary/40 bg-primary/5 text-primary px-2 py-1 hover:bg-primary/10 transition inline-flex items-center gap-1"
           >
-            <ExternalLink className="h-3 w-3" /> Open full cheat sheet
-          </Link>
+            <Sparkles className="h-3 w-3" /> Ask Blossom AI
+          </button>
         </div>
       </div>
     );
@@ -1079,12 +1079,12 @@ export function BenefitsCheatSheetMatchPanel({
         >
           Request missing insurance info
         </button>
-        <Link
-          to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(match.sheet.payer)}`}
-          className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition inline-flex items-center gap-1"
+        <button
+          onClick={() => askBlossom(match)}
+          className="text-[11px] rounded-md border border-primary/40 bg-primary/5 text-primary px-2 py-1 hover:bg-primary/10 transition inline-flex items-center gap-1"
         >
-          <ExternalLink className="h-3 w-3" /> Open full cheat sheet
-        </Link>
+          <Sparkles className="h-3 w-3" /> Ask Blossom AI
+        </button>
       </div>
     </div>
   );
