@@ -2,15 +2,11 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
-  ClipboardList, TrendingUp, MessageSquare, AlertCircle, ShieldCheck, Plus,
-  ArrowRightLeft, Users, MapPin, Signal, Clock, HeartHandshake, List,
-  Inbox, ArrowUpRight, Zap, BarChart3, HeartPulse, PieChart as PieIcon,
-  AlertTriangle, Phone, Mail, Send,
+  TrendingUp, MessageSquare, ShieldCheck, Plus,
+  Users, MapPin, Signal, Clock, HeartHandshake, List,
+  Inbox, ArrowUpRight, HeartPulse, ChevronRight,
+  AlertTriangle, Phone, Mail, Send, Sparkles, Sun, Coffee, Moon, Settings2,
 } from "lucide-react";
-import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
-  PieChart, Pie, Cell,
-} from "recharts";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { useLeads } from "@/contexts/LeadsContext";
 import { Badge } from "@/components/ui/badge";
@@ -18,8 +14,6 @@ import { Button } from "@/components/ui/button";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { cn } from "@/lib/utils";
-// Send-to-State-Support has been retired here in favor of the
-// floating escalation chat available site-wide from OSShell.
 import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import { IntakeSystemHealthPanel } from "@/components/intake/IntakeSystemHealthPanel";
 import { useIntakeTasksLive } from "@/hooks/useIntakeTasksLive";
@@ -37,6 +31,8 @@ import {
   isLeadOutOfPipeline,
 } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Export 88 — every dashboard count is computed off the canonical Family /
 // Lead Workflow via `canonicalFamilyLeadStage`. We do NOT keep
@@ -48,41 +44,40 @@ import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/inta
 const isOpenFamilyPipeline = (status: string) => !isLeadOutOfPipeline(status);
 const AGING_STAGES = FAMILY_LEAD_PIPELINE_STAGES;
 
-type Tone = "sky" | "amber" | "rose" | "violet" | "indigo" | "emerald" | "primary";
-const TONE: Record<Tone, { bg: string; ring: string; icon: string; number: string; bar: string }> = {
-  primary: { bg: "bg-primary/[0.06]",      ring: "ring-primary/30",     icon: "bg-primary/15 text-primary",                                  number: "text-primary",                          bar: "bg-primary" },
-  sky:     { bg: "bg-sky-500/[0.06]",      ring: "ring-sky-500/30",     icon: "bg-sky-500/15 text-sky-600 dark:text-sky-400",                number: "text-sky-700 dark:text-sky-300",        bar: "bg-sky-500" },
-  amber:   { bg: "bg-amber-500/[0.06]",    ring: "ring-amber-500/30",   icon: "bg-amber-500/15 text-amber-600 dark:text-amber-400",          number: "text-amber-700 dark:text-amber-300",    bar: "bg-amber-500" },
-  rose:    { bg: "bg-rose-500/[0.06]",     ring: "ring-rose-500/30",    icon: "bg-rose-500/15 text-rose-600 dark:text-rose-400",             number: "text-rose-700 dark:text-rose-300",      bar: "bg-rose-500" },
-  violet:  { bg: "bg-violet-500/[0.06]",   ring: "ring-violet-500/30",  icon: "bg-violet-500/15 text-violet-600 dark:text-violet-400",       number: "text-violet-700 dark:text-violet-300",  bar: "bg-violet-500" },
-  indigo:  { bg: "bg-indigo-500/[0.06]",   ring: "ring-indigo-500/30",  icon: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",       number: "text-indigo-700 dark:text-indigo-300",  bar: "bg-indigo-500" },
-  emerald: { bg: "bg-emerald-500/[0.06]",  ring: "ring-emerald-500/30", icon: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",    number: "text-emerald-700 dark:text-emerald-300", bar: "bg-emerald-500" },
-};
-
+/** Intake-only section header — quiet, no rainbow tiles. */
 function SectionHeader({
-  icon: Icon, tone = "primary", title, subtitle, right,
-}: {
-  icon: any; tone?: Tone; title: string; subtitle?: string; right?: React.ReactNode;
-}) {
+  title, subtitle, right,
+}: { title: string; subtitle?: string; right?: React.ReactNode }) {
   return (
     <div className="flex items-end justify-between gap-3 mb-3">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className={cn("grid place-items-center h-9 w-9 rounded-xl shrink-0", TONE[tone].icon)}>
-          <Icon className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight leading-tight">{title}</h2>
-          {subtitle && <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>}
-        </div>
+      <div className="min-w-0">
+        <h2 className="text-base font-semibold tracking-tight leading-tight text-foreground">{title}</h2>
+        {subtitle && <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>}
       </div>
       {right && <div className="shrink-0">{right}</div>}
     </div>
   );
 }
 
+/** Time-of-day greeting for the workspace welcome band. */
+function useGreeting(): { label: string; Icon: typeof Sun } {
+  const h = new Date().getHours();
+  if (h < 12) return { label: "Good morning", Icon: Sun };
+  if (h < 17) return { label: "Good afternoon", Icon: Coffee };
+  return { label: "Good evening", Icon: Moon };
+}
+
 export default function IntakeDashboard() {
   const { leads: allLeads, loading } = useLeads();
   const [addOpen, setAddOpen] = useState(false);
+  const { role, activeState } = useOSRole();
+  const { displayName } = useAuth();
+  const { label: greetingLabel, Icon: GreetingIcon } = useGreeting();
+  // Active view role decides what surfaces. Admin diagnostics are gated by
+  // ACTIVE view role — so "View As Intake" hides them even for a real admin.
+  const isAdminView = role === "super_admin" || role === "systems_admin";
+  const isIntakeRole =
+    role === "intake_coordinator" || role === "intake_lead" || role === "intake_team";
   // Shared intake task feed — same hook used by every other intake page so
   // task counts stay consistent across the operational surface.
   const { tasks: _intakeTasksLive } = useIntakeTasksLive();
