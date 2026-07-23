@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 // floating escalation chat available site-wide from OSShell.
 import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import { IntakeSystemHealthPanel } from "@/components/intake/IntakeSystemHealthPanel";
+import { useIntakeTasksLive } from "@/hooks/useIntakeTasksLive";
 import {
   callParent,
   sendLeadEmail,
