@@ -9,7 +9,14 @@ import type {
 } from "./communicationTypes";
 import { resolveTemplate } from "./templateRegistry";
 
+/** Test-only override used to force a configured state without leaking env. */
+let __configuredOverride: boolean | null = null;
+export function __setSmsConfiguredForTests(value: boolean | null) {
+  __configuredOverride = value;
+}
+
 export function isMailchimpSmsConfigured(): boolean {
+  if (__configuredOverride !== null) return __configuredOverride;
   const envFlag = (import.meta as unknown as { env?: Record<string, string> }).env;
   return Boolean(envFlag?.VITE_MAILCHIMP_SMS_API_KEY && envFlag?.VITE_MAILCHIMP_SMS_PROGRAM_ID);
 }
