@@ -86,4 +86,12 @@ export const FINANCE_ROUTE_ROLES = [
   "billing",
   "rcm_director",
   "controller",
+  // Canonical assignable finance roles from the app_role enum. These map
+  // to the `billing_finance` OS role in OSRoleContext and render the
+  // Finance Visibility sidebar, so they must be permitted to reach
+  // /billing-finance and its tabbed sub-routes.
+  "billing_lead",
+  "rcm_team",
+  "finance_benefits_lead",
+  "finance_benefits_team",
 ] as const;
