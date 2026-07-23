@@ -286,6 +286,7 @@ function OSLeadsV2Inner() {
   const { leads, loading, error, refresh, bulkUpdate, moveStage, assignOwner } = useLeads();
   const { user, roles } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
 
