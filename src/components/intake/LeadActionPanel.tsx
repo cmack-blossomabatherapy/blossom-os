@@ -221,7 +221,7 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
         ...(nextStage && !atPipelineEnd
           ? [{
               icon: ArrowRight,
-              label: `Move to ${nextStage}`,
+              label: `Move Forward → ${nextStage}`,
               description: "Advance this lead to the next canonical pipeline stage.",
               onClick: () => safeMove(nextStage, nextStage),
               tone: "primary" as const,
@@ -309,6 +309,15 @@ export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: Le
           icon: ExternalLink,
           label: "Open Lead",
           description: "Open the full lead detail drawer with timeline and docs.",
+          onClick: () => {
+            openLead(lead.id);
+            after();
+          },
+        },
+        {
+          icon: ExternalLink,
+          label: "Journey",
+          description: "Open the lead's Journey timeline in the detail drawer.",
           onClick: () => {
             openLead(lead.id);
             after();
