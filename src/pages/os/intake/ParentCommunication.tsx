@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { useLeads } from "@/contexts/LeadsContext";
 import type { Lead } from "@/data/leads";
+import { isLeadOutOfPipeline } from "@/lib/intake/intakeWorkflow";
 import {
   sendLeadEmail, sendLeadSms, notifyCommunicationResult,
 } from "@/lib/integrations/communications/communicationAdapters";
@@ -50,7 +51,8 @@ function LeadPickerDialog({
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    const base = leads.slice(0, 500);
+    // Exclude out-of-pipeline leads (closed / non-qualified) from the picker.
+    const base = leads.filter((l) => !isLeadOutOfPipeline(l.status)).slice(0, 500);
     if (!term) return base.slice(0, 50);
     return base.filter((l) =>
       [l.childName, l.parentName, l.phone, l.email, l.state]
@@ -149,7 +151,7 @@ export default function ParentCommunication() {
     <GrowthPageShell
       eyebrow="Resource Library"
       title="Parent Communication Resources"
-      description="Approved SMS and email templates for every stage of the family journey. Search, filter, copy, or send from a lead."
+      description="Approved SMS and email templates for every stage of the family journey — including Benefits Verification Update outreach. Search, filter, copy, or send from a lead."
     >
       <div className="rounded-xl border border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 p-3 flex items-start gap-2">
         <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />

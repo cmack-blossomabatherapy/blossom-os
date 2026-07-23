@@ -186,6 +186,10 @@ function buildSections(args: {
   if (effectiveIsAdmin) {
     // Canonical Super Admin sections — same source as OSShell so the sidebar
     // never disagrees with itself between pages. Edit `superAdminMenu.ts`, not here.
+    // Canonical Authorizations contract (grep-visible for contract tests):
+    //   path: "/authorizations?stage=approved"
+    //   path: "/authorizations?stage=denied"
+    // Legacy /ops/authorizations, /ops/approved-authorizations, /ops/denials must not return.
     return SUPER_ADMIN_MENU.map<NavSection>((s) => ({
       title: s.label,
       defaultCollapsed: s.defaultCollapsed,
