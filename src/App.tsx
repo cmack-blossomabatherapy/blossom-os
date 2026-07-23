@@ -700,6 +700,7 @@ function RoleDashboardRedirect() {
     : roles.includes("qa_director") ? ROLE_HOME.qa_director
     : roles.includes("qa_specialist") ? ROLE_HOME.qa_specialist
     : (roles as string[]).includes("qa_team") ? ROLE_HOME.qa_team
+    : roles.includes("qa") ? ROLE_HOME.qa_team
     : roles.includes("payroll_admin") ? ROLE_HOME.payroll_coordinator
     : roles.includes("bcba") ? ROLE_HOME.bcba
     : roles.includes("rbt") ? ROLE_HOME.rbt
@@ -1148,7 +1149,7 @@ const App = () => (
                   <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={[...OPERATIONS_AND_STATE_ROUTE_ROLES, "staffing", "staffing_lead", "staffing_coordinator"]}><OSStaffingWorkspace /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
-                  <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
+                  <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
                   <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={[...OPERATIONS_AND_STATE_ROUTE_ROLES, "staffing", "staffing_lead", "staffing_coordinator"]}><Navigate to="/ops/staffing?tab=preferences" replace /></PermissionRoute>} />
                   {/* Staffing reports always route through the unified Reports page */}
                   <Route path="/staffing/reports" element={<Navigate to="/reports" replace />} />
