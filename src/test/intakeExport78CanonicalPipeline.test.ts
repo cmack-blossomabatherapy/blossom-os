@@ -74,11 +74,12 @@ describe("Export 78 — canonical lead pipeline alignment", () => {
     expect(src).not.toMatch(/label="Converted \(30d\)"/);
     expect(src).toMatch(/Open Family Pipeline/);
     expect(src).toMatch(/Benefits Verification/);
-    // Top buttons preserved from Export 75.
-    expect(src).toMatch(/label: "Add Lead"/);
-    expect(src).toMatch(/label: "Open Leads"/);
-    expect(src).not.toMatch(/label: "Send Missing Info Reminder"/);
-    expect(src).not.toMatch(/label: "Intake Communications"/);
+    // Post-redesign: primary Add Lead + Open Pipeline cluster is in the
+    // welcome band, not as duplicate GrowthPageShell actions.
+    expect(src).toMatch(/Add Lead/);
+    expect(src).toMatch(/Open Pipeline/);
+    expect(src).not.toMatch(/Send Missing Info Reminder/);
+    expect(src).not.toMatch(/label:\s*"Intake Communications"/);
   });
 
   it("Referral partner workflow stage labels appear on marketing surfaces", () => {
