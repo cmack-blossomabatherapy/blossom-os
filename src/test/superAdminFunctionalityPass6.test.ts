@@ -72,8 +72,8 @@ describe("Super Admin — Pass 6 closeout", () => {
     const ids = getIntegrationSelectOptions().map((o) => o.id);
     for (const key of [
       "centralreach", "viventium", "ctm", "retell", "apploi",
-      "calendly", "leadtrap", "google-ads", "meta-ads",
-      "eligipro", "pandadoc", "bloomgrowth", "go-integrate-nava",
+      "calendly", "jotform", "google-ads", "meta-ads",
+      "eligipro", "bloomgrowth", "go-integrate-nava",
     ]) {
       expect(ids).toContain(key);
     }
