@@ -243,7 +243,7 @@ export default function CTMAdmin() {
                     <td className="p-2">{c.duration_seconds ?? 0}s</td>
                     <td className="p-2">
                       {c.intake_lead_id
-                        ? <a className="text-primary hover:underline" href={`/leads?lead=${c.intake_lead_id}`}>Open</a>
+                        ? <a className="text-primary hover:underline" href={`/leads/${c.intake_lead_id}`}>Open</a>
                         : "—"}
                     </td>
                   </tr>

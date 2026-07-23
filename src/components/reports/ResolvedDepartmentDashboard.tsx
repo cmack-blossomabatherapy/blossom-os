@@ -116,7 +116,7 @@ function intakeTaskRow(t: IntakeTaskRow): DeptWorkQueueRow {
   const href = t.related_url
     ? t.related_url
     : t.lead_id
-      ? `/intake/leads?lead=${encodeURIComponent(t.lead_id)}`
+      ? `/leads/${encodeURIComponent(t.lead_id)}`
       : `/tasks?task=${encodeURIComponent(t.id)}`;
   return {
     name: t.title,

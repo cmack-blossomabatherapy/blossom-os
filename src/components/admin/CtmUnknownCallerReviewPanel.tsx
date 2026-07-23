@@ -3,7 +3,7 @@
  *
  * Reads ctm_unknown_caller_reviews joined to ctm_call_events, and invokes
  * `ctm-review-action` for Attach / Create lead / Ignore. Every canonical
- * lead link opens `/leads?lead=<id>`.
+ * lead link opens `/leads/<id>`.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -205,7 +205,7 @@ function ReviewDecisionDialog({ review, onClose, onDecided }: {
                   <div>
                     <div className="text-sm font-medium">{c.parent_name ?? "(no name)"}</div>
                     <div className="text-xs text-muted-foreground">{c.phone ?? "—"} · {c.state ?? "—"}</div>
-                    <a className="text-xs text-primary hover:underline" href={`/leads?lead=${c.id}`} target="_blank" rel="noreferrer">Open lead ↗</a>
+                    <a className="text-xs text-primary hover:underline" href={`/leads/${c.id}`} target="_blank" rel="noreferrer">Open lead ↗</a>
                   </div>
                   <Button size="sm" disabled={busy} onClick={() => decide("attach", { lead_id: c.id })}>
                     <Link2 className="h-3.5 w-3.5 mr-1"/> Attach
