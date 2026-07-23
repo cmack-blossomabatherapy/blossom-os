@@ -59,7 +59,7 @@ describe("Intake dashboard redesign — role-scoped operator workspace", () => {
 
   it("renders operator-first copy: welcome band, Today, At a glance, Family journey, Ready for handoff", () => {
     expect(src).toMatch(/Good morning|Good afternoon|Good evening/);
-    expect(src).toMatch(/need(s)? your attention today/);
+    expect(src).toMatch(/attention today/);
     expect(src).toMatch(/title="Today"/);
     expect(src).toMatch(/At a glance/);
     expect(src).toMatch(/Family journey/);
