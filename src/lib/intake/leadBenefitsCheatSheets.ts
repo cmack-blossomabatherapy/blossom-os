@@ -264,3 +264,69 @@ export function mapCheatSheetStatusToTone(status: CheatSheetStatus | string): {
       };
   }
 }
+
+/* ---------------------------------------------------------------------- */
+/* Live persistence layer (public.benefits_knowledge)                     */
+/* ---------------------------------------------------------------------- */
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Fetch active benefit guidance rows from Supabase, falling back to the
+ * canonical 48-row seed if the backend is unavailable or empty.
+ */
+export async function fetchBenefitsKnowledge(opts?: {
+  includeInactive?: boolean;
+}): Promise<BenefitsKnowledgeRow[]> {
+  try {
+    let query = (supabase as any).from("benefits_knowledge").select(
+      "id,state,payer,insurance_category,intake_status,notes,monday_item_id,is_active,updated_at",
+    );
+    if (!opts?.includeInactive) query = query.eq("is_active", true);
+    const { data, error } = await query.order("state").order("payer");
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      return leadBenefitsCheatSheets.map((r) => ({ ...r, isActive: true }));
+    }
+    return (data as any[]).map((r) => ({
+      id: r.id as string,
+      state: r.state as CheatSheetState,
+      payer: r.payer as string,
+      insuranceCategory: r.insurance_category as CheatSheetCategory,
+      intakeStatus: r.intake_status as CheatSheetStatus,
+      notes: r.notes ?? "",
+      mondayItemId: r.monday_item_id ?? "",
+      isActive: Boolean(r.is_active),
+      updatedAt: r.updated_at ?? null,
+    }));
+  } catch {
+    return leadBenefitsCheatSheets.map((r) => ({ ...r, isActive: true }));
+  }
+}
+
+/**
+ * React hook — returns live persisted Benefits Knowledge (active only by
+ * default) with the 48-row seed as a safe fallback while loading or offline.
+ */
+export function useBenefitsKnowledge(opts?: { includeInactive?: boolean }) {
+  const [rows, setRows] = useState<BenefitsKnowledgeRow[]>(() =>
+    leadBenefitsCheatSheets.map((r) => ({ ...r, isActive: true })),
+  );
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    fetchBenefitsKnowledge(opts).then((r) => {
+      if (!cancelled) {
+        setRows(r);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts?.includeInactive, reloadKey]);
+  return { rows, loading, refresh: () => setReloadKey((k) => k + 1) };
+}
