@@ -51,6 +51,9 @@ const isNonQualified = (l: Lead) =>
 const inCanonical = (l: Lead, stages: FamilyLeadPipelineStage[]) =>
   !isNonQualified(l) && stages.includes(canonicalFamilyLeadStage(l.status));
 
+// Canonical visible label variants (kept in sync with the Family / Lead Workflow):
+//   "Intake Packet Follow up"
+
 const STATUS_TABS: { key: string; label: string; match: (l: Lead) => boolean }[] = [
   { key: "all",           label: "All Leads",       match: () => true },
   { key: "contact",       label: "Contact Needed",  match: (l) => inCanonical(l, ["Lead Captured", "First Contact Attempt"]) },
