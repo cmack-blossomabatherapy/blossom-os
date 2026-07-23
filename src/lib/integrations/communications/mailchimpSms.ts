@@ -7,6 +7,7 @@ import type {
   LeadCommunicationContext,
   SmsTemplateKey,
 } from "./communicationTypes";
+import { resolveTemplate } from "./templateRegistry";
 
 export function isMailchimpSmsConfigured(): boolean {
   const envFlag = (import.meta as unknown as { env?: Record<string, string> }).env;
@@ -40,12 +41,24 @@ export async function sendSmsViaMailchimp(
       message: "No phone number on file for this lead.",
     };
   }
+  const resolved = await resolveTemplate("sms", templateKey);
+  if (!resolved || !resolved.approvedForAutomation) {
+    return {
+      success: false,
+      provider: "mailchimp-sms",
+      action: "sms",
+      leadId: lead.leadId,
+      timestamp,
+      message: `SMS template "${templateKey}" is inactive or unavailable; contact Admin.`,
+      needsConfiguration: false,
+    };
+  }
   return {
     success: true,
     provider: "mailchimp-sms",
     action: "sms",
     leadId: lead.leadId,
     timestamp,
-    message: `SMS "${templateKey}" sent to ${lead.phone}.`,
+    message: `SMS "${resolved.displayName}" sent to ${lead.phone}.`,
   };
 }
