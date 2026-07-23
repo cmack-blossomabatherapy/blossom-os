@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Send, ShieldCheck, ClipboardList, Sparkles, Phone, Mail,
   MessageSquare, StickyNote, AlertTriangle, ChevronRight, Loader2, RefreshCw,
@@ -76,7 +76,11 @@ function OSIntakeOperationsInner({ title, subtitle }: Required<OSIntakeOperation
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  // Full-page migration: opening a lead is a route navigation, not a drawer.
+  const setOpenLeadId = (id: string | null) => {
+    if (id) navigate(`/leads/${encodeURIComponent(id)}`);
+  };
   const [searchParams, setSearchParams] = useSearchParams();
   const modals = useIntakeModals();
 
@@ -256,9 +260,7 @@ function OSIntakeOperationsInner({ title, subtitle }: Required<OSIntakeOperation
         )}
       </div>
 
-      {openLeadId && (
-        <LeadDetailDrawer leadId={openLeadId} onClose={() => setOpenLeadId(null)} />
-      )}
+      {/* Drawer removed — /leads/:id is the canonical full record. */}
     </OSShell>
   );
 }

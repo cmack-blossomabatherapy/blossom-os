@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Building2, HeartHandshake, ListChecks, ListFilter,
   Workflow, BarChart3, Upload, Download, Settings2, ShieldCheck, Trash2,
@@ -44,7 +44,6 @@ import { importReferralRows, failedRowsToCsv } from "@/lib/os/referrals/importer
 import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
 import { FAMILY_LEAD_PIPELINE_STAGES, canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
 import { useLeads } from "@/contexts/LeadsContext";
-import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableFilterBar, type FilterDef } from "@/components/marketing/TableFilterBar";
