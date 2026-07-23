@@ -269,7 +269,10 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
         clientName: s.client_name,
         reasons: ["missing_supervision"],
         owner: "bcba",
-        deepLink: `/bcba/my-rbts?rbt=${s.provider_id}`,
+        // /bcba/rbts is the canonical MyRbtsPage route. Include ?provider so
+        // the page can (optionally) auto-filter/highlight; MyRbtsPage safely
+        // ignores unknown params.
+        deepLink: `/bcba/rbts?provider=${s.provider_id}`,
       });
     }
   }
