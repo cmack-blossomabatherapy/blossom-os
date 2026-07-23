@@ -6,42 +6,73 @@ import { fetchJson } from "../http.ts";
  * CentralReach is the EMR. Blossom OS INTEGRATES with it; it is not replaced.
  * The BCBA Productivity admin upload flow remains the source for the
  * productivity report — this adapter does not touch it.
+ *
+ * Enhanced API: OAuth2 client_credentials against CentralReach's Enhanced
+ * API tenant. Canonical endpoints (override with env if the tenant issues
+ * different values):
+ *   base   = https://enhanced-api.centralreach.com
+ *   token  = https://login.centralreach.com/connect/token
+ *
+ * INGEST_ONLY: no writebacks to CentralReach through this adapter.
  */
 export const centralreachAdapter: ProviderAdapter = {
   id: "centralreach",
   classification: "emr",
   requiredSecrets: ["CENTRALREACH_CLIENT_ID", "CENTRALREACH_CLIENT_SECRET", "CENTRALREACH_API_BASE_URL"],
-  optionalSecrets: ["CENTRALREACH_TOKEN_URL", "CENTRALREACH_PROBE_PATH"],
+  optionalSecrets: [
+    "CENTRALREACH_TOKEN_URL",
+    "CENTRALREACH_PROBE_PATH",
+    "CENTRALREACH_SCOPE",
+  ],
+  capabilities: {
+    probe: true,
+    pullSync: true,
+    webhook: false,
+    outboundDisabled: true,
+    documentationUrl: "https://developers.centralreach.com/",
+    operationalState: "ingest_only",
+  },
 
   async probe() {
     const need = hasAll(this.requiredSecrets);
-    if (!need.ok) return { ok: false, status: "not_configured", message: `Missing: ${need.missing.join(", ")}` };
-    const tokenUrl = getEnv("CENTRALREACH_TOKEN_URL");
+    if (!need.ok) return { ok: false, status: "needs_credentials", message: `Missing: ${need.missing.join(", ")}` };
+    // Enhanced API canonical token URL when tenant has not overridden.
+    const tokenUrl =
+      getEnv("CENTRALREACH_TOKEN_URL") ?? "https://login.centralreach.com/connect/token";
     const probePath = getEnv("CENTRALREACH_PROBE_PATH");
-    if (!tokenUrl && !probePath) {
-      return {
-        ok: true,
-        status: "configured_pending_probe_path",
-        message: "CentralReach client creds present; set CENTRALREACH_TOKEN_URL or CENTRALREACH_PROBE_PATH for live probe.",
-      };
-    }
     if (tokenUrl) {
+      const body = new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: getEnv("CENTRALREACH_CLIENT_ID")!,
+        client_secret: getEnv("CENTRALREACH_CLIENT_SECRET")!,
+      });
+      const scope = getEnv("CENTRALREACH_SCOPE");
+      if (scope) body.set("scope", scope);
       const res = await fetchJson<any>(tokenUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          grant_type: "client_credentials",
-          client_id: getEnv("CENTRALREACH_CLIENT_ID")!,
-          client_secret: getEnv("CENTRALREACH_CLIENT_SECRET")!,
-        }),
+        body,
       });
       if (!res.ok) return { ok: false, status: "error", message: res.error ?? `HTTP ${res.status}` };
-      return { ok: true, status: "connected", message: "CentralReach OAuth client credentials ok" };
+      return {
+        ok: true,
+        status: "connected",
+        message: "CentralReach Enhanced API OAuth (client_credentials) ok",
+        details: { tokenUrl, hasScope: Boolean(scope) },
+      };
     }
-    const baseUrl = getEnv("CENTRALREACH_API_BASE_URL")!.replace(/\/$/, "");
-    const res = await fetchJson(`${baseUrl}${probePath}`);
-    if (!res.ok) return { ok: false, status: "error", message: res.error ?? `HTTP ${res.status}` };
-    return { ok: true, status: "connected", message: "CentralReach probe ok" };
+    if (probePath) {
+      const baseUrl = getEnv("CENTRALREACH_API_BASE_URL")!.replace(/\/$/, "");
+      const res = await fetchJson(`${baseUrl}${probePath}`);
+      if (!res.ok) return { ok: false, status: "error", message: res.error ?? `HTTP ${res.status}` };
+      return { ok: true, status: "connected", message: "CentralReach probe ok" };
+    }
+    return {
+      ok: true,
+      status: "configured_pending_probe_path",
+      message:
+        "CentralReach client creds present; supply CENTRALREACH_TOKEN_URL (Enhanced API) or CENTRALREACH_PROBE_PATH for a live probe.",
+    };
   },
 
   async sync(_ctx, options) {
