@@ -98,6 +98,23 @@ export interface ProviderAdapter {
   optionalSecrets?: string[];
   /** Webhook-only providers skip probe/sync API calls. */
   webhookOnly?: boolean;
+  /** Honest capabilities matrix — see integrations readiness manifest. */
+  capabilities?: {
+    probe?: boolean;
+    pullSync?: boolean;
+    webhook?: boolean;
+    oauth?: boolean;
+    /** True when the integration is a local desktop/client tool and
+     * cannot be probed/synced from the cloud (e.g. Go Integrator Nava). */
+    localOnly?: boolean;
+    /** True when outbound actions/writes are intentionally disabled. */
+    outboundDisabled?: boolean;
+    /** Public vendor documentation URL. */
+    documentationUrl?: string;
+    /** Free-form operational state, e.g. "manual_local_setup",
+     * "configured_pending_vendor_endpoint", "not_cloud_testable". */
+    operationalState?: string;
+  };
   /** Lightweight live probe. Must be honest. */
   probe(ctx: AdapterContext): Promise<ProviderProbeResult>;
   /** Pull/staging sync. Returns honest counts; never `not_implemented`. */
