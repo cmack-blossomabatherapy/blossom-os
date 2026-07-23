@@ -50,6 +50,16 @@ interface UnmappedRow {
   last_seen: string | null;
 }
 
+interface WebhookEventRow {
+  id: string;
+  status: string;
+  ctm_call_id: string | null;
+  event_kind: string | null;
+  attempt_count: number;
+  error: string | null;
+  received_at: string;
+}
+
 function VerdictBadge({ status }: { status: Verdict }) {
   const map: Record<Verdict, { label: string; cls: string }> = {
     connected:    { label: "Connected",    cls: "bg-emerald-100 text-emerald-800" },
@@ -67,6 +77,8 @@ export function CtmOperationsPanel() {
   const [runs, setRuns] = useState<SyncRunRow[]>([]);
   const [unmapped, setUnmapped] = useState<UnmappedRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [webhookEvents, setWebhookEvents] = useState<WebhookEventRow[]>([]);
+  const [retrying, setRetrying] = useState<string | null>(null);
 
   const testConnection = useCallback(async () => {
     setTesting(true);
@@ -83,7 +95,7 @@ export function CtmOperationsPanel() {
 
   const loadHealth = useCallback(async () => {
     setLoading(true);
-    const [{ data: r }, { data: u }] = await Promise.all([
+    const [{ data: r }, { data: u }, { data: w }] = await Promise.all([
       supabase.from("ctm_sync_runs")
         .select("id,kind,status,started_at,finished_at,calls_fetched,calls_upserted,error")
         .order("started_at", { ascending: false })
@@ -94,8 +106,13 @@ export function CtmOperationsPanel() {
         .not("tracking_number", "is", null)
         .order("called_at", { ascending: false, nullsFirst: false })
         .limit(100),
+      supabase.from("ctm_webhook_events")
+        .select("id,status,ctm_call_id,event_kind,attempt_count,error,received_at")
+        .order("received_at", { ascending: false })
+        .limit(20),
     ]);
     setRuns((r ?? []) as SyncRunRow[]);
+    setWebhookEvents((w ?? []) as WebhookEventRow[]);
     // Client-side aggregate for unmapped tracking numbers.
     const byNumber = new Map<string, UnmappedRow>();
     for (const row of (u ?? []) as Array<{ tracking_number: string | null; called_at: string | null }>) {
@@ -108,6 +125,17 @@ export function CtmOperationsPanel() {
     setUnmapped(Array.from(byNumber.values()).sort((a, b) => b.call_count - a.call_count).slice(0, 10));
     setLoading(false);
   }, []);
+
+  const retryEvent = useCallback(async (eventId: string) => {
+    setRetrying(eventId);
+    const { data, error } = await supabase.functions.invoke("ctm-retry-event", { body: { event_id: eventId } });
+    setRetrying(null);
+    if (error) return toast.error(`Retry failed: ${error.message}`);
+    const d = data as { ok?: boolean; error?: string };
+    if (d?.error) return toast.error(`Retry failed: ${d.error}`);
+    toast.success("Event reprocessed");
+    void loadHealth();
+  }, [loadHealth]);
 
   useEffect(() => {
     void loadHealth();
@@ -228,6 +256,50 @@ export function CtmOperationsPanel() {
                 {unmapped.length === 0 && (
                   <tr><td colSpan={3} className="p-3 text-center text-muted-foreground">All recent CTM calls are linked to leads.</td></tr>
                 )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Recent webhook events</div>
+          <div className="rounded-lg border">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 text-left uppercase text-muted-foreground">
+                <tr>
+                  <th className="p-2">Received</th><th className="p-2">Call</th>
+                  <th className="p-2">Kind</th><th className="p-2">Status</th>
+                  <th className="p-2">Attempts</th><th className="p-2">Error</th>
+                  <th className="p-2 w-24" />
+                </tr>
+              </thead>
+              <tbody>
+                {webhookEvents.length === 0 && (
+                  <tr><td colSpan={7} className="p-3 text-center text-muted-foreground">No webhook events recorded yet.</td></tr>
+                )}
+                {webhookEvents.map((e) => (
+                  <tr key={e.id} className="border-t align-top">
+                    <td className="p-2">{new Date(e.received_at).toLocaleString()}</td>
+                    <td className="p-2 font-mono">{e.ctm_call_id ?? "—"}</td>
+                    <td className="p-2">{e.event_kind ?? "—"}</td>
+                    <td className="p-2">
+                      <Badge variant={
+                        e.status === "processed" ? "default"
+                        : e.status === "failed" ? "destructive" : "outline"
+                      }>{e.status}</Badge>
+                    </td>
+                    <td className="p-2">{e.attempt_count}</td>
+                    <td className="p-2 text-destructive break-all">{e.error ?? "—"}</td>
+                    <td className="p-2 text-right">
+                      {e.status === "failed" && (
+                        <Button size="sm" variant="outline" disabled={retrying === e.id}
+                          onClick={() => { void retryEvent(e.id); }}>
+                          {retrying === e.id ? "Retrying…" : "Retry"}
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
