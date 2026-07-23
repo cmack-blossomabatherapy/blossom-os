@@ -14,7 +14,6 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PushNavigationListener } from "@/components/push/PushNavigationListener";
-import { BlossomAIProvider } from "@/components/ai/BlossomAIAssistant";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
@@ -602,9 +601,7 @@ function RbtLegacyRoute({ appPath, children }: { appPath: string; children: Reac
 
 const OSOutlet = () => (
   <OSRoleProvider>
-    <BlossomAIProvider>
-      <Outlet />
-    </BlossomAIProvider>
+    <Outlet />
   </OSRoleProvider>
 );
 
