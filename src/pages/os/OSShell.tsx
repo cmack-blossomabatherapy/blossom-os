@@ -115,7 +115,6 @@ export const STAGED_ROLE_LIVE_PATHS: ReadonlySet<string> = new Set([
   "/reports",
   "/ai/assistant",
   "/tasks",
-  "/intake/parent-communication",
 ]);
 
 /**
@@ -142,6 +141,7 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   ]),
   intake_coordinator: new Set<string>([
     "/intake/dashboard",
+    "/intake/lead-to-active",
     "/leads?view=pipeline",
     "/intake/missing-information",
     "/intake/parent-communication",
