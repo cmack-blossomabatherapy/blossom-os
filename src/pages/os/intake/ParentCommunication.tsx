@@ -134,7 +134,7 @@ export default function ParentCommunication() {
   const [sendTpl, setSendTpl] = useState<ParentCommTemplate | null>(null);
   // Live intake tasks feed powers the "open follow-ups" badge and keeps this
   // page aligned with the shared intake operational surface.
-  const { rows: intakeTasks } = useIntakeTasksLive();
+  const { tasks: intakeTasks } = useIntakeTasksLive();
   const openTasks = intakeTasks.filter((t) => t.status !== "Completed").length;
 
   const filtered = useMemo(() => {
