@@ -14,17 +14,35 @@ describe("Sprint 15 — Intake Team live menu", () => {
     const paths = intake!.sections.flatMap((s) => s.items.map((i) => i.path));
     for (const p of [
       "/intake/dashboard",
-      "/intake/lead-to-active",
-      "/intake/missing-information",
-      "/intake/parent-communication",
       "/intake/tasks",
-      "/intake/benefits-cheat-sheets",
+      "/leads",
+      "/intake/missing-information",
+      "/phone/ai-calls",
+      "/intake/cr-packet-prep",
     ]) {
       expect(paths).toContain(p);
     }
     // Export 81 — Patient Lifetime Journey is Marketing/Admin only and must
     // no longer appear in the Intake menu.
     expect(paths).not.toContain("/patient-journey");
+    // Intake simplification pass — removed operator-facing entries:
+    for (const p of [
+      "/intake/lead-to-active",
+      "/intake/parent-communication",
+      "/intake/benefits-cheat-sheets",
+      "/leads?view=pipeline",
+    ]) {
+      expect(paths).not.toContain(p);
+    }
+  });
+
+  it("Intake menu order: Dashboard, Tasks, then Leads", () => {
+    const paths = intake!.sections
+      .find((s) => s.id === "intake")!
+      .items.map((i) => i.path);
+    expect(paths[0]).toBe("/intake/dashboard");
+    expect(paths[1]).toBe("/intake/tasks");
+    expect(paths[2]).toBe("/leads");
   });
 
   it("Intake menu does NOT include the generic /dashboard item", () => {
@@ -54,11 +72,8 @@ describe("Sprint 15 — OSShell role-specific live paths", () => {
     expect(shell).toMatch(/intake_coordinator:\s*new Set/);
     for (const p of [
       "/intake/dashboard",
-      "/intake/lead-to-active",
       "/intake/missing-information",
-      "/intake/parent-communication",
       "/intake/tasks",
-      "/intake/benefits-cheat-sheets",
       "/leads",
     ]) {
       expect(shell).toContain(`"${p}"`);
@@ -69,6 +84,10 @@ describe("Sprint 15 — OSShell role-specific live paths", () => {
     const end = shell.indexOf("])", start);
     const block = shell.slice(start, end);
     expect(block).not.toMatch(/\/patient-journey/);
+    // Retired intake surfaces should no longer be listed as live for intake:
+    expect(block).not.toMatch(/\/intake\/lead-to-active/);
+    expect(block).not.toMatch(/\/intake\/parent-communication/);
+    expect(block).not.toMatch(/\/intake\/benefits-cheat-sheets/);
   });
 
   it("uses isPathLiveForRole instead of bare STAGED_ROLE_LIVE_PATHS.has for menu gating", () => {
