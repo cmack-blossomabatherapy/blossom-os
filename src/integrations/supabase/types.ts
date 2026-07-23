@@ -9921,66 +9921,6 @@ export type Database = {
           },
         ]
       }
-      email_templates: {
-        Row: {
-          body: string
-          channel: string
-          created_at: string
-          description: string | null
-          display_name: string
-          id: string
-          is_active: boolean
-          merge_fields: Json
-          provider: string | null
-          stage: string | null
-          subject: string | null
-          team: string | null
-          template_key: string
-          updated_at: string
-          updated_by: string | null
-          use_case: string | null
-          used_in: string | null
-        }
-        Insert: {
-          body: string
-          channel: string
-          created_at?: string
-          description?: string | null
-          display_name: string
-          id?: string
-          is_active?: boolean
-          merge_fields?: Json
-          provider?: string | null
-          stage?: string | null
-          subject?: string | null
-          team?: string | null
-          template_key: string
-          updated_at?: string
-          updated_by?: string | null
-          use_case?: string | null
-          used_in?: string | null
-        }
-        Update: {
-          body?: string
-          channel?: string
-          created_at?: string
-          description?: string | null
-          display_name?: string
-          id?: string
-          is_active?: boolean
-          merge_fields?: Json
-          provider?: string | null
-          stage?: string | null
-          subject?: string | null
-          team?: string | null
-          template_key?: string
-          updated_at?: string
-          updated_by?: string | null
-          use_case?: string | null
-          used_in?: string | null
-        }
-        Relationships: []
-      }
       employee_bonuses: {
         Row: {
           amount: number
@@ -14079,6 +14019,69 @@ export type Database = {
           updated_by?: string | null
           updated_by_name?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      intake_communication_templates: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          merge_fields: Json
+          provider: string | null
+          stage: string | null
+          subject: string | null
+          team: string | null
+          template_key: string
+          updated_at: string
+          updated_by: string | null
+          use_case: string | null
+          used_in: string | null
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          merge_fields?: Json
+          provider?: string | null
+          stage?: string | null
+          subject?: string | null
+          team?: string | null
+          template_key: string
+          updated_at?: string
+          updated_by?: string | null
+          use_case?: string | null
+          used_in?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          merge_fields?: Json
+          provider?: string | null
+          stage?: string | null
+          subject?: string | null
+          team?: string | null
+          template_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          use_case?: string | null
+          used_in?: string | null
         }
         Relationships: []
       }
