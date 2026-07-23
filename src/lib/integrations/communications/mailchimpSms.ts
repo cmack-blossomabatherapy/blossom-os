@@ -7,8 +7,16 @@ import type {
   LeadCommunicationContext,
   SmsTemplateKey,
 } from "./communicationTypes";
+import { resolveTemplate } from "./templateRegistry";
+
+/** Test-only override used to force a configured state without leaking env. */
+let __configuredOverride: boolean | null = null;
+export function __setSmsConfiguredForTests(value: boolean | null) {
+  __configuredOverride = value;
+}
 
 export function isMailchimpSmsConfigured(): boolean {
+  if (__configuredOverride !== null) return __configuredOverride;
   const envFlag = (import.meta as unknown as { env?: Record<string, string> }).env;
   return Boolean(envFlag?.VITE_MAILCHIMP_SMS_API_KEY && envFlag?.VITE_MAILCHIMP_SMS_PROGRAM_ID);
 }
@@ -40,12 +48,24 @@ export async function sendSmsViaMailchimp(
       message: "No phone number on file for this lead.",
     };
   }
+  const resolved = await resolveTemplate("sms", templateKey);
+  if (!resolved || !resolved.approvedForAutomation) {
+    return {
+      success: false,
+      provider: "mailchimp-sms",
+      action: "sms",
+      leadId: lead.leadId,
+      timestamp,
+      message: `SMS template "${templateKey}" is inactive or unavailable; contact Admin.`,
+      needsConfiguration: false,
+    };
+  }
   return {
     success: true,
     provider: "mailchimp-sms",
     action: "sms",
     leadId: lead.leadId,
     timestamp,
-    message: `SMS "${templateKey}" sent to ${lead.phone}.`,
+    message: `SMS "${resolved.displayName}" sent to ${lead.phone}.`,
   };
 }
