@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LeadNameLink, useLeadDrawer } from "@/contexts/LeadDrawerContext";
+import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
   Plus, AlertCircle, CheckCircle2, List, Play,
   CalendarClock, Flame, Inbox, ListTodo, Search, ArrowUpDown,
@@ -158,7 +158,6 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
   const { leads: allLeads } = useLeads();
   const { matches } = useIntakeStateFilter();
   const { tasks, loading, complete, snooze, reassign, markStarted, setStatus } = useIntakeTasksLive();
-  const { openLead } = useLeadDrawer();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
@@ -362,7 +361,7 @@ export default function IntakeTasks({ variant = "intake", noShell = false }: Int
     }
     if (dest.drawer) {
       const openId = row.lead?.id ?? row.task.lead_id;
-      if (openId) openLead(openId);
+      if (openId) navigate(`/leads/${encodeURIComponent(openId)}`);
     } else if (dest.to) {
       navigate(dest.to);
     }

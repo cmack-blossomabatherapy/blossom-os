@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { LeadNameLink, useLeadDrawer } from "@/contexts/LeadDrawerContext";
+import { LeadNameLink } from "@/contexts/LeadDrawerContext";
+import { useNavigate } from "react-router-dom";
 import {
   MessageSquare, Plus, ArrowRight, ArrowLeft, UserPlus, AlertCircle,
   ShieldCheck, ShieldAlert, Flame, ExternalLink,
@@ -73,7 +74,8 @@ const MISSING_OPTIONS: { key: string; label: string; tag: string }[] = [
 export function LeadActionPanel({ lead, compact, sourcePage, onAfterAction }: LeadActionPanelProps) {
   const { moveStage, revertStage, assignOwner, addTag } = useLeads();
   const { logInteraction, addFollowUp, isPersistable } = useLeadJourneyLive(lead.id);
-  const { openLead } = useLeadDrawer();
+  const navigate = useNavigate();
+  const openLead = (id: string) => navigate(`/leads/${encodeURIComponent(id)}`);
 
   const [logOpen, setLogOpen] = useState(false);
   const [followOpen, setFollowOpen] = useState(false);
