@@ -28,3 +28,62 @@ export const OPERATIONS_AND_STATE_ROUTE_ROLES = [
   "state_director",
   "assistant_state_director",
 ] as const;
+
+/**
+ * Executive Leadership tier — roles allowed to reach `/executive/*` surfaces
+ * (company-wide KPIs, strategic risks, growth readiness, org health).
+ * Anything more sensitive than this should escalate to an explicit AdminRoute.
+ */
+export const EXECUTIVE_ROUTE_ROLES = [
+  "admin",
+  "super_admin",
+  "systems_admin",
+  "exec",
+  "executive",
+  "executive_leadership",
+  "ceo",
+  "coo",
+  "ops_manager",
+  "director_of_operations",
+  "operations_manager",
+  "operations_leadership",
+  // Clinic Growth-to-Launch shares `/executive/growth-readiness`.
+  "clinic_growth",
+] as const;
+
+/**
+ * State Director tier — leadership + state directors (all variants) + the
+ * assistant/VA roles that report into them. Used to guard `/state-director`
+ * and other state-scoped landing pages.
+ */
+export const STATE_DIRECTOR_ROUTE_ROLES = [
+  ...OPERATIONS_AND_STATE_ROUTE_ROLES,
+  "regional_state_director",
+  "state_va",
+] as const;
+
+/**
+ * Finance visibility tier — roles allowed to reach `/billing-finance` and
+ * related revenue/RCM surfaces. Payroll admins are intentionally excluded;
+ * they use `/hr/payroll` instead. Kept narrow because finance surfaces expose
+ * revenue, collections, and write-off data.
+ */
+export const FINANCE_ROUTE_ROLES = [
+  "admin",
+  "super_admin",
+  "systems_admin",
+  "exec",
+  "executive",
+  "executive_leadership",
+  "ceo",
+  "coo",
+  "ops_manager",
+  "director_of_operations",
+  "operations_manager",
+  "operations_leadership",
+  "finance",
+  "billing_finance",
+  "billing",
+  "rcm_director",
+  "controller",
+] as const;
