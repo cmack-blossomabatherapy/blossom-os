@@ -1065,7 +1065,7 @@ export default function LeadDetail() {
         </Tabs>
       </div>
 
-      {/* Dialogs — real, no window.prompt anywhere. */}
+      {/* Real dialogs — no ad-hoc browser prompts. */}
       <EditLeadDialog open={editOpen} onOpenChange={setEditOpen} lead={lead} />
       {isPersisted && (
         <>
