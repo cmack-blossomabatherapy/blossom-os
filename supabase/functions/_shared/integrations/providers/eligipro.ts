@@ -1,32 +1,52 @@
 import type { ProviderAdapter } from "../types.ts";
 import { getEnv, hasAll } from "../secrets.ts";
-import { fetchJson } from "../http.ts";
 
+/**
+ * Eligipro — payer eligibility. Vendor endpoint requires configuration
+ * per tenant; the adapter reports `vendor_docs_required` honestly until
+ * a documented base URL + probe path are supplied. Never fakes success.
+ */
 export const eligiproAdapter: ProviderAdapter = {
   id: "eligipro",
   classification: "eligibility",
   requiredSecrets: ["ELIGIPRO_API_KEY"],
   optionalSecrets: ["ELIGIPRO_API_BASE_URL", "ELIGIPRO_PROBE_PATH"],
+  capabilities: {
+    probe: true,
+    pullSync: false,
+    webhook: true,
+    outboundDisabled: true,
+    documentationUrl: "https://www.eligipro.com/",
+    operationalState: "vendor_docs_required",
+  },
 
   async probe() {
     const need = hasAll(this.requiredSecrets);
-    if (!need.ok) return { ok: false, status: "not_configured", message: `Missing: ${need.missing.join(", ")}` };
+    if (!need.ok) return { ok: false, status: "needs_credentials", message: `Missing: ${need.missing.join(", ")}` };
     const baseUrl = getEnv("ELIGIPRO_API_BASE_URL");
     const probePath = getEnv("ELIGIPRO_PROBE_PATH");
     if (!baseUrl || !probePath) {
-      return { ok: true, status: "configured_pending_probe_path", message: "Eligipro key present; set ELIGIPRO_API_BASE_URL and ELIGIPRO_PROBE_PATH." };
+      return {
+        ok: true,
+        status: "vendor_docs_required",
+        message: "Eligipro key present; vendor endpoint unconfirmed. Set ELIGIPRO_API_BASE_URL and ELIGIPRO_PROBE_PATH.",
+      };
     }
-    const res = await fetchJson(`${baseUrl.replace(/\/$/, "")}${probePath}`, {
+    const res = await fetch(`${baseUrl.replace(/\/$/, "")}${probePath}`, {
       headers: { Authorization: `Bearer ${getEnv("ELIGIPRO_API_KEY")}` },
-    });
-    if (!res.ok) return { ok: false, status: "error", message: res.error ?? `HTTP ${res.status}` };
+    }).catch((e) => ({ ok: false, status: 0, statusText: e instanceof Error ? e.message : String(e) } as Response));
+    if (!res.ok) return { ok: false, status: "error", message: `HTTP ${res.status}` };
     return { ok: true, status: "connected", message: "Eligipro probe ok" };
   },
 
   async sync() {
-    const baseUrl = getEnv("ELIGIPRO_API_BASE_URL");
-    if (!baseUrl) return { ok: false, status: "failed", message: "configured_pending_probe_path: ELIGIPRO_API_BASE_URL required." };
-    return { ok: true, status: "success", message: "Eligipro pull sync is a no-op; eligibility events flow via webhook." };
+    // Never returns success without a real API call.
+    return {
+      ok: false,
+      status: "failed",
+      message:
+        "vendor_docs_required: Eligipro has no published pull endpoint for Blossom OS. Eligibility events flow via webhook once vendor confirms.",
+    };
   },
 
   normalizeWebhook(payload) {

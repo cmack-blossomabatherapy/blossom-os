@@ -14,6 +14,10 @@ import { jotformAdapter } from "./providers/jotform.ts";
 import { calendlyAdapter } from "./providers/calendly.ts";
 import { goIntegrateNavaAdapter } from "./providers/goIntegrateNava.ts";
 import { viventiumAdapter } from "./providers/viventium.ts";
+import { googleAdsAdapter } from "./providers/googleAds.ts";
+import { metaAdsAdapter } from "./providers/metaAds.ts";
+import { fathomAdapter } from "./providers/fathom.ts";
+import { bloomgrowthAdapter } from "./providers/bloomgrowth.ts";
 
 const ADAPTERS: ProviderAdapter[] = [
   mailchimpAdapter,
@@ -31,6 +35,10 @@ const ADAPTERS: ProviderAdapter[] = [
   calendlyAdapter,
   goIntegrateNavaAdapter,
   viventiumAdapter,
+  googleAdsAdapter,
+  metaAdsAdapter,
+  fathomAdapter,
+  bloomgrowthAdapter,
 ];
 
 const REGISTRY = new Map<string, ProviderAdapter>(ADAPTERS.map((a) => [a.id, a]));

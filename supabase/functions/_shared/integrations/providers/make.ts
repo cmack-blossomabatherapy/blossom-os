@@ -12,6 +12,14 @@ export const makeAdapter: ProviderAdapter = {
   classification: "migration_bridge",
   requiredSecrets: ["MAKE_WEBHOOK_SECRET", "MAKE_OUTBOUND_WEBHOOK_URL"],
   webhookOnly: false,
+  capabilities: {
+    probe: true,
+    pullSync: false,
+    webhook: true,
+    outboundDisabled: false,
+    documentationUrl: "https://www.make.com/en/api-documentation",
+    operationalState: "migration_bridge",
+  },
 
   async probe() {
     const need = hasAll(this.requiredSecrets);

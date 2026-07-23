@@ -13,6 +13,14 @@ export const viventiumAdapter: ProviderAdapter = {
     "VIVENTIUM_DIVISION_CODE",
   ],
   optionalSecrets: ["VIVENTIUM_BASE_URL"],
+  capabilities: {
+    probe: true,
+    pullSync: true,
+    webhook: false,
+    outboundDisabled: true,
+    documentationUrl: "https://www.viventium.com/",
+    operationalState: "ingest_only",
+  },
 
   async probe() {
     const need = hasAll(this.requiredSecrets);

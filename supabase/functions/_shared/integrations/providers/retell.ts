@@ -10,6 +10,14 @@ export const retellAdapter: ProviderAdapter = {
   classification: "ai_voice",
   requiredSecrets: ["RETELL_API_KEY"],
   optionalSecrets: ["RETELL_WEBHOOK_SECRET"],
+  capabilities: {
+    probe: true,
+    pullSync: true,
+    webhook: true,
+    outboundDisabled: true,
+    documentationUrl: "https://docs.retellai.com/",
+    operationalState: "ingest_only",
+  },
 
   async probe() {
     const need = hasAll(this.requiredSecrets);
