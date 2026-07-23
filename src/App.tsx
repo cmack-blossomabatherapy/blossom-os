@@ -814,30 +814,30 @@ const App = () => (
                   <Route path="/ws/finance"    element={<Navigate to="/reports"                    replace />} />
                   {/* Old workspace shell is fully retired — any /ws/:id falls back to dashboard. */}
                   <Route path="/ws/:id"        element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/executive" element={<ExecutiveOverview />} />
+                  <Route path="/executive" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><ExecutiveOverview /></PermissionRoute>} />
                   <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
-                  <Route path="/executive/pulse" element={<CompanyPulse />} />
-                  <Route path="/executive/briefing" element={<ExecutiveBriefing />} />
-                  <Route path="/executive/organizational-health" element={<OrganizationalHealth />} />
-                  <Route path="/executive/strategic-risks" element={<StrategicRisks />} />
-                  <Route path="/executive/growth-readiness" element={<GrowthReadiness />} />
-                  <Route path="/executive/leadership-accountability" element={<LeadershipAccountability />} />
-                  <Route path="/executive/staffing-expansion" element={<StaffingExpansion />} />
-                  <Route path="/executive/operational-consistency" element={<OperationalConsistency />} />
-                  <Route path="/executive/updates" element={<ExecutiveUpdates />} />
+                  <Route path="/executive/pulse" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><CompanyPulse /></PermissionRoute>} />
+                  <Route path="/executive/briefing" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><ExecutiveBriefing /></PermissionRoute>} />
+                  <Route path="/executive/organizational-health" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><OrganizationalHealth /></PermissionRoute>} />
+                  <Route path="/executive/strategic-risks" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><StrategicRisks /></PermissionRoute>} />
+                  <Route path="/executive/growth-readiness" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><GrowthReadiness /></PermissionRoute>} />
+                  <Route path="/executive/leadership-accountability" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><LeadershipAccountability /></PermissionRoute>} />
+                  <Route path="/executive/staffing-expansion" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><StaffingExpansion /></PermissionRoute>} />
+                  <Route path="/executive/operational-consistency" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><OperationalConsistency /></PermissionRoute>} />
+                  <Route path="/executive/updates" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><ExecutiveUpdates /></PermissionRoute>} />
                   <Route path="/executive/resources" element={<Navigate to="/resource-library" replace />} />
-                  <Route path="/operations" element={<OpsExecutiveDashboard />} />
-                  <Route path="/operations/command-center" element={<OpsCommandCenter />} />
-                  <Route path="/operations/briefing" element={<OpsLeadershipBriefing />} />
-                  <Route path="/operations/department-health" element={<OpsDepartmentHealth />} />
-                  <Route path="/operations/workflow-risks" element={<OpsWorkflowRisks />} />
-                  <Route path="/operations/escalations" element={<OpsEscalations />} />
-                  <Route path="/operations/accountability" element={<OpsAccountability />} />
-                  <Route path="/operations/staffing-capacity" element={<OpsStaffingCapacity />} />
-                  <Route path="/operations/training-adoption" element={<OpsTrainingAdoption />} />
-                  <Route path="/operations/updates" element={<OpsLeadershipUpdates />} />
+                  <Route path="/operations" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsExecutiveDashboard /></PermissionRoute>} />
+                  <Route path="/operations/command-center" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsCommandCenter /></PermissionRoute>} />
+                  <Route path="/operations/briefing" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsLeadershipBriefing /></PermissionRoute>} />
+                  <Route path="/operations/department-health" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsDepartmentHealth /></PermissionRoute>} />
+                  <Route path="/operations/workflow-risks" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsWorkflowRisks /></PermissionRoute>} />
+                  <Route path="/operations/escalations" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsEscalations /></PermissionRoute>} />
+                  <Route path="/operations/accountability" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsAccountability /></PermissionRoute>} />
+                  <Route path="/operations/staffing-capacity" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsStaffingCapacity /></PermissionRoute>} />
+                  <Route path="/operations/training-adoption" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsTrainingAdoption /></PermissionRoute>} />
+                  <Route path="/operations/updates" element={<PermissionRoute allowedRoles={[...OPERATIONS_LEADERSHIP_ROUTE_ROLES]}><OpsLeadershipUpdates /></PermissionRoute>} />
                   <Route path="/operations/resources" element={<Navigate to="/resource-library" replace />} />
-                  <Route path="/state-director" element={<OSStateDirector />} />
+                  <Route path="/state-director" element={<PermissionRoute allowedRoles={[...STATE_DIRECTOR_ROUTE_ROLES]}><OSStateDirector /></PermissionRoute>} />
                   <Route path="/state-director/resources" element={<PermissionRoute allowedRoles={["admin", "state_director", "assistant_state_director", "regional_state_director", "state_va", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "business_development", "intake_lead", "recruiting_lead", "scheduling_lead", "staffing_lead", "clinical_director", "bcba", "case_manager", "qa_team", "qa_director", "authorization_manager", "training_manager"]}><OSStateDirectorResources /></PermissionRoute>} />
                   <Route path="/assistant-state-director/resources" element={<PermissionRoute allowedRoles={["admin", "assistant_state_director", "state_director", "regional_state_director", "state_va", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "intake_lead", "recruiting_lead", "scheduling_lead", "staffing_lead", "clinical_director", "case_manager", "qa_team", "qa_director", "authorization_manager", "training_manager"]}><OSAssistantStateDirectorResources /></PermissionRoute>} />
                   <Route path="/intake-coordinator" element={<OSIntakeCoordinator />} />
@@ -888,8 +888,8 @@ const App = () => (
                   <Route path="/hr/compliance" element={<OSHRCompliance />} />
                   <Route path="/hr/messages" element={<OSHRMessages />} />
                   <Route path="/hr/team-resources" element={<Navigate to="/resource-library" replace />} />
-                  <Route path="/billing-finance" element={<OSBillingFinance />} />
-                  <Route path="/qa-team" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQATeam /></PermissionRoute>} />
+                  <Route path="/billing-finance" element={<PermissionRoute allowedRoles={[...FINANCE_ROUTE_ROLES]}><OSBillingFinance /></PermissionRoute>} />
+                  <Route path="/qa-team" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQATeam /></PermissionRoute>} />
                   <Route path="/qa-workspace" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQAWorkspace /></PermissionRoute>} />
                   <Route path="/qa-queue" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQAQueue /></PermissionRoute>} />
                   <Route path="/qa/board" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQAReviewBoard /></PermissionRoute>} />
