@@ -21,21 +21,11 @@ export function LeadDrawerProvider({ children }: { children: ReactNode }) {
 }
 
 export function useLeadDrawer(): Ctx {
-  // useNavigate is safe inside React components / hooks under BrowserRouter.
-  // Any legacy caller that runs outside a Router falls back to a plain assign.
-  let navigate: ReturnType<typeof useNavigate> | null = null;
-  try {
-    navigate = useNavigate();
-  } catch {
-    navigate = null;
-  }
+  const navigate = useNavigate();
   return {
     openLeadId: null,
     closeLead: () => {},
-    openLead: (id: string) => {
-      if (navigate) navigate(`/leads/${encodeURIComponent(id)}`);
-      else if (typeof window !== "undefined") window.location.assign(`/leads/${id}`);
-    },
+    openLead: (id: string) => navigate(`/leads/${encodeURIComponent(id)}`),
   };
 }
 

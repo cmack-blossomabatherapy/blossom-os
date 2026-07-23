@@ -40,7 +40,7 @@ import { useLeadDocuments } from "@/hooks/useLeadDocuments";
 import { useLeadReferralLink } from "@/hooks/useLeadReferralLink";
 import { Button } from "@/components/ui/button";
 
-const STAGE_DETAILS: Record<string, { what: string; involves: string[]; owner: string }> = {
+export const STAGE_DETAILS: Record<string, { what: string; involves: string[]; owner: string }> = {
   "Lead Captured": {
     what: "Inquiry received from a parent, referral source, or marketing channel.",
     involves: ["Source attribution logged", "Auto-assigned to intake coordinator", "Welcome SMS/email queued"],
@@ -1104,7 +1104,7 @@ const DOC_REQUEST_OPTIONS: DocRequestOption[] = [
   { label: "Intake Packet", template: "document-request-intake-packet", matchTokens: ["intake packet"] },
 ];
 
-function DocumentRequestsBlock({
+export function DocumentRequestsBlock({
   lead,
   existingLabels,
 }: {
@@ -1182,7 +1182,7 @@ function DocumentRequestsBlock({
   );
 }
 
-function PipelineProgress({
+export function PipelineProgress({
   status,
   focusStage,
 }: {
