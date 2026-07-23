@@ -121,6 +121,7 @@ export const jotformAdapter: ProviderAdapter = {
     webhook: true,
     outboundDisabled: true,
     documentationUrl: "https://api.jotform.com/docs/",
+    operationalState: "ingest_only",
   },
 
   async probe() {

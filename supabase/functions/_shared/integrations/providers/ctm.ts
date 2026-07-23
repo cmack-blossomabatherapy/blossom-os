@@ -8,6 +8,15 @@ export const ctmAdapter: ProviderAdapter = {
   classification: "call_tracking",
   requiredSecrets: ["CTM_API_KEY", "CTM_WEBHOOK_SECRET"],
   optionalSecrets: ["CTM_API_BASE_URL", "CTM_ACCOUNT_ID", "CTM_PROBE_PATH"],
+  capabilities: {
+    probe: true,
+    pullSync: true,
+    webhook: true,
+    outboundDisabled: true,
+    documentationUrl: "https://developers.calltrackingmetrics.com/",
+    // CTM stays INGEST_ONLY — live inbound calls flow via ctm-webhook.
+    operationalState: "ingest_only",
+  },
 
   async probe() {
     const need = hasAll(this.requiredSecrets);
