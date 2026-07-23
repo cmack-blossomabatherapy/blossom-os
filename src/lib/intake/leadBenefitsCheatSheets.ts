@@ -39,6 +39,16 @@ export interface LeadBenefitsCheatSheet {
 }
 
 /**
+ * Persisted row shape (mirrors public.benefits_knowledge). Optional id/active
+ * fields distinguish it from the static fallback array.
+ */
+export interface BenefitsKnowledgeRow extends LeadBenefitsCheatSheet {
+  id?: string;
+  isActive?: boolean;
+  updatedAt?: string | null;
+}
+
+/**
  * Source rows — exact mirror of the cleaned Lead Benefits Cheat Sheet
  * workbook (Monday board id 1782177836). Every row carries the real
  * Monday item id from the source board.
