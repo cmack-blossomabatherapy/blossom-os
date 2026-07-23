@@ -162,8 +162,6 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "Billing & Finance",         to: "/billing-finance",                icon: IdCard },
       { label: "Revenue",                   to: "/revenue",                        icon: TrendingUp },
       { label: "Payroll Benefits",          to: "/payroll/benefits",               icon: Wallet },
-      { label: "No OON Benefits",           to: "/ops/no-oon-benefits",            icon: ShieldCheck },
-      { label: "Lead Benefits Cheat Sheets",to: "/intake/benefits-cheat-sheets",   icon: ShieldCheck },
     ],
   },
   {
@@ -175,9 +173,7 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "Employee Records",   to: "/hr/employee-records",  icon: Users },
       { label: "HR Requests",        to: "/hr/requests",          icon: ClipboardList },
       { label: "Compliance Items",   to: "/hr/compliance-items",  icon: ShieldCheck },
-      { label: "Billing",            to: "/billing-finance",      icon: IdCard },
       { label: "Payroll",            to: "/payroll/workspace",    icon: Wallet },
-      { label: "Revenue",            to: "/revenue",              icon: TrendingUp },
     ],
   },
   {

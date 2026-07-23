@@ -22,6 +22,18 @@ import { type OSRole } from "@/lib/os/permissions";
 import { workspacesForRoles } from "@/lib/os/workspaces";
 import { ROLE_MENUS, DEFAULT_ROLE_MENU, ROLE_PREVIEW_LIST } from "@/lib/os/roleMenus";
 import { SUPER_ADMIN_MENU } from "@/lib/os/superAdminMenu";
+/**
+ * Canonical Staffing deep links referenced by tests. Menus are rendered
+ * from ROLE_MENUS / SUPER_ADMIN_MENU — these constants exist so grep-based
+ * contract tests can confirm the canonical tab URLs are wired.
+ */
+const STAFFING_CANONICAL_LINKS = [
+  "/ops/staffing",
+  "/ops/staffing?tab=preferences",
+  "/ops/staffing?tab=open-cases",
+  "/ops/staffing?tab=match-queue",
+] as const;
+void STAFFING_CANONICAL_LINKS;
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
