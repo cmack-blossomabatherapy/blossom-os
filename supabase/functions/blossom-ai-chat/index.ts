@@ -546,15 +546,20 @@ Deno.serve(async (req) => {
       }
       if (wantsTemplates) {
         const { data } = await supabase
-          .from("email_templates")
-          .select("template_key,channel,display_name,description,used_in,subject,stage,use_case,is_active")
+          .from("intake_communication_templates")
+          .select("template_key,channel,display_name,description,used_in,subject,stage,use_case,team,merge_fields,is_active")
           .eq("is_active", true)
           .limit(30);
         if (data && data.length) {
           templatesBlock =
-            "INTAKE TEMPLATES (approved drafts only — never auto-send):\n\n" +
-            data.map((r: any) => `- ${r.display_name || r.template_key} [${r.channel}${r.stage ? ` · ${r.stage}` : ""}${r.use_case ? ` · ${r.use_case}` : ""}]${r.subject ? ` — subject: ${r.subject}` : ""}`).join("\n");
-          toolsCalled.push("retrieve:email_templates");
+            "INTAKE TEMPLATES (approved drafting guidance from public.intake_communication_templates — only these active rows are approved for automated drafting; never auto-send, always cite template_key + channel):\n\n" +
+            data.map((r: any) => {
+              const mf = Array.isArray(r.merge_fields) && r.merge_fields.length
+                ? ` · merge: ${r.merge_fields.map((f: string) => `{{${f}}}`).join(", ")}`
+                : "";
+              return `- [${r.channel}:${r.template_key}] ${r.display_name || r.template_key}${r.stage ? ` · stage=${r.stage}` : ""}${r.use_case ? ` · use=${r.use_case}` : ""}${r.team ? ` · team=${r.team}` : ""}${r.subject ? ` — subject: ${r.subject}` : ""}${mf}`;
+            }).join("\n");
+          toolsCalled.push("retrieve:intake_communication_templates");
         }
       }
     } catch (e) {
