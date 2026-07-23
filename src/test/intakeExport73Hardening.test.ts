@@ -158,23 +158,21 @@ describe("Export 75 - Intake Dashboard top actions", () => {
     resolve(process.cwd(), "src/pages/os/intake/IntakeDashboard.tsx"),
     "utf8",
   );
-  // Extract the actions={[ ... ]} block from GrowthPageShell props.
-  const actionsMatch = src.match(/actions=\{\[([\s\S]*?)\]\}/);
-  const actionsBlock = actionsMatch?.[1] ?? "";
-
-  it("actions array exists on GrowthPageShell", () => {
-    expect(actionsBlock).toBeTruthy();
+  // Redesign: single primary action cluster lives in the welcome band, not
+  // in a duplicate GrowthPageShell actions prop.
+  it("no duplicate GrowthPageShell actions prop", () => {
+    expect(src).not.toMatch(/actions=\{\[/);
   });
-  it("includes Add Lead", () => {
-    expect(actionsBlock).toContain('label: "Add Lead"');
+  it("welcome band exposes Add Lead", () => {
+    expect(src).toMatch(/onClick=\{\(\)\s*=>\s*setAddOpen\(true\)\}[\s\S]{0,200}Add Lead/);
   });
-  it("includes Open Leads", () => {
-    expect(actionsBlock).toContain('label: "Open Leads"');
+  it("welcome band exposes Open Pipeline linking to /leads?view=pipeline", () => {
+    expect(src).toMatch(/to="\/leads\?view=pipeline"[\s\S]{0,120}Open Pipeline/);
   });
   it("does not include Send Missing Info Reminder", () => {
-    expect(actionsBlock).not.toContain("Send Missing Info Reminder");
+    expect(src).not.toContain("Send Missing Info Reminder");
   });
-  it("does not include Intake Communications in top actions", () => {
-    expect(actionsBlock).not.toContain("Intake Communications");
+  it("does not use Intake Communications as a top-action label", () => {
+    expect(src).not.toMatch(/label:\s*"Intake Communications"/);
   });
 });

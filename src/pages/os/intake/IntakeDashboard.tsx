@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
   TrendingUp, MessageSquare, ShieldCheck, Plus,
-  Users, MapPin, Signal, Clock, HeartHandshake, List,
+  Users, MapPin, Signal, Clock, HeartHandshake,
   Inbox, ArrowUpRight, HeartPulse, ChevronRight,
   AlertTriangle, Phone, Mail, Send, Sparkles, Sun, Coffee, Moon, Settings2,
 } from "lucide-react";
@@ -70,7 +70,7 @@ function useGreeting(): { label: string; Icon: typeof Sun } {
 export default function IntakeDashboard() {
   const { leads: allLeads, loading } = useLeads();
   const [addOpen, setAddOpen] = useState(false);
-  const { role, activeState } = useOSRole();
+  const { role } = useOSRole();
   const { displayName } = useAuth();
   const { label: greetingLabel, Icon: GreetingIcon } = useGreeting();
   // Active view role decides what surfaces. Admin diagnostics are gated by
@@ -88,7 +88,8 @@ export default function IntakeDashboard() {
   void _intakeTasksLive;
   // Shared cross-page intake state filter (also drives /intake/tasks,
   // /intake/lead-to-active, /intake/missing-information, etc.).
-  const { matches: matchesIntakeState } = useIntakeStateFilter();
+  const { matches: matchesIntakeState, stateFilter } = useIntakeStateFilter();
+  const stateScopeLabel = stateFilter === "ALL" ? "All states" : stateFilter;
   const leads = useMemo(
     () => allLeads.filter((l) => matchesIntakeState(l.state)),
     [allLeads, matchesIntakeState],
@@ -204,10 +205,6 @@ export default function IntakeDashboard() {
           <IntakeStateFilterToggle />
         </div>
       }
-      actions={[
-        { label: "Add Lead", icon: Plus, variant: "default", onClick: () => setAddOpen(true) },
-        { label: "Open Leads", icon: List, to: "/leads" },
-      ]}
     >
       {/* Warm welcome band — Blossom blush → teal, no rainbow tiles. */}
       <section
@@ -223,7 +220,7 @@ export default function IntakeDashboard() {
               <GreetingIcon className="h-3.5 w-3.5" />
               <span>{greetingLabel}, {displayName?.split(" ")[0] || "there"}.</span>
               <span aria-hidden>·</span>
-              <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {activeState}</span>
+              <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {stateScopeLabel}</span>
             </div>
             <h2 className="mt-1.5 text-2xl md:text-[26px] font-semibold tracking-tight text-foreground leading-tight">
               {actionRequired.length > 0
