@@ -87,6 +87,7 @@ describe("provider readiness manifest — Slice 3", () => {
     for (const entry of PROVIDER_READINESS_MANIFEST) {
       if (entry.retired) continue;
       if (entry.id === "make") continue; // migration_bridge documented exception
+      if (entry.id === "resend") continue; // transactional email is preserved outbound
       expect(entry.capabilities.outboundDisabled, `${entry.id} must have outboundDisabled=true`).toBe(true);
     }
   });
