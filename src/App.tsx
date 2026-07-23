@@ -22,6 +22,7 @@ import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES, 
 import { ROLE_HOME } from "@/lib/os/roleHome";
 import { Loader2 } from "lucide-react";
 import LeadIdRedirect from "./components/leads/LeadIdRedirect";
+import LeadDetail from "./pages/LeadDetail";
 import MapslyHub from "./pages/os/mapsly/MapslyHub";
 import OrgChartPage from "./pages/os/org/OrgChartPage";
 import LiveOrgChart from "./pages/os/org/LiveOrgChart";
@@ -999,7 +1000,7 @@ const App = () => (
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
                   <Route path="/leads/operations" element={<OSIntakeOperations />} />
-                  <Route path="/leads/:id" element={<LeadIdRedirect />} />
+                  <Route path="/leads/:id" element={<LeadDetail />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<ClientsRouter />} />
                   <Route path="/clients/cr/:crId" element={<CrClientRedirect />} />
@@ -1201,7 +1202,7 @@ const App = () => (
                   <Route path="/phone/requests/:id" element={<PhoneSystemRoute><PhoneRequestDetail /></PhoneSystemRoute>} />
                   <Route path="/phone/admin" element={<PhoneSystemRoute><PhoneAdmin /></PhoneSystemRoute>} />
                   <Route path="/phone/ai-calls" element={<IntakeAiCallsRoute><PhoneAfterHoursAI /></IntakeAiCallsRoute>} />
-                  <Route path="/phone/ai-calls/audit" element={<PhoneSystemRoute><PhoneAiCallAudit /></PhoneSystemRoute>} />
+                  <Route path="/phone/ai-calls/audit" element={<BlockIntakeRoute><PhoneSystemRoute><PhoneAiCallAudit /></PhoneSystemRoute></BlockIntakeRoute>} />
                   {/* Marketing Team — all /marketing/* routes wrap PermissionRoute with the shared MARKETING_ROLES model. */}
                   <Route path="/marketing-dashboard" element={<Navigate to="/marketing" replace />} />
                   <Route path="/marketing" element={<PermissionRoute allowedRoles={[...MARKETING_ROLES]}><MarketingDashboard /></PermissionRoute>} />
@@ -1231,7 +1232,7 @@ const App = () => (
                   <Route
                     path="/patient-journey"
                     element={
-                      <PermissionRoute allowedRoles={[...MARKETING_ROLES]}>
+                      <PermissionRoute allowedRoles={["admin", "super_admin", "marketing", "marketing_team", "marketing_growth_lead"]}>
                         <PatientLifetimeJourney />
                       </PermissionRoute>
                     }

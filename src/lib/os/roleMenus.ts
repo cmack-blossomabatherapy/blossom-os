@@ -59,7 +59,7 @@ const TRAINING_AND_RESOURCES: RoleMenuSection = {
   items: [
     { label: "Training Academy", path: "/academy",          icon: GraduationCap },
     { label: "Resource Library", path: "/resource-library", icon: BookOpen },
-    { label: "Parent Communication", path: "/intake/parent-communication", icon: MessageSquare },
+    { label: "Intake Communications", path: "/intake/parent-communication", icon: MessageSquare },
     { label: "Reports",          path: "/reports",          icon: FileText },
   ],
 };
@@ -76,7 +76,7 @@ const STATE_TRAINING_AND_RESOURCES: RoleMenuSection = {
     { label: "Resource Library", path: "/resource-library", icon: BookOpen },
     { label: "State Director Resources", path: "/state-director/resources", icon: BookOpen },
     { label: "Assistant State Director Resources", path: "/assistant-state-director/resources", icon: BookOpen },
-    { label: "Parent Communication", path: "/intake/parent-communication", icon: MessageSquare },
+    { label: "Intake Communications", path: "/intake/parent-communication", icon: MessageSquare },
     { label: "Reports",          path: "/reports",          icon: FileText },
   ],
 };
@@ -326,9 +326,9 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Intake Dashboard",           path: "/intake/dashboard",              icon: LayoutDashboard },
           { label: "Lead → Active Pipeline",     path: "/intake/lead-to-active",         icon: TrendingUp },
           { label: "Leads",                      path: "/leads",                         icon: List },
-          { label: "Ready-to-Start Pipeline",    path: "/leads?view=pipeline",           icon: TrendingUp },
+          { label: "Lead to Ready-to-Start Pipeline",    path: "/leads?view=pipeline",           icon: TrendingUp },
           { label: "Packet Follow Up / Missing Info", path: "/intake/missing-information", icon: ShieldCheck },
-          { label: "Parent Communication",       path: "/intake/parent-communication",   icon: MessageSquare },
+          { label: "Intake Communications",       path: "/intake/parent-communication",   icon: MessageSquare },
           { label: "After-Hours AI Calls",       path: "/phone/ai-calls",                icon: PhoneCall },
           { label: "Benefits Cheat Sheets",      path: "/intake/benefits-cheat-sheets",  icon: ShieldCheck },
           { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },

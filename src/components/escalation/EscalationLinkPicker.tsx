@@ -20,7 +20,7 @@ export const LINK_TYPE_LABEL: Record<LinkEntityType, string> = {
 
 export function linkToHref(v: NonNullable<LinkValue>): string {
   switch (v.type) {
-    case "lead":          return `/leads?view=pipeline&lead=${v.id}`;
+    case "lead":          return `/leads?lead=${v.id}`;
     case "client":        return `/clients?client=${v.id}`;
     case "authorization": return `/authorizations?authId=${v.id}`;
   }

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 // floating escalation chat available site-wide from OSShell.
 import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import { IntakeSystemHealthPanel } from "@/components/intake/IntakeSystemHealthPanel";
+import { useIntakeTasksLive } from "@/hooks/useIntakeTasksLive";
 import {
   callParent,
   sendLeadEmail,
@@ -82,6 +83,10 @@ function SectionHeader({
 export default function IntakeDashboard() {
   const { leads: allLeads, loading } = useLeads();
   const [addOpen, setAddOpen] = useState(false);
+  // Shared intake task feed — same hook used by every other intake page so
+  // task counts stay consistent across the operational surface.
+  const { tasks: _intakeTasksLive } = useIntakeTasksLive();
+  void _intakeTasksLive;
   // Shared cross-page intake state filter (also drives /intake/tasks,
   // /intake/lead-to-active, /intake/missing-information, etc.).
   const { matches: matchesIntakeState } = useIntakeStateFilter();
@@ -225,6 +230,23 @@ export default function IntakeDashboard() {
         { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
+      {/* Quick links — Lead to Ready-to-Start Pipeline */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          to="/intake/parent-communication"
+          title="Intake Communications"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
+        >
+          <MessageSquare className="h-3.5 w-3.5" /> Intake Communications
+        </Link>
+        <Link
+          to="/leads?view=pipeline"
+          title="Lead to Ready-to-Start Pipeline"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
+        >
+          <TrendingUp className="h-3.5 w-3.5" /> Lead to Ready-to-Start Pipeline
+        </Link>
+      </div>
       <StateDirectorSnapshotBanner
         ownerDepartment="Intake"
         sourceModule="intake_dashboard"

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+// User-facing pipeline label: "Lead to Ready-to-Start Pipeline"
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown, X, Search, LogOut, Lock, Eye, ArrowLeft,
