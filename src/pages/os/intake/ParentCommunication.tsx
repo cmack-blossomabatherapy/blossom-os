@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  MessageSquare, Mail, Copy, Send, Search, ShieldAlert, FileText, StickyNote,
+  MessageSquare, Mail, Copy, Send, Search, ShieldAlert, FileText, StickyNote, List,
 } from "lucide-react";
 import { GrowthPageShell } from "@/components/os/growth/GrowthPageShell";
 import { Button } from "@/components/ui/button";
@@ -159,7 +159,7 @@ export default function ParentCommunication() {
       title="Intake Communications"
       description="Approved SMS and email templates for every stage of the family journey — including Intake Packet, Missing Info, and Benefits Verification (VOB) outreach. Search, filter, copy, or send from a lead."
       actions={[
-        { label: "Open Leads", icon: MessageSquare, to: "/leads" },
+        { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
       <div className="text-[11px] text-muted-foreground">
