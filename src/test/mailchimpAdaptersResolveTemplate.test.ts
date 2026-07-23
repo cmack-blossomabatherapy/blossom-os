@@ -1,14 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Force both providers to appear configured for these adapter tests.
-vi.mock("@/lib/integrations/communications/mailchimpEmail", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("@/lib/integrations/communications/mailchimpEmail")>();
-  return { ...mod, isMailchimpEmailConfigured: () => true };
-});
-vi.mock("@/lib/integrations/communications/mailchimpSms", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("@/lib/integrations/communications/mailchimpSms")>();
-  return { ...mod, isMailchimpSmsConfigured: () => true };
-});
+// Force provider config flags on so we exercise the resolveTemplate path.
+// The adapters read Vite env at call time from import.meta.env; write the
+// keys directly so no bundler transform is needed.
+const _env = (import.meta as unknown as { env: Record<string, unknown> }).env;
+_env.VITE_MAILCHIMP_API_KEY = "k";
+_env.VITE_MAILCHIMP_AUDIENCE_ID = "a";
+_env.VITE_MAILCHIMP_SMS_API_KEY = "k";
+_env.VITE_MAILCHIMP_SMS_PROGRAM_ID = "p";
 
 vi.mock("@/integrations/supabase/client", () => {
   const maybeSingle = vi.fn();
