@@ -45,7 +45,7 @@ describe("Benefits Knowledge persistence + AI wiring", () => {
   it("blossom-ai-chat retrieves persisted Benefits Knowledge and Intake Templates when relevant", () => {
     const src = read("supabase/functions/blossom-ai-chat/index.ts");
     expect(src).toMatch(/from\("benefits_knowledge"\)/);
-    expect(src).toMatch(/from\("email_templates"\)/);
+    expect(src).toMatch(/from\("intake_communication_templates"\)/);
     expect(src).toMatch(/BENEFITS KNOWLEDGE/);
     expect(src).toMatch(/INTAKE TEMPLATES/);
   });
