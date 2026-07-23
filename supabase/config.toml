@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.notify-after-hours-call]
 verify_jwt = false
+
+[functions.ctm-webhook]
+verify_jwt = false
