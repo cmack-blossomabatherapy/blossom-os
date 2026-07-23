@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import {
   TrendingUp, MessageSquare, ShieldCheck, Plus,
-  Users, MapPin, Signal, Clock, HeartHandshake, List,
+  Users, MapPin, Signal, Clock, HeartHandshake,
   Inbox, ArrowUpRight, HeartPulse, ChevronRight,
   AlertTriangle, Phone, Mail, Send, Sparkles, Sun, Coffee, Moon, Settings2,
 } from "lucide-react";
