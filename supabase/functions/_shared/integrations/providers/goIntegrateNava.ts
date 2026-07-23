@@ -1,49 +1,55 @@
 import type { ProviderAdapter } from "../types.ts";
-import { getEnv, hasAll } from "../secrets.ts";
-import { fetchJson } from "../http.ts";
 
-/** Go Integrate Nava — kept as backend-ready placeholder; reuses
- * eligibility adapter shape until vendor docs are confirmed. */
+/**
+ * Go Integrator Nava — corrected classification.
+ *
+ * Nava is a desktop CTI/CRM companion that bridges to NetSapiens /
+ * Jivetel phone systems. Its HTTP(S) client API requires a UNITE license
+ * and runs on the user's local machine — it is NOT reachable from cloud
+ * Edge Functions. Prior classification as "eligibility" was wrong.
+ *
+ * Docs:
+ * - https://help.nava.gointegrator.com/help?item=2505&lang=us&version=4.2
+ * - https://nava.gointegrator.com/connection-method-protocols-2/
+ *
+ * Operationally this adapter reports honestly: manual_local_setup, and
+ * Run Sync is unsupported. Setup is linked to Jivetel / NetSapiens.
+ */
 export const goIntegrateNavaAdapter: ProviderAdapter = {
   id: "go-integrate-nava",
-  classification: "eligibility_pending",
-  requiredSecrets: ["GO_INTEGRATE_NAVA_API_KEY", "GO_INTEGRATE_NAVA_WEBHOOK_SECRET"],
-  optionalSecrets: ["GO_INTEGRATE_NAVA_API_BASE_URL", "GO_INTEGRATE_NAVA_PROBE_PATH"],
+  classification: "communications_desktop_cti",
+  requiredSecrets: [],
+  optionalSecrets: [],
+  capabilities: {
+    localOnly: true,
+    outboundDisabled: true,
+    probe: false,
+    pullSync: false,
+    webhook: false,
+    documentationUrl:
+      "https://help.nava.gointegrator.com/help?item=2505&lang=us&version=4.2",
+    operationalState: "manual_local_setup",
+  },
 
   async probe() {
-    const need = hasAll(this.requiredSecrets);
-    if (!need.ok) return { ok: false, status: "not_configured", message: `Missing: ${need.missing.join(", ")}` };
-    const baseUrl = getEnv("GO_INTEGRATE_NAVA_API_BASE_URL");
-    const probePath = getEnv("GO_INTEGRATE_NAVA_PROBE_PATH");
-    if (!baseUrl || !probePath) {
-      return {
-        ok: true,
-        status: "configured_pending_vendor_endpoint",
-        message: "Go Integrate Nava creds present; vendor endpoint docs pending.",
-      };
-    }
-    const res = await fetchJson(`${baseUrl.replace(/\/$/, "")}${probePath}`, {
-      headers: { Authorization: `Bearer ${getEnv("GO_INTEGRATE_NAVA_API_KEY")}` },
-    });
-    if (!res.ok) return { ok: false, status: "error", message: res.error ?? `HTTP ${res.status}` };
-    return { ok: true, status: "connected", message: "Go Integrate Nava probe ok" };
+    return {
+      ok: true,
+      status: "manual_local_setup",
+      message:
+        "Go Integrator Nava is a local desktop CTI client (requires UNITE license) and is not cloud-testable. Configure per user against the Blossom NetSapiens/Jivetel host.",
+    };
   },
 
   async sync() {
     return {
       ok: false,
       status: "failed",
-      message: "configured_pending_vendor_endpoint: Go Integrate Nava vendor endpoint docs unavailable.",
+      message:
+        "not_cloud_testable: Go Integrator Nava runs on the user's desktop. Cloud pull-sync is unsupported by design.",
     };
   },
 
-  normalizeWebhook(payload) {
-    const p = (payload ?? {}) as any;
-    return {
-      eventType: p.event ?? p.type ?? "unknown",
-      providerEventId: p.id ?? null,
-      normalizedKind: "eligibility",
-      metadata: { raw: p },
-    };
+  normalizeWebhook() {
+    return { metadata: { note: "go_integrate_nava_has_no_cloud_webhook" } };
   },
 };
