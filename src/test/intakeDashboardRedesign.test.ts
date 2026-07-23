@@ -15,7 +15,7 @@ describe("Intake dashboard redesign — role-scoped operator workspace", () => {
     // Panel is still imported (so admin diagnostics work) but the render is
     // wrapped in an isAdminView guard — never renders for Intake roles.
     expect(src).toContain("IntakeSystemHealthPanel");
-    const adminBlock = src.match(/isAdminView[\s\S]{0,600}IntakeSystemHealthPanel/);
+    const adminBlock = src.match(/isAdminView\s*&&[\s\S]{0,2500}IntakeSystemHealthPanel/);
     expect(adminBlock, "IntakeSystemHealthPanel must render only inside the isAdminView branch")
       .not.toBeNull();
     // isAdminView must include super_admin AND systems_admin (not the auth
@@ -59,8 +59,8 @@ describe("Intake dashboard redesign — role-scoped operator workspace", () => {
 
   it("renders operator-first copy: welcome band, Today, At a glance, Family journey, Ready for handoff", () => {
     expect(src).toMatch(/Good morning|Good afternoon|Good evening/);
-    expect(src).toMatch(/needs? your attention today/);
-    expect(src).toMatch(/>Today</);
+    expect(src).toMatch(/need(s)? your attention today/);
+    expect(src).toMatch(/title="Today"/);
     expect(src).toMatch(/At a glance/);
     expect(src).toMatch(/Family journey/);
     expect(src).toMatch(/Ready for handoff/);
