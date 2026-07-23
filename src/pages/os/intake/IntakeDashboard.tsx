@@ -225,6 +225,23 @@ export default function IntakeDashboard() {
         { label: "Open Leads", icon: List, to: "/leads" },
       ]}
     >
+      {/* Quick links — Lead to Ready-to-Start Pipeline */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          to="/intake/parent-communication"
+          title="Intake Communications"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
+        >
+          <MessageSquare className="h-3.5 w-3.5" /> Intake Communications
+        </Link>
+        <Link
+          to="/leads?view=pipeline"
+          title="Lead to Ready-to-Start Pipeline"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs hover:bg-muted transition"
+        >
+          <TrendingUp className="h-3.5 w-3.5" /> Lead to Ready-to-Start Pipeline
+        </Link>
+      </div>
       <StateDirectorSnapshotBanner
         ownerDepartment="Intake"
         sourceModule="intake_dashboard"
