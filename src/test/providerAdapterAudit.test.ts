@@ -48,6 +48,27 @@ describe("provider adapter audit — capability contract", () => {
     expect(f.capabilities!.webhook).toBe(false);
   });
 
+  it("Fathom adapter calls only /meetings with documented include_* flags — no invented endpoints", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile(
+      "supabase/functions/_shared/integrations/providers/fathom.ts",
+      "utf8",
+    );
+    // No invented endpoints.
+    expect(src).not.toMatch(/\/summaries\b/);
+    expect(src).not.toMatch(/\/action-items\b/);
+    // Documented includes present.
+    expect(src).toMatch(/include_summary/);
+    expect(src).toMatch(/include_action_items/);
+    // Transcripts never requested (must be false or omitted).
+    expect(src).toMatch(/include_transcript.*false/);
+    expect(src).not.toMatch(/include_transcript["'\s:=]+true/);
+    // Cursor pagination on the documented field.
+    expect(src).toMatch(/next_cursor/);
+    // Probe uses documented shape.
+    expect(src).toMatch(/\/meetings\?limit=1/);
+  });
+
   it("Google Ads is ingest_only (public docs); credential/approval is the blocker, not docs", () => {
     const g = adapters.find((a) => a.id === "google-ads")!;
     expect(g.capabilities!.operationalState).toBe("ingest_only");
