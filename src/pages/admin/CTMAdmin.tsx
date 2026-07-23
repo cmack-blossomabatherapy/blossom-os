@@ -11,6 +11,9 @@ import {
   classifyProviderReadiness,
 } from "@/lib/intake/reviewDataLayer";
 import { CtmOperationsPanel } from "@/components/admin/CtmOperationsPanel";
+import { CtmHistoricalImportDialog } from "@/components/admin/CtmHistoricalImportDialog";
+import { CtmUnknownCallerReviewPanel } from "@/components/admin/CtmUnknownCallerReviewPanel";
+import { History } from "lucide-react";
 
 type Mapping = {
   id: string;
@@ -25,6 +28,7 @@ type Mapping = {
 export default function CTMAdmin() {
   const [mappings, setMappings] = useState<Mapping[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [draft, setDraft] = useState({ tracking_number: "", friendly_name: "", state_code: "" });
   const projectId = (import.meta.env.VITE_SUPABASE_PROJECT_ID as string) ?? "";
   const webhookBase = projectId ? `https://${projectId}.functions.supabase.co/ctm-webhook` : "";
@@ -94,13 +98,20 @@ export default function CTMAdmin() {
             Live call tracking, tracking-number mapping, and backfill sync.
           </p>
         </div>
-        <Button onClick={runSync} disabled={syncing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Syncing…" : "Run backfill"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <History className="h-4 w-4 mr-2" /> Historical import
+          </Button>
+          <Button onClick={runSync} disabled={syncing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing…" : "Run backfill"}
+          </Button>
+        </div>
       </header>
 
       <CtmOperationsPanel />
+
+      <CtmUnknownCallerReviewPanel />
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Provider readiness</CardTitle></CardHeader>
@@ -212,7 +223,7 @@ export default function CTMAdmin() {
                     <td className="p-2">{c.duration_seconds ?? 0}s</td>
                     <td className="p-2">
                       {c.intake_lead_id
-                        ? <a className="text-primary hover:underline" href={`/intake?lead=${c.intake_lead_id}`}>Open</a>
+                        ? <a className="text-primary hover:underline" href={`/leads?lead=${c.intake_lead_id}`}>Open</a>
                         : "—"}
                     </td>
                   </tr>
@@ -222,6 +233,8 @@ export default function CTMAdmin() {
           </div>
         </CardContent>
       </Card>
+
+      <CtmHistoricalImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

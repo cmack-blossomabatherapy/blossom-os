@@ -9036,6 +9036,81 @@ export type Database = {
           },
         ]
       }
+      ctm_import_jobs: {
+        Row: {
+          calls_duplicate: number
+          calls_fetched: number
+          calls_upserted: number
+          created_at: string
+          cursor_iso: string | null
+          cursor_page: number
+          dry_run: boolean
+          end_date: string
+          finished_at: string | null
+          id: string
+          last_error: string | null
+          leads_created: number
+          leads_linked: number
+          pages_processed: number
+          rate_limit_hits: number
+          requested_by: string | null
+          review_queued: number
+          start_date: string
+          started_at: string | null
+          status: string
+          summary: Json
+          updated_at: string
+        }
+        Insert: {
+          calls_duplicate?: number
+          calls_fetched?: number
+          calls_upserted?: number
+          created_at?: string
+          cursor_iso?: string | null
+          cursor_page?: number
+          dry_run?: boolean
+          end_date: string
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          leads_created?: number
+          leads_linked?: number
+          pages_processed?: number
+          rate_limit_hits?: number
+          requested_by?: string | null
+          review_queued?: number
+          start_date: string
+          started_at?: string | null
+          status?: string
+          summary?: Json
+          updated_at?: string
+        }
+        Update: {
+          calls_duplicate?: number
+          calls_fetched?: number
+          calls_upserted?: number
+          created_at?: string
+          cursor_iso?: string | null
+          cursor_page?: number
+          dry_run?: boolean
+          end_date?: string
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          leads_created?: number
+          leads_linked?: number
+          pages_processed?: number
+          rate_limit_hits?: number
+          requested_by?: string | null
+          review_queued?: number
+          start_date?: string
+          started_at?: string | null
+          status?: string
+          summary?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ctm_number_mapping: {
         Row: {
           created_at: string
@@ -9116,6 +9191,154 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      ctm_unknown_caller_reviews: {
+        Row: {
+          caller_name: string | null
+          candidate_lead_ids: string[]
+          created_at: string
+          ctm_call_event_id: string
+          ctm_call_id: string
+          decided_at: string | null
+          decided_by: string | null
+          decided_lead_id: string | null
+          decision_reason: string | null
+          from_number: string | null
+          id: string
+          reason: string
+          resolved_state: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          caller_name?: string | null
+          candidate_lead_ids?: string[]
+          created_at?: string
+          ctm_call_event_id: string
+          ctm_call_id: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_lead_id?: string | null
+          decision_reason?: string | null
+          from_number?: string | null
+          id?: string
+          reason: string
+          resolved_state?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          caller_name?: string | null
+          candidate_lead_ids?: string[]
+          created_at?: string
+          ctm_call_event_id?: string
+          ctm_call_id?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_lead_id?: string | null
+          decision_reason?: string | null
+          from_number?: string | null
+          id?: string
+          reason?: string
+          resolved_state?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctm_unknown_caller_reviews_ctm_call_event_id_fkey"
+            columns: ["ctm_call_event_id"]
+            isOneToOne: false
+            referencedRelation: "ctm_call_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_unknown_caller_reviews_ctm_call_event_id_fkey"
+            columns: ["ctm_call_event_id"]
+            isOneToOne: false
+            referencedRelation: "v_intake_ctm_calls_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_unknown_caller_reviews_decided_lead_id_fkey"
+            columns: ["decided_lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctm_webhook_events: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          ctm_call_id: string | null
+          error: string | null
+          event_kind: string | null
+          id: string
+          linked_call_event_id: string | null
+          payload: Json
+          payload_hash: string
+          payload_size_bytes: number
+          processed_at: string | null
+          received_at: string
+          source_ip: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          ctm_call_id?: string | null
+          error?: string | null
+          event_kind?: string | null
+          id?: string
+          linked_call_event_id?: string | null
+          payload?: Json
+          payload_hash: string
+          payload_size_bytes?: number
+          processed_at?: string | null
+          received_at?: string
+          source_ip?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          ctm_call_id?: string | null
+          error?: string | null
+          event_kind?: string | null
+          id?: string
+          linked_call_event_id?: string | null
+          payload?: Json
+          payload_hash?: string
+          payload_size_bytes?: number
+          processed_at?: string | null
+          received_at?: string
+          source_ip?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctm_webhook_events_linked_call_event_id_fkey"
+            columns: ["linked_call_event_id"]
+            isOneToOne: false
+            referencedRelation: "ctm_call_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctm_webhook_events_linked_call_event_id_fkey"
+            columns: ["linked_call_event_id"]
+            isOneToOne: false
+            referencedRelation: "v_intake_ctm_calls_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       data_uploads: {
         Row: {
