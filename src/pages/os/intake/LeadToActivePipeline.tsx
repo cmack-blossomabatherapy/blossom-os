@@ -17,6 +17,7 @@ import {
 import type { LeadStatus } from "@/data/leads";
 import { guardIntakeMutation } from "@/lib/intake/actionGuard";
 import { useIntakeOperatingMode } from "@/lib/intake/operatingMode";
+import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
 
 /**
  * Blossom OS — Lead → Active Pipeline
@@ -214,6 +215,12 @@ export default function LeadToActivePipeline() {
                     );
                   })}
                 </ol>
+              </div>
+
+              {/* Shared operational action surface — keeps this page aligned
+                  with every other intake screen that uses LeadActionPanel. */}
+              <div className="rounded-xl border bg-card/50 p-4">
+                <LeadActionPanel lead={lead} sourcePage="lead-to-active-pipeline" />
               </div>
             </>
           ) : (
