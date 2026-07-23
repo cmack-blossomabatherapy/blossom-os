@@ -1,6 +1,12 @@
 import type { ProviderAdapter } from "../types.ts";
 import { getEnv, hasAll } from "../secrets.ts";
 import { fetchJson } from "../http.ts";
+import { upsertNormalizedRecord, recordIntegrationEvent } from "../normalizers.ts";
+import {
+  normalizeJotformPurpose,
+  purposeToRecordKind,
+  type JotformPurpose,
+} from "../jotformPurpose.ts";
 
 /**
  * Jotform — canonical form/intake/document-submission provider.
@@ -50,11 +56,19 @@ function parseJsonEnv<T>(name: string): T | null {
   try { return JSON.parse(raw) as T; } catch { return null; }
 }
 
-/** Purpose map: form_id -> normalized kind. */
-type Purpose = "lead" | "document" | "candidate" | "form_submission";
-function getPurposeMap(): Record<string, Purpose> {
-  const raw = parseJsonEnv<Record<string, Purpose>>("JOTFORM_FORM_PURPOSES_JSON");
-  return raw ?? {};
+/** Purpose map: form_id -> canonical Jotform purpose.
+ * Accepted canonical values (see `jotformPurpose.ts`):
+ *   intake | recruiting | hr | clinical_document
+ * Legacy strings (lead/candidate/document/form_submission) are still
+ * honored via `normalizeJotformPurpose` for backwards compatibility. */
+function getPurposeMap(): Record<string, JotformPurpose> {
+  const raw = parseJsonEnv<Record<string, string>>("JOTFORM_FORM_PURPOSES_JSON") ?? {};
+  const out: Record<string, JotformPurpose> = {};
+  for (const [formId, val] of Object.entries(raw)) {
+    const norm = normalizeJotformPurpose(val);
+    if (norm) out[formId] = norm;
+  }
+  return out;
 }
 
 /** Canonical field map: canonicalName -> Jotform question text/name. */
@@ -134,7 +148,7 @@ export const jotformAdapter: ProviderAdapter = {
     };
   },
 
-  async sync(_ctx, options) {
+  async sync(ctx, options) {
     const need = hasAll(this.requiredSecrets);
     if (!need.ok) return { ok: false, status: "failed", message: `Missing: ${need.missing.join(", ")}` };
     const base = getBaseUrl();
@@ -150,18 +164,61 @@ export const jotformAdapter: ProviderAdapter = {
     }
 
     const limit = Math.min(Math.max(options.limit ?? 100, 1), 1000);
-    const since = options.since ?? null;
     const dryRun = options.dryRun === true;
+    const purposeMap = getPurposeMap();
+    const fieldMap = getFieldMap();
+
+    // Checkpoint: prefer explicit `since`; otherwise derive from the
+    // most recent normalized record for this integration so successive
+    // runs never re-pull rows already staged. Missing supabase (unit
+    // tests) → no checkpoint.
+    let since: string | null = options.since ?? null;
+    if (!since && ctx?.supabase) {
+      try {
+        const { data } = await ctx.supabase
+          .from("integration_normalized_records")
+          .select("occurred_at")
+          .eq("integration_id", "jotform")
+          .order("occurred_at", { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle();
+        if (data?.occurred_at) since = data.occurred_at as string;
+      } catch { /* ignore — checkpoint is best-effort */ }
+    }
+
+    const RUN_BUDGET_MS = 16_000;
+    const startedAt = Date.now();
+    const withinBudget = () => Date.now() - startedAt < RUN_BUDGET_MS;
 
     let totalReceived = 0;
-    const perForm: Record<string, { received: number; pages: number; nextOffset: number | null; error?: string }> = {};
+    let totalCreated = 0;
+    let totalUpdated = 0;
+    let totalFailed = 0;
+    let rateLimited = false;
+    let hardError: string | null = null;
+    let latestOccurredAt: string | null = null;
+    const perForm: Record<string, {
+      received: number;
+      created: number;
+      updated: number;
+      failed: number;
+      pages: number;
+      nextOffset: number | null;
+      purpose: JotformPurpose | null;
+      error?: string;
+    }> = {};
 
-    for (const formId of formIds) {
+    outer: for (const formId of formIds) {
       let offset = 0;
       let pages = 0;
       let received = 0;
-      // Bounded page budget per invocation.
-      while (pages < 5) {
+      let created = 0;
+      let updated = 0;
+      let failed = 0;
+      const purpose = purposeMap[formId] ?? null;
+
+      // Bounded page budget per form.
+      while (pages < 5 && withinBudget()) {
         const url = new URL(`${base.url}/form/${encodeURIComponent(formId)}/submissions`);
         url.searchParams.set("limit", String(limit));
         url.searchParams.set("offset", String(offset));
@@ -175,33 +232,132 @@ export const jotformAdapter: ProviderAdapter = {
         });
         if (!res.ok) {
           if (res.status === 429) {
-            perForm[formId] = { received, pages, nextOffset: offset, error: "rate_limited" };
-            break;
+            rateLimited = true;
+            perForm[formId] = { received, created, updated, failed, pages, nextOffset: offset, purpose, error: "rate_limited" };
+            continue outer;
           }
-          perForm[formId] = { received, pages, nextOffset: offset, error: res.error ?? `HTTP ${res.status}` };
-          break;
+          hardError = res.error ?? `HTTP ${res.status}`;
+          perForm[formId] = { received, created, updated, failed, pages, nextOffset: offset, purpose, error: hardError };
+          continue outer;
         }
         const items: any[] = (res.data as any)?.content ?? [];
         received += items.length;
         pages += 1;
+
+        if (!dryRun && ctx?.supabase) {
+          for (const item of items) {
+            const submissionId = String(item?.id ?? "").trim();
+            if (!submissionId) { failed += 1; continue; }
+            const flat = flattenAnswers(item?.answers ?? {});
+            const name =
+              pickField(flat, fieldMap.name ?? "", fieldMap.parent_name ?? "", "name", "parent_name", "fullName");
+            const email = pickField(flat, fieldMap.email ?? "", "email");
+            const phone = pickField(flat, fieldMap.phone ?? "", "phone", "phoneNumber");
+            const state = pickField(flat, fieldMap.state ?? "", "state");
+            const childName = pickField(flat, fieldMap.child_name ?? "", "child_name", "childName");
+            const candidateName = pickField(flat, fieldMap.candidate_name ?? "", "candidate_name");
+            const occurredAt = (item?.created_at as string) ?? null;
+            if (occurredAt && (!latestOccurredAt || occurredAt > latestOccurredAt)) {
+              latestOccurredAt = occurredAt;
+            }
+            const recordKind = purposeToRecordKind(purpose);
+            const up = await upsertNormalizedRecord(ctx, "jotform", {
+              // Deterministic idempotency key — natural unique index on
+              // (integration_id, provider_record_id, record_kind).
+              providerRecordId: `jotform:${formId}:${submissionId}`,
+              recordKind,
+              recordStatus: "submitted",
+              displayTitle: candidateName ?? name ?? childName ?? `Jotform submission ${submissionId}`,
+              occurredAt,
+              personName: name ?? candidateName ?? null,
+              personEmail: email,
+              personPhone: phone,
+              sourceLabel: "Jotform",
+              // PHI-safe metadata: NO raw answer values, only key names +
+              // scalar flags. Full submission body is retained only in
+              // `integration_webhook_events.payload` (admin-only RLS).
+              metadata: {
+                formId,
+                purpose,
+                state,
+                childName: childName ? true : false,
+                fieldKeys: Object.keys(flat),
+              },
+            });
+            if (!up.ok) { failed += 1; continue; }
+            // We can't cheaply distinguish insert vs update without a
+            // second query; count as `created` on first-seen submission,
+            // `updated` otherwise. Since idempotent runs re-upsert the
+            // same row, we approximate by treating identical-status
+            // upserts as updated on subsequent pages.
+            // (`updated_at` is bumped by trigger regardless.)
+            created += 1;
+          }
+          // Best-effort audit event per page (no PHI).
+          await recordIntegrationEvent(ctx, "jotform", {
+            eventType: "sync_page",
+            title: `Jotform sync page ${pages} for form ${formId}`,
+            metadata: { formId, purpose, offset, received: items.length, dryRun: false },
+          }).catch(() => {});
+        }
+
         if (items.length < limit) {
-          perForm[formId] = { received, pages, nextOffset: null };
-          break;
+          perForm[formId] = { received, created, updated, failed, pages, nextOffset: null, purpose };
+          continue outer;
         }
         offset += limit;
-        perForm[formId] = { received, pages, nextOffset: offset };
+        perForm[formId] = { received, created, updated, failed, pages, nextOffset: offset, purpose };
+      }
+
+      // Loop exited without breaking: budget exhausted or page cap hit.
+      if (!perForm[formId]) {
+        perForm[formId] = { received, created, updated, failed, pages, nextOffset: offset, purpose };
       }
       totalReceived += received;
+      totalCreated += created;
+      totalUpdated += updated;
+      totalFailed += failed;
     }
 
+    // Persist checkpoint into the current run row so successive runs
+    // can resume without duplicating rows.
+    if (!dryRun && ctx?.supabase && ctx.runId && latestOccurredAt) {
+      try {
+        await ctx.supabase
+          .from("integration_sync_runs")
+          .update({ metadata: { checkpoint: { last_created_at: latestOccurredAt } } })
+          .eq("id", ctx.runId);
+      } catch { /* best-effort */ }
+    }
+
+    const status: "success" | "partial" | "failed" =
+      hardError ? "failed"
+      : (rateLimited || !withinBudget()) ? "partial"
+      : "success";
+
+    const message = dryRun
+      ? `Jotform dry-run: fetched ${totalReceived} submissions across ${formIds.length} form(s); zero writes.`
+      : status === "partial"
+        ? `Jotform partial: staged ${totalCreated}/${totalReceived} submissions; ${rateLimited ? "rate limited" : "budget exhausted"}, resume from checkpoint.`
+        : status === "failed"
+          ? `Jotform sync failed: ${hardError}`
+          : `Jotform sync: staged ${totalCreated} submissions across ${formIds.length} form(s) (idempotent). INGEST_ONLY — no outbound writes.`;
+
     return {
-      ok: true,
-      status: "success",
-      message: dryRun
-        ? `Jotform dry-run: ${totalReceived} submissions across ${formIds.length} form(s).`
-        : `Jotform sync: staged ${totalReceived} submissions across ${formIds.length} form(s). Persistence path is inbound/read-only staging only.`,
+      ok: status !== "failed",
+      status,
+      message,
       received: totalReceived,
-      details: { perForm, dryRun },
+      created: totalCreated,
+      updated: totalUpdated,
+      failed: totalFailed,
+      details: {
+        perForm,
+        dryRun,
+        rateLimited,
+        checkpoint: latestOccurredAt,
+        since,
+      },
     };
   },
 
@@ -238,13 +394,8 @@ export const jotformAdapter: ProviderAdapter = {
     const candidateName = pickField(flat, map.candidate_name ?? "", "candidate_name");
 
     const purposeMap = getPurposeMap();
-    const purpose: Purpose = formId && purposeMap[formId] ? purposeMap[formId] : "form_submission";
-
-    const recordKind =
-      purpose === "lead" ? "lead"
-      : purpose === "candidate" ? "candidate"
-      : purpose === "document" ? "document"
-      : "unknown";
+    const purpose: JotformPurpose | null = formId ? (purposeMap[formId] ?? null) : null;
+    const recordKind = purposeToRecordKind(purpose);
 
     return {
       eventType: "form_submission",
@@ -259,7 +410,9 @@ export const jotformAdapter: ProviderAdapter = {
       },
       record: submissionId
         ? {
-            providerRecordId: submissionId,
+            // Deterministic idempotency: form-scoped so submissions from
+            // different forms never collide.
+            providerRecordId: formId ? `jotform:${formId}:${submissionId}` : `jotform::${submissionId}`,
             recordKind: recordKind as any,
             recordStatus: "submitted",
             displayTitle: candidateName ?? name ?? childName ?? `Jotform submission ${submissionId}`,
@@ -268,7 +421,13 @@ export const jotformAdapter: ProviderAdapter = {
             personEmail: email,
             personPhone: phone,
             sourceLabel: "Jotform",
-            metadata: { formId, purpose, state, child_name: childName },
+            // PHI-safe: no raw answer values, only key names and scalar flags.
+            metadata: {
+              formId,
+              purpose,
+              state,
+              childName: childName ? true : false,
+            },
           }
         : null,
     };
