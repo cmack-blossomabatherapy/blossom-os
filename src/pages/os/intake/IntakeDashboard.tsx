@@ -176,8 +176,8 @@ export default function IntakeDashboard() {
 
   const pulseTiles: { key: string; label: string; value: number; hint: string; icon: any; tone: Tone; to: string }[] = [
     { key: "captured",  label: "Lead Captured",        value: counts.newReferrals, hint: "New family leads",                       icon: Inbox,         tone: "sky",     to: "/leads?stage=Lead Captured" },
-    { key: "pipeline",  label: "Open Family Pipeline", value: counts.inPipeline,   hint: "Captured → Ready to Start",              icon: TrendingUp,    tone: "indigo",  to: "/leads" },
-    { key: "missing",   label: "Packet Follow Up",     value: counts.missing,      hint: "Blocked on packet, docs, or family",     icon: AlertCircle,   tone: "rose",    to: "/intake/missing-information" },
+    { key: "pipeline",  label: "Open Family Pipeline", value: counts.inPipeline,   hint: "Lead Captured -> Ready to Start Services", icon: TrendingUp,  tone: "indigo",  to: "/leads" },
+    { key: "missing",   label: "Packet Follow Up / Missing Info", value: counts.missing, hint: "Blocked on packet, docs, or family", icon: AlertCircle, tone: "rose",    to: "/intake/missing-information" },
     { key: "tasks",     label: "Open Follow-Ups",      value: counts.followUps,    hint: "Open tasks across leads",                icon: MessageSquare, tone: "amber",   to: "/intake/tasks" },
     { key: "benefits",  label: "Benefits Verification",value: counts.awaiting,     hint: "Eligibility and payer review",           icon: ShieldCheck,   tone: "violet",  to: "/vob-decision-center" },
     { key: "ready",     label: "Ready to Start (30d)", value: counts.converted,    hint: "Reached handoff for active services",    icon: ArrowRightLeft,tone: "emerald", to: "/leads?stage=Ready to Start Services" },
