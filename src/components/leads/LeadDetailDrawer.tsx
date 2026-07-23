@@ -851,7 +851,7 @@ export function LeadDetailDrawer({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Benefits Cheat Sheet Match Panel                                            */
+/* Benefits Knowledge Match Panel                                            */
 /* -------------------------------------------------------------------------- */
 
 const CONFIDENCE_LABEL = {
@@ -961,7 +961,7 @@ export function BenefitsCheatSheetMatchPanel({
       <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-4">
         <div className="flex items-center gap-2 mb-1">
           <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+          <p className="text-sm font-medium text-foreground">Benefits Knowledge Match</p>
         </div>
         <p className="text-xs text-muted-foreground">
           No insurance listed yet. Add insurance to see payer guidance.
@@ -984,7 +984,7 @@ export function BenefitsCheatSheetMatchPanel({
       <div className="rounded-2xl border border-border/70 bg-card p-4">
         <div className="flex items-center gap-2 mb-1">
           <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+          <p className="text-sm font-medium text-foreground">Benefits Knowledge Match</p>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           No payer match found for <span className="font-medium text-foreground">{searchTerm}</span>
@@ -1021,7 +1021,7 @@ export function BenefitsCheatSheetMatchPanel({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+            <p className="text-sm font-medium text-foreground">Benefits Knowledge Match</p>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {match.sheet.payer} - {match.sheet.state} - {match.sheet.insuranceCategory}
