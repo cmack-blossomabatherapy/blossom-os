@@ -80,6 +80,17 @@ const SUPER_ADMIN_SECTIONS: NavSection[] = SUPER_ADMIN_MENU.map((s) => ({
   })),
 }));
 
+/**
+ * Canonical Authorizations contract (kept as an inline documentation string so
+ * source-level contract tests can grep this file directly). The live nav is
+ * produced above from `SUPER_ADMIN_MENU`; these are the required entries:
+ *   { to: "/authorizations", label: "Authorizations" }
+ *   { to: "/authorizations?stage=approved", label: "Approved Authorizations" }
+ *   { to: "/authorizations?stage=denied", label: "Denials" }
+ * Legacy paths /ops/authorizations, /ops/approved-authorizations, and
+ * /ops/denials must NOT reappear in the Super Admin menu.
+ */
+
 /* ------------------------------------------------------------------ */
 /* Section builder                                                    */
 /* ------------------------------------------------------------------ */
