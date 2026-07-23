@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+// User-facing pipeline label: "Lead to Ready-to-Start Pipeline"
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
