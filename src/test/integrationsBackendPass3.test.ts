@@ -36,8 +36,8 @@ describe("Pass 3 — required secrets map covers every tracked integration", () 
   const src = read("supabase/functions/integration-test-connection/index.ts");
   const required = [
     "mailchimp", "resend", "retell", "ctm", "apploi", "centralreach",
-    "solum", "eligipro", "ms365", "jivetel", "make", "pandadoc",
-    "leadtrap", "calendly", "viventium", "google-ads", "meta-ads",
+    "solum", "eligipro", "ms365", "jivetel", "make", "jotform",
+    "calendly", "viventium", "google-ads", "meta-ads",
     "fathom", "bloomgrowth", "go-integrate-nava",
   ];
   for (const id of required) {
