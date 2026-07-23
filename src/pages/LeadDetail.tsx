@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useDeepLink, useConsumeDeepLink, useDeepLinkHighlight } from "@/lib/deepLink";
-import { statusVariant, priorityVariant, getInlineAlert, pipelineStages, LeadStatus } from "@/data/leads";
+import { statusVariant, priorityVariant, getInlineAlert, LeadStatus } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -136,7 +136,7 @@ export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { getLead, updateLead, moveStage, assignOwner, deleteLeads } = useLeads();
+  const { getLead, updateLead, moveStage, deleteLeads } = useLeads();
   const lead = id ? getLead(id) : undefined;
   const blossom = useBlossomAI();
 
