@@ -38,7 +38,8 @@ export type IntegrationCategory =
   | "documents"
   | "communications"
   | "meetings"
-  | "ai_voice";
+  | "ai_voice"
+  | "forms_intake_documents";
 
 export type IntegrationCriticality = "critical" | "standard" | "optional" | "maybe";
 
@@ -112,7 +113,8 @@ export type PatientJourneyEventSource =
   | "eligipro"
   | "solum"
   | "pandadoc"
-  | "calendly";
+  | "calendly"
+  | "jotform";
 
 export interface PatientJourneyEvent {
   id: string;
