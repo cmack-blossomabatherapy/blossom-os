@@ -1,8 +1,14 @@
-import { Sparkles, BookOpen, FileText, Wand2, History, BarChart3 } from "lucide-react";
+import { Sparkles, BookOpen, FileText, Wand2, History, BarChart3, ShieldCheck, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { deriveGuidance, PAYOR_INTEL, type VobReview } from "@/lib/vob/mockData";
+import { deriveGuidance, type VobReview } from "@/lib/vob/mockData";
+import {
+  findBenefitsCheatSheetForLead,
+  mapCheatSheetStatusToTone,
+  useBenefitsKnowledge,
+} from "@/lib/intake/leadBenefitsCheatSheets";
+import { useBlossomAI } from "@/components/ai/BlossomAIAssistant";
 
 const TONE_BAR: Record<string, string> = {
   ok:   "border-l-emerald-400 bg-emerald-50/50",
@@ -15,6 +21,37 @@ const TONE_ICON: Record<string, string> = {
 
 export function VobAiPanel({ review }: { review: VobReview }) {
   const insights = deriveGuidance(review);
+  const blossom = useBlossomAI();
+  const { rows: knowledge, loading } = useBenefitsKnowledge();
+  const match = findBenefitsCheatSheetForLead({ insurance: review.payor, state: review.state });
+  const tone = match.sheet ? mapCheatSheetStatusToTone(match.sheet.intakeStatus) : null;
+
+  function askBlossomBenefits() {
+    const parts = [
+      "Give me the payer guidance for this VOB review:",
+      `- Family: ${review.parentName}`,
+      `- Payer: ${review.payor}`,
+      `- State: ${review.state}`,
+      match.sheet
+        ? `- Matched: ${match.sheet.payer} (${match.sheet.state}) · ${match.sheet.intakeStatus}`
+        : "- Matched: none (no persisted guidance yet)",
+      match.sheet?.notes ? `- Notes: ${match.sheet.notes}` : null,
+      `- Confidence: ${match.confidence}${match.sameState ? "" : " · cross-state"}`,
+      "",
+      "Summarize the recommended VOB decision and cite the Benefits Knowledge row you used.",
+    ].filter(Boolean).join("\n");
+    blossom.open({
+      surface: "page-help",
+      title: "Ask Blossom AI · Benefits Knowledge",
+      contextText: parts,
+      initialPrompt: parts,
+      suggestions: [
+        "What decision does this payer suggest?",
+        "Any cross-state warnings I should flag?",
+        "Draft the family benefit summary.",
+      ],
+    });
+  }
 
   function quick(label: string) {
     toast.success("AI guidance ready", { description: `${label} prepared for ${review.parentName}.` });
@@ -58,37 +95,62 @@ export function VobAiPanel({ review }: { review: VobReview }) {
         </div>
       </div>
 
-      {/* INSURANCE KNOWLEDGE BASE */}
+      {/* BENEFITS KNOWLEDGE — live persisted payer guidance for this review */}
       <div className="rounded-2xl border border-border/50 bg-card/80 p-4">
         <div className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-xl bg-[hsl(265_85%_96%)] text-[hsl(265_70%_45%)]">
-            <BookOpen className="h-3.5 w-3.5" />
+            <ShieldCheck className="h-3.5 w-3.5" />
           </span>
           <div>
-            <h3 className="text-[13px] font-semibold tracking-tight">Insurance guide</h3>
-            <p className="text-[10.5px] text-muted-foreground">Payor knowledge base · replaces tribal spreadsheets</p>
+            <h3 className="text-[13px] font-semibold tracking-tight">Benefits Knowledge</h3>
+            <p className="text-[10.5px] text-muted-foreground">
+              {loading ? "Loading persisted guidance…" : `${knowledge.length} active payer rows`}
+            </p>
           </div>
         </div>
 
-        <ul className="mt-3 space-y-1.5 text-[12px]">
-          {PAYOR_INTEL.slice(0, 6).map((p, i) => (
-            <li key={i} className="flex items-center justify-between rounded-lg border border-border/40 bg-secondary/20 px-2.5 py-1.5">
-              <span className="font-medium">
-                {p.payor}{p.state !== "*" && <span className="text-muted-foreground"> · {p.state}</span>}
+        {match.sheet && tone ? (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[12.5px] font-semibold truncate">
+                  {match.sheet.payer} <span className="text-muted-foreground font-normal">· {match.sheet.state}</span>
+                </p>
+                <p className="text-[10.5px] text-muted-foreground">
+                  {match.sheet.insuranceCategory} · confidence {match.confidence}
+                </p>
+              </div>
+              <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap", tone.className)}>
+                {tone.label}
               </span>
-              <span className={cn(
-                "rounded-full px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.08em]",
-                p.category === "green"  && "bg-emerald-600 text-white",
-                p.category === "yellow" && "bg-amber-500 text-white",
-                p.category === "red"    && "bg-rose-600 text-white",
-              )}>
-                {p.category === "green" ? "Hard Yes" : p.category === "yellow" ? "Mid" : "Hard No"}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <Button size="sm" variant="ghost" className="mt-2 h-7 w-full text-[11px] text-[hsl(265_70%_45%)] hover:bg-[hsl(265_85%_96%)]">
-          Open full insurance guide
+            </div>
+            {!match.sameState && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 text-amber-900 px-2 py-1.5 text-[11px] flex gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>{match.reason}</span>
+              </div>
+            )}
+            {match.sheet.notes && (
+              <p className="text-[11.5px] text-foreground/90">{match.sheet.notes}</p>
+            )}
+            <div className="rounded-lg bg-muted/40 border border-border/60 px-2.5 py-1.5">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Recommended action</p>
+              <p className="text-[11.5px] text-foreground/90">{tone.recommendation}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-3 text-[11.5px] text-muted-foreground">
+            No persisted guidance matched <span className="font-medium text-foreground">{review.payor}</span>
+            {review.state ? <> in <span className="font-medium text-foreground">{review.state}</span></> : null}.
+          </p>
+        )}
+
+        <Button
+          size="sm"
+          onClick={askBlossomBenefits}
+          className="mt-3 h-7 w-full text-[11px] bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white hover:opacity-90"
+        >
+          <Sparkles className="mr-1 h-3 w-3" /> Ask Blossom AI
         </Button>
       </div>
     </div>
