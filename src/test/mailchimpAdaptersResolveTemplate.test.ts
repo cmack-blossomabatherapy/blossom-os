@@ -16,15 +16,6 @@ vi.mock("@/integrations/supabase/client", () => {
 const { __mocks } = (await import("@/integrations/supabase/client")) as any;
 const { from, maybeSingle } = __mocks;
 
-const originalEnv = { ...(import.meta as unknown as { env: Record<string, string> }).env };
-function setEnv(patch: Record<string, string | undefined>) {
-  const env = (import.meta as unknown as { env: Record<string, string> }).env;
-  for (const [k, v] of Object.entries(patch)) {
-    if (v === undefined) delete env[k];
-    else env[k] = v;
-  }
-}
-
 import { sendEmailViaMailchimp } from "@/lib/integrations/communications/mailchimpEmail";
 import { sendSmsViaMailchimp } from "@/lib/integrations/communications/mailchimpSms";
 
@@ -37,18 +28,14 @@ const lead = {
 beforeEach(() => {
   from.mockClear();
   maybeSingle.mockReset();
-  setEnv({
-    VITE_MAILCHIMP_API_KEY: "k",
-    VITE_MAILCHIMP_AUDIENCE_ID: "a",
-    VITE_MAILCHIMP_SMS_API_KEY: "k",
-    VITE_MAILCHIMP_SMS_PROGRAM_ID: "p",
-  });
+  vi.stubEnv("VITE_MAILCHIMP_API_KEY", "k");
+  vi.stubEnv("VITE_MAILCHIMP_AUDIENCE_ID", "a");
+  vi.stubEnv("VITE_MAILCHIMP_SMS_API_KEY", "k");
+  vi.stubEnv("VITE_MAILCHIMP_SMS_PROGRAM_ID", "p");
 });
 
 afterAll(() => {
-  const env = (import.meta as unknown as { env: Record<string, string> }).env;
-  for (const k of Object.keys(env)) if (!(k in originalEnv)) delete env[k];
-  Object.assign(env, originalEnv);
+  vi.unstubAllEnvs();
 });
 
 import { afterAll } from "vitest";
