@@ -210,21 +210,21 @@ export const ROLE_SPECIFIC_LIVE_PATHS: Partial<Record<string, ReadonlySet<string
   ]),
   staffing_team: new Set<string>([
     "/ops/staffing",
+    "/ops/staffing?tab=preferences",
     "/staffing",
     "/ops/rbt-match-queue",
-    "/ops/family-staffing-preferences",
   ]),
   staffing_lead: new Set<string>([
     "/ops/staffing",
+    "/ops/staffing?tab=preferences",
     "/staffing",
     "/ops/rbt-match-queue",
-    "/ops/family-staffing-preferences",
   ]),
   staffing_coordinator: new Set<string>([
     "/ops/staffing",
+    "/ops/staffing?tab=preferences",
     "/staffing",
     "/ops/rbt-match-queue",
-    "/ops/family-staffing-preferences",
   ]),
   billing_finance: new Set<string>([
     "/billing-finance",
