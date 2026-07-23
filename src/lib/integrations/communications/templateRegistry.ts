@@ -1,10 +1,12 @@
 /**
- * Single source of truth for the automated emails / SMS messages Blossom OS
- * sends to parents. The Admin → Automated Emails page reads from this list
- * and so does the send-side default fallback copy. Admins can override any
- * row by editing `public.email_templates` in the database.
+ * Code-side registry of the automated emails / SMS messages Blossom OS may
+ * draft for families. The authoritative store is
+ * `public.intake_communication_templates`; this array is a bootstrap seed and
+ * an offline-safe fallback for the resolver. The Admin → Intake Templates
+ * page reads/writes the database rows.
  */
 import type { EmailTemplateKey, SmsTemplateKey } from "./communicationTypes";
+import { supabase } from "@/integrations/supabase/client";
 
 export type TemplateChannel = "email" | "sms";
 
@@ -195,4 +197,89 @@ export function findRegistryEntry(
   key: string,
 ): TemplateRegistryEntry | undefined {
   return AUTOMATED_EMAIL_REGISTRY.find((t) => t.channel === channel && t.key === key);
+}
+
+export interface ResolvedTemplate {
+  channel: TemplateChannel;
+  key: string;
+  displayName: string;
+  subject: string | null;
+  body: string;
+  mergeFields: string[];
+  isActive: boolean;
+  /** True only when the caller may use this template for automated/approved sends. */
+  approvedForAutomation: boolean;
+  source: "db" | "registry";
+}
+
+/**
+ * Load the active persisted template row by (channel, template_key). Falls
+ * back to the code registry when the backend is unreachable. When a row
+ * exists but is inactive, the returned copy is marked `approvedForAutomation:
+ * false` so callers must not treat it as an approved automated send.
+ */
+export async function resolveTemplate(
+  channel: TemplateChannel,
+  key: string,
+): Promise<ResolvedTemplate | null> {
+  const registry = findRegistryEntry(channel, key);
+
+  try {
+    const { data, error } = await supabase
+      .from("intake_communication_templates" as never)
+      .select("template_key,channel,display_name,subject,body,merge_fields,is_active")
+      .eq("channel", channel)
+      .eq("template_key", key)
+      .maybeSingle();
+    if (!error && data) {
+      const row = data as {
+        template_key: string;
+        channel: TemplateChannel;
+        display_name: string;
+        subject: string | null;
+        body: string;
+        merge_fields: unknown;
+        is_active: boolean;
+      };
+      const mergeFields = Array.isArray(row.merge_fields)
+        ? (row.merge_fields as string[])
+        : [];
+      return {
+        channel: row.channel,
+        key: row.template_key,
+        displayName: row.display_name,
+        subject: row.subject,
+        body: row.body,
+        mergeFields,
+        isActive: row.is_active,
+        approvedForAutomation: row.is_active === true,
+        source: "db",
+      };
+    }
+  } catch {
+    // fall through to registry
+  }
+
+  if (!registry) return null;
+  return {
+    channel: registry.channel,
+    key: String(registry.key),
+    displayName: registry.displayName,
+    subject: registry.subject ?? null,
+    body: registry.body,
+    mergeFields: extractMergeFields(
+      `${registry.subject ?? ""}\n${registry.body}`,
+    ),
+    isActive: true,
+    approvedForAutomation: true,
+    source: "registry",
+  };
+}
+
+function extractMergeFields(text: string): string[] {
+  const out = new Set<string>();
+  const re = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) out.add(m[1]);
+  return [...out];
 }
