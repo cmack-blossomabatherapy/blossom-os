@@ -1,4 +1,4 @@
-import { Sparkles, BookOpen, FileText, Wand2, History, BarChart3, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Sparkles, FileText, Wand2, History, BarChart3, ShieldCheck, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";

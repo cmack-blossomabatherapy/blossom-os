@@ -37,13 +37,13 @@ describe("Intake menu simplification pass", () => {
     expect(app).toMatch(
       /path="\/intake\/lead-to-active"\s+element=\{<Navigate to="\/intake\/dashboard"/,
     );
-    // /intake/parent-communication → /admin/intake-templates
+    // /intake/parent-communication → /intake/tasks (operator-safe)
     expect(app).toMatch(
-      /path="\/intake\/parent-communication"\s+element=\{<Navigate to="\/admin\/intake-templates"/,
+      /path="\/intake\/parent-communication"\s+element=\{<Navigate to="\/intake\/tasks"/,
     );
-    // /intake/benefits-cheat-sheets → /admin/benefits-knowledge
+    // /intake/benefits-cheat-sheets → /vob-decision-center (operator-safe)
     expect(app).toMatch(
-      /path="\/intake\/benefits-cheat-sheets"\s+element=\{<Navigate to="\/admin\/benefits-knowledge"/,
+      /path="\/intake\/benefits-cheat-sheets"\s+element=\{<Navigate to="\/vob-decision-center"/,
     );
   });
 
