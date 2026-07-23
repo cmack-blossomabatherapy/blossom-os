@@ -87,7 +87,7 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "Lead Source Inbox",                to: "/marketing/lead-source-inbox",     icon: Inbox },
       { label: "Campaigns",                        to: "/marketing/campaigns",             icon: Megaphone },
       { label: "CTM / Call Tracking",              to: "/marketing/call-tracking",         icon: Phone },
-      { label: "LeadTrap",                         to: "/marketing/leadtrap",              icon: TrendingUp },
+      { label: "Jotform Submissions",              to: "/marketing/lead-source-inbox?source=jotform", icon: TrendingUp },
       { label: "Facebook Ads",                     to: "/marketing/facebook-ads",          icon: Megaphone },
       { label: "Google Ads",                       to: "/marketing/google-ads",            icon: TrendingUp },
       { label: "Patient Lifetime Journey",         to: "/patient-journey",                 icon: Workflow },
