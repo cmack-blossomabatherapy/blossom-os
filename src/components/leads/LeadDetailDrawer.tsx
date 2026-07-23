@@ -875,6 +875,7 @@ export function BenefitsCheatSheetMatchPanel({
   rawInsurance?: string | null;
 }) {
   const { updateLead, leads } = useLeads();
+  const blossom = useBlossomAI();
   const resolvedLead = leadId ? leads.find((l) => l.id === leadId) : undefined;
   const candidates = [insurance, secondaryInsurance, rawInsurance].filter(
     (v) => v && String(v).trim(),
@@ -928,6 +929,31 @@ export function BenefitsCheatSheetMatchPanel({
       });
     }
     toast.success("Flagged: needs benefits review");
+  };
+
+  const askBlossom = (match?: ReturnType<typeof findBenefitsCheatSheetForLead>) => {
+    const sheet = match?.sheet;
+    const parts = [
+      "Give me the payer guidance for this lead:",
+      insurance ? `- Insurance: ${insurance}` : null,
+      state ? `- State: ${state}` : null,
+      sheet ? `- Matched payer: ${sheet.payer} (${sheet.state}) · status ${sheet.intakeStatus}` : "- Matched payer: none",
+      sheet?.notes ? `- Notes: ${sheet.notes}` : null,
+      match ? `- Confidence: ${match.confidence}${match.sameState ? "" : " (cross-state — verify)"}` : null,
+      "",
+      "Summarize what Intake should do next and cite the Benefits Knowledge row you used.",
+    ].filter(Boolean).join("\n");
+    blossom.open({
+      surface: "page-help",
+      title: "Ask Blossom AI · Benefits Knowledge",
+      contextText: parts,
+      initialPrompt: parts,
+      suggestions: [
+        "What should Intake do with this payer?",
+        "Are there cross-state warnings I should flag?",
+        "Draft a family message explaining benefits.",
+      ],
+    });
   };
 
   if (!hasInsurance) {
