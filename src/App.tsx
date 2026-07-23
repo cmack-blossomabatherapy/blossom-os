@@ -155,6 +155,7 @@ import AiAnalytics from "./pages/admin/ai/Analytics";
 import AiAppearance from "./pages/admin/ai/Appearance";
 import Integrations from "./pages/admin/Integrations";
 import IntegrationIngestAdminPage from "./pages/admin/IntegrationIngest";
+import IntegrationsReadiness from "./pages/admin/IntegrationsReadiness";
 import JourneyHub from "./pages/hr/JourneyHub";
 import JourneyDrive from "./pages/hr/JourneyDrive";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
@@ -1272,6 +1273,7 @@ const App = () => (
                       sidebar/header. Keep them here so the OS shell is the
                       single source of chrome. */}
                   <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><OSShellPage><Integrations /></OSShellPage></PermissionRoute>} />
+                  <Route path="/admin/integrations/readiness" element={<PermissionRoute allowedRoles={["super_admin"]}><OSShellPage><IntegrationsReadiness /></OSShellPage></PermissionRoute>} />
                   <Route path="/admin/integration-ingest" element={<AdminRoute><OSShellPage><IntegrationIngestAdminPage /></OSShellPage></AdminRoute>} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
