@@ -94,7 +94,8 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "Intake Dashboard",                 to: "/intake/dashboard",                icon: Briefcase },
       { label: "Lead to Ready-to-Start Pipeline",  to: "/leads?view=pipeline",           icon: TrendingUp },
       { label: "Intake Tasks",                     to: "/intake/tasks",                    icon: ListTodo },
-      { label: "Lead Benefits Cheat Sheets",       to: "/intake/benefits-cheat-sheets",    icon: ShieldCheck },
+      { label: "Benefits Knowledge (Admin)",       to: "/admin/benefits-knowledge",        icon: ShieldCheck },
+      { label: "Intake Templates (Admin)",         to: "/admin/intake-templates",          icon: Mail },
     ],
   },
   {

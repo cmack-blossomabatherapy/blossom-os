@@ -6007,6 +6007,51 @@ export type Database = {
           },
         ]
       }
+      benefits_knowledge: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          insurance_category: string
+          intake_status: string
+          is_active: boolean
+          monday_item_id: string | null
+          notes: string
+          payer: string
+          state: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          insurance_category: string
+          intake_status: string
+          is_active?: boolean
+          monday_item_id?: string | null
+          notes?: string
+          payer: string
+          state: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          insurance_category?: string
+          intake_status?: string
+          is_active?: boolean
+          monday_item_id?: string | null
+          notes?: string
+          payer?: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       case_manager_assignments: {
         Row: {
           active: boolean
@@ -9884,11 +9929,16 @@ export type Database = {
           description: string | null
           display_name: string
           id: string
+          is_active: boolean
+          merge_fields: Json
           provider: string | null
+          stage: string | null
           subject: string | null
+          team: string | null
           template_key: string
           updated_at: string
           updated_by: string | null
+          use_case: string | null
           used_in: string | null
         }
         Insert: {
@@ -9898,11 +9948,16 @@ export type Database = {
           description?: string | null
           display_name: string
           id?: string
+          is_active?: boolean
+          merge_fields?: Json
           provider?: string | null
+          stage?: string | null
           subject?: string | null
+          team?: string | null
           template_key: string
           updated_at?: string
           updated_by?: string | null
+          use_case?: string | null
           used_in?: string | null
         }
         Update: {
@@ -9912,11 +9967,16 @@ export type Database = {
           description?: string | null
           display_name?: string
           id?: string
+          is_active?: boolean
+          merge_fields?: Json
           provider?: string | null
+          stage?: string | null
           subject?: string | null
+          team?: string | null
           template_key?: string
           updated_at?: string
           updated_by?: string | null
+          use_case?: string | null
           used_in?: string | null
         }
         Relationships: []

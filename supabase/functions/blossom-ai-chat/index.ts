@@ -522,6 +522,45 @@ Deno.serve(async (req) => {
       ? `KNOWLEDGE (Resource Library excerpts, cite as [n]):\n\n${contextParts.join("\n\n---\n\n")}`
       : "KNOWLEDGE: no directly matching Resource Library excerpts for this question.";
 
+    // Live table retrieval — Benefits Knowledge + Intake Templates.
+    // Triggered when the question mentions payer, insurance, benefits, VOB, or
+    // intake-communication keywords. Rows are RLS-scoped to the caller.
+    let benefitsBlock = "";
+    let templatesBlock = "";
+    try {
+      const q = question.toLowerCase();
+      const wantsBenefits = /payer|payor|insurance|benefits?|vob|deductible|coinsurance|inn|oon|medicaid|bcbs|uhc|aetna|cigna|anthem|kaiser/i.test(q);
+      const wantsTemplates = /template|email|sms|message|intro|introduction|welcome|follow.?up|intake communication|reminder/i.test(q);
+      if (wantsBenefits) {
+        const { data } = await supabase
+          .from("benefits_knowledge")
+          .select("payer,state,insurance_category,intake_status,notes")
+          .eq("is_active", true)
+          .limit(60);
+        if (data && data.length) {
+          benefitsBlock =
+            "BENEFITS KNOWLEDGE (persisted payer guidance — cite specific payer/state rows when used):\n\n" +
+            data.map((r: any) => `- ${r.payer} · ${r.state} · ${r.insurance_category} · ${r.intake_status}${r.notes ? ` — ${r.notes}` : ""}`).join("\n");
+          toolsCalled.push("retrieve:benefits_knowledge");
+        }
+      }
+      if (wantsTemplates) {
+        const { data } = await supabase
+          .from("email_templates")
+          .select("template_key,channel,display_name,description,used_in,subject,stage,use_case,is_active")
+          .eq("is_active", true)
+          .limit(30);
+        if (data && data.length) {
+          templatesBlock =
+            "INTAKE TEMPLATES (approved drafts only — never auto-send):\n\n" +
+            data.map((r: any) => `- ${r.display_name || r.template_key} [${r.channel}${r.stage ? ` · ${r.stage}` : ""}${r.use_case ? ` · ${r.use_case}` : ""}]${r.subject ? ` — subject: ${r.subject}` : ""}`).join("\n");
+          toolsCalled.push("retrieve:email_templates");
+        }
+      }
+    } catch (e) {
+      console.error("live_table_retrieval_failed", e);
+    }
+
     // Fallback mode: when semantic retrieval finds nothing, pre-fetch
     // people/client/lead/resource-index context using the question as a
     // keyword probe so the model has real internal data to answer from
@@ -552,6 +591,8 @@ Deno.serve(async (req) => {
       { role: "system", content: SYSTEM_PROMPT },
       { role: "system", content: `BLOSSOM OS BRIEF:\n\n${BLOSSOM_SYSTEM_PACK}` },
       { role: "system", content: kbBlock },
+      ...(benefitsBlock ? [{ role: "system" as const, content: benefitsBlock }] : []),
+      ...(templatesBlock ? [{ role: "system" as const, content: templatesBlock }] : []),
       ...(fallbackBlock ? [{ role: "system" as const, content: fallbackBlock }] : []),
       ...priorTurns.map((t) => ({ role: t.role as "user" | "assistant", content: t.content })),
       { role: "user", content: question },

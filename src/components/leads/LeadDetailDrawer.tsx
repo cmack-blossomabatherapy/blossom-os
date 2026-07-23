@@ -16,6 +16,7 @@ import {
   findBenefitsCheatSheetForLead,
   mapCheatSheetStatusToTone,
 } from "@/lib/intake/leadBenefitsCheatSheets";
+import { useBlossomAI } from "@/components/ai/BlossomAIAssistant";
 import {
   notifyCommunicationResult,
   sendLeadEmail,
@@ -850,7 +851,7 @@ export function LeadDetailDrawer({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Benefits Cheat Sheet Match Panel                                            */
+/* Benefits Knowledge Match Panel                                            */
 /* -------------------------------------------------------------------------- */
 
 const CONFIDENCE_LABEL = {
@@ -874,6 +875,7 @@ export function BenefitsCheatSheetMatchPanel({
   rawInsurance?: string | null;
 }) {
   const { updateLead, leads } = useLeads();
+  const blossom = useBlossomAI();
   const resolvedLead = leadId ? leads.find((l) => l.id === leadId) : undefined;
   const candidates = [insurance, secondaryInsurance, rawInsurance].filter(
     (v) => v && String(v).trim(),
@@ -929,12 +931,37 @@ export function BenefitsCheatSheetMatchPanel({
     toast.success("Flagged: needs benefits review");
   };
 
+  const askBlossom = (match?: ReturnType<typeof findBenefitsCheatSheetForLead>) => {
+    const sheet = match?.sheet;
+    const parts = [
+      "Give me the payer guidance for this lead:",
+      insurance ? `- Insurance: ${insurance}` : null,
+      state ? `- State: ${state}` : null,
+      sheet ? `- Matched payer: ${sheet.payer} (${sheet.state}) · status ${sheet.intakeStatus}` : "- Matched payer: none",
+      sheet?.notes ? `- Notes: ${sheet.notes}` : null,
+      match ? `- Confidence: ${match.confidence}${match.sameState ? "" : " (cross-state — verify)"}` : null,
+      "",
+      "Summarize what Intake should do next and cite the Benefits Knowledge row you used.",
+    ].filter(Boolean).join("\n");
+    blossom.open({
+      surface: "page-help",
+      title: "Ask Blossom AI · Benefits Knowledge",
+      contextText: parts,
+      initialPrompt: parts,
+      suggestions: [
+        "What should Intake do with this payer?",
+        "Are there cross-state warnings I should flag?",
+        "Draft a family message explaining benefits.",
+      ],
+    });
+  };
+
   if (!hasInsurance) {
     return (
       <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-4">
         <div className="flex items-center gap-2 mb-1">
           <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+          <p className="text-sm font-medium text-foreground">Benefits Knowledge Match</p>
         </div>
         <p className="text-xs text-muted-foreground">
           No insurance listed yet. Add insurance to see payer guidance.
@@ -957,7 +984,7 @@ export function BenefitsCheatSheetMatchPanel({
       <div className="rounded-2xl border border-border/70 bg-card p-4">
         <div className="flex items-center gap-2 mb-1">
           <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+          <p className="text-sm font-medium text-foreground">Benefits Knowledge Match</p>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           No payer match found for <span className="font-medium text-foreground">{searchTerm}</span>
@@ -976,12 +1003,12 @@ export function BenefitsCheatSheetMatchPanel({
           >
             Create Intake Task: Review benefits cheat sheet
           </button>
-          <Link
-            to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(searchTerm)}`}
-            className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition inline-flex items-center gap-1"
+          <button
+            onClick={() => askBlossom(match)}
+            className="text-[11px] rounded-md border border-primary/40 bg-primary/5 text-primary px-2 py-1 hover:bg-primary/10 transition inline-flex items-center gap-1"
           >
-            <ExternalLink className="h-3 w-3" /> Open full cheat sheet
-          </Link>
+            <Sparkles className="h-3 w-3" /> Ask Blossom AI
+          </button>
         </div>
       </div>
     );
@@ -994,7 +1021,7 @@ export function BenefitsCheatSheetMatchPanel({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">Benefits Cheat Sheet Match</p>
+            <p className="text-sm font-medium text-foreground">Benefits Knowledge Match</p>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {match.sheet.payer} - {match.sheet.state} - {match.sheet.insuranceCategory}
@@ -1052,12 +1079,12 @@ export function BenefitsCheatSheetMatchPanel({
         >
           Request missing insurance info
         </button>
-        <Link
-          to={`/intake/benefits-cheat-sheets?q=${encodeURIComponent(match.sheet.payer)}`}
-          className="text-[11px] rounded-md border border-border/60 px-2 py-1 hover:bg-muted transition inline-flex items-center gap-1"
+        <button
+          onClick={() => askBlossom(match)}
+          className="text-[11px] rounded-md border border-primary/40 bg-primary/5 text-primary px-2 py-1 hover:bg-primary/10 transition inline-flex items-center gap-1"
         >
-          <ExternalLink className="h-3 w-3" /> Open full cheat sheet
-        </Link>
+          <Sparkles className="h-3 w-3" /> Ask Blossom AI
+        </button>
       </div>
     </div>
   );
