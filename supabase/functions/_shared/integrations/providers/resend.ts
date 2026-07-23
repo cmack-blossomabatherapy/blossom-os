@@ -33,25 +33,29 @@ export async function verifyResendWebhook(
   const rawSecret = signingSecret.startsWith("whsec_")
     ? signingSecret.slice("whsec_".length)
     : signingSecret;
-  let keyBytes: Uint8Array;
+  // Copy key material into a fresh ArrayBuffer so the WebCrypto types
+  // (ArrayBufferView<ArrayBuffer>) are satisfied — Uint8Array<ArrayBufferLike>
+  // from atob/TextEncoder is not directly assignable to BufferSource.
+  let source: Uint8Array;
   try {
     const bin = atob(rawSecret);
-    keyBytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    source = Uint8Array.from(bin, (c) => c.charCodeAt(0));
   } catch {
-    keyBytes = new TextEncoder().encode(rawSecret);
+    source = new TextEncoder().encode(rawSecret);
   }
+  const keyBuffer = new ArrayBuffer(source.byteLength);
+  new Uint8Array(keyBuffer).set(source);
   const key = await crypto.subtle.importKey(
     "raw",
-    keyBytes,
+    keyBuffer,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
   );
-  const buf = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(`${id}.${ts}.${rawBody}`),
-  );
+  const msg = new TextEncoder().encode(`${id}.${ts}.${rawBody}`);
+  const msgBuffer = new ArrayBuffer(msg.byteLength);
+  new Uint8Array(msgBuffer).set(msg);
+  const buf = await crypto.subtle.sign("HMAC", key, msgBuffer);
   const expected = btoa(String.fromCharCode(...new Uint8Array(buf)));
   const provided = sigHeader
     .split(" ")

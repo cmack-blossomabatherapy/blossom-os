@@ -1,14 +1,26 @@
 // Typed env helpers with optional aliases (e.g. SOLOM_API_KEY -> SOLUM_API_KEY).
 
+// Edge functions run in Deno at runtime; tsgo typechecks with DOM lib and no
+// Deno types loaded. Declare a minimal shape via globalThis so both runtimes
+// resolve without weakening call sites.
+interface DenoEnvShim {
+  env: { get(name: string): string | undefined };
+}
+const denoEnv: DenoEnvShim | undefined = (globalThis as { Deno?: DenoEnvShim }).Deno;
+
+function readEnv(name: string): string | undefined {
+  return denoEnv?.env.get(name);
+}
+
 const ALIASES: Record<string, string[]> = {
   SOLUM_API_KEY: ["SOLOM_API_KEY"],
 };
 
 export function getEnv(name: string): string | undefined {
-  const direct = Deno.env.get(name);
+  const direct = readEnv(name);
   if (direct) return direct;
   for (const alt of ALIASES[name] ?? []) {
-    const v = Deno.env.get(alt);
+    const v = readEnv(alt);
     if (v) return v;
   }
   return undefined;
