@@ -10,6 +10,7 @@ import {
   useProviderReadiness,
   classifyProviderReadiness,
 } from "@/lib/intake/reviewDataLayer";
+import { CtmOperationsPanel } from "@/components/admin/CtmOperationsPanel";
 
 type Mapping = {
   id: string;
@@ -98,6 +99,8 @@ export default function CTMAdmin() {
           {syncing ? "Syncing…" : "Run backfill"}
         </Button>
       </header>
+
+      <CtmOperationsPanel />
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Provider readiness</CardTitle></CardHeader>
