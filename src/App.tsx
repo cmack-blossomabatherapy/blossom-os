@@ -1186,7 +1186,7 @@ const App = () => (
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/permissions" element={<AdminRoute><OSPermissions /></AdminRoute>} />
-                  <Route path="/integrations" element={<Navigate to="/admin/integrations" replace />} />
+                  <Route path="/integrations" element={<AdminRoute><Navigate to="/admin/integrations" replace /></AdminRoute>} />
                   <Route path="/phone" element={<PhoneSystemRoute><PhoneDashboard /></PhoneSystemRoute>} />
                   <Route path="/phone/lookup" element={<PhoneSystemRoute><PhoneLookup /></PhoneSystemRoute>} />
                   <Route path="/phone/calls" element={<PhoneSystemRoute><CTMCalls /></PhoneSystemRoute>} />
