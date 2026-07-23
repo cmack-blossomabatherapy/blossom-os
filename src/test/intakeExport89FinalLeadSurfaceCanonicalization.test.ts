@@ -26,9 +26,8 @@ describe("Intake Export 89 — final lead surface canonicalization", () => {
     it("/leads routes to OSLeadsV2", () => {
       expect(APP).toMatch(/<Route path="\/leads" element={<OSLeadsV2 \/>}/);
     });
-    it("/leads/:id does not route to the legacy LeadDetail page", () => {
-      expect(APP).not.toMatch(/path="\/leads\/:id" element={<LeadDetail/);
-      expect(APP).toMatch(/path="\/leads\/:id" element={<LeadIdRedirect/);
+    it("/leads/:id routes to the canonical full-page LeadDetail record", () => {
+      expect(APP).toMatch(/path="\/leads\/:id" element={<LeadDetail/);
     });
     it("App.tsx does not keep an unused import of pages/Leads", () => {
       expect(APP).not.toMatch(/from "\.\/pages\/Leads"/);
