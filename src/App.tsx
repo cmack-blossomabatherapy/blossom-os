@@ -693,7 +693,7 @@ function RoleDashboardRedirect() {
     : roles.includes("finance") ? ROLE_HOME.billing_finance
     : roles.includes("qa_director") ? ROLE_HOME.qa_director
     : roles.includes("qa_specialist") ? ROLE_HOME.qa_specialist
-    : roles.includes("qa") ? ROLE_HOME.qa_team
+    : roles.includes("qa_team") ? ROLE_HOME.qa_team
     : roles.includes("payroll_admin") ? ROLE_HOME.payroll_coordinator
     : roles.includes("bcba") ? ROLE_HOME.bcba
     : roles.includes("rbt") ? ROLE_HOME.rbt
@@ -832,11 +832,11 @@ const App = () => (
                   <Route path="/operations/updates" element={<OpsLeadershipUpdates />} />
                   <Route path="/operations/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/state-director" element={<OSStateDirector />} />
-                  <Route path="/state-director/resources" element={<PermissionRoute allowedRoles={["admin", "state_director", "assistant_state_director", "regional_state_director", "state_va", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "business_development", "intake_lead", "recruiting_lead", "scheduling_lead", "staffing_lead", "clinical_director", "bcba", "case_manager", "qa", "qa_director", "authorization_manager", "training_manager"]}><OSStateDirectorResources /></PermissionRoute>} />
-                  <Route path="/assistant-state-director/resources" element={<PermissionRoute allowedRoles={["admin", "assistant_state_director", "state_director", "regional_state_director", "state_va", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "intake_lead", "recruiting_lead", "scheduling_lead", "staffing_lead", "clinical_director", "case_manager", "qa", "qa_director", "authorization_manager", "training_manager"]}><OSAssistantStateDirectorResources /></PermissionRoute>} />
+                  <Route path="/state-director/resources" element={<PermissionRoute allowedRoles={["admin", "state_director", "assistant_state_director", "regional_state_director", "state_va", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "business_development", "intake_lead", "recruiting_lead", "scheduling_lead", "staffing_lead", "clinical_director", "bcba", "case_manager", "qa_team", "qa_director", "authorization_manager", "training_manager"]}><OSStateDirectorResources /></PermissionRoute>} />
+                  <Route path="/assistant-state-director/resources" element={<PermissionRoute allowedRoles={["admin", "assistant_state_director", "state_director", "regional_state_director", "state_va", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "intake_lead", "recruiting_lead", "scheduling_lead", "staffing_lead", "clinical_director", "case_manager", "qa_team", "qa_director", "authorization_manager", "training_manager"]}><OSAssistantStateDirectorResources /></PermissionRoute>} />
                   <Route path="/intake-coordinator" element={<OSIntakeCoordinator />} />
                   <Route path="/auth-coordinator" element={<OSAuthCoordinator />} />
-                  <Route path="/auth-workspace" element={<PermissionRoute allowedRoles={["admin", "authorization_coordinator", "authorization_manager", "authorization_team", "authorizations", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director", "qa", "qa_director", "clinical_director"]}><OSAuthWorkspace /></PermissionRoute>} />
+                  <Route path="/auth-workspace" element={<PermissionRoute allowedRoles={["admin", "authorization_coordinator", "authorization_manager", "authorization_team", "authorizations", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director", "qa_team", "qa_director", "clinical_director"]}><OSAuthWorkspace /></PermissionRoute>} />
                   <Route path="/auth-risk-center" element={<OSAuthRiskCenter />} />
                   <Route path="/supervision-tracking" element={<OSSupervisionTracking />} />
                   <Route path="/parent-training-97156" element={<OSParentTraining97156 />} />
@@ -883,23 +883,23 @@ const App = () => (
                   <Route path="/hr/messages" element={<OSHRMessages />} />
                   <Route path="/hr/team-resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
-                  <Route path="/qa-team" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQATeam /></PermissionRoute>} />
-                  <Route path="/qa-workspace" element={<OSQAWorkspace />} />
-                  <Route path="/qa-queue" element={<OSQAQueue />} />
-                  <Route path="/qa/board" element={<OSQAReviewBoard />} />
-                  <Route path="/qa-clients" element={<OSQAClients />} />
-                  <Route path="/authorization-reviews" element={<OSQAAuthReviews />} />
+                  <Route path="/qa-team" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQATeam /></PermissionRoute>} />
+                  <Route path="/qa-workspace" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQAWorkspace /></PermissionRoute>} />
+                  <Route path="/qa-queue" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQAQueue /></PermissionRoute>} />
+                  <Route path="/qa/board" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQAReviewBoard /></PermissionRoute>} />
+                  <Route path="/qa-clients" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQAClients /></PermissionRoute>} />
+                  <Route path="/authorization-reviews" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "authorization_coordinator", "authorization_manager", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><OSQAAuthReviews /></PermissionRoute>} />
                   {/* Progress Reports: canonical destination is the Reports hub. The
                       /progress-reports URL stays as a backward-compatible redirect and
                       the working page is deep-linked at /reports/progress-reports. */}
                   <Route path="/progress-reports" element={<Navigate to="/reports/progress-reports" replace />} />
-                  <Route path="/treatment-plan-reviews" element={<OSQATreatmentPlans />} />
-                  <Route path="/missing-information" element={<OSQAMissingInfo />} />
-                  <Route path="/expiring-items" element={<OSQAExpiring />} />
-                  <Route path="/assigned-bcbas" element={<PermissionRoute allowedRoles={["admin","super_admin","qa","qa_lead","clinical_director","operations_leadership","state_director"]}><OSQABCBAs /></PermissionRoute>} />
-                  <Route path="/supervision-visibility" element={<PermissionRoute allowedRoles={["admin","super_admin","qa","qa_lead","clinical_director","operations_leadership","state_director"]}><OSQASupervision /></PermissionRoute>} />
-                  <Route path="/qa-messages" element={<OSQAMessages />} />
-                  <Route path="/escalations-followups" element={<PermissionRoute allowedRoles={["admin","super_admin","qa","qa_lead","clinical_director","operations_leadership","state_director"]}><OSQAEscalations /></PermissionRoute>} />
+                  <Route path="/treatment-plan-reviews" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "bcba", "state_director", "assistant_state_director", "regional_state_director", "operations_leadership"]}><OSQATreatmentPlans /></PermissionRoute>} />
+                  <Route path="/missing-information" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "operations_leadership"]}><OSQAMissingInfo /></PermissionRoute>} />
+                  <Route path="/expiring-items" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "operations_leadership"]}><OSQAExpiring /></PermissionRoute>} />
+                  <Route path="/assigned-bcbas" element={<PermissionRoute allowedRoles={["admin","super_admin","qa_team","qa_director","qa_specialist","clinical_director","operations_leadership","state_director","assistant_state_director","regional_state_director"]}><OSQABCBAs /></PermissionRoute>} />
+                  <Route path="/supervision-visibility" element={<PermissionRoute allowedRoles={["admin","super_admin","qa_team","qa_director","qa_specialist","clinical_director","operations_leadership","state_director","assistant_state_director","regional_state_director","behavioral_support"]}><OSQASupervision /></PermissionRoute>} />
+                  <Route path="/qa-messages" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "operations_leadership"]}><OSQAMessages /></PermissionRoute>} />
+                  <Route path="/escalations-followups" element={<PermissionRoute allowedRoles={["admin","super_admin","qa_team","qa_director","qa_specialist","clinical_director","operations_leadership","state_director","assistant_state_director","regional_state_director","behavioral_support"]}><OSQAEscalations /></PermissionRoute>} />
                   <Route path="/qa/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/payroll-coordinator" element={<OSPayrollCoordinator />} />
                   <Route path="/payroll/workspace" element={<OSPayrollWorkspace />} />
@@ -916,8 +916,8 @@ const App = () => (
                   <Route path="/payroll/messages" element={<OSPayrollMessages />} />
                   <Route path="/payroll/resources" element={<Navigate to="/resource-library" replace />} />
                   {/* Case Manager role */}
-                  <Route path="/case-manager" element={<OSCaseManager />} />
-                  <Route path="/clinical-director" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership"]}><ClinicalDirectorDashboard /></PermissionRoute>} />
+                  <Route path="/case-manager" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><OSCaseManager /></PermissionRoute>} />
+                  <Route path="/clinical-director" element={<PermissionRoute allowedRoles={["admin","super_admin","clinical_director","operations_leadership","executive_leadership","exec","executive","coo","ops_manager","director_of_operations","operations_manager","state_director","assistant_state_director","regional_state_director"]}><ClinicalDirectorDashboard /></PermissionRoute>} />
                   {/* Live Org Chart — HR + admins can edit; every authenticated
                       teammate can view. Edit gate is enforced inside OrgChartPage. */}
                   <Route path="/org-chart" element={<OSShellPage><LiveOrgChart /></OSShellPage>} />
@@ -931,28 +931,28 @@ const App = () => (
                   <Route path="/home" element={<CompanyHome />} />
                   <Route path="/home/manage" element={<CompanyHomeManage />} />
                   <Route path="/goals" element={<GoalsPage />} />
-                  <Route path="/behavioral-support" element={<BehavioralSupportDashboard />} />
-                  <Route path="/behavioral-support/crisis-support" element={<BehavioralSupportCrisisSupport />} />
-                  <Route path="/behavioral-support/escalations" element={<BehavioralSupportEscalations />} />
-                  <Route path="/behavioral-support/support-plans" element={<BehavioralSupportPlans />} />
-                  <Route path="/behavioral-support/follow-ups" element={<BehavioralSupportFollowUps />} />
-                  <Route path="/behavioral-support/supervision-visibility" element={<BehavioralSupportSupervisionVisibility />} />
-                  <Route path="/behavioral-support/evaluations" element={<BehavioralSupportEvaluations />} />
+                  <Route path="/behavioral-support" element={<PermissionRoute allowedRoles={["admin", "behavioral_support", "bcba", "clinical_director", "qa_team", "qa_director", "qa_specialist", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><BehavioralSupportDashboard /></PermissionRoute>} />
+                  <Route path="/behavioral-support/crisis-support" element={<PermissionRoute allowedRoles={["admin", "behavioral_support", "bcba", "clinical_director", "qa_team", "qa_director", "qa_specialist", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><BehavioralSupportCrisisSupport /></PermissionRoute>} />
+                  <Route path="/behavioral-support/escalations" element={<PermissionRoute allowedRoles={["admin", "behavioral_support", "bcba", "clinical_director", "qa_team", "qa_director", "qa_specialist", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><BehavioralSupportEscalations /></PermissionRoute>} />
+                  <Route path="/behavioral-support/support-plans" element={<PermissionRoute allowedRoles={["admin", "behavioral_support", "bcba", "clinical_director", "qa_team", "qa_director", "qa_specialist", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><BehavioralSupportPlans /></PermissionRoute>} />
+                  <Route path="/behavioral-support/follow-ups" element={<PermissionRoute allowedRoles={["admin", "behavioral_support", "bcba", "clinical_director", "qa_team", "qa_director", "qa_specialist", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><BehavioralSupportFollowUps /></PermissionRoute>} />
+                  <Route path="/behavioral-support/supervision-visibility" element={<PermissionRoute allowedRoles={["admin", "behavioral_support", "bcba", "clinical_director", "qa_team", "qa_director", "qa_specialist", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><BehavioralSupportSupervisionVisibility /></PermissionRoute>} />
+                  <Route path="/behavioral-support/evaluations" element={<PermissionRoute allowedRoles={["admin", "behavioral_support", "bcba", "clinical_director", "qa_team", "qa_director", "qa_specialist", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><BehavioralSupportEvaluations /></PermissionRoute>} />
                   <Route path="/behavioral-support/resources" element={<OSBehavioralSupportResources />} />
                   {/* Case Manager training goes to the shared /academy destination
                       (matches TRAINING_AND_RESOURCES menu). CMTrainingAcademy remains
                       exported for legacy use but is no longer routed as a role page. */}
                   <Route path="/case-manager/training" element={<Navigate to="/academy" replace />} />
-                  <Route path="/case-manager/families" element={<CMAssignedFamilies />} />
-                  <Route path="/case-manager/communication" element={<CMParentCommunication />} />
-                  <Route path="/case-manager/family-support" element={<CMFamilySupport />} />
-                  <Route path="/case-manager/follow-ups" element={<CMProgressFollowUps />} />
-                  <Route path="/case-manager/scheduling" element={<CMSchedulingCoordination />} />
-                  <Route path="/case-manager/authorizations" element={<CMAuthorizationsVisibility />} />
-                  <Route path="/case-manager/staffing" element={<CMStaffingCoordination />} />
-                  <Route path="/case-manager/service-issues" element={<CMServiceIssues />} />
-                  <Route path="/case-manager/escalations" element={<CMEscalations />} />
-                  <Route path="/case-manager/community" element={<CMCommunityReferrals />} />
+                  <Route path="/case-manager/families" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><CMAssignedFamilies /></PermissionRoute>} />
+                  <Route path="/case-manager/communication" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><CMParentCommunication /></PermissionRoute>} />
+                  <Route path="/case-manager/family-support" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><CMFamilySupport /></PermissionRoute>} />
+                  <Route path="/case-manager/follow-ups" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><CMProgressFollowUps /></PermissionRoute>} />
+                  <Route path="/case-manager/scheduling" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "scheduling_team", "state_director", "assistant_state_director", "regional_state_director"]}><CMSchedulingCoordination /></PermissionRoute>} />
+                  <Route path="/case-manager/authorizations" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "authorization_coordinator", "authorization_manager", "state_director", "assistant_state_director", "regional_state_director"]}><CMAuthorizationsVisibility /></PermissionRoute>} />
+                  <Route path="/case-manager/staffing" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "staffing_team", "state_director", "assistant_state_director", "regional_state_director"]}><CMStaffingCoordination /></PermissionRoute>} />
+                  <Route path="/case-manager/service-issues" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><CMServiceIssues /></PermissionRoute>} />
+                  <Route path="/case-manager/escalations" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><CMEscalations /></PermissionRoute>} />
+                  <Route path="/case-manager/community" element={<PermissionRoute allowedRoles={["admin", "case_manager", "clinical_director", "operations_leadership", "state_director", "assistant_state_director", "regional_state_director"]}><CMCommunityReferrals /></PermissionRoute>} />
                   <Route path="/case-manager/resources" element={<OSCaseManagerResources />} />
                   {/* Legacy flat BCBA routes redirected into the new BcbaShell.
                       Nested routes are declared under /bcba below. */}
@@ -984,7 +984,7 @@ const App = () => (
                     <Route path="/rbt/schedule" element={<OSRBTSchedule />} />
                   </Route>
                   <Route path="/rbt/session-support" element={<RbtLegacyRoute appPath="support"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director"]}><OSRBTSessionSupport /></PermissionRoute></RbtLegacyRoute>} />
-                  <Route path="/rbt/supervision" element={<RbtLegacyRoute appPath="supervision"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","qa","qa_lead"]}><OSRBTSupervision /></PermissionRoute></RbtLegacyRoute>} />
+                  <Route path="/rbt/supervision" element={<RbtLegacyRoute appPath="supervision"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","qa_team","qa_director"]}><OSRBTSupervision /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/messages" element={<RbtLegacyRoute appPath="support"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","hr","hr_admin"]}><OSRBTMessages /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/help" element={<RbtLegacyRoute appPath="support"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","hr","hr_admin","operations_leadership"]}><OSRBTHelp /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/resources" element={<RbtLegacyRoute appPath="learn"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","training_admin","hr","hr_admin"]}><OSRBTResources /></PermissionRoute></RbtLegacyRoute>} />
@@ -1001,7 +1001,7 @@ const App = () => (
                   <Route path="/intake/leads" element={<Navigate to="/leads" replace />} />
                   <Route path="/intake/vob-decision" element={<Navigate to="/vob-decision-center" replace />} />
                   <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
-                  <Route path="/authorizations" element={<PermissionRoute allowedRoles={["admin", "authorization_coordinator", "authorization_manager", "authorization_team", "authorizations", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "qa", "qa_director", "qa_specialist", "bcba", "clinical_director"]}><AuthorizationsRouter /></PermissionRoute>} />
+                  <Route path="/authorizations" element={<PermissionRoute allowedRoles={["admin", "authorization_coordinator", "authorization_manager", "authorization_team", "authorizations", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership", "qa_team", "qa_director", "qa_specialist", "bcba", "clinical_director"]}><AuthorizationsRouter /></PermissionRoute>} />
                   <Route path="/authorizations/handoff" element={<OSAuthHandoff />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
                   <Route path="/scheduling/board" element={<OSSchedulingBoard />} />
@@ -1142,7 +1142,7 @@ const App = () => (
                   <Route path="/ops/staffing" element={<PermissionRoute allowedRoles={[...OPERATIONS_AND_STATE_ROUTE_ROLES, "staffing", "staffing_lead", "staffing_coordinator"]}><OSStaffingWorkspace /></PermissionRoute>} />
                   <Route path="/ops/no-oon-benefits" element={<AdminRoute><NoOONBenefitsPage /></AdminRoute>} />
                   <Route path="/ops/case-management" element={<AdminRoute><CaseManagementPhase6Page /></AdminRoute>} />
-                  <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
+                  <Route path="/ops/qa" element={<PermissionRoute allowedRoles={["admin", "qa_team", "qa_director", "qa_specialist"]}><QAPhase6OpsPage /></PermissionRoute>} />
                   <Route path="/ops/family-staffing-preferences" element={<PermissionRoute allowedRoles={[...OPERATIONS_AND_STATE_ROUTE_ROLES, "staffing", "staffing_lead", "staffing_coordinator"]}><Navigate to="/ops/staffing?tab=preferences" replace /></PermissionRoute>} />
                   {/* Staffing reports always route through the unified Reports page */}
                   <Route path="/staffing/reports" element={<Navigate to="/reports" replace />} />

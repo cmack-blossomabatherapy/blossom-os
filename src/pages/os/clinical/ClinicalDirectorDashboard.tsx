@@ -17,7 +17,7 @@ const ACTIONS = [
   { label: "BCBA Oversight",         to: "/assigned-bcbas",         icon: UserCheck },
   { label: "Supervision Visibility", to: "/supervision-visibility", icon: Eye },
   { label: "Treatment Plan Reviews", to: "/treatment-plan-reviews", icon: FileCheck2 },
-  { label: "Progress Reports",       to: "/reports?category=progress", icon: BarChart3 },
+  { label: "Progress Reports",       to: "/reports/progress-reports", icon: BarChart3 },
   { label: "Evaluations",            to: "/evaluations",            icon: ClipboardCheck },
   { label: "Clinical Escalations",   to: "/escalations-followups",  icon: AlertTriangle },
   { label: "QA Dashboard",           to: "/qa-team",                icon: ShieldCheck },
