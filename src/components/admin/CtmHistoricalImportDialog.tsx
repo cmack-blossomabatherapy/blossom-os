@@ -57,32 +57,53 @@ export function CtmHistoricalImportDialog({ open, onOpenChange }: {
   const [busy, setBusy] = useState<null | "preview" | "start" | "resume" | "cancel">(null);
   const [preview, setPreview] = useState<Job | null>(null);
   const [job, setJob] = useState<Job | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const invoke = useCallback(async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("ctm-historical-import", { body });
-    if (error) throw new Error(error.message);
-    const d = data as { job?: Job; job_id?: string; error?: string };
-    if (d?.error) throw new Error(d.error);
+    const d = (data ?? {}) as { job?: Job; job_id?: string; error?: string };
+    // Supabase invoke sets `error` on non-2xx, but the response body may
+    // still carry our structured `{ error, job }` payload. Prefer the body.
+    const msg = d?.error ?? (error ? error.message : null);
+    if (msg && !d?.job) throw new Error(msg);
+    if (msg && d?.job) {
+      // Surface non-fatal errors but still return the job for the UI.
+      setErrorMsg(msg);
+    }
     return d;
   }, []);
 
   const runPreview = async () => {
-    setBusy("preview"); setPreview(null); setJob(null);
+    setBusy("preview"); setPreview(null); setJob(null); setErrorMsg(null);
     try {
       const res = await invoke({ action: "start", start_date: start, end_date: end, dry_run: true });
-      setPreview((res.job ?? null) as Job | null);
-      toast.success("Dry-run complete — no data written");
-    } catch (e) { toast.error(`Preview failed: ${(e as Error).message}`); }
+      const j = (res.job ?? null) as Job | null;
+      setPreview(j);
+      if (j?.last_error) {
+        setErrorMsg(j.last_error);
+        toast.error(`Preview finished with error: ${j.last_error}`);
+      } else {
+        toast.success("Dry-run complete — no data written");
+      }
+    } catch (e) {
+      const m = (e as Error).message;
+      setErrorMsg(m);
+      toast.error(`Preview failed: ${m}`);
+    }
     finally { setBusy(null); }
   };
 
   const runConfirm = async () => {
-    setBusy("start");
+    setBusy("start"); setErrorMsg(null);
     try {
       const res = await invoke({ action: "start", start_date: start, end_date: end, dry_run: false });
       setJob((res.job ?? null) as Job | null);
       toast.success("Import started");
-    } catch (e) { toast.error(`Start failed: ${(e as Error).message}`); }
+    } catch (e) {
+      const m = (e as Error).message;
+      setErrorMsg(m);
+      toast.error(`Start failed: ${m}`);
+    }
     finally { setBusy(null); }
   };
 
@@ -120,7 +141,12 @@ export function CtmHistoricalImportDialog({ open, onOpenChange }: {
     return () => { cancelled = true; clearInterval(t); };
   }, [job, invoke]);
 
-  const showConfirm = useMemo(() => !!preview && !job, [preview, job]);
+  // Confirm becomes available whenever we have a preview job that finished
+  // without a fatal error — including zero-result dry runs.
+  const showConfirm = useMemo(
+    () => !!preview && !job && !preview.last_error,
+    [preview, job],
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -156,7 +182,19 @@ export function CtmHistoricalImportDialog({ open, onOpenChange }: {
               <div>Would duplicate (already in Blossom): <strong>{preview.calls_duplicate}</strong></div>
               <div>New: <strong>{Math.max(0, preview.calls_fetched - preview.calls_duplicate)}</strong></div>
               <div>Pages processed: {preview.pages_processed} · Rate-limit hits: {preview.rate_limit_hits}</div>
+              {preview.calls_fetched === 0 && (
+                <div className="text-muted-foreground">
+                  No calls in this window. Confirm import will be a safe no-op.
+                </div>
+              )}
               {preview.last_error && <div className="text-destructive">Error: {preview.last_error}</div>}
+            </div>
+          )}
+
+          {errorMsg && !preview && !job && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+              <div className="font-medium">Preview error</div>
+              <div className="mt-1 break-words">{errorMsg}</div>
             </div>
           )}
 
