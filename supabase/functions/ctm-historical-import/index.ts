@@ -31,7 +31,9 @@ const CTM_SECRET = Deno.env.get("CTM_API_SECRET") ?? "";
 const CTM_ACCOUNT_ID = Deno.env.get("CTM_ACCOUNT_ID") ?? "";
 
 const PER_PAGE = 100;
-const WORK_BUDGET_PAGES = 20; // ~2000 calls per invocation; keeps under fn timeout.
+const WORK_BUDGET_PAGES = 20;      // real import: ~2000 calls per invocation.
+const DRY_RUN_BUDGET_PAGES = 3;    // preview: fast probe, never long-runs.
+const FETCH_TIMEOUT_MS = 12_000;   // hard cap per CTM page fetch.
 
 const ALLOWED_ROLES = [
   "super_admin","admin","operations_leadership","intake_lead","intake_coordinator",
@@ -64,10 +66,16 @@ async function fetchPage(startIso: string, endIso: string, page: number) {
   u.searchParams.set("end_date", endIso);
   u.searchParams.set("page", String(page));
   u.searchParams.set("per_page", String(PER_PAGE));
-  const resp = await fetch(u.toString(), {
-    headers: { Authorization: ctmAuth(), Accept: "application/json" },
-  });
-  return resp;
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(u.toString(), {
+      headers: { Authorization: ctmAuth(), Accept: "application/json" },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 async function processJob(service: ReturnType<typeof createClient>, jobId: string) {
@@ -89,6 +97,7 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
   let lastErr: string | null = null;
   let pagesInThisRun = 0;
   let exhausted = false;
+  const pageBudget = job.dry_run ? DRY_RUN_BUDGET_PAGES : WORK_BUDGET_PAGES;
 
   await service.from("ctm_import_jobs").update({
     status: "running",
@@ -96,7 +105,7 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
   }).eq("id", jobId);
 
   try {
-    while (pagesInThisRun < WORK_BUDGET_PAGES) {
+    while (pagesInThisRun < pageBudget) {
       const resp = await fetchPage(startIso, endIso, page);
       if (resp.status === 429) {
         rateHits += 1;
@@ -184,21 +193,32 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
     lastErr = e instanceof Error ? e.message : String(e);
   }
 
-  const finalStatus = lastErr ? "failed" : exhausted ? "completed" : "paused";
+  // Dry-run terminates as "completed" whether we exhausted or hit the small
+  // page budget — a dry-run is always a probe, never a long-running job.
+  const finalStatus = lastErr
+    ? "failed"
+    : exhausted
+      ? "completed"
+      : job.dry_run
+        ? "completed"
+        : "paused";
   const { data: updated } = await service.from("ctm_import_jobs").update({
     status: finalStatus,
     cursor_page: page,
     calls_fetched: fetched, calls_upserted: upserted, calls_duplicate: duplicate,
     leads_linked: linked, leads_created: created, review_queued: review,
     rate_limit_hits: rateHits, last_error: lastErr,
-    finished_at: (exhausted || lastErr) ? new Date().toISOString() : null,
+    finished_at: (finalStatus !== "paused") ? new Date().toISOString() : null,
     summary: {
-      dry_run: job.dry_run, pages_in_last_run: pagesInThisRun,
-      exhausted, error: lastErr,
+      dry_run: job.dry_run,
+      pages_in_last_run: pagesInThisRun,
+      exhausted,
+      truncated_by_budget: !exhausted && !lastErr && job.dry_run,
+      error: lastErr,
     },
   }).eq("id", jobId).select("*").single();
 
-  return { done: exhausted || !!lastErr, job: updated };
+  return { done: finalStatus !== "paused", job: updated };
 }
 
 Deno.serve(async (req) => {
@@ -250,6 +270,15 @@ Deno.serve(async (req) => {
   }).select("id").single();
   if (createErr) return jsonResp({ error: createErr.message }, 500);
 
-  const res = await processJob(service, created.id);
-  return jsonResp({ job_id: created.id, ...res });
+  try {
+    const res = await processJob(service, created.id);
+    return jsonResp({ job_id: created.id, ...res });
+  } catch (e) {
+    // Never leave the client without a job to inspect.
+    const msg = e instanceof Error ? e.message : String(e);
+    const { data: fallback } = await service.from("ctm_import_jobs")
+      .update({ status: "failed", last_error: msg, finished_at: new Date().toISOString() })
+      .eq("id", created.id).select("*").single();
+    return jsonResp({ job_id: created.id, done: true, job: fallback, error: msg }, 200);
+  }
 });
