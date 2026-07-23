@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useLeadDrawer } from "@/contexts/LeadDrawerContext";
+// Full-page migration: activity clicks navigate to /leads/:id (no drawer).
 import {
   filterActivityEvents,
   getActivityColor,
@@ -68,7 +68,6 @@ export function ActivityTimeline({
   const knownCampaigns = useMemo(() => listKnownCampaigns(events), [events]);
   const knownTypes = useMemo(() => listKnownEventTypes(events), [events]);
   const navigate = useNavigate();
-  const { openLead } = useLeadDrawer();
 
   const handleActivate = useCallback(
     (e: ActivityEvent) => {
@@ -79,14 +78,14 @@ export function ActivityTimeline({
       }
       if (!enableClickThrough) return;
       if (e.relatedLeadId) {
-        openLead(e.relatedLeadId);
+        navigate(`/leads/${encodeURIComponent(e.relatedLeadId)}`);
         return;
       }
       if (e.objectType === "source_event" && e.objectId) {
         navigate(`/marketing/lead-source-inbox?eventId=${e.objectId}`);
       }
     },
-    [enableClickThrough, navigate, onOpenObject, onSelect, openLead],
+    [enableClickThrough, navigate, onOpenObject, onSelect],
   );
 
   const filtered = useMemo(

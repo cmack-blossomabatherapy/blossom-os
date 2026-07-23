@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Building2, HeartHandshake, ListChecks, ListFilter,
   Workflow, BarChart3, Upload, Download, Settings2, ShieldCheck, Trash2,
@@ -44,7 +44,6 @@ import { importReferralRows, failedRowsToCsv } from "@/lib/os/referrals/importer
 import { REFERRAL_PARTNER_PIPELINE_STAGES } from "@/lib/intake/intakeWorkflow";
 import { FAMILY_LEAD_PIPELINE_STAGES, canonicalFamilyLeadStage, type FamilyLeadPipelineStage } from "@/lib/intake/intakeWorkflow";
 import { useLeads } from "@/contexts/LeadsContext";
-import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableFilterBar, type FilterDef } from "@/components/marketing/TableFilterBar";
@@ -1248,6 +1247,7 @@ function PipelineStagePill({ stage, onClick }: { stage: FamilyLeadPipelineStage 
 function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
   const { leads } = useLeads();
+  const navigate = useNavigate();
   const leadById = useMemo(() => {
     const m = new Map<string, (typeof leads)[number]>();
     leads.forEach((l) => m.set(l.id, l));
@@ -1256,12 +1256,11 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
   const [logId, setLogId] = useState<ID | null>(null);
-  const [drawerLeadIdRaw, setDrawerLeadIdRaw] = useUrlState("lead", "");
-  const [drawerFocusStageRaw, setDrawerFocusStageRaw] = useUrlState("stage", "");
-  const drawerLeadId = drawerLeadIdRaw || null;
-  const drawerFocusStage = drawerFocusStageRaw || null;
-  const setDrawerLeadId = (v: string | null) => setDrawerLeadIdRaw(v ?? "");
-  const setDrawerFocusStage = (v: string | null) => setDrawerFocusStageRaw(v ?? "");
+  // Full-page migration: opening a lead navigates to the canonical record.
+  const setDrawerLeadId = (v: string | null) => {
+    if (v) navigate(`/leads/${encodeURIComponent(v)}`);
+  };
+  const setDrawerFocusStage = (_v: string | null) => { /* no-op — full page owns tabs */ };
   const [statusFilter, _setStatusFilter] = useUrlState("rs", "all");
   const [stageFilter, _setStageFilter] = useUrlState("rp", "all");
   const [rQuery, _setRQuery] = useUrlState("rq", "", { history: "replace" });
@@ -1548,11 +1547,7 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
       <NewReferralDialog open={creating} onOpenChange={setCreating} />
       <EditReferralDialog id={editingId} open={!!editingId} onOpenChange={(o) => !o && setEditingId(null)} />
       <LogActivityDialog open={!!logId} onOpenChange={(o) => !o && setLogId(null)} referralId={logId ?? undefined} />
-      <LeadDetailDrawer
-        leadId={drawerLeadId}
-        focusStage={drawerFocusStage}
-        onClose={() => { setDrawerLeadId(null); setDrawerFocusStage(null); }}
-      />
+      {/* Drawer removed — /leads/:id is the canonical full record. */}
       <BulkCreateTaskDialog
         open={bulkTaskOpen}
         onOpenChange={setBulkTaskOpen}
