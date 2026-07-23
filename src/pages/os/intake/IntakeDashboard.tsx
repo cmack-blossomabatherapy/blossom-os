@@ -83,6 +83,10 @@ function SectionHeader({
 export default function IntakeDashboard() {
   const { leads: allLeads, loading } = useLeads();
   const [addOpen, setAddOpen] = useState(false);
+  // Shared intake task feed — same hook used by every other intake page so
+  // task counts stay consistent across the operational surface.
+  const { tasks: _intakeTasksLive } = useIntakeTasksLive();
+  void _intakeTasksLive;
   // Shared cross-page intake state filter (also drives /intake/tasks,
   // /intake/lead-to-active, /intake/missing-information, etc.).
   const { matches: matchesIntakeState } = useIntakeStateFilter();
