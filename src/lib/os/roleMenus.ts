@@ -59,7 +59,6 @@ const TRAINING_AND_RESOURCES: RoleMenuSection = {
   items: [
     { label: "Training Academy", path: "/academy",          icon: GraduationCap },
     { label: "Resource Library", path: "/resource-library", icon: BookOpen },
-    { label: "Intake Communications", path: "/intake/parent-communication", icon: MessageSquare },
     { label: "Reports",          path: "/reports",          icon: FileText },
   ],
 };
@@ -76,7 +75,6 @@ const STATE_TRAINING_AND_RESOURCES: RoleMenuSection = {
     { label: "Resource Library", path: "/resource-library", icon: BookOpen },
     { label: "State Director Resources", path: "/state-director/resources", icon: BookOpen },
     { label: "Assistant State Director Resources", path: "/assistant-state-director/resources", icon: BookOpen },
-    { label: "Intake Communications", path: "/intake/parent-communication", icon: MessageSquare },
     { label: "Reports",          path: "/reports",          icon: FileText },
   ],
 };
@@ -324,14 +322,10 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
       {
         id: "intake", label: "Intake", items: [
           { label: "Intake Dashboard",           path: "/intake/dashboard",              icon: LayoutDashboard },
-          { label: "Lead → Active Pipeline",     path: "/intake/lead-to-active",         icon: TrendingUp },
-          { label: "Leads",                      path: "/leads",                         icon: List },
-          { label: "Lead to Ready-to-Start Pipeline",    path: "/leads?view=pipeline",           icon: TrendingUp },
-          { label: "Packet Follow Up / Missing Info", path: "/intake/missing-information", icon: ShieldCheck },
-          { label: "Intake Communications",       path: "/intake/parent-communication",   icon: MessageSquare },
-          { label: "After-Hours AI Calls",       path: "/phone/ai-calls",                icon: PhoneCall },
-          { label: "Benefits Cheat Sheets",      path: "/intake/benefits-cheat-sheets",  icon: ShieldCheck },
           { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
+          { label: "Leads",                      path: "/leads",                         icon: List },
+          { label: "Packet Follow Up / Missing Info", path: "/intake/missing-information", icon: ShieldCheck },
+          { label: "After-Hours AI Calls",       path: "/phone/ai-calls",                icon: PhoneCall },
           { label: "CentralReach Packet Prep",   path: "/intake/cr-packet-prep",         icon: FileCheck2 },
         ],
       },

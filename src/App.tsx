@@ -63,8 +63,6 @@ import TasksPage from "./pages/tasks/TasksPage";
 import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
 import MissingInformation from "./pages/os/intake/MissingInformation";
 import CentralReachPacketPrep from "./pages/os/intake/CentralReachPacketPrep";
-import ParentCommunication from "./pages/os/intake/ParentCommunication";
-import LeadToActivePipeline from "./pages/os/intake/LeadToActivePipeline";
 import IntakePromotionReviewQueues from "./pages/os/intake/IntakePromotionReviewQueues";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
@@ -1241,17 +1239,25 @@ const App = () => (
                     }
                   />
                   <Route path="/intake/dashboard" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><IntakeWorkspaceLanding /></PermissionRoute>} />
-                  <Route path="/intake/lead-to-active" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><LeadToActivePipeline /></PermissionRoute>} />
+                  {/* Retired staff-facing surface — redirect old bookmarks to the operator dashboard. */}
+                  <Route path="/intake/lead-to-active" element={<Navigate to="/intake/dashboard" replace />} />
                   <Route path="/intake/review-queues" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "operations_leadership"]}><IntakePromotionReviewQueues /></PermissionRoute>} />
                   <Route path="/intake/referral-queue" element={<Navigate to="/intake/dashboard" replace />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
-                  <Route path="/intake/benefits-cheat-sheets" element={<LeadBenefitsCheatSheets />} />
+                  {/* Benefits knowledge is admin-managed backend content. Old
+                      intake bookmarks land on the admin surface (non-admins see
+                      the standard admin-only guard). */}
+                  <Route path="/intake/benefits-cheat-sheets" element={<Navigate to="/admin/benefits-knowledge" replace />} />
+                  <Route path="/admin/benefits-knowledge" element={<AdminRoute><LeadBenefitsCheatSheets /></AdminRoute>} />
+                  <Route path="/admin/intake-templates" element={<AdminRoute><AutomatedEmailsPage /></AdminRoute>} />
                   {/* --- Live MVP pages backing role menu items that don't have a
                        dedicated workspace yet. Real route, real shell, no
                        /coming-soon. Will be replaced with full workspaces in
                        future passes. --- */}
                   <Route path="/intake/missing-information"  element={<MissingInformation />} />
-                  <Route path="/intake/parent-communication" element={<ParentCommunication />} />
+                  {/* Parent communication became admin-managed template + inline
+                      lead-drawer actions. Preserve safe redirect for old bookmarks. */}
+                  <Route path="/intake/parent-communication" element={<Navigate to="/admin/intake-templates" replace />} />
                   <Route path="/intake/cr-packet-prep"       element={<PermissionRoute allowedRoles={["admin","super_admin","intake","intake_coordinator","intake_lead","intake_team","operations_leadership"]}><CentralReachPacketPrep /></PermissionRoute>} />
                   <Route path="/ops/expiring-authorizations" element={<OSShellPage><ExpiringAuthorizations /></OSShellPage>} />
                   <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />
