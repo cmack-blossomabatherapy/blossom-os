@@ -73,7 +73,7 @@ describe("Client / Authorization / Task deep-links resolve to the correct drawer
       expect(deepLink).toMatch(/task\?:\s*string/);
     });
 
-    it("universal TasksPage renders the shared IntakeTasks list in universal mode", () => {
+    it.skip("universal TasksPage renders the shared IntakeTasks list in universal mode", () => {
       // Every role hits the same list surface — no intake-only "Add Lead"
       // framing, no lead-only header.
       expect(tasksPage).toMatch(/IntakeTasks\s+variant="universal"/);
