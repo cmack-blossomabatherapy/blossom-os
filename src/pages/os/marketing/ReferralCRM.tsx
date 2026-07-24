@@ -47,6 +47,7 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableFilterBar, type FilterDef } from "@/components/marketing/TableFilterBar";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 import { TablePagination } from "@/components/marketing/TablePagination";
 
 type ModuleId =
