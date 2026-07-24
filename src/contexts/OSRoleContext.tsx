@@ -154,7 +154,19 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   // Fall back to the lowest-privilege OS role if none of the user's app roles
   // map to a known OS role — never silently elevate to State Director.
   const derivedRole = mapAuthRoleToOS(appRoles) ?? "rbt";
-  const isSuperAdmin = derivedRole === "super_admin" || derivedRole === "systems_admin";
+  // Admin eligibility for "View as role" MUST match the signal that gates
+  // <RoleSwitcher /> (useAuth().isAdmin) — any auth role of
+  // admin / super_admin / systems_admin qualifies. Deriving this from the
+  // OS role alone drifts when a super-admin also carries a non-admin hat
+  // (e.g. state director), causing the override to be silently ignored
+  // while the switcher still allows selection.
+  const appRoleSet = appRoles as string[];
+  const isSuperAdmin =
+    appRoleSet.includes("admin") ||
+    appRoleSet.includes("super_admin") ||
+    appRoleSet.includes("systems_admin") ||
+    derivedRole === "super_admin" ||
+    derivedRole === "systems_admin";
 
   // Multi-hat: build the list of hats from active assignments.
   const hats = useMemo(() => buildHats(activeAssignments), [activeAssignments]);
@@ -192,8 +204,10 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
     [hats, activeHatId],
   );
 
-  // Role resolution order:
-  //   1. Super-admin override (View As Role)
+  // Role resolution order (STRICT — the effective role change must be
+  // atomic when a super-admin picks a preview role):
+  //   1. Super-admin override (View As Role) — always wins for admins,
+  //      regardless of any active hat.
   //   2. Active hat's OS role (multi-hat users)
   //   3. Legacy derived role from user_roles
   const role: OSRole = isSuperAdmin && roleOverride

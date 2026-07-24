@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ROLE_HOME } from "@/lib/os/roleHome";
 
@@ -46,3 +46,4 @@ describe("RoleSwitcher — role selection navigates to ROLE_HOME", () => {
     expect(navigateMock).toHaveBeenCalledWith(ROLE_HOME["intake_coordinator"], { replace: true });
   });
 });
+
