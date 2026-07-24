@@ -856,12 +856,20 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
   const PAGE = 5000;
   const acc: BcbaSharedBillingRow[] = [];
 
-  async function drain(builder: () => ReturnType<typeof supabase.from>) {
+  type Pass = "active" | "historical_direct";
+  async function drain(pass: Pass) {
     let offset = 0;
-    // Each iteration reissues the builder so we don't mutate a shared query.
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const { data, error } = await builder().range(offset, offset + PAGE - 1);
+      const base = supabase
+        .from("bcba_productivity_billing_rows")
+        .select("normalized")
+        .order("service_date", { ascending: true })
+        .range(offset, offset + PAGE - 1);
+      const q = pass === "active"
+        ? base.eq("active", true)
+        : base.not("procedure_code", "ilike", "97153%");
+      const { data, error } = await q;
       if (error) throw error;
       const arr = data ?? [];
       for (const d of arr) {
@@ -877,24 +885,11 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
   }
 
   // (1) All active rows.
-  await drain(() =>
-    supabase
-      .from("bcba_productivity_billing_rows")
-      .select("normalized")
-      .eq("active", true)
-      .order("service_date", { ascending: true }) as unknown as ReturnType<typeof supabase.from>,
-  );
-
+  await drain("active");
   // (2) Historical direct-service anchors (any active status) — codes that
-  // do NOT start with 97153. We include active=true here again so a code
-  // filter alone drives the second pass; dedupe below removes overlap.
-  await drain(() =>
-    supabase
-      .from("bcba_productivity_billing_rows")
-      .select("normalized")
-      .not("procedure_code", "ilike", "97153%")
-      .order("service_date", { ascending: true }) as unknown as ReturnType<typeof supabase.from>,
-  );
+  // do NOT start with 97153. Overlap with pass (1) is removed by the
+  // dedupe below.
+  await drain("historical_direct");
 
   // Stable dedupe key. Active + historical passes will overlap for
   // non-97153 rows in active batches; this collapses them into one entry.
