@@ -7,6 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCaseload, type CaseloadRow } from "./useCaseload";
 import { useBcbaIdentity } from "../useBcbaIdentity";
@@ -94,6 +101,11 @@ export default function CaseloadPage() {
   const [filters, setFilters] = useState<CaseloadFilters>({});
   const filtered = useMemo(() => applyFilters(rows ?? [], filters), [rows, filters]);
 
+  // Saved-view dialog state (replaces window.prompt/confirm).
+  const [saveDialog, setSaveDialog] = useState<{ open: boolean; name: string }>({ open: false, name: "" });
+  const [renameDialog, setRenameDialog] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: "", name: "" });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: "", name: "" });
+
   const activeClientId = params.get("client");
   const activeRow = filtered.find((r) => r.clientId === activeClientId) ?? null;
 
@@ -107,22 +119,17 @@ export default function CaseloadPage() {
 
   function saveCurrent() {
     if (identity.readOnly) return;
-    const name = prompt("Name this view");
-    if (!name?.trim()) return;
-    save.mutate({ name: name.trim(), filters });
+    setSaveDialog({ open: true, name: "" });
   }
 
   function renameView(id: string, current: string) {
     if (identity.readOnly) return;
-    const next = prompt("Rename view", current);
-    if (!next?.trim() || next.trim() === current) return;
-    rename.mutate({ id, name: next.trim() });
+    setRenameDialog({ open: true, id, name: current });
   }
 
   function deleteView(id: string, current: string) {
     if (identity.readOnly) return;
-    if (!confirm(`Delete saved view "${current}"?`)) return;
-    remove.mutate(id);
+    setDeleteDialog({ open: true, id, name: current });
   }
 
   function resetFilters() { setFilters(emptyFilters); }
@@ -259,6 +266,81 @@ export default function CaseloadPage() {
         onOpenChange={(v) => { if (!v) setParams((p) => { p.delete("client"); return p; }, { replace: true }); }}
         onRefresh={() => refetch()}
       />
+
+      {/* Save view */}
+      <Dialog open={saveDialog.open} onOpenChange={(o) => setSaveDialog((d) => ({ ...d, open: o }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save current view</DialogTitle>
+            <DialogDescription>Name this filter set so you can jump back to it later.</DialogDescription>
+          </DialogHeader>
+          <Input
+            autoFocus
+            placeholder="e.g. Auth risk this week"
+            value={saveDialog.name}
+            onChange={(e) => setSaveDialog((d) => ({ ...d, name: e.target.value }))}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setSaveDialog({ open: false, name: "" })}>Cancel</Button>
+            <Button
+              disabled={!saveDialog.name.trim() || save.isPending}
+              onClick={() => {
+                const name = saveDialog.name.trim();
+                if (!name) return;
+                save.mutate({ name, filters });
+                setSaveDialog({ open: false, name: "" });
+              }}
+            >Save view</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename view */}
+      <Dialog open={renameDialog.open} onOpenChange={(o) => setRenameDialog((d) => ({ ...d, open: o }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename saved view</DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={renameDialog.name}
+            onChange={(e) => setRenameDialog((d) => ({ ...d, name: e.target.value }))}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenameDialog({ open: false, id: "", name: "" })}>Cancel</Button>
+            <Button
+              disabled={!renameDialog.name.trim() || rename.isPending}
+              onClick={() => {
+                const name = renameDialog.name.trim();
+                if (!name) return;
+                rename.mutate({ id: renameDialog.id, name });
+                setRenameDialog({ open: false, id: "", name: "" });
+              }}
+            >Rename</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete view */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(o) => setDeleteDialog((d) => ({ ...d, open: o }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete saved view?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleteDialog.name}" will be removed from your saved views. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                remove.mutate(deleteDialog.id);
+                setDeleteDialog({ open: false, id: "", name: "" });
+              }}
+            >Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
