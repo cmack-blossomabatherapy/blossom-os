@@ -2,6 +2,7 @@ import { AlertTriangle, ExternalLink, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useBcbaIdentity, shouldShowMappingDiagnostic } from "./useBcbaIdentity";
+import { OperatorDiagnosticsGate } from "@/components/os/intake/OperatorDiagnosticsGate";
 
 /**
  * Actionable clinician-mapping banner. Shown whenever the current BCBA
@@ -35,11 +36,19 @@ export function BcbaMappingDiagnostic({ onRetry }: { onRetry?: () => void }) {
         <div className="text-sm font-semibold text-amber-900 dark:text-amber-100">{title}</div>
         <p className="text-xs text-amber-900/80 dark:text-amber-100/80 mt-1">{detail}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button asChild size="sm" variant="outline" className="gap-1">
-            <Link to="/admin/centralreach-sync">
-              <ExternalLink className="h-3.5 w-3.5" /> Open Clinician Identity
-            </Link>
-          </Button>
+          <OperatorDiagnosticsGate
+            fallback={
+              <span className="text-[11px] text-amber-900/70 dark:text-amber-100/70">
+                Please ask your system administrator to review your CentralReach provider mapping.
+              </span>
+            }
+          >
+            <Button asChild size="sm" variant="outline" className="gap-1">
+              <Link to="/admin/centralreach-sync">
+                <ExternalLink className="h-3.5 w-3.5" /> Open Clinician Identity
+              </Link>
+            </Button>
+          </OperatorDiagnosticsGate>
           {onRetry && (
             <Button size="sm" variant="ghost" onClick={onRetry} className="gap-1">
               <RefreshCw className="h-3.5 w-3.5" /> Retry
