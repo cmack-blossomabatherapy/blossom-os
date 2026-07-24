@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
 import { getHrReadinessBlockers } from "@/lib/hr/readiness";
 import { ONBOARDING_STAGES, type OnboardingStatus } from "@/lib/hr/types";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 import {
   useRecruitingCandidates, useRecruitingBackgroundChecks,
   useRecruitingOrientation, daysInStage, fullName as candName,
