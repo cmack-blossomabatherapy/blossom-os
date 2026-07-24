@@ -258,6 +258,7 @@ function AttachLeadDialog({
 
 export default function LeadSourceInbox() {
   const { leads, createLead } = useLeads();
+  const { confirmOperator } = useOperatorDialogs();
   const {
     events,
     insertEvent,
@@ -372,9 +373,12 @@ export default function LeadSourceInbox() {
 
   const onConvert = async (s: typeof scored[number]) => {
     if (s.score >= 0.6) {
-      const ok = window.confirm(
-        `This event likely matches an existing lead (${(s.score * 100).toFixed(0)}% match). Create a new lead anyway?`,
-      );
+      const ok = await confirmOperator({
+        title: "Likely duplicate lead",
+        description: `This event looks like an existing lead (${(s.score * 100).toFixed(0)}% match). Create a new lead anyway?`,
+        confirmLabel: "Create new lead",
+        destructive: true,
+      });
       if (!ok) return;
     }
     let lead: Awaited<ReturnType<typeof createLead>> | null = null;
