@@ -956,10 +956,16 @@ export default function OSRecruitingEscalations() {
                         toast.success("Leadership notified");
                       }} />
                       <DAction icon={UserPlus} label="Assign recruiter" onClick={async () => {
-                        const recruiter = window.prompt("Assign to recruiter (name or email)");
+                        const recruiter = await promptOperator({
+                          title: "Assign recruiter",
+                          label: "Recruiter (name or email)",
+                          submitLabel: "Assign",
+                          required: true,
+                        });
                         if (!recruiter) return;
                         if (isLive) await mutations.updateEscalation(eid, { assigned_to: recruiter } as any);
                         await logIntent("recruiter_assigned", { recruiter });
+                        toast.success(`Assigned to ${recruiter}`);
                       }} />
                       <DAction icon={Bell} label="Notify staffing" onClick={() => logIntent("staffing_notified")} />
                       <DAction icon={Send} label="Resend onboarding" onClick={() => logIntent("onboarding_resend")} />
@@ -971,9 +977,16 @@ export default function OSRecruitingEscalations() {
                       }} />
                       <DAction icon={Clock} label="Snooze" onClick={() => logIntent("escalation_snoozed")} />
                       <DAction icon={Plus} label="Add note" onClick={async () => {
-                        const note = window.prompt("Add note");
+                        const note = await promptOperator({
+                          title: "Add note",
+                          label: "Note",
+                          multiline: true,
+                          submitLabel: "Save note",
+                          required: true,
+                        });
                         if (!note) return;
                         await logIntent("note_added", { note });
+                        toast.success("Note saved");
                       }} />
                     </>
                   );
