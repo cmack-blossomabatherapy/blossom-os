@@ -792,7 +792,14 @@ function DetailPanel({
                 else toast({ title: "No orientation slot yet" });
                 return;
               }
-              const next = window.prompt("Reschedule to (YYYY-MM-DD):", slot.scheduled_date ?? "");
+              const next = await promptOperator({
+                title: "Reschedule orientation",
+                label: "New date",
+                inputType: "date",
+                defaultValue: slot.scheduled_date ?? "",
+                submitLabel: "Reschedule",
+                required: true,
+              });
               if (!next) return;
               const { error } = await supabase.from("recruiting_orientation_slots")
                 .update({ scheduled_date: next, status: "Scheduled" }).eq("id", slot.id);
