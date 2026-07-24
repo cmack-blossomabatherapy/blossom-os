@@ -733,11 +733,21 @@ export default function OSHRRequests() {
                     <Send className="h-3.5 w-3.5" strokeWidth={1.75} /> Message employee
                   </button>
                   <button onClick={async () => {
-                    const role = window.prompt("Reassign to owner role (HR, Manager, Payroll, Recruiting):", openCase.owner_role ?? "HR");
+                    const role = await promptOperator({
+                      title: "Reassign request",
+                      description: "Route this request to the right owner.",
+                      label: "Owner role (HR, Manager, Payroll, Recruiting)",
+                      defaultValue: openCase.owner_role ?? "HR",
+                      submitLabel: "Reassign",
+                      required: true,
+                    });
                     if (!role) return;
                     const { error } = await supabase.from("employee_cases").update({ owner_role: role }).eq("id", openCase.id);
                     if (!error) await logHrEvent({ eventType: "request_reassigned", title: `Request reassigned to ${role}`, caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null, metadata: { role } });
-                    toast({ title: error ? "Could not reassign" : `Reassigned to ${role}` });
+                    toast({
+                      title: error ? "Could not reassign" : `Reassigned to ${role}`,
+                      description: error ? "Please try again in a moment." : undefined,
+                    });
                     if (!error) setReloadKey(k => k + 1);
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <UserCheck className="h-3.5 w-3.5" strokeWidth={1.75} /> Reassign
@@ -745,40 +755,71 @@ export default function OSHRRequests() {
                   <button onClick={async () => {
                     const { error } = await supabase.from("employee_cases").update({ priority: "urgent" }).eq("id", openCase.id);
                     if (!error) await logHrEvent({ eventType: "request_escalated", title: "Request escalated to urgent", caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null });
-                    toast({ title: error ? "Could not escalate" : "Escalated to urgent" });
+                    toast({
+                      title: error ? "Could not escalate" : "Escalated to urgent",
+                      description: error ? "Please try again in a moment." : undefined,
+                    });
                     if (!error) setReloadKey(k => k + 1);
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <Flag className="h-3.5 w-3.5" strokeWidth={1.75} /> Escalate
                   </button>
                   <button onClick={async () => {
-                    const note = window.prompt("Add operational note:");
+                    const note = await promptOperator({
+                      title: "Add operational note",
+                      label: "Note",
+                      multiline: true,
+                      submitLabel: "Add note",
+                      required: true,
+                    });
                     if (!note) return;
                     const { error } = await logHrEvent({ eventType: "request_note", title: "Operational note added", description: note, caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null });
-                    toast({ title: error ? "Could not add note" : "Note added" });
+                    toast({
+                      title: error ? "Could not add note" : "Note added",
+                      description: error ? "Please try again in a moment." : undefined,
+                    });
                     if (!error) setReloadKey(k => k + 1);
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} /> Add note
                   </button>
                   <button onClick={async () => {
-                    const resolution = window.prompt("Resolution note:", openCase.resolution ?? "");
+                    const resolution = await promptOperator({
+                      title: "Resolve request",
+                      label: "Resolution note",
+                      multiline: true,
+                      defaultValue: openCase.resolution ?? "",
+                      submitLabel: "Mark resolved",
+                    });
                     if (resolution === null) return;
                     const { error } = await supabase.from("employee_cases").update({
                       status: "resolved", resolution, closed_at: new Date().toISOString(),
                     }).eq("id", openCase.id);
                     if (!error) await logHrEvent({ eventType: "request_resolved", title: "Request resolved", description: resolution, caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null });
-                    toast({ title: error ? "Could not resolve" : "Request resolved" });
+                    toast({
+                      title: error ? "Could not resolve" : "Request resolved",
+                      description: error ? "Please try again in a moment." : undefined,
+                    });
                     if (!error) { setOpenId(null); setReloadKey(k => k + 1); }
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} /> Resolve
                   </button>
                   <button onClick={async () => {
-                    const date = window.prompt("Follow-up due date (YYYY-MM-DD):", new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10));
+                    const date = await promptOperator({
+                      title: "Schedule follow-up",
+                      label: "Follow-up due date",
+                      inputType: "date",
+                      defaultValue: new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10),
+                      submitLabel: "Schedule",
+                      required: true,
+                    });
                     if (!date) return;
                     const { error } = await supabase.from("employee_cases").update({
                       due_date: date, status: "waiting_employee",
                     }).eq("id", openCase.id);
                     if (!error) await logHrEvent({ eventType: "request_follow_up_created", title: `Follow-up scheduled for ${date}`, caseId: openCase.id, employeeId: (openCase as any).employee_id ?? null, metadata: { due_date: date } });
-                    toast({ title: error ? "Could not schedule" : `Follow-up set for ${date}` });
+                    toast({
+                      title: error ? "Could not schedule" : `Follow-up set for ${date}`,
+                      description: error ? "Please try again in a moment." : undefined,
+                    });
                     if (!error) setReloadKey(k => k + 1);
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /> Create follow-up
