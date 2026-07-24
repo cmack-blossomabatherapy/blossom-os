@@ -1236,7 +1236,7 @@ const App = () => (
                   <Route
                     path="/patient-journey"
                     element={
-                      <PermissionRoute allowedRoles={["admin", "super_admin", "marketing", "marketing_team", "marketing_growth_lead"]}>
+                      <PermissionRoute allowedRoles={[...MARKETING_ROLES]}>
                         <PatientLifetimeJourney />
                       </PermissionRoute>
                     }
