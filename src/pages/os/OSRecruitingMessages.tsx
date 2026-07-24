@@ -22,6 +22,7 @@ import {
 } from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { cn } from "@/lib/utils";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 
 // Recruiting → Communication → Messages & Updates
 
@@ -335,6 +336,7 @@ const QUICK_ACTIONS = [
 ];
 
 export default function OSRecruitingMessages() {
+  const { promptOperator } = useOperatorDialogs();
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveMessages, loading: liveMessagesLoading } = useRecruitingMessages();
