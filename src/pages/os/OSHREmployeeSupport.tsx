@@ -665,6 +665,7 @@ function DetailPanel({ item, employee, onboarding, trainings, documents, related
   trainings: TrRow[]; documents: DocRow[]; relatedCases: CaseRow[];
   onClose: () => void;
 }) {
+  const { promptOperator } = useOperatorDialogs();
   const meta = CASE_TYPE_META[item.case_type] ?? { label: item.case_type, icon: HeartHandshake };
   const st = STATUS_META[item.status] ?? { label: item.status, tone: "muted" as Tone };
   const pr = PRIORITY_META[item.priority] ?? { label: item.priority, tone: "muted" as Tone };
