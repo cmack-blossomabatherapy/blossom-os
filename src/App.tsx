@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
 import { RouteErrorBoundary } from "@/components/errors/RouteErrorBoundary";
+import { OperatorDialogsProvider } from "@/components/os/OperatorDialogs";
 import { Unauthorized } from "@/components/auth/Unauthorized";
 import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, COURSE_AUTHOR_ROLES, AUTOMATIONS_ROLES } from "@/lib/navigationAccess";
 import { ROLE_HOME } from "@/lib/os/roleHome";
