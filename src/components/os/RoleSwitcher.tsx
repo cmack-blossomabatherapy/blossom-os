@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Shield, MapPin, Eye, User, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useOSRole, OS_STATES } from "@/contexts/OSRoleContext";
 import { ROLE_PREVIEW_LIST } from "@/lib/os/roleMenus";
+import { ROLE_HOME } from "@/lib/os/roleHome";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { displayNameFor } from "@/lib/os/clinicianIdentity";
@@ -14,6 +16,7 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
     previewSubjectEmployeeId, setPreviewSubjectEmployeeId, isPreviewing,
   } = useOSRole();
   const { isAdmin, loading } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [subjectQuery, setSubjectQuery] = useState("");
   const [subjectResults, setSubjectResults] = useState<Array<{ id: string; first_name: string|null; last_name: string|null; email: string|null; credential: string|null }>>([]);
@@ -96,7 +99,14 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
               {ROLE_PREVIEW_LIST.map((r) => (
                 <button
                   key={r.role}
-                  onClick={() => { setRole(r.role); setOpen(false); }}
+                  onClick={() => {
+                    setRole(r.role);
+                    setOpen(false);
+                    // Always land on the target role's home so mismatched
+                    // role content can never persist under the new menu.
+                    const home = ROLE_HOME[r.role] ?? "/";
+                    navigate(home, { replace: true });
+                  }}
                   className={cn(
                     "flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] transition",
                     r.role === role ? "bg-gradient-to-r from-[hsl(265_85%_65%)]/15 to-transparent text-foreground" : "hover:bg-foreground/[0.04]",
