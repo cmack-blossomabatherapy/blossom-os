@@ -22,9 +22,12 @@ describe("OperatorDiagnosticsGate — Intake role diagnostics contract", () => {
     "state_director",
     "recruiting_team",
     "billing_finance",
+    // Generic auth "admin" is NOT an OS diagnostics role. Only the
+    // active OS roles super_admin / systems_admin see diagnostics.
+    "admin",
   ];
 
-  const ADMIN_ROLES = ["super_admin", "systems_admin", "admin"];
+  const ADMIN_ROLES = ["super_admin", "systems_admin"];
 
   it.each(OPERATOR_ROLES)("hides diagnostics for %s", (role) => {
     expect(isOperatorDiagnosticsVisible(role)).toBe(false);

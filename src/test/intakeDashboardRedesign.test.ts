@@ -50,10 +50,10 @@ describe("Intake dashboard redesign — role-scoped operator workspace", () => {
     }
     // Single primary action cluster lives in the welcome band — no duplicate
     // GrowthPageShell top actions. Add Lead opens the NewLeadDialog and
-    // Open Pipeline links to /leads?view=pipeline.
+    // Open Leads links to /leads?view=pipeline.
     expect(src).not.toMatch(/actions=\{\[/);
     expect(src).toMatch(/onClick=\{\(\)\s*=>\s*setAddOpen\(true\)\}[\s\S]{0,200}Add Lead/);
-    expect(src).toMatch(/to="\/leads\?view=pipeline"[\s\S]{0,120}Open Pipeline/);
+    expect(src).toMatch(/to="\/leads\?view=pipeline"[\s\S]{0,120}Open Leads/);
     // NewLeadDialog is still mounted.
     expect(src).toMatch(/<NewLeadDialog/);
     // State filter toggle is still present.

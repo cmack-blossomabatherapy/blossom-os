@@ -241,7 +241,7 @@ export default function IntakeDashboard() {
               <Plus className="h-4 w-4 mr-1.5" /> Add Lead
             </Button>
             <Button asChild variant="outline" className="rounded-xl h-10 px-5">
-              <Link to="/leads">
+              <Link to="/leads?view=pipeline">
                 <TrendingUp className="h-4 w-4 mr-1.5" /> Open Leads
               </Link>
             </Button>

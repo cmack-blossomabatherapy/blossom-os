@@ -13,10 +13,12 @@ import { useOSRole } from "@/contexts/OSRoleContext";
  * Operators should see human-readable readiness ("Call linked", "Import
  * pending") in the parent surface; the diagnostic detail lives here.
  */
+// Diagnostics are visible ONLY for the active OS roles Super Admin and
+// Systems Admin. Generic "admin" (auth AppRole) must NOT see them — this
+// matches IntakeDashboard's isAdminView contract.
 const ADMIN_ROLES = new Set<string>([
   "super_admin",
   "systems_admin",
-  "admin",
 ]);
 
 export function OperatorDiagnosticsGate({
