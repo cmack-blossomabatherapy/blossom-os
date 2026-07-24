@@ -1181,7 +1181,7 @@ export default function BcbaProductivityReportV3() {
             <ClientsRbtsTab filtered={filtered} bcbaTable={bcbaTable} />
           </TabsContent>
 
-          <TabsContent value="upload" className="space-y-4">
+          {isSuperAdmin && <TabsContent value="upload" className="space-y-4">
             {/* Admin-fed dataset status and controls. */}
             <div className="rounded-2xl border bg-card/60 p-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
