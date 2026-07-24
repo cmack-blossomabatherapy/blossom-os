@@ -1404,7 +1404,7 @@ export default function BcbaProductivityReportV3() {
                 </table>
               </div>
             </div>
-          </TabsContent>
+          </TabsContent>}
         </Tabs>
       </div>
 
