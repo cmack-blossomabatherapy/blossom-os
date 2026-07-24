@@ -35,6 +35,7 @@ import {
 import { useMarketingSourceEvents } from "@/hooks/useMarketingSourceEvents";
 import { sourceSystemToSourceValue } from "@/lib/marketing/sourceEventMapper";
 import { EditSourceEventDialog } from "@/components/marketing/EditSourceEventDialog";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 import { Pencil, UserPlus, Code2 } from "lucide-react";
 import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 
