@@ -126,7 +126,7 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
       .order("occurred_at", { ascending: false })
       .limit(300),
     supabase.from("cr_freshness_config")
-      .select("type_key,current_minutes,threshold_minutes"),
+      .select("type_key,current_minutes,stale_minutes"),
     supabase.from("user_notifications")
       .select("id,title,body,kind,category,link,created_at,read_at")
       .eq("user_id", userId)
@@ -159,7 +159,7 @@ async function fetchAll(userId: string): Promise<BcbaHomeData> {
     key: r.type_key,
     label: r.type_key.replace(/_/g, " "),
     minutesSinceSync: r.current_minutes ?? null,
-    isStale: isStaleFor(r.current_minutes ?? null, r.threshold_minutes ?? null),
+    isStale: isStaleFor(r.current_minutes ?? null, r.stale_minutes ?? null),
   }));
   const schedStale  = freshness.find((f) => f.key.includes("schedule"))?.isStale ?? false;
   const authStale   = freshness.find((f) => f.key.includes("auth"))?.isStale ?? false;
