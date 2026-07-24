@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
 import { getHrReadinessBlockers } from "@/lib/hr/readiness";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 
 /* ---------------- types ---------------- */
 interface Doc {
@@ -195,6 +196,7 @@ function useData(reloadKey = 0) {
 type Tab = "all" | "onboarding" | "certifications" | "background" | "missing" | "expiring" | "pending";
 
 export default function OSHRCompliance() {
+  const { promptOperator } = useOperatorDialogs();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [reloadKey, setReloadKey] = useState(0);
