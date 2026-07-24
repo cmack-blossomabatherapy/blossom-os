@@ -861,7 +861,7 @@ const App = () => (
                   <Route path="/staffing" element={<Navigate to="/ops/staffing?tab=open-cases" replace />} />
                   <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
                   <Route path="/recruiting/workspace"      element={<OSRecruitingWorkspace />} />
-                  <Route path="/recruiting/academy"        element={<OSRecruitingTrainingAcademy />} />
+                  <Route path="/recruiting/academy"        element={<Navigate to="/academy/path/recruiting" replace />} />
                   <Route path="/recruiting/pipeline"       element={<OSRecruitingPipeline />} />
                   <Route path="/recruiting/interviews"     element={<SafeBoundary label="Interviews" fallbackTitle="Interviews could not load." showErrorDetails><OSRecruitingInterviews /></SafeBoundary>} />
                  <Route path="/recruiting/offers"         element={<OSRecruitingOffers />} />
