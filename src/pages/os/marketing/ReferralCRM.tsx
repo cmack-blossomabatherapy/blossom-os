@@ -1643,6 +1643,7 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 // ===========================================================
 function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
+  const { promptOperator } = useOperatorDialogs();
   const tasks = scopedTasks(s);
 
   const [groupByRaw, setGroupByRaw] = useUrlState("tg", "owner");
@@ -1717,8 +1718,15 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
     ids().forEach((id) => crm.updateTask(id, { priority: v as Task["priority"] }));
     toast({ title: `Updated priority on ${selected.size}` }); clear();
   };
-  const bulkDueDate = () => {
-    const v = window.prompt("Due date (YYYY-MM-DD):"); if (!v) return;
+  const bulkDueDate = async () => {
+    const v = await promptOperator({
+      title: "Set due date",
+      label: "Due date",
+      inputType: "date",
+      submitLabel: "Apply",
+      required: true,
+    });
+    if (!v) return;
     ids().forEach((id) => crm.updateTask(id, { dueDate: v }));
     toast({ title: `Updated due date on ${selected.size}` }); clear();
   };
