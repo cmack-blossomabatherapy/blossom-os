@@ -44,6 +44,7 @@ import blossomLogo from "@/assets/blossom-logo-color.png";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -166,6 +167,8 @@ function deriveAssignmentIssues(assignments: BcbaAssignmentV3[]): AssignmentIssu
 export default function BcbaProductivityReportV3() {
   const [params] = useSearchParams();
   const savedParam = params.get("saved");
+  const { role: osRole } = useOSRole();
+  const isSuperAdmin = String(osRole) === "super_admin";
 
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<BillingRow[]>([]);
@@ -969,7 +972,10 @@ export default function BcbaProductivityReportV3() {
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">BCBA Productivity Report V3</h1>
             <p className="text-sm text-muted-foreground">
-              One billing upload. Historical BCBA Assignment History is the source of truth for ownership.
+              Company-wide view of BCBA billable hours, supervision %, direct vs. indirect
+              time, and client / RBT coverage — sourced from CentralReach billing and
+              historical BCBA Assignment History. Use the filters below to slice by date,
+              BCBA, client, RBT, state, payor, or service code.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -995,36 +1001,43 @@ export default function BcbaProductivityReportV3() {
           </div>
         </div>
 
-        <CentralReachRequirementsCard
-          exportName="CentralReach Billing / Service export (CSV or XLSX)"
-          requiredColumns={[
-            "DateOfService", "ClientId", "ClientFirstName", "ClientLastName",
-            "ProcedureCode", "TimeWorkedInHours", "ProviderFirstName",
-            "ProviderLastName", "PayorNickname", "LocationCode",
-          ]}
-          filterNote="Same file feeds BCBA Supervision and Parent Training. Admin uploads at System Tools → BCBA Productivity Uploads are auto-loaded — no manual upload needed when the shared dataset is populated."
-          adminUploadsHref="/admin/bcba-productivity-uploads"
-          adminSourceLabel="Auto-loads from Admin Uploads"
-        />
-        <SourceCoverageBanner reportKey="bcba-productivity" />
-        <div className="mt-3">
-          <CanonicalSessionsCard
-            title="Auto-loaded from imported CentralReach billing (company-wide)"
-            scope={{}}
-            requireScope={false}
-            highlightKinds={["direct", "supervision", "parent_training"]}
-            showClients={false}
-          />
-        </div>
+        {/* Admin-only diagnostics: dataset requirements, source coverage,
+            canonical sessions, and assignment-history banners. Hidden from
+            every non-super-admin role. */}
+        {isSuperAdmin && (
+          <>
+            <CentralReachRequirementsCard
+              exportName="CentralReach Billing / Service export (CSV or XLSX)"
+              requiredColumns={[
+                "DateOfService", "ClientId", "ClientFirstName", "ClientLastName",
+                "ProcedureCode", "TimeWorkedInHours", "ProviderFirstName",
+                "ProviderLastName", "PayorNickname", "LocationCode",
+              ]}
+              filterNote="Same file feeds BCBA Supervision and Parent Training. Admin uploads at System Tools → BCBA Productivity Uploads are auto-loaded — no manual upload needed when the shared dataset is populated."
+              adminUploadsHref="/admin/bcba-productivity-uploads"
+              adminSourceLabel="Auto-loads from Admin Uploads"
+            />
+            <SourceCoverageBanner reportKey="bcba-productivity" />
+            <div className="mt-3">
+              <CanonicalSessionsCard
+                title="Auto-loaded from imported CentralReach billing (company-wide)"
+                scope={{}}
+                requireScope={false}
+                highlightKinds={["direct", "supervision", "parent_training"]}
+                showClients={false}
+              />
+            </div>
+          </>
+        )}
 
-        {/* Setup / inferred banners stay above tabs */}
-        {setupIncomplete && (
+        {/* Setup / inferred banners stay above tabs — admin-only */}
+        {isSuperAdmin && setupIncomplete && (
           <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-4 w-4" />
             BCBA Assignment History is required before productivity can be assigned. Upload or create assignment history first.
           </div>
         )}
-        {usingInferred && (
+        {isSuperAdmin && usingInferred && (
           <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -1048,7 +1061,7 @@ export default function BcbaProductivityReportV3() {
             </div>
           </div>
         )}
-        {usingMixedSources && (
+        {isSuperAdmin && usingMixedSources && (
           <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
             <Database className="mr-1.5 inline h-4 w-4 text-primary" />
             Mixed ownership sources — {assignments.length} saved assignments are used for clients with manual history,
@@ -1056,7 +1069,7 @@ export default function BcbaProductivityReportV3() {
             Saved Assignment History for one client no longer disables inference for other clients.
           </div>
         )}
-        {kpis.unassigned > 0 && (
+        {isSuperAdmin && kpis.unassigned > 0 && (
           <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             <AlertTriangle className="mr-1.5 inline h-3.5 w-3.5" />
             {fmt1(kpis.unassigned)} hrs have no Assignment History match. Open <button className="underline" onClick={() => setShowHistory(true)}>Assignment History</button> to add ownership entries.
@@ -1065,7 +1078,7 @@ export default function BcbaProductivityReportV3() {
         )}
 
         {/* Empty state when no admin-uploaded dataset exists. */}
-        {!savedParam && !rows.length && (!sharedStatus || sharedStatus.activeRowCount === 0) && (
+        {isSuperAdmin && !savedParam && !rows.length && (!sharedStatus || sharedStatus.activeRowCount === 0) && (
           <div className="rounded-xl border bg-card/60 p-5">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="flex items-start gap-3">
@@ -1134,7 +1147,7 @@ export default function BcbaProductivityReportV3() {
             <TabsTrigger value="bcba">BCBA Summary</TabsTrigger>
             <TabsTrigger value="supervision">Supervision</TabsTrigger>
             <TabsTrigger value="clients">Clients &amp; RBTs</TabsTrigger>
-            <TabsTrigger value="upload">Data Source</TabsTrigger>
+            {isSuperAdmin && <TabsTrigger value="upload">Data Source</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -1168,7 +1181,7 @@ export default function BcbaProductivityReportV3() {
             <ClientsRbtsTab filtered={filtered} bcbaTable={bcbaTable} />
           </TabsContent>
 
-          <TabsContent value="upload" className="space-y-4">
+          {isSuperAdmin && <TabsContent value="upload" className="space-y-4">
             {/* Admin-fed dataset status and controls. */}
             <div className="rounded-2xl border bg-card/60 p-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -1391,7 +1404,7 @@ export default function BcbaProductivityReportV3() {
                 </table>
               </div>
             </div>
-          </TabsContent>
+          </TabsContent>}
         </Tabs>
       </div>
 
