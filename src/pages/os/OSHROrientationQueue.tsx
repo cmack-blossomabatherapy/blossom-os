@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { queueHrMessage, logHrEvent } from "@/lib/hr/activityEvents";
 import { HRMessageHistory } from "@/components/hr/HRMessageHistory";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 
 /* ---------------- types ---------------- */
 interface Slot {
@@ -720,6 +721,7 @@ function DetailPanel({
   toast: ReturnType<typeof useToast>["toast"];
   onSchedule?: () => void;
 }) {
+  const { promptOperator } = useOperatorDialogs();
   const days = daysFromToday(slot?.scheduled_date ?? null);
   const slotSt = slotStatusTone(slot?.status ?? (slot ? null : "not_scheduled"), days);
   return (
