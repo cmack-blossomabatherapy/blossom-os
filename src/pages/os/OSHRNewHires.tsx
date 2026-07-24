@@ -715,6 +715,7 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
   bgChecks: ReturnType<typeof useRecruitingBackgroundChecks>["items"];
   orientation: ReturnType<typeof useRecruitingOrientation>["items"];
 }) {
+  const { promptOperator } = useOperatorDialogs();
   const isEmp = item.source === "employee";
   const emp = isEmp ? (item.raw as Emp) : null;
   const cand = !isEmp ? (item.raw as RecruitingCandidate) : null;
