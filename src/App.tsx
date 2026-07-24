@@ -801,6 +801,7 @@ const App = () => (
             <ClientsProvider>
               <JourneyOverridesProvider>
                 <PhoneSystemProvider>
+                <OperatorDialogsProvider>
                 <PushNavigationListener />
                 <RouteErrorBoundary>
                 <Routes>
