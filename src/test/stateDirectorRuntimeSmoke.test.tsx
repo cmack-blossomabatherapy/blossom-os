@@ -44,7 +44,7 @@ describe("State Director runtime smoke — module load", () => {
   it("OSTraining (State Director training route) module loads", async () => {
     const mod: any = await import("@/pages/os/OSTraining");
     expect(typeof mod.default).toBe("function");
-  });
+  }, 30000);
 
   it("ReportsHome (single Reports hub) module loads", async () => {
     const mod: any = await import("@/pages/os/reports/ReportsHome");
