@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { queueHrMessage, logHrEvent } from "@/lib/hr/activityEvents";
 import { HRMessageHistory } from "@/components/hr/HRMessageHistory";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 
 /* ---------------- types ---------------- */
 interface Slot {
@@ -720,6 +721,7 @@ function DetailPanel({
   toast: ReturnType<typeof useToast>["toast"];
   onSchedule?: () => void;
 }) {
+  const { promptOperator } = useOperatorDialogs();
   const days = daysFromToday(slot?.scheduled_date ?? null);
   const slotSt = slotStatusTone(slot?.status ?? (slot ? null : "not_scheduled"), days);
   return (
@@ -790,7 +792,14 @@ function DetailPanel({
                 else toast({ title: "No orientation slot yet" });
                 return;
               }
-              const next = window.prompt("Reschedule to (YYYY-MM-DD):", slot.scheduled_date ?? "");
+              const next = await promptOperator({
+                title: "Reschedule orientation",
+                label: "New date",
+                inputType: "date",
+                defaultValue: slot.scheduled_date ?? "",
+                submitLabel: "Reschedule",
+                required: true,
+              });
               if (!next) return;
               const { error } = await supabase.from("recruiting_orientation_slots")
                 .update({ scheduled_date: next, status: "Scheduled" }).eq("id", slot.id);
@@ -901,7 +910,7 @@ function ScheduleOrientationDialog({
     const { data, error } = await (supabase.from("recruiting_orientation_slots") as any)
       .insert(payload).select("id").maybeSingle();
     setSaving(false);
-    if (error) { toast({ title: "Could not schedule", description: error.message }); return; }
+    if (error) { toast({ title: "Could not schedule", description: "Please try again in a moment." }); return; }
     await logHrEvent({
       eventType: "orientation_scheduled",
       title: `Orientation scheduled for ${cand.first_name} ${cand.last_name}`,

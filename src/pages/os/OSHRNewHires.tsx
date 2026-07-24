@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
 import { getHrReadinessBlockers } from "@/lib/hr/readiness";
 import { ONBOARDING_STAGES, type OnboardingStatus } from "@/lib/hr/types";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 import {
   useRecruitingCandidates, useRecruitingBackgroundChecks,
   useRecruitingOrientation, daysInStage, fullName as candName,
@@ -714,6 +715,7 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
   bgChecks: ReturnType<typeof useRecruitingBackgroundChecks>["items"];
   orientation: ReturnType<typeof useRecruitingOrientation>["items"];
 }) {
+  const { promptOperator } = useOperatorDialogs();
   const isEmp = item.source === "employee";
   const emp = isEmp ? (item.raw as Emp) : null;
   const cand = !isEmp ? (item.raw as RecruitingCandidate) : null;
@@ -845,7 +847,13 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
             <ActionBtn icon={CalendarPlus} label="Orientation" to="/hr/orientation-queue" />
             <ActionBtn icon={BookOpen} label="Assign training" to="/hr/training-center" />
             <ActionBtn icon={FileText} label="Add note" onClick={async () => {
-              const note = window.prompt(`Add HR note for ${item.name}:`, "");
+              const note = await promptOperator({
+                title: `Add HR note for ${item.name}`,
+                label: "Note (visible to HR only)",
+                multiline: true,
+                submitLabel: "Save note",
+                required: true,
+              });
               if (!note) return;
               const { error } = await logHrEvent({
                 eventType: "new_hire_note",
@@ -854,7 +862,10 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
                 employeeId: emp?.id ?? null,
                 onboardingId: onb?.id ?? null,
               });
-              toast({ title: error ? "Could not save note" : "Note saved", description: error?.message });
+              toast({
+                title: error ? "Could not save note" : "Note saved",
+                description: error ? "Please try again in a moment." : undefined,
+              });
             }} />
             <ActionBtn icon={Heart} label="Open support" to="/hr/employee-support" />
             <ActionBtn
@@ -893,7 +904,12 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
                     employeeId: emp.id, onboardingId: onb?.id ?? null,
                   });
                   hr.reload();
-                  toast({ title: error ? "Could not update" : "Marked ready for staffing", description: error?.message ?? `${item.name} onboarding is ready for start.` });
+                  toast({
+                    title: error ? "Could not update" : "Marked ready for staffing",
+                    description: error
+                      ? "Please try again in a moment."
+                      : `${item.name} onboarding is ready for start.`,
+                  });
                 } else {
                   toast({ title: "Marked ready", description: `${item.name} flagged ready for staffing.` });
                 }

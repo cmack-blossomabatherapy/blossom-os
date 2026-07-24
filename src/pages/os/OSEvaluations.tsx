@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { ClinicalDirectorSection } from "@/components/clinical/ClinicalDirectorSection";
+import { toast } from "@/hooks/use-toast";
 
 type EmployeeRow = {
   id: string;
@@ -250,7 +251,7 @@ export default function OSEvaluations() {
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-right">
-                    <Button size="sm" variant="ghost" className="h-7" onClick={() => window.alert("Schedule review flow coming next")}>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => toast({ title: "Coming soon", description: "Scheduling review flow will be available shortly." })}>
                       Schedule <ChevronRight className="ml-0.5 h-3.5 w-3.5" />
                     </Button>
                   </td>

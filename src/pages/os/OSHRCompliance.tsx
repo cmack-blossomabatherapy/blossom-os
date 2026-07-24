@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
 import { getHrReadinessBlockers } from "@/lib/hr/readiness";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 
 /* ---------------- types ---------------- */
 interface Doc {
@@ -195,6 +196,7 @@ function useData(reloadKey = 0) {
 type Tab = "all" | "onboarding" | "certifications" | "background" | "missing" | "expiring" | "pending";
 
 export default function OSHRCompliance() {
+  const { promptOperator } = useOperatorDialogs();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [reloadKey, setReloadKey] = useState(0);
@@ -761,14 +763,25 @@ export default function OSHRCompliance() {
               <section className="pt-2 border-t border-border/70 -mx-6 px-6">
                 <div className="flex flex-wrap gap-2">
                   <button onClick={async () => {
-                    const docType = window.prompt("Document type (e.g. cpr_cert, i9, w4):");
+                    const docType = await promptOperator({
+                      title: "Request document",
+                      label: "Document type (e.g. cpr_cert, i9, w4)",
+                      submitLabel: "Continue",
+                      required: true,
+                    });
                     if (!docType) return;
-                    const name = window.prompt("Document name:", docType);
+                    const name = await promptOperator({
+                      title: "Document name",
+                      label: "Display name shown to the employee",
+                      defaultValue: docType,
+                      submitLabel: "Request",
+                      required: true,
+                    });
                     if (!name) return;
                     const { error } = await supabase.from("employee_documents_hr").insert({
                       employee_id: openEmp.id, doc_type: docType, name, status: "requested", required: true,
                     });
-                    toast({ title: error ? "Could not request" : "Document requested" });
+                    toast({ title: error ? "Could not request" : "Document requested", description: error ? "Please try again in a moment." : undefined });
                     if (!error) refresh();
                   }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] bg-primary text-primary-foreground hover:opacity-90 transition">
                     <Send className="h-3.5 w-3.5" strokeWidth={1.75} /> Request document

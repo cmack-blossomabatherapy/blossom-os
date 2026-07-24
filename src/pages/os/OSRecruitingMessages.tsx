@@ -22,6 +22,7 @@ import {
 } from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { cn } from "@/lib/utils";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 
 // Recruiting → Communication → Messages & Updates
 
@@ -335,6 +336,7 @@ const QUICK_ACTIONS = [
 ];
 
 export default function OSRecruitingMessages() {
+  const { promptOperator } = useOperatorDialogs();
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveMessages, loading: liveMessagesLoading } = useRecruitingMessages();
@@ -888,9 +890,16 @@ export default function OSRecruitingMessages() {
                       }} />
                       <DAction icon={Clock} label="Snooze reminder" onClick={() => logIntent("reminder_snoozed")} />
                       <DAction icon={Plus} label="Add internal note" onClick={async () => {
-                        const note = window.prompt("Internal note");
+                        const note = await promptOperator({
+                          title: "Internal note",
+                          label: "Note (visible to recruiting team only)",
+                          multiline: true,
+                          submitLabel: "Save note",
+                          required: true,
+                        });
                         if (!note) return;
                         await logIntent("note_added", { note });
+                        toast.success("Note saved");
                       }} />
                     </>
                   );
