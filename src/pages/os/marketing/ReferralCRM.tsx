@@ -797,6 +797,7 @@ const COMPANY_VIEWS = [
 
 function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const s = useCrm();
+  const { promptOperator, confirmOperator } = useOperatorDialogs();
   const companies = scopedCompanies(s);
 
   const [viewRaw, _setView] = useUrlState("ov", "all");
@@ -901,16 +902,18 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     ids().forEach((id) => crm.updateCompany(id, { relationshipTier: v as Company["relationshipTier"] }));
     toast({ title: `Updated tier on ${selected.size}` }); clear();
   };
-  const bulkAddTag = () => {
-    const tag = window.prompt("Tag to add:"); if (!tag) return;
+  const bulkAddTag = async () => {
+    const tag = await promptOperator({ title: "Tag companies", label: "Tag to add", submitLabel: "Apply tag", required: true });
+    if (!tag) return;
     ids().forEach((id) => {
       const c = s.companies.find((x) => x.id === id);
       if (c && !c.tags.includes(tag)) crm.updateCompany(id, { tags: [...c.tags, tag] });
     });
     toast({ title: `Tagged ${selected.size} company(ies)` }); clear();
   };
-  const bulkRemoveTag = () => {
-    const tag = window.prompt("Tag to remove:"); if (!tag) return;
+  const bulkRemoveTag = async () => {
+    const tag = await promptOperator({ title: "Remove tag", label: "Tag to remove", submitLabel: "Remove tag", required: true });
+    if (!tag) return;
     ids().forEach((id) => {
       const c = s.companies.find((x) => x.id === id);
       if (c && c.tags.includes(tag)) crm.updateCompany(id, { tags: c.tags.filter((t) => t !== tag) });
@@ -935,8 +938,14 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     ids().forEach((id) => crm.softDeleteCompany(id));
     toast({ title: `${selected.size} company(ies) deleted` }); clear();
   };
-  const bulkResetReferrals = () => {
-    if (!window.confirm(`Reset referral counts (total + YTD) to 0 for ${selected.size} company(ies)?`)) return;
+  const bulkResetReferrals = async () => {
+    const ok = await confirmOperator({
+      title: "Reset referral counts?",
+      description: `This will set total and YTD referral counts to 0 for ${selected.size} company(ies).`,
+      confirmLabel: "Reset counts",
+      destructive: true,
+    });
+    if (!ok) return;
     ids().forEach((id) => crm.updateCompany(id, { referralCount: 0, referralsYTD: 0 }));
     toast({ title: `Reset referrals on ${selected.size} company(ies)` }); clear();
   };
