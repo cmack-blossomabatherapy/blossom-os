@@ -269,6 +269,7 @@ export default function BcbaProductivityReportV3() {
       });
       if (!totals.totalRows) {
         setRows([]);
+        setOwnershipRows([]);
         setFileName("");
         if (!opts?.silent) {
           toast.info("No CentralReach billing rows are available. Add one from CentralReach Uploads.");
@@ -318,6 +319,7 @@ export default function BcbaProductivityReportV3() {
         const data = await getSavedReportRowsV3(savedParam);
         if (data?.length) {
           setRows(data);
+          setOwnershipRows(data);
           const meta = readSavedReportsV3().find(r => r.id === savedParam);
           if (meta) setFileName(meta.fileName);
           return;
@@ -439,6 +441,7 @@ export default function BcbaProductivityReportV3() {
       }
 
       setRows(parsedRows);
+      setOwnershipRows(parsedRows);
       setFileName(file.name);
       // Persist so the upload survives tab navigation / refresh.
       void saveLastBillingV3(file.name, parsedRows);
@@ -702,6 +705,7 @@ export default function BcbaProductivityReportV3() {
   async function handleResetUpload() {
     if (rows.length && !confirm("Clear the current upload? Unsaved data will be lost.")) return;
     setRows([]);
+    setOwnershipRows([]);
     setFileName("");
     setValidation(null);
     setMissingCols([]);
@@ -713,6 +717,7 @@ export default function BcbaProductivityReportV3() {
     const data = await getSavedReportRowsV3(id);
     if (!data.length) { toast.error("Saved report payload not found"); return; }
     setRows(data);
+    setOwnershipRows(data);
     const meta = readSavedReportsV3().find(r => r.id === id);
     if (meta) setFileName(meta.fileName);
     toast.success(`Regenerated "${meta?.name || id}"`);
