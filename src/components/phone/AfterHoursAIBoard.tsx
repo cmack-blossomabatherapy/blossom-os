@@ -379,17 +379,19 @@ export function AfterHoursAIBoard() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">After-Hours AI Calls</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Retell AI captures inbound calls outside business hours. Intake follows up here.
+            Inbound calls captured after business hours. Intake reviews and follows up here.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setSettingsOpen(true)} variant="outline" size="sm">
-            <SettingsIcon className="mr-2 h-3.5 w-3.5" /> Routing & Notifications
-          </Button>
-          <Button onClick={runSync} disabled={syncing} variant="outline" size="sm">
-            <RefreshCw className={`mr-2 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-            Sync from Retell
-          </Button>
+          <OperatorDiagnosticsGate>
+            <Button onClick={() => setSettingsOpen(true)} variant="outline" size="sm">
+              <SettingsIcon className="mr-2 h-3.5 w-3.5" /> Routing & Notifications
+            </Button>
+            <Button onClick={runSync} disabled={syncing} variant="outline" size="sm">
+              <RefreshCw className={`mr-2 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+              Sync history
+            </Button>
+          </OperatorDiagnosticsGate>
         </div>
       </div>
 
@@ -487,7 +489,7 @@ export function AfterHoursAIBoard() {
             <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
           ) : filtered.length === 0 ? (
             <div className="py-12 text-center text-sm text-muted-foreground">
-              No calls yet. Calls will appear here as Retell sends webhooks, or use Sync to pull history.
+              No calls yet. New after-hours calls will appear here as they come in.
             </div>
           ) : (
             <div className="space-y-2">
@@ -596,7 +598,7 @@ export function AfterHoursAIBoard() {
             <SheetTitle className="flex items-center gap-2"><Mail className="h-4 w-4" /> Email Routing</SheetTitle>
           </SheetHeader>
           <div className="mt-2 text-xs text-muted-foreground">
-            Each call is auto-classified by AI into a department. Add the email addresses that should be notified when a call comes in for that department. The <span className="font-medium">unverified</span> bucket also catches webhook-unverified or unprocessable calls.
+            Each call is auto-classified by AI into a department. Add the email addresses that should be notified when a call comes in for that department. The <span className="font-medium">unverified</span> bucket also catches calls that could not be classified or verified.
           </div>
           <div className="mt-5 space-y-4">
             {routing.length === 0 && (
