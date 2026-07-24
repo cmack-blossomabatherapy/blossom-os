@@ -167,7 +167,7 @@ function SendToCentralReachReadinessButton({
       bumpCentralReachReadiness();
     } else {
       toast.error("Could not create CentralReach readiness item", {
-        description: res.error ?? "Unknown error",
+        description: "Please try again in a moment. If this continues, contact your admin.",
       });
     }
   }
@@ -1314,17 +1314,18 @@ function ManualMetricsDialog({
         agingBlockers: form.agingBlockers,
       });
       if (!res.ok) {
-        setError(res.error ?? "Save failed");
-        toast.error("State metrics did not save", { description: res.error ?? "Unknown error" });
+        const friendly = "State metrics didn't save. Please try again in a moment.";
+        setError(friendly);
+        toast.error("State metrics did not save", { description: friendly });
         return;
       }
       await refreshStateMetrics();
       toast.success(`State metrics saved for ${code}`);
       onOpenChange(false);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unexpected error";
-      setError(message);
-      toast.error("State metrics did not save", { description: message });
+    } catch {
+      const friendly = "State metrics didn't save. Please try again in a moment.";
+      setError(friendly);
+      toast.error("State metrics did not save", { description: friendly });
     } finally {
       setSaving(false);
     }
