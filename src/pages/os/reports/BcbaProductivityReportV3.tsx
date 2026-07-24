@@ -44,6 +44,7 @@ import blossomLogo from "@/assets/blossom-logo-color.png";
 import { CentralReachRequirementsCard } from "@/components/reports/CentralReachRequirementsCard";
 import { SourceCoverageBanner } from "@/components/reports/SourceCoverageBanner";
 import CanonicalSessionsCard from "@/components/reports/CanonicalSessionsCard";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
 /* ----- helpers ----- */
 const normH = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -166,6 +167,8 @@ function deriveAssignmentIssues(assignments: BcbaAssignmentV3[]): AssignmentIssu
 export default function BcbaProductivityReportV3() {
   const [params] = useSearchParams();
   const savedParam = params.get("saved");
+  const { role: osRole } = useOSRole();
+  const isSuperAdmin = String(osRole) === "super_admin";
 
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<BillingRow[]>([]);
