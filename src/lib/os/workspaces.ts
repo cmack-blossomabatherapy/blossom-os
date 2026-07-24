@@ -197,7 +197,6 @@ export const WORKSPACES: Workspace[] = [
     roles: [...OPS, "recruiting_assistant", "hr", "hr_admin", "hr_manager", "recruiting_lead", "recruiting_coordinator", "hr_lead"],
     tabs: [
       { label: "Dashboard",              path: "/recruiting/workspace" },
-      { label: "Training Academy",       path: "/recruiting/academy" },
       { label: "Candidate Pipeline",     path: "/recruiting/pipeline" },
       { label: "RBT Recruiting",         path: "/recruiting/rbt" },
       { label: "BCBA Recruiting",        path: "/recruiting/bcba" },

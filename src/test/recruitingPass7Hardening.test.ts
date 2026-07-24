@@ -65,13 +65,15 @@ describe("Recruiting Pass 7 — Apploi importer safety", () => {
 describe("Recruiting Pass 7 — menu alignment", () => {
   const menus = read("src/lib/os/roleMenus.ts");
 
-  it("exposes /recruiting/academy in every recruiting role menu", () => {
+  it("keeps core recruiting nav in every recruiting role menu (Training Academy lives in the shared Training & Resources section)", () => {
     const roles = ["recruiting_team", "recruiting_lead", "recruiting_coordinator"] as const;
     for (const role of roles) {
       const idx = menus.indexOf(`${role}:`);
       expect(idx).toBeGreaterThan(-1);
       const next = menus.slice(idx, idx + 4000);
-      expect(next).toMatch(/\/recruiting\/academy/);
+      // The duplicative "Recruiting Academy" entry was retired; recruiters
+      // now use the unified Training Academy via TRAINING_AND_RESOURCES.
+      expect(next).not.toMatch(/\/recruiting\/academy/);
       expect(next).toMatch(/\/recruiting\/rbt/);
       expect(next).toMatch(/\/recruiting\/bcba/);
       expect(next).toMatch(/\/recruiting\/onboarding/);

@@ -6,7 +6,6 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
 const REQUIRED_TABS = [
   "/recruiting/workspace",
-  "/recruiting/academy",
   "/recruiting/pipeline",
   "/recruiting/rbt",
   "/recruiting/bcba",
