@@ -126,7 +126,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
           { label: "Work Queue",               path: "/work-queue",                      icon: ClipboardList },
           { label: "Escalation Center",        path: "/work-queue/escalations",          icon: Flame },
           { label: "CR Handoff Queue",         path: "/authorizations/handoff",          icon: ShieldCheck },
-          { label: "Integration Health",       path: "/admin/integrations",              icon: Activity },
           { label: "Role / Menu Governance",   path: "/role-management",                 icon: ShieldCheck },
           { label: "System Request Intake",    path: "/system/request-intake",           icon: Inbox },
           { label: "Org Chart",                path: "/org-chart",                       icon: Users },
