@@ -159,7 +159,7 @@ describe("View as role — effective role and menu update atomically", () => {
 
       // Sanity: the Super Admin menu DOES expose System Tools surfaces —
       // proves the assertion above is meaningful.
-      const superPaths = SUPER_ADMIN_MENU.flatMap((s) => s.items.map((i) => i.path));
+      const superPaths = SUPER_ADMIN_MENU.flatMap((s) => s.items.map((i) => i.to));
       expect(superPaths.some((p) => forbidden.includes(p))).toBe(true);
 
       // Navigation to ROLE_HOME must fire so the shell can never render
