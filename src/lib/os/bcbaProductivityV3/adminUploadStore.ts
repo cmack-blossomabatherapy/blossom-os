@@ -873,7 +873,7 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
       if (error) throw error;
       const arr = data ?? [];
       for (const d of arr) {
-        const n = (d as { normalized?: BcbaSharedBillingRow | null }).normalized ?? null;
+        const n = (d as unknown as { normalized?: BcbaSharedBillingRow | null }).normalized ?? null;
         if (n && n.date && n.code) {
           const state = normalizeUsState(n.state) || n.state || "";
           acc.push(state === n.state ? n : { ...n, state });
