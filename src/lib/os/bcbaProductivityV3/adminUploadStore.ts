@@ -832,3 +832,83 @@ export async function getBcbaProductivityBatchRows(batchId: string): Promise<Bcb
     .map((d) => d.normalized as unknown as BcbaSharedBillingRow)
     .filter((r) => !!r && !!r.date);
 }
+
+/**
+ * Ownership-context rows for BCBA Productivity Report V3 inference.
+ *
+ * Returns:
+ *   - all `active = true` rows (the same set counted by
+ *     getBcbaProductivitySharedRows), PLUS
+ *   - historical direct-service anchor rows where the procedure_code does
+ *     NOT start with 97153, regardless of active status.
+ *
+ * The historical rows are used **only** to give
+ * `inferAssignmentHistory` enough BCBA anchor context to attribute current
+ * 97153 RBT hours to the correct BCBA when the active dataset is a short
+ * period slice with no in-period BCBA anchor. They must never be counted
+ * in productivity totals — the report continues to key its KPIs off the
+ * shared active rows only.
+ *
+ * Rows are deduped on `date + clientId/clientName + renderingProvider +
+ * code + hours` and sorted by date ascending.
+ */
+export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSharedBillingRow[]> {
+  const PAGE = 5000;
+  const acc: BcbaSharedBillingRow[] = [];
+
+  type Pass = "active" | "historical_direct";
+  async function drain(pass: Pass) {
+    let offset = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const base = supabase
+        .from("bcba_productivity_billing_rows")
+        .select("normalized")
+        .order("service_date", { ascending: true })
+        .range(offset, offset + PAGE - 1);
+      const q = pass === "active"
+        ? base.eq("active", true)
+        : base.not("procedure_code", "ilike", "97153%");
+      const { data, error } = await q;
+      if (error) throw error;
+      const arr = data ?? [];
+      for (const d of arr) {
+        const n = (d as unknown as { normalized?: BcbaSharedBillingRow | null }).normalized ?? null;
+        if (n && n.date && n.code) {
+          const state = normalizeUsState(n.state) || n.state || "";
+          acc.push(state === n.state ? n : { ...n, state });
+        }
+      }
+      if (arr.length < PAGE) break;
+      offset += PAGE;
+    }
+  }
+
+  // (1) All active rows.
+  await drain("active");
+  // (2) Historical direct-service anchors (any active status) — codes that
+  // do NOT start with 97153. Overlap with pass (1) is removed by the
+  // dedupe below.
+  await drain("historical_direct");
+
+  // Stable dedupe key. Active + historical passes will overlap for
+  // non-97153 rows in active batches; this collapses them into one entry.
+  const seen = new Set<string>();
+  const out: BcbaSharedBillingRow[] = [];
+  for (const r of acc) {
+    const clientKey =
+      (r.clientId && r.clientId.trim()) || normText(r.clientName);
+    const key = [
+      r.date,
+      clientKey,
+      normText(r.renderingProvider),
+      normText(r.code),
+      normNumStr(r.hours),
+    ].join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+  }
+  out.sort((a, b) => a.date.localeCompare(b.date));
+  return out;
+}

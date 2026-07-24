@@ -29,7 +29,9 @@ import {
 import { inferAssignmentHistory, type OwnershipConflict } from "@/lib/os/bcbaProductivityV3/inferAssignments";
 import {
   getBcbaProductivitySharedRows,
+  getBcbaProductivityOwnershipContextRows,
   type BcbaDatasetStatus,
+  type BcbaSharedBillingRow,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
 import {
   fetchBcbaBillingRowsAsSharedShape,
@@ -172,6 +174,14 @@ export default function BcbaProductivityReportV3() {
 
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<BillingRow[]>([]);
+  /**
+   * Ownership-context rows: superset of `rows` used **only** to feed
+   * `inferAssignmentHistory`. Includes historical BCBA direct-service
+   * anchors so 97153 RBT hours in a short active-period slice attach to
+   * the correct BCBA instead of showing up as Unassigned. These rows are
+   * NEVER counted in KPIs, tables, filters, charts, or saved payloads.
+   */
+  const [ownershipRows, setOwnershipRows] = useState<BillingRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [validation, setValidation] = useState<ValidationSummary | null>(null);
   const [missingCols, setMissingCols] = useState<string[]>([]);
@@ -259,18 +269,33 @@ export default function BcbaProductivityReportV3() {
       });
       if (!totals.totalRows) {
         setRows([]);
+        setOwnershipRows([]);
         setFileName("");
         if (!opts?.silent) {
           toast.info("No CentralReach billing rows are available. Add one from CentralReach Uploads.");
         }
         return;
       }
-      const shared = await fetchBcbaBillingRowsAsSharedShape({
-        pageSize: 2000,
-        hardCap: 60000,
-        onProgress: (loaded, total) => setSharedProgress({ loaded, total }),
-      });
+      // Fetch the canonical (active) dataset and the ownership-context
+      // dataset (active + historical non-97153 anchors) in parallel. The
+      // ownership-context call is best-effort; if it fails we fall back
+      // to inferring from `shared` alone so the report never regresses.
+      const [shared, ownershipContext] = await Promise.all([
+        fetchBcbaBillingRowsAsSharedShape({
+          pageSize: 2000,
+          hardCap: 60000,
+          onProgress: (loaded, total) => setSharedProgress({ loaded, total }),
+        }),
+        getBcbaProductivityOwnershipContextRows().catch((err) => {
+          // eslint-disable-next-line no-console
+          console.warn("[bcba v3] ownership context fetch failed", err);
+          return [] as BcbaSharedBillingRow[];
+        }),
+      ]);
       setRows(shared as unknown as BillingRow[]);
+      setOwnershipRows(
+        (ownershipContext.length ? ownershipContext : shared) as unknown as BillingRow[],
+      );
       setFileName(
         `Canonical CentralReach dataset · ${totals.totalRows.toLocaleString()} rows · ${totals.minServiceDate ?? "—"} → ${totals.maxServiceDate ?? "—"}`,
       );
@@ -294,6 +319,7 @@ export default function BcbaProductivityReportV3() {
         const data = await getSavedReportRowsV3(savedParam);
         if (data?.length) {
           setRows(data);
+          setOwnershipRows(data);
           const meta = readSavedReportsV3().find(r => r.id === savedParam);
           if (meta) setFileName(meta.fileName);
           return;
@@ -415,6 +441,7 @@ export default function BcbaProductivityReportV3() {
       }
 
       setRows(parsedRows);
+      setOwnershipRows(parsedRows);
       setFileName(file.name);
       // Persist so the upload survives tab navigation / refresh.
       void saveLastBillingV3(file.name, parsedRows);
@@ -438,7 +465,14 @@ export default function BcbaProductivityReportV3() {
    * This prevents partial saved Assignment History (e.g. records that end
    * before June) from silently disabling inferred ownership and turning
    * valid June rows into "No assignment covering DOS". */
-  const inferred = useMemo(() => inferAssignmentHistory(rows), [rows]);
+  /**
+   * Inference uses `ownershipRows` when available (superset with historical
+   * BCBA anchors) so 97153 RBT rows in the active dataset attach to the
+   * correct BCBA even when no same-period BCBA anchor exists. Falls back
+   * to `rows` for legacy/manual/saved paths that don't populate context.
+   */
+  const inferenceRows = ownershipRows.length ? ownershipRows : rows;
+  const inferred = useMemo(() => inferAssignmentHistory(inferenceRows), [inferenceRows]);
 
   const savedClientKeys = useMemo(() => {
     const s = new Set<string>();
@@ -671,6 +705,7 @@ export default function BcbaProductivityReportV3() {
   async function handleResetUpload() {
     if (rows.length && !confirm("Clear the current upload? Unsaved data will be lost.")) return;
     setRows([]);
+    setOwnershipRows([]);
     setFileName("");
     setValidation(null);
     setMissingCols([]);
@@ -682,6 +717,7 @@ export default function BcbaProductivityReportV3() {
     const data = await getSavedReportRowsV3(id);
     if (!data.length) { toast.error("Saved report payload not found"); return; }
     setRows(data);
+    setOwnershipRows(data);
     const meta = readSavedReportsV3().find(r => r.id === id);
     if (meta) setFileName(meta.fileName);
     toast.success(`Regenerated "${meta?.name || id}"`);
