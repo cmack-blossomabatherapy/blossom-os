@@ -339,7 +339,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
         id: "recruiting", label: "Recruiting", items: [
           { label: "Recruiting Dashboard",          path: "/recruiting-team",            icon: LayoutDashboard },
           { label: "Recruiting Workspace",          path: "/recruiting/workspace",       icon: LayoutDashboard },
-          { label: "Recruiting Academy",            path: "/recruiting/academy",         icon: GraduationCap },
           { label: "Candidate Pipeline",            path: "/recruiting/pipeline",        icon: UserPlus },
           { label: "RBT Recruiting",                path: "/recruiting/rbt",             icon: UserCheck },
           { label: "BCBA Recruiting",               path: "/recruiting/bcba",            icon: Stethoscope },
@@ -369,7 +368,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
         id: "recruiting", label: "Recruiting", items: [
           { label: "Recruiting Dashboard",          path: "/recruiting-team",            icon: LayoutDashboard },
           { label: "Recruiting Workspace",          path: "/recruiting/workspace",       icon: LayoutDashboard },
-          { label: "Recruiting Academy",            path: "/recruiting/academy",         icon: GraduationCap },
           { label: "Candidate Pipeline",            path: "/recruiting/pipeline",        icon: UserPlus },
           { label: "RBT Recruiting",                path: "/recruiting/rbt",             icon: UserCheck },
           { label: "BCBA Recruiting",               path: "/recruiting/bcba",            icon: Stethoscope },
@@ -399,7 +397,6 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
         id: "recruiting", label: "Recruiting", items: [
           { label: "Recruiting Dashboard",          path: "/recruiting-team",            icon: LayoutDashboard },
           { label: "Recruiting Workspace",          path: "/recruiting/workspace",       icon: LayoutDashboard },
-          { label: "Recruiting Academy",            path: "/recruiting/academy",         icon: GraduationCap },
           { label: "Candidate Pipeline",            path: "/recruiting/pipeline",        icon: UserPlus },
           { label: "RBT Recruiting",                path: "/recruiting/rbt",             icon: UserCheck },
           { label: "BCBA Recruiting",               path: "/recruiting/bcba",            icon: Stethoscope },
