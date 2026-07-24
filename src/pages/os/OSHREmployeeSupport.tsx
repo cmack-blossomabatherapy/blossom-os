@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { logHrEvent } from "@/lib/hr/activityEvents";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 
 /* ─── atoms ─── */
 type Tone = "ok" | "warn" | "crit" | "muted" | "info";
