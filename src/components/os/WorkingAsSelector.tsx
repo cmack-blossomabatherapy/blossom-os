@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { ChevronDown, MapPin, Briefcase, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
+import { ROLE_HOME } from "@/lib/os/roleHome";
 import { useAuth } from "@/contexts/AuthContext";
 import { DEPARTMENT_LABELS, type DepartmentKey } from "@/lib/access/roleAssignments";
 
@@ -12,6 +14,7 @@ import { DEPARTMENT_LABELS, type DepartmentKey } from "@/lib/access/roleAssignme
 export function WorkingAsSelector() {
   const { hats, activeHat, setActiveHat } = useOSRole();
   const { isAdmin, loading } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   if (loading) return null;
@@ -63,7 +66,12 @@ export function WorkingAsSelector() {
                 <button
                   key={h.id}
                   type="button"
-                  onClick={() => { setActiveHat(h.id); setOpen(false); }}
+                  onClick={() => {
+                    setActiveHat(h.id);
+                    setOpen(false);
+                    const home = ROLE_HOME[h.osRole] ?? "/";
+                    navigate(home, { replace: true });
+                  }}
                   className={cn(
                     "flex w-full items-start gap-2 rounded-xl px-2.5 py-2 text-left transition",
                     h.id === activeHat.id
