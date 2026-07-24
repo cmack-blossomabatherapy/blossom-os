@@ -83,23 +83,25 @@ export default function OpsRecordsWorkspace(props: OpsRecordsWorkspaceProps) {
   const create = useRemote
     ? (async (row: Omit<OpsRecord, "id" | "createdAt" | "updatedAt">) => {
         try { await remote.create(row); }
-        catch (e: any) { toast.error(e?.message ?? "Failed to save"); throw e; }
+        catch (e) { toast.error("Couldn't save — please try again."); throw e; }
       })
     : (async (row: Omit<OpsRecord, "id" | "createdAt" | "updatedAt">) => { local.create(row); });
   const update = useRemote
     ? (async (id: string, patch: Partial<OpsRecord>) => {
         try { await remote.update(id, patch); }
-        catch (e: any) { toast.error(e?.message ?? "Failed to update"); throw e; }
+        catch (e) { toast.error("Couldn't update — please try again."); throw e; }
       })
     : (async (id: string, patch: Partial<OpsRecord>) => { local.update(id, patch); });
   const remove = useRemote
     ? (async (id: string) => {
         try { await remote.remove(id); }
-        catch (e: any) { toast.error(e?.message ?? "Failed to delete"); throw e; }
+        catch (e) { toast.error("Couldn't remove — please try again."); throw e; }
       })
     : (async (id: string) => { local.remove(id); });
   const loading = useRemote && remote.loading;
-  const loadError = useRemote ? remote.error : null;
+  const loadError = useRemote && remote.error
+    ? "Records couldn't load. Try again in a moment or contact your admin if this continues."
+    : null;
   const [query, setQuery] = useState("");
   const [filterValue, setFilterValue] = useState<string>("all");
   const [showAdd, setShowAdd] = useState(false);
