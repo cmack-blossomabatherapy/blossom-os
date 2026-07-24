@@ -910,7 +910,7 @@ function ScheduleOrientationDialog({
     const { data, error } = await (supabase.from("recruiting_orientation_slots") as any)
       .insert(payload).select("id").maybeSingle();
     setSaving(false);
-    if (error) { toast({ title: "Could not schedule", description: error.message }); return; }
+    if (error) { toast({ title: "Could not schedule", description: "Please try again in a moment." }); return; }
     await logHrEvent({
       eventType: "orientation_scheduled",
       title: `Orientation scheduled for ${cand.first_name} ${cand.last_name}`,
