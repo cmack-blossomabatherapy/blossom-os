@@ -11,11 +11,13 @@ import { CONTACT_ROLE_TYPES, CONTACT_STAGES, CONTACT_STATUSES, COMPANY_TYPES, CO
 import { extractDomain } from "@/lib/os/referrals/utils";
 import { toast } from "@/hooks/use-toast";
 import { OwnerCombobox } from "./OwnerCombobox";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 
 interface Props { open: boolean; onOpenChange: (o: boolean) => void; onCreated?: () => void; presetCompanyId?: string }
 
 export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompanyId }: Props) {
   const { data: companies } = useReferralCompanies();
+  const { confirmOperator } = useOperatorDialogs();
   const [saving, setSaving] = useState(false);
 
   const [firstName, setFirstName] = useState("");
@@ -119,9 +121,12 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
         });
       }
       if (!resolvedCompanyId && companyMode !== "none") {
-        const proceed = window.confirm(
-          "No company is linked to this contact yet. Save without a company?\n\nTip: choose an existing company or use \"Create new\" to link one now.",
-        );
+        const proceed = await confirmOperator({
+          title: "Save without a company?",
+          description: "No company is linked to this contact yet. You can add or link a company now, or save the contact without one.",
+          confirmLabel: "Save without company",
+          cancelLabel: "Keep editing",
+        });
         if (!proceed) { setSaving(false); return; }
       }
       await createContact({
