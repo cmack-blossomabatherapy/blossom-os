@@ -1283,7 +1283,7 @@ const App = () => (
                       used to live under AppLayout which produced a double
                       sidebar/header. Keep them here so the OS shell is the
                       single source of chrome. */}
-                  <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={[...EXECUTIVE_ROUTE_ROLES]}><OSShellPage><Integrations /></OSShellPage></PermissionRoute>} />
+                  <Route path="/admin/integrations" element={<AdminRoute><OSShellPage><Integrations /></OSShellPage></AdminRoute>} />
                   <Route path="/admin/integrations/readiness" element={<PermissionRoute allowedRoles={["super_admin"]}><OSShellPage><IntegrationsReadiness /></OSShellPage></PermissionRoute>} />
                   <Route path="/admin/integration-ingest" element={<AdminRoute><OSShellPage><IntegrationIngestAdminPage /></OSShellPage></AdminRoute>} />
                 </Route>
