@@ -819,41 +819,80 @@ function DetailPanel({ item, employee, onboarding, trainings, documents, related
           <div className="pt-2 grid grid-cols-2 gap-2">
             <ActionBtn icon={MessageSquare} label="Message employee" to="/hr/messages" />
             <ActionBtn icon={UserCircle2} label="Reassign" onClick={async () => {
-              const owner = window.prompt("Reassign to (role or name):", item.owner_role ?? "");
+              const owner = await promptOperator({
+                title: "Reassign case",
+                label: "New owner (role or name)",
+                defaultValue: item.owner_role ?? "",
+                submitLabel: "Reassign",
+                required: true,
+              });
               if (!owner) return;
               const { error } = await supabase.from("employee_cases").update({ owner_role: owner }).eq("id", item.id);
               if (!error) await logHrEvent({ eventType: "case_reassigned", title: `Case reassigned to ${owner}`, caseId: item.id, employeeId: (item as any).employee_id ?? null, metadata: { owner } });
-              toast({ title: error ? "Reassign failed" : "Reassigned", description: error?.message ?? `Owner set to ${owner}.` });
+              toast({
+                title: error ? "Reassign failed" : "Reassigned",
+                description: error ? "Please try again in a moment." : `Owner set to ${owner}.`,
+              });
             }} />
             <ActionBtn icon={ArrowUpRight} label="Escalate" onClick={async () => {
               const { error } = await supabase.from("employee_cases").update({ priority: "urgent", status: "waiting_hr" }).eq("id", item.id);
               if (!error) await logHrEvent({ eventType: "case_escalated", title: "Case escalated to urgent", caseId: item.id, employeeId: (item as any).employee_id ?? null });
-              toast({ title: error ? "Could not escalate" : "Escalated", description: error?.message ?? "Marked urgent and routed to HR." });
+              toast({
+                title: error ? "Could not escalate" : "Escalated",
+                description: error ? "Please try again in a moment." : "Marked urgent and routed to HR.",
+              });
             }} />
-            <ActionBtn icon={FileText} label="Add note" onClick={() => {
-              const note = window.prompt("Add a private HR note:", "");
+            <ActionBtn icon={FileText} label="Add note" onClick={async () => {
+              const note = await promptOperator({
+                title: "Add internal HR note",
+                label: "Note (visible to HR only)",
+                multiline: true,
+                submitLabel: "Save note",
+                required: true,
+              });
               if (!note) return;
-              void (async () => {
-                const { error } = await logHrEvent({ eventType: "case_note", title: "Internal HR note", description: note, caseId: item.id, employeeId: (item as any).employee_id ?? null });
-                toast({ title: error ? "Could not save note" : "Note saved", description: error?.message ?? "Internal note recorded." });
-              })();
+              const { error } = await logHrEvent({ eventType: "case_note", title: "Internal HR note", description: note, caseId: item.id, employeeId: (item as any).employee_id ?? null });
+              toast({
+                title: error ? "Could not save note" : "Note saved",
+                description: error ? "Please try again in a moment." : "Internal note recorded.",
+              });
             }} />
             <ActionBtn icon={BookOpen} label="Create follow-up" onClick={async () => {
-              const date = window.prompt("Follow-up due date (YYYY-MM-DD):", new Date(Date.now() + 86400000 * 3).toISOString().slice(0,10));
+              const date = await promptOperator({
+                title: "Schedule follow-up",
+                label: "Follow-up due date",
+                inputType: "date",
+                defaultValue: new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10),
+                submitLabel: "Schedule",
+                required: true,
+              });
               if (!date) return;
               const { error } = await supabase.from("employee_cases").update({ due_date: date, status: "waiting_employee" }).eq("id", item.id);
               if (!error) await logHrEvent({ eventType: "case_follow_up_created", title: `Follow-up scheduled for ${date}`, caseId: item.id, employeeId: (item as any).employee_id ?? null, metadata: { due_date: date } });
-              toast({ title: error ? "Could not schedule" : "Follow-up created", description: error?.message ?? `Due ${date}` });
+              toast({
+                title: error ? "Could not schedule" : "Follow-up created",
+                description: error ? "Please try again in a moment." : `Due ${date}`,
+              });
             }} />
             <ActionBtn icon={CheckCircle2} label="Resolve" primary onClick={async () => {
-              const resolution = window.prompt("Resolution note:", item.resolution ?? "");
+              const resolution = await promptOperator({
+                title: "Resolve request",
+                label: "Resolution note",
+                multiline: true,
+                defaultValue: item.resolution ?? "",
+                submitLabel: "Mark resolved",
+              });
+              if (resolution === null) return;
               const { error } = await supabase.from("employee_cases").update({
                 status: "resolved",
                 resolution: resolution ?? item.resolution,
                 closed_at: new Date().toISOString(),
               }).eq("id", item.id);
               if (!error) await logHrEvent({ eventType: "case_resolved", title: "Case resolved", description: resolution ?? null, caseId: item.id, employeeId: (item as any).employee_id ?? null });
-              toast({ title: error ? "Could not resolve" : "Request resolved", description: error?.message ?? "Marked as resolved." });
+              toast({
+                title: error ? "Could not resolve" : "Request resolved",
+                description: error ? "Please try again in a moment." : "Marked as resolved.",
+              });
               if (!error) onClose();
             }} />
           </div>
