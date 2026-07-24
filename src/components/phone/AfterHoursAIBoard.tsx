@@ -11,6 +11,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { OperatorDiagnosticsGate } from "@/components/os/intake/OperatorDiagnosticsGate";
 import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Settings as SettingsIcon, Mail, Send, Plus, X, Sparkles, AlertTriangle, CheckCircle2, Building2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
