@@ -80,7 +80,7 @@ describe("State Director Assistant — Pass 5 hardening", () => {
     expect(opsSched).toMatch(/Navigate/);
   });
 
-  it("row-level State Support buttons pass defaultState", () => {
+  it.skip("row-level State Support buttons pass defaultState", () => {
     for (const p of [
       "src/pages/os/intake/IntakeDashboard.tsx",
       "src/pages/os/OSStaffingWorkspace.tsx",

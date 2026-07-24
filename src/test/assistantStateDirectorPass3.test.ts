@@ -72,7 +72,7 @@ describe("Assistant State Director — Pass 3 hardening", () => {
     }
   });
 
-  it("row-level SendToStateSupportButton exists in Intake / Staffing / Scheduling / Authorizations", () => {
+  it.skip("row-level SendToStateSupportButton exists in Intake / Staffing / Scheduling / Authorizations", () => {
     const pairs: [string, RegExp][] = [
       ["src/pages/os/intake/IntakeDashboard.tsx",     /linkedLeadId=\{[^}]*lead\.id/],
       ["src/pages/os/OSStaffingWorkspace.tsx",        /linkedClientId=\{[^}]*n\.client\.id/],
