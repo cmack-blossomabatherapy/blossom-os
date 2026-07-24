@@ -47,6 +47,7 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TableFilterBar, type FilterDef } from "@/components/marketing/TableFilterBar";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 import { TablePagination } from "@/components/marketing/TablePagination";
 
 type ModuleId =
@@ -407,6 +408,7 @@ const CONTACT_VIEWS = [
 
 function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
+  const { promptOperator, confirmOperator } = useOperatorDialogs();
   const contacts = scopedContacts(s);
 
   const [viewRaw, _setView] = useUrlState("cv", "all");
@@ -509,8 +511,8 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     toast({ title: `Assigned ${selected.size} contact(s)` });
     setSelected(new Set());
   };
-  const bulkTag = () => {
-    const tag = window.prompt("Tag to add:");
+  const bulkTag = async () => {
+    const tag = await promptOperator({ title: "Tag contacts", label: "Tag to add", submitLabel: "Apply tag", required: true });
     if (!tag) return;
     selected.forEach((id) => {
       const c = s.contacts.find((x) => x.id === id);
@@ -524,8 +526,14 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     toast({ title: `${selected.size} contact(s) moved to Deleted` });
     setSelected(new Set());
   };
-  const bulkResetReferrals = () => {
-    if (!window.confirm(`Reset referral count to 0 for ${selected.size} contact(s)?`)) return;
+  const bulkResetReferrals = async () => {
+    const ok = await confirmOperator({
+      title: "Reset referral counts?",
+      description: `This will set the referral count to 0 for ${selected.size} contact(s). This does not affect referral history.`,
+      confirmLabel: "Reset counts",
+      destructive: true,
+    });
+    if (!ok) return;
     selected.forEach((id) => crm.updateContact(id, { referralCount: 0 }));
     toast({ title: `Reset referrals on ${selected.size} contact(s)` });
     setSelected(new Set());
@@ -789,6 +797,7 @@ const COMPANY_VIEWS = [
 
 function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
   const s = useCrm();
+  const { promptOperator, confirmOperator } = useOperatorDialogs();
   const companies = scopedCompanies(s);
 
   const [viewRaw, _setView] = useUrlState("ov", "all");
@@ -893,16 +902,18 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     ids().forEach((id) => crm.updateCompany(id, { relationshipTier: v as Company["relationshipTier"] }));
     toast({ title: `Updated tier on ${selected.size}` }); clear();
   };
-  const bulkAddTag = () => {
-    const tag = window.prompt("Tag to add:"); if (!tag) return;
+  const bulkAddTag = async () => {
+    const tag = await promptOperator({ title: "Tag companies", label: "Tag to add", submitLabel: "Apply tag", required: true });
+    if (!tag) return;
     ids().forEach((id) => {
       const c = s.companies.find((x) => x.id === id);
       if (c && !c.tags.includes(tag)) crm.updateCompany(id, { tags: [...c.tags, tag] });
     });
     toast({ title: `Tagged ${selected.size} company(ies)` }); clear();
   };
-  const bulkRemoveTag = () => {
-    const tag = window.prompt("Tag to remove:"); if (!tag) return;
+  const bulkRemoveTag = async () => {
+    const tag = await promptOperator({ title: "Remove tag", label: "Tag to remove", submitLabel: "Remove tag", required: true });
+    if (!tag) return;
     ids().forEach((id) => {
       const c = s.companies.find((x) => x.id === id);
       if (c && c.tags.includes(tag)) crm.updateCompany(id, { tags: c.tags.filter((t) => t !== tag) });
@@ -927,8 +938,14 @@ function CompaniesModule({ onOpen }: { onOpen: (id: ID) => void }) {
     ids().forEach((id) => crm.softDeleteCompany(id));
     toast({ title: `${selected.size} company(ies) deleted` }); clear();
   };
-  const bulkResetReferrals = () => {
-    if (!window.confirm(`Reset referral counts (total + YTD) to 0 for ${selected.size} company(ies)?`)) return;
+  const bulkResetReferrals = async () => {
+    const ok = await confirmOperator({
+      title: "Reset referral counts?",
+      description: `This will set total and YTD referral counts to 0 for ${selected.size} company(ies).`,
+      confirmLabel: "Reset counts",
+      destructive: true,
+    });
+    if (!ok) return;
     ids().forEach((id) => crm.updateCompany(id, { referralCount: 0, referralsYTD: 0 }));
     toast({ title: `Reset referrals on ${selected.size} company(ies)` }); clear();
   };
@@ -1246,6 +1263,7 @@ function PipelineStagePill({ stage, onClick }: { stage: FamilyLeadPipelineStage 
 
 function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
+  const { promptOperator } = useOperatorDialogs();
   const { leads } = useLeads();
   const navigate = useNavigate();
   const leadById = useMemo(() => {
@@ -1375,8 +1393,9 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
     toast({ title: `Updated status on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
     clear();
   };
-  const bulkIntakeStatus = () => {
-    const v = window.prompt("New intake status:"); if (!v) return;
+  const bulkIntakeStatus = async () => {
+    const v = await promptOperator({ title: "Update intake status", label: "New intake status", submitLabel: "Update", required: true });
+    if (!v) return;
     const { nativeIds, skipped } = partitionLegacy(rows, ids());
     nativeIds.forEach((id) => crm.updateReferral(id, { intakeStatus: v }));
     toast({ title: `Updated intake status on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
@@ -1624,6 +1643,7 @@ function NewReferralDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 // ===========================================================
 function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
+  const { promptOperator } = useOperatorDialogs();
   const tasks = scopedTasks(s);
 
   const [groupByRaw, setGroupByRaw] = useUrlState("tg", "owner");
@@ -1698,8 +1718,15 @@ function TasksModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
     ids().forEach((id) => crm.updateTask(id, { priority: v as Task["priority"] }));
     toast({ title: `Updated priority on ${selected.size}` }); clear();
   };
-  const bulkDueDate = () => {
-    const v = window.prompt("Due date (YYYY-MM-DD):"); if (!v) return;
+  const bulkDueDate = async () => {
+    const v = await promptOperator({
+      title: "Set due date",
+      label: "Due date",
+      inputType: "date",
+      submitLabel: "Apply",
+      required: true,
+    });
+    if (!v) return;
     ids().forEach((id) => crm.updateTask(id, { dueDate: v }));
     toast({ title: `Updated due date on ${selected.size}` }); clear();
   };
