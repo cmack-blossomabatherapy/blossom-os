@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getClientStaffingNeeds, type StaffingClientNeed } from "@/data/staffing";
 import { useClients } from "@/contexts/ClientsContext";
+import { toast } from "sonner";
 
 const sections: {
   id: StaffingClientNeed["reason"];
@@ -125,8 +126,12 @@ export function StaffingQueueView({ searchQuery, onStartMatching }: Props) {
                         </Button>
                         {n.client.rbt && <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={async (event) => {
                           event.stopPropagation();
-                          try { await assignRbt([n.client.id], n.client.rbt ?? ""); }
-                          catch (err) { console.error("Failed to confirm RBT assignment", err); }
+                          try {
+                            await assignRbt([n.client.id], n.client.rbt ?? "");
+                            toast.success("RBT assignment confirmed");
+                          } catch {
+                            toast.error("Couldn't confirm assignment — please try again.");
+                          }
                         }}>Confirm</Button>}
                       </td>
                     </tr>

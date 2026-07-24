@@ -64,11 +64,11 @@ export default function PayerRequirements() {
             </Link>
             <button
               onClick={async () => {
-                try {
+              try {
                   await Promise.resolve(remove(r.id));
                   toast.success("Payer requirement deleted");
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "Could not delete requirement");
+                } catch {
+                  toast.error("Couldn't delete requirement — please try again.");
                 }
               }}
               className="text-xs text-muted-foreground hover:text-rose-600"

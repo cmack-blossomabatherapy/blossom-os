@@ -127,8 +127,8 @@ export default function MissingDocs() {
               try {
                 await Promise.resolve(update(r.id, { status: "Received" }));
                 toast.success("Marked as received");
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Could not update status");
+              } catch {
+                toast.error("Couldn't update status — please try again.");
               }
             }}
             className="text-xs text-emerald-600 hover:underline"
@@ -140,8 +140,8 @@ export default function MissingDocs() {
               try {
                 await Promise.resolve(update(r.id, { status: "Waived" }));
                 toast.success("Requirement waived");
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Could not update status");
+              } catch {
+                toast.error("Couldn't update status — please try again.");
               }
             }}
             className="text-xs text-slate-600 hover:underline"
@@ -153,8 +153,8 @@ export default function MissingDocs() {
               try {
                 await Promise.resolve(remove(r.id));
                 toast.success("Removed");
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Could not remove");
+              } catch {
+                toast.error("Couldn't remove — please try again.");
               }
             }}
             className="text-xs text-muted-foreground hover:text-rose-600"
