@@ -1621,6 +1621,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
                 </Routes>
                 </RouteErrorBoundary>
+                </OperatorDialogsProvider>
                 </PhoneSystemProvider>
               </JourneyOverridesProvider>
             </ClientsProvider>
