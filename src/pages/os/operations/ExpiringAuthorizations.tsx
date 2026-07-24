@@ -132,7 +132,9 @@ export default function ExpiringAuthorizations() {
         {loading ? (
           <div className="px-6 py-16 text-center text-sm text-muted-foreground">Loading authorizations…</div>
         ) : error ? (
-          <div className="px-6 py-16 text-center text-sm text-rose-600">{error}</div>
+          <div className="px-6 py-16 text-center text-sm text-rose-600">
+            Authorizations couldn't load. Try again in a moment or contact your admin if this continues.
+          </div>
         ) : visible.length === 0 ? (
           <div className="px-6 py-16 text-center text-sm text-muted-foreground">
             No authorizations in this expiration window. Try another bucket or remove the state filter.
