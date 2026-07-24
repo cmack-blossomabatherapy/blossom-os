@@ -1263,6 +1263,7 @@ function PipelineStagePill({ stage, onClick }: { stage: FamilyLeadPipelineStage 
 
 function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void }) {
   const s = useCrm();
+  const { promptOperator } = useOperatorDialogs();
   const { leads } = useLeads();
   const navigate = useNavigate();
   const leadById = useMemo(() => {
@@ -1392,8 +1393,9 @@ function ReferralsModule({ onOpenContact }: { onOpenContact: (id: ID) => void })
     toast({ title: `Updated status on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
     clear();
   };
-  const bulkIntakeStatus = () => {
-    const v = window.prompt("New intake status:"); if (!v) return;
+  const bulkIntakeStatus = async () => {
+    const v = await promptOperator({ title: "Update intake status", label: "New intake status", submitLabel: "Update", required: true });
+    if (!v) return;
     const { nativeIds, skipped } = partitionLegacy(rows, ids());
     nativeIds.forEach((id) => crm.updateReferral(id, { intakeStatus: v }));
     toast({ title: `Updated intake status on ${nativeIds.length}`, description: skipped ? "Skipped read-only legacy referrals." : undefined });
