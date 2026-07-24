@@ -408,6 +408,7 @@ const CONTACT_VIEWS = [
 
 function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: ID) => void; onOpenCompany: (id: ID) => void }) {
   const s = useCrm();
+  const { promptOperator, confirmOperator } = useOperatorDialogs();
   const contacts = scopedContacts(s);
 
   const [viewRaw, _setView] = useUrlState("cv", "all");
@@ -510,8 +511,8 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     toast({ title: `Assigned ${selected.size} contact(s)` });
     setSelected(new Set());
   };
-  const bulkTag = () => {
-    const tag = window.prompt("Tag to add:");
+  const bulkTag = async () => {
+    const tag = await promptOperator({ title: "Tag contacts", label: "Tag to add", submitLabel: "Apply tag", required: true });
     if (!tag) return;
     selected.forEach((id) => {
       const c = s.contacts.find((x) => x.id === id);
@@ -525,8 +526,14 @@ function ContactsModule({ onOpenContact, onOpenCompany }: { onOpenContact: (id: 
     toast({ title: `${selected.size} contact(s) moved to Deleted` });
     setSelected(new Set());
   };
-  const bulkResetReferrals = () => {
-    if (!window.confirm(`Reset referral count to 0 for ${selected.size} contact(s)?`)) return;
+  const bulkResetReferrals = async () => {
+    const ok = await confirmOperator({
+      title: "Reset referral counts?",
+      description: `This will set the referral count to 0 for ${selected.size} contact(s). This does not affect referral history.`,
+      confirmLabel: "Reset counts",
+      destructive: true,
+    });
+    if (!ok) return;
     selected.forEach((id) => crm.updateContact(id, { referralCount: 0 }));
     toast({ title: `Reset referrals on ${selected.size} contact(s)` });
     setSelected(new Set());
