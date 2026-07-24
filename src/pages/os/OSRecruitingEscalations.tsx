@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useRecruitingEscalations, type RecruitingEscalation } from "@/hooks/useRecruitingCandidates";
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { cn } from "@/lib/utils";
+import { useOperatorDialogs } from "@/components/os/OperatorDialogs";
 // Escalations workflow status lives on `recruiting_escalations.status`.
 // We keep an optimistic UI-only map and persist the real status via mutations.
 
@@ -312,6 +313,7 @@ function mapLiveEscalationToViewModel(
 }
 
 export default function OSRecruitingEscalations() {
+  const { promptOperator } = useOperatorDialogs();
   const recruitingCandidates = useLegacyRecruitingCandidates();
   const mutations = useRecruitingMutations();
   const { items: liveEscalations, loading: liveEscalationsLoading } = useRecruitingEscalations();
