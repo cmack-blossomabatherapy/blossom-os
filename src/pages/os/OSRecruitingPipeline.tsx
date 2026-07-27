@@ -26,6 +26,7 @@ import {
   isRbtLikeRole,
   type RbtCertificationStatus,
 } from "@/lib/recruiting/rbtPathwayClassifier";
+import { classifyJobFamily, RECRUITING_ROLE_OPTIONS } from "@/lib/recruiting/jobFamily";
 
 // Recruiting → Candidates → Applicant Pipeline
 // Real backend (recruiting_candidates). DnD persists pipeline_stage.
@@ -48,7 +49,9 @@ const STAGES: { key: PipelineStage; label: string }[] = [
   { key: "Rejected",              label: "Rejected" },
 ];
 
-const ROLES = ["RBT", "BCBA", "BT", "Other"] as const;
+// Explicit job-family taxonomy. Office Staff / Clinic Staff are first-class
+// options; "Other" is retained for backward compatibility with older rows.
+const ROLES = RECRUITING_ROLE_OPTIONS;
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 function toneFor(c: RecruitingCandidate): Tone {
@@ -108,7 +111,9 @@ export default function OSRecruitingPipeline() {
     const q = search.trim().toLowerCase();
     return candidates.filter((c) => {
       if (stateF !== "all" && c.state !== stateF) return false;
-      if (roleF !== "all" && c.role !== roleF) return false;
+      // Match on the effective job family so legacy `Other` rows carrying an
+      // office/clinic job title still filter correctly.
+      if (roleF !== "all" && classifyJobFamily(c) !== roleF) return false;
       if (sourceF !== "all" && c.source !== sourceF) return false;
       if (recruiterF !== "all" && c.recruiter !== recruiterF) return false;
       if (chip === "stalled" && daysInStage(c) < 7) return false;

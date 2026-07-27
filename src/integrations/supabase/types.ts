@@ -25308,6 +25308,7 @@ export type Database = {
       recruiting_candidates: {
         Row: {
           applied_date: string
+          applied_title: string | null
           city: string | null
           created_at: string
           email: string | null
@@ -25341,6 +25342,7 @@ export type Database = {
         }
         Insert: {
           applied_date?: string
+          applied_title?: string | null
           city?: string | null
           created_at?: string
           email?: string | null
@@ -25374,6 +25376,7 @@ export type Database = {
         }
         Update: {
           applied_date?: string
+          applied_title?: string | null
           city?: string | null
           created_at?: string
           email?: string | null
@@ -32832,7 +32835,13 @@ export type Database = {
         | "Withdrawn"
         | "Rejected"
         | "On Hold"
-      recruiting_role: "RBT" | "BCBA" | "BT" | "Other"
+      recruiting_role:
+        | "RBT"
+        | "BCBA"
+        | "BT"
+        | "Other"
+        | "Office Staff"
+        | "Clinic Staff"
       recruiting_state:
         | "GA"
         | "NC"
@@ -33708,7 +33717,14 @@ export const Constants = {
         "Rejected",
         "On Hold",
       ],
-      recruiting_role: ["RBT", "BCBA", "BT", "Other"],
+      recruiting_role: [
+        "RBT",
+        "BCBA",
+        "BT",
+        "Other",
+        "Office Staff",
+        "Clinic Staff",
+      ],
       recruiting_state: [
         "GA",
         "NC",

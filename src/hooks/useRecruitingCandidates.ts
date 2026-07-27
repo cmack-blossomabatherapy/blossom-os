@@ -6,7 +6,7 @@ import {
   type RbtCertificationStatus,
 } from "@/lib/recruiting/rbtPathwayClassifier";
 
-export type RecruitingRole = "RBT" | "BCBA" | "BT" | "Other";
+export type RecruitingRole = "RBT" | "BCBA" | "BT" | "Office Staff" | "Clinic Staff" | "Other";
 export type RecruitingState = "GA" | "NC" | "TN" | "VA" | "MD" | "NJ" | "FL" | "TX" | "SC" | "Other";
 export type PipelineStage =
   | "New Applicant"
@@ -33,6 +33,12 @@ export interface RecruitingCandidate {
   role: RecruitingRole;
   state: RecruitingState;
   city: string | null;
+  /**
+   * Job title the candidate applied for. Drives Office Staff / Clinic
+   * Staff job-family classification for rows imported before those
+   * roles existed. See `src/lib/recruiting/jobFamily.ts`.
+   */
+  applied_title?: string | null;
   pipeline_stage: PipelineStage;
   source: string | null;
   recruiter: string | null;

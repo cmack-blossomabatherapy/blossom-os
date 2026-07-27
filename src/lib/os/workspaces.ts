@@ -200,6 +200,8 @@ export const WORKSPACES: Workspace[] = [
       { label: "Candidate Pipeline",     path: "/recruiting/pipeline" },
       { label: "RBT Recruiting",         path: "/recruiting/rbt" },
       { label: "BCBA Recruiting",        path: "/recruiting/bcba" },
+      { label: "Office Staff Recruiting", path: "/recruiting/office-staff" },
+      { label: "Clinic Staff Recruiting", path: "/recruiting/clinic-staff" },
       { label: "Interviews",             path: "/recruiting/interviews" },
       { label: "Offers",                 path: "/recruiting/offers" },
       { label: "Background Checks",      path: "/recruiting/background" },
