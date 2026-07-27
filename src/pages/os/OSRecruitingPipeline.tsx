@@ -48,7 +48,9 @@ const STAGES: { key: PipelineStage; label: string }[] = [
   { key: "Rejected",              label: "Rejected" },
 ];
 
-const ROLES = ["RBT", "BCBA", "BT", "Other"] as const;
+// Explicit job-family taxonomy. Office Staff / Clinic Staff are first-class
+// options; "Other" is retained for backward compatibility with older rows.
+const ROLES = RECRUITING_ROLE_OPTIONS;
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 function toneFor(c: RecruitingCandidate): Tone {
