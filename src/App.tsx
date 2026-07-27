@@ -380,6 +380,8 @@ import OSRecruitingOrientation from "./pages/os/OSRecruitingOrientation";
 import OSRecruitingStaffingNeeds from "./pages/os/OSRecruitingStaffingNeeds";
 import OSRecruitingRBT from "./pages/os/OSRecruitingRBT";
 import OSRecruitingBCBA from "./pages/os/OSRecruitingBCBA";
+import OSRecruitingOfficeStaff from "./pages/os/OSRecruitingOfficeStaff";
+import OSRecruitingClinicStaff from "./pages/os/OSRecruitingClinicStaff";
 import OSRecruitingPerformance from "./pages/os/OSRecruitingPerformance";
 import OSRecruitingFollowUps from "./pages/os/OSRecruitingFollowUps";
 import OSRecruitingMessages from "./pages/os/OSRecruitingMessages";
@@ -873,6 +875,8 @@ const App = () => (
                  <Route path="/recruiting/apploi" element={<Navigate to="/admin/integrations?connector=apploi" replace />} />
                   <Route path="/recruiting/rbt"            element={<OSRecruitingRBT />} />
                   <Route path="/recruiting/bcba"           element={<OSRecruitingBCBA />} />
+                  <Route path="/recruiting/office-staff"   element={<OSRecruitingOfficeStaff />} />
+                  <Route path="/recruiting/clinic-staff"   element={<OSRecruitingClinicStaff />} />
                   <Route path="/recruiting/performance"    element={<OSRecruitingPerformance />} />
                   <Route path="/recruiting/follow-ups"     element={<OSRecruitingFollowUps />} />
                   <Route path="/recruiting/messages"       element={<OSRecruitingMessages />} />
