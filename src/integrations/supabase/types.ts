@@ -32138,13 +32138,15 @@ export type Database = {
         }[]
       }
       resolve_client_by_cr_id: { Args: { _cr_id: string }; Returns: string }
-      resolve_rbt_pathway_key: {
-        Args: {
-          _cert_status: Database["public"]["Enums"]["rbt_certification_status"]
-          _years: number
-        }
-        Returns: string
-      }
+      resolve_rbt_pathway_key:
+        | {
+            Args: {
+              _cert_status: Database["public"]["Enums"]["rbt_certification_status"]
+              _years: number
+            }
+            Returns: string
+          }
+        | { Args: { _cert_status: string; _years: number }; Returns: string }
       search_assignable_employees: {
         Args: { max_rows?: number; search?: string }
         Returns: {
