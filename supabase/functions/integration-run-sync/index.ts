@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   const token = authHeader.replace(/^Bearer\s+/i, "");
   // Scheduled runs (pg_cron) present the service-role key instead of a user
   // JWT. They are server-side only and never reach the browser.
-  const isScheduled = token === SERVICE_ROLE;
+  const isScheduled = token === SERVICE_ROLE || isServiceRoleJwt(token);
   let user: any = null;
   if (!isScheduled) {
     const { data: userData } = await supabase.auth.getUser(token);
