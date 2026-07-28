@@ -18,12 +18,35 @@
  *   dismiss the tour for one another.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // ---------------------------------------------------------------- version + storage
 
 export const TOUR_VERSION = 1;
 const STORAGE_PREFIX = "rbt.walkthrough.v1";
+/**
+ * Per-tab marker used ONLY by the Experience Lab so the demo tour
+ * auto-opens once per Lab activation. Never written for a real user and
+ * never used to suppress a real first-login tour.
+ */
+export const LAB_DEMO_TOUR_KEY = "rbt.walkthrough.labDemo.v1";
+
+export function readLabDemoSeen(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.sessionStorage.getItem(LAB_DEMO_TOUR_KEY) === "1"; }
+  catch { return false; }
+}
+
+export function markLabDemoSeen(): void {
+  if (typeof window === "undefined") return;
+  try { window.sessionStorage.setItem(LAB_DEMO_TOUR_KEY, "1"); } catch { /* ignore */ }
+}
+
+/** Clear the Lab-only demo tour marker so the tour replays from the top. */
+export function clearLabDemoTourState(): void {
+  if (typeof window === "undefined") return;
+  try { window.sessionStorage.removeItem(LAB_DEMO_TOUR_KEY); } catch { /* ignore */ }
+}
 
 export interface StoredCompletion {
   version: number;
@@ -191,8 +214,10 @@ export function useReducedMotion(): boolean {
 
 export interface UseRbtWalkthroughOptions {
   userId: string | null | undefined;
-  /** Any of: Experience Lab active, OSRole preview active, no real user, etc. */
+  /** OSRole view-as preview active (admin previewing another role). */
   previewActive: boolean;
+  /** Experience Lab active. Demo tour still opens, but never persists. */
+  labActive?: boolean;
   version?: number;
 }
 
@@ -205,31 +230,53 @@ export interface UseRbtWalkthrough {
   isReplay: boolean;
   isFirst: boolean;
   isLast: boolean;
+  /** True when running as an unsaved demo (Lab or view-as preview). */
+  isDemo: boolean;
   start: (opts?: { replay?: boolean }) => void;
   next: () => void;
   prev: () => void;
   goTo: (i: number) => void;
   finish: () => void;
   dismiss: () => void;
+  /** Lab-only: clear demo tour state so it can replay from step 1. */
+  resetDemoTour: () => void;
 }
 
 export function useRbtWalkthroughController(opts: UseRbtWalkthroughOptions): UseRbtWalkthrough {
   const { userId, previewActive } = opts;
+  const labActive = Boolean(opts.labActive);
   const version = opts.version ?? TOUR_VERSION;
-  const canPersist = Boolean(userId) && !previewActive;
+  // Completion is stored ONLY for a real user browsing their own app.
+  const canPersist = Boolean(userId) && !previewActive && !labActive;
+  const isDemo = previewActive || labActive;
 
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const [isReplay, setIsReplay] = useState(false);
+  const labAutoOpened = useRef(false);
 
-  // Auto-open on first login for eligible users only. Never for previews.
+  // 1) Experience Lab: always demonstrate the brand-new sign-in tour once
+  //    per Lab activation, regardless of the real user's stored completion.
   useEffect(() => {
+    if (!labActive) { labAutoOpened.current = false; return; }
+    if (labAutoOpened.current) return;
+    if (readLabDemoSeen()) return;
+    labAutoOpened.current = true;
+    markLabDemoSeen();
+    setIsReplay(false);
+    setIndex(0);
+    setOpen(true);
+  }, [labActive]);
+
+  // 2) Real first login: auto-open once per version for the real user only.
+  useEffect(() => {
+    if (labActive) return;
     if (!canPersist) return;
     if (!shouldAutoOpen(userId, version)) return;
     setIsReplay(false);
     setIndex(0);
     setOpen(true);
-  }, [userId, previewActive, version, canPersist]);
+  }, [userId, previewActive, version, canPersist, labActive]);
 
   const start = useCallback((startOpts?: { replay?: boolean }) => {
     setIsReplay(Boolean(startOpts?.replay));
@@ -266,6 +313,14 @@ export function useRbtWalkthroughController(opts: UseRbtWalkthroughOptions): Use
     setOpen(false);
   }, [userId, version, canPersist]);
 
+  const resetDemoTour = useCallback(() => {
+    clearLabDemoTourState();
+    labAutoOpened.current = false;
+    setOpen(false);
+    setIndex(0);
+    setIsReplay(false);
+  }, []);
+
   const step = TOUR_STEPS[Math.min(Math.max(index, 0), TOUR_STEPS.length - 1)];
   const isFirst = index === 0;
   const isLast = index === TOUR_STEPS.length - 1;
@@ -279,11 +334,13 @@ export function useRbtWalkthroughController(opts: UseRbtWalkthroughOptions): Use
     isReplay,
     isFirst,
     isLast,
+    isDemo,
     start,
     next,
     prev,
     goTo,
     finish,
     dismiss,
-  }), [open, index, step, canPersist, isReplay, isFirst, isLast, start, next, prev, goTo, finish, dismiss]);
+    resetDemoTour,
+  }), [open, index, step, canPersist, isReplay, isFirst, isLast, isDemo, start, next, prev, goTo, finish, dismiss, resetDemoTour]);
 }

@@ -51,22 +51,22 @@ describe("RBT Experience Lab — Slice 3", () => {
 
   describe("stage / preset switching", () => {
     it("starting → first step in_progress, none complete", () => {
-      const p = projectProgram({ pathway: "new_rbt_certification", preset: "starting" });
+      const p = projectProgram({ pathway: "not_certified", preset: "starting" });
       expect(p.stats.complete).toBe(0);
       expect(p.rows[0].progress.status).toBe("in_progress");
     });
     it("midway → roughly half complete", () => {
-      const p = projectProgram({ pathway: "new_rbt_certification", preset: "midway" });
+      const p = projectProgram({ pathway: "not_certified", preset: "midway" });
       expect(p.stats.complete).toBeGreaterThan(0);
       expect(p.stats.percent).toBeGreaterThan(20);
       expect(p.stats.percent).toBeLessThan(80);
     });
     it("nearly_done → mostly complete", () => {
-      const p = projectProgram({ pathway: "new_rbt_certification", preset: "nearly_done" });
+      const p = projectProgram({ pathway: "not_certified", preset: "nearly_done" });
       expect(p.stats.percent).toBeGreaterThanOrEqual(70);
     });
     it("needs_support → surfaces a blocked row", () => {
-      const p = projectProgram({ pathway: "new_rbt_certification", preset: "needs_support" });
+      const p = projectProgram({ pathway: "not_certified", preset: "needs_support" });
       expect(p.stats.blocked).not.toBeNull();
       expect(p.stats.blocked?.progress.status).toBe("needs_support");
     });
@@ -80,7 +80,7 @@ describe("RBT Experience Lab — Slice 3", () => {
   describe("skill passport projection", () => {
     it("returns 6 defs and one status per def across every preset", () => {
       for (const preset of LAB_PRESETS) {
-        const proj = projectSkillPassport({ pathway: "new_rbt_certification", preset });
+        const proj = projectSkillPassport({ pathway: "not_certified", preset });
         expect(proj.defs.length).toBe(6);
         expect(Object.keys(proj.status).length).toBe(6);
       }
@@ -92,15 +92,15 @@ describe("RBT Experience Lab — Slice 3", () => {
       const a = __lab_internal.storageKey("admin-a");
       const b = __lab_internal.storageKey("admin-b");
       expect(a).not.toEqual(b);
-      const stateA: LabState = { pathway: "experienced_rbt", preset: "starting" };
+      const stateA: LabState = { pathway: "certified_2yrs_plus", preset: "starting" };
       __lab_internal.writeSession(a, stateA);
       expect(__lab_internal.readSession(b)).toBeNull();
       expect(__lab_internal.readSession(a)).toEqual(stateA);
     });
 
     it("purgeAllLabStorage removes every namespaced entry", () => {
-      __lab_internal.writeSession(__lab_internal.storageKey("admin-a"), { pathway: "experienced_rbt", preset: "starting" });
-      __lab_internal.writeSession(__lab_internal.storageKey("admin-b"), { pathway: "under_2_years", preset: "midway" });
+      __lab_internal.writeSession(__lab_internal.storageKey("admin-a"), { pathway: "certified_2yrs_plus", preset: "starting" });
+      __lab_internal.writeSession(__lab_internal.storageKey("admin-b"), { pathway: "certified_under_2yrs", preset: "midway" });
       purgeAllLabStorage();
       expect(__lab_internal.readSession(__lab_internal.storageKey("admin-a"))).toBeNull();
       expect(__lab_internal.readSession(__lab_internal.storageKey("admin-b"))).toBeNull();
@@ -129,7 +129,7 @@ describe("RBT Experience Lab — Slice 3", () => {
       // Simulate an RBT tampering: they know the storage key format and
       // hand-craft a valid payload.
       const k = __lab_internal.storageKey("rbt-user");
-      __lab_internal.writeSession(k, { pathway: "new_rbt_certification", preset: "midway" });
+      __lab_internal.writeSession(k, { pathway: "not_certified", preset: "midway" });
 
       // Render the controller with RBT roles.
       const { renderHook } = await import("@testing-library/react");

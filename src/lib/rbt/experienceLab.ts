@@ -27,12 +27,32 @@ import type { PathwayStep, PathwayStepStatus, StepProgress, StepRow } from "@/pa
 
 // ---------------------------------------------------------------- constants
 
+/**
+ * Canonical Blossom RBT program pathways (exactly four, matching the
+ * approved program and `RBTPathId` in @/lib/training/rbtAcademy).
+ */
 export const LAB_PATHWAY_KEYS = [
-  "new_rbt_certification",
-  "under_2_years",
-  "experienced_rbt",
+  "not_certified",
+  "certified_no_experience",
+  "certified_under_2yrs",
+  "certified_2yrs_plus",
 ] as const;
 export type LabPathwayKey = (typeof LAB_PATHWAY_KEYS)[number];
+
+/** Historical keys that may still live in a tab's sessionStorage. */
+export const LEGACY_LAB_PATHWAY_ALIASES: Record<string, LabPathwayKey> = {
+  new_rbt_certification: "not_certified",
+  under_2_years: "certified_under_2yrs",
+  experienced_rbt: "certified_2yrs_plus",
+  certified_2plus_years: "certified_2yrs_plus",
+  certified_under_2_years: "certified_under_2yrs",
+};
+
+export function normalizeLabPathwayKey(key: unknown): LabPathwayKey | null {
+  if (typeof key !== "string") return null;
+  if ((LAB_PATHWAY_KEYS as readonly string[]).includes(key)) return key as LabPathwayKey;
+  return LEGACY_LAB_PATHWAY_ALIASES[key] ?? null;
+}
 
 export const LAB_PRESETS = [
   "starting",
@@ -50,17 +70,97 @@ export const LAB_PRESET_LABEL: Record<LabPreset, string> = {
 };
 
 export const LAB_PATHWAY_LABEL: Record<LabPathwayKey, string> = {
-  new_rbt_certification: "Certification Track",
-  under_2_years:         "Developing RBT (< 2 years)",
-  experienced_rbt:       "Experienced RBT (2+ years)",
+  not_certified:           "Not Certified",
+  certified_no_experience: "Certified — No Experience",
+  certified_under_2yrs:    "Certified — Under 2 Years",
+  certified_2yrs_plus:     "Certified — 2+ Years",
 };
 
+// ---------------------------------------------------------------- lifecycle stages
+
+export const LAB_STAGES = [
+  "brand_new",
+  "onboarding",
+  "training",
+  "competency",
+  "cr_setup",
+  "first_client",
+  "first_two_weeks",
+  "growth",
+] as const;
+export type LabStage = (typeof LAB_STAGES)[number];
+
+export interface LabStageMeta {
+  key: LabStage;
+  label: string;
+  blurb: string;
+  /** Best matching existing RBT page for this stage. */
+  route: string;
+  /** Progress projection preset this stage implies. */
+  preset: LabPreset;
+}
+
+export const LAB_STAGE_META: Record<LabStage, LabStageMeta> = {
+  brand_new: {
+    key: "brand_new", label: "Brand-new sign-in",
+    blurb: "Very first login — welcome tour and nothing completed yet.",
+    route: "/rbt/app/welcome", preset: "starting",
+  },
+  onboarding: {
+    key: "onboarding", label: "HR onboarding",
+    blurb: "Paperwork, credentials and preboarding tasks in flight.",
+    route: "/rbt/app/preboarding", preset: "starting",
+  },
+  training: {
+    key: "training", label: "Training / Academy",
+    blurb: "Working the assigned pathway modules.",
+    route: "/rbt/app/program", preset: "midway",
+  },
+  competency: {
+    key: "competency", label: "Competency & readiness",
+    blurb: "Role-play, competency checks and BCBA sign-off gates.",
+    route: "/rbt/app/readiness", preset: "needs_support",
+  },
+  cr_setup: {
+    key: "cr_setup", label: "CentralReach setup & field readiness",
+    blurb: "Systems access, scheduling setup and field clearance.",
+    route: "/rbt/app/staffing", preset: "nearly_done",
+  },
+  first_client: {
+    key: "first_client", label: "First client",
+    blurb: "First pairing, first session, and the check-in that follows.",
+    route: "/rbt/app/first-case", preset: "nearly_done",
+  },
+  first_two_weeks: {
+    key: "first_two_weeks", label: "First two weeks",
+    blurb: "Early journey checkpoints and supervision cadence.",
+    route: "/rbt/app/journey", preset: "nearly_done",
+  },
+  growth: {
+    key: "growth", label: "30 / 60 / 90 growth",
+    blurb: "Fully active RBT — performance, growth and fellowship.",
+    route: "/rbt/app/growth", preset: "nearly_done",
+  },
+};
+
+export function stageRoute(stage: LabStage): string {
+  return LAB_STAGE_META[stage].route;
+}
+
+export function presetForStage(stage: LabStage): LabPreset {
+  return LAB_STAGE_META[stage].preset;
+}
+
 const STORAGE_PREFIX = "rbt.experienceLab.v1";
+/** Per-tab marker so the demo tour auto-opens once per Lab activation. */
+export const LAB_TOUR_STORAGE_KEY = "rbt.experienceLab.demoTour.v1";
 const ELIGIBLE_ROLES = new Set(["admin", "super_admin", "systems_admin"]);
 
 export interface LabState {
   pathway: LabPathwayKey;
   preset: LabPreset;
+  /** Lifecycle stage being demonstrated. Absent on legacy payloads. */
+  stage?: LabStage;
 }
 
 // ---------------------------------------------------------------- helpers
@@ -81,9 +181,15 @@ function readSession(key: string): LabState | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
-    if (!LAB_PATHWAY_KEYS.includes(parsed.pathway)) return null;
-    if (!LAB_PRESETS.includes(parsed.preset)) return null;
-    return { pathway: parsed.pathway, preset: parsed.preset };
+    const pathway = normalizeLabPathwayKey(parsed.pathway);
+    if (!pathway) return null;
+    const stage: LabStage | undefined = (LAB_STAGES as readonly string[]).includes(parsed.stage)
+      ? (parsed.stage as LabStage)
+      : undefined;
+    const preset: LabPreset = (LAB_PRESETS as readonly string[]).includes(parsed.preset)
+      ? (parsed.preset as LabPreset)
+      : presetForStage(stage ?? "brand_new");
+    return stage ? { pathway, preset, stage } : { pathway, preset };
   } catch {
     return null;
   }
@@ -144,40 +250,51 @@ function makeStep(
 }
 
 const FIXTURES: Record<LabPathwayKey, { name: string; description: string; steps: PathwayStep[] }> = {
-  new_rbt_certification: {
-    name: "Certification Track",
-    description: "Full RBT certification: 15-minute explainer → role-play → in-person competency → BCBA sign-off → 40-hour → exam → staffed with Lead RBT.",
+  not_certified: {
+    name: "Not Certified",
+    description: "Full certification runway: welcome → classroom & role play → client competency → knowledge assessment → shadowing → full session participation → BCBA final readiness.",
     steps: [
-      makeStep("new_rbt_certification", 1, "cert_explainer", "15-minute RBT explainer", "Understand the RBT role, expectations, and pathway ahead.", 1, "self_paced"),
-      makeStep("new_rbt_certification", 2, "cert_roleplay", "Paired role-play & competency", "Practice the RBT skill assessment with a Lead RBT partner.", 2, "in_person"),
-      makeStep("new_rbt_certification", 3, "cert_inperson_1", "In-person competency (session 1)", "First of three Lead RBT client-competency sessions.", 1, "in_person"),
-      makeStep("new_rbt_certification", 4, "cert_inperson_2", "In-person competency (session 2)", "Second Lead RBT client-competency session.", 1, "in_person"),
-      makeStep("new_rbt_certification", 5, "cert_inperson_3", "In-person competency (session 3)", "Third Lead RBT client-competency session.", 1, "in_person"),
-      makeStep("new_rbt_certification", 6, "cert_bcba_signoff", "BCBA competency sign-off", "BCBA reviews evidence and signs off the RBT skill assessment.", 1, "in_person"),
-      makeStep("new_rbt_certification", 7, "cert_40_hour", "40-hour training", "Complete the required 40-hour RBT training.", 10, "self_paced"),
-      makeStep("new_rbt_certification", 8, "cert_exam", "RBT exam", "Sit and pass the RBT certification exam.", 1, "exam"),
-      makeStep("new_rbt_certification", 9, "cert_shadow_eval", "Lead RBT shadow + evaluation", "Shadow a Lead RBT and complete a reviewed session note.", 1, "in_person"),
-      makeStep("new_rbt_certification", 10, "cert_staffed", "Staffed case with Lead RBT", "First staffed case: Lead RBT joins for the full first session; BCBA joins the second.", 2, "in_person"),
+      makeStep("not_certified", 1, "nc_welcome", "Welcome to Blossom", "Meet Blossom, your pathway, and what the first 90 days look like.", 1, "self_paced"),
+      makeStep("not_certified", 2, "nc_classroom_roleplay", "Classroom & role play", "Instructor-led ABA foundations paired with structured role play.", 3, "in_person"),
+      makeStep("not_certified", 3, "nc_client_competency", "Client competency", "Complete the RBT client competency assessment with a Lead RBT.", 2, "in_person"),
+      makeStep("not_certified", 4, "nc_knowledge_assessment", "Knowledge assessment", "Pass the Blossom knowledge assessment covering ethics, safety and ABA basics.", 1, "exam"),
+      makeStep("not_certified", 5, "nc_shadowing_docs", "Shadowing & documentation review", "Shadow live sessions and review documentation standards with your supervisor.", 2, "in_person"),
+      makeStep("not_certified", 6, "nc_full_session", "Full session participation", "Run a full session end to end with a Lead RBT present.", 2, "in_person"),
+      makeStep("not_certified", 7, "nc_bcba_final", "BCBA oversight & final readiness", "BCBA observes, signs off competencies, and clears you for staffing.", 1, "in_person"),
     ],
   },
-  under_2_years: {
-    name: "Developing RBT (< 2 years)",
-    description: "Zoom learning (no ABA basics) → orientation → Lead RBT + client session → evaluation with band placement.",
+  certified_no_experience: {
+    name: "Certified — No Experience",
+    description: "Certified but new to the field: welcome → ABA foundations refresh → documentation & data → role play competency → shadowing → supported session → BCBA supervision.",
     steps: [
-      makeStep("under_2_years", 1, "dev_zoom_intake", "Zoom learning intro", "Live Zoom learning session — Blossom systems and expectations.", 1, "zoom"),
-      makeStep("under_2_years", 2, "dev_orientation", "Orientation", "Attend Blossom orientation with the recruiting team.", 1, "in_person"),
-      makeStep("under_2_years", 3, "dev_zoom_datanotes", "Zoom: data & session notes", "Learn Blossom's data collection and session-note standards.", 1, "zoom"),
-      makeStep("under_2_years", 4, "dev_lead_session", "Lead RBT + client session", "First supervised session paired with a Lead RBT.", 1, "in_person"),
-      makeStep("under_2_years", 5, "dev_evaluation", "Skill evaluation", "Score 0–60. ≤36 repeat · 37–47 additional coaching · ≥48 ready.", 1, "in_person"),
-      makeStep("under_2_years", 6, "dev_staffed", "Staffed case", "Placed onto a case with the appropriate support level based on evaluation.", 2, "in_person"),
+      makeStep("certified_no_experience", 1, "cne_welcome", "Welcome to Blossom", "Orientation to Blossom systems, culture and expectations.", 1, "self_paced"),
+      makeStep("certified_no_experience", 2, "cne_aba_refresh", "ABA foundations refresh", "Refresh core ABA principles as Blossom applies them in the field.", 2, "self_paced"),
+      makeStep("certified_no_experience", 3, "cne_documentation", "Documentation & data", "Blossom session notes, data collection standards and CentralReach basics.", 2, "zoom"),
+      makeStep("certified_no_experience", 4, "cne_roleplay", "Role play & competency", "Structured role play plus the Blossom competency checkpoint.", 2, "in_person"),
+      makeStep("certified_no_experience", 5, "cne_shadowing", "Shadowing", "Shadow an experienced RBT across at least two client sessions.", 2, "in_person"),
+      makeStep("certified_no_experience", 6, "cne_supported_session", "Supported session", "Lead a session with in-room support and immediate feedback.", 1, "in_person"),
+      makeStep("certified_no_experience", 7, "cne_bcba_supervision", "BCBA supervision", "BCBA supervision session and readiness sign-off.", 1, "in_person"),
     ],
   },
-  experienced_rbt: {
-    name: "Experienced RBT (2+ years)",
-    description: "Streamlined onboarding: orientation → staffed. Prior experience is honored.",
+  certified_under_2yrs: {
+    name: "Certified — Under 2 Years",
+    description: "Developing clinician: welcome → initial evaluation → targeted coaching → ABA Explained when needed → Day 2 BCBA supervision.",
     steps: [
-      makeStep("experienced_rbt", 1, "exp_orientation", "Orientation", "Blossom orientation and systems overview.", 1, "in_person"),
-      makeStep("experienced_rbt", 2, "exp_staffed", "Staffed case", "Assigned to a case immediately.", 1, "in_person"),
+      makeStep("certified_under_2yrs", 1, "cu2_welcome", "Welcome to Blossom", "Fast orientation to Blossom systems and support structure.", 1, "self_paced"),
+      makeStep("certified_under_2yrs", 2, "cu2_initial_eval", "Initial evaluation", "Skills evaluation that places you into the right coaching band.", 1, "in_person"),
+      makeStep("certified_under_2yrs", 3, "cu2_targeted_coaching", "Targeted coaching", "Coaching focused only on the gaps your evaluation surfaced.", 2, "in_person"),
+      makeStep("certified_under_2yrs", 4, "cu2_aba_explained", "ABA Explained (as needed)", "Assigned only when the evaluation flags foundational gaps.", 1, "self_paced"),
+      makeStep("certified_under_2yrs", 5, "cu2_day2_supervision", "Day 2 BCBA supervision", "BCBA joins your second day in the field to confirm readiness.", 1, "in_person"),
+    ],
+  },
+  certified_2yrs_plus: {
+    name: "Certified — 2+ Years",
+    description: "Experienced clinician: welcome → expedited readiness → documentation calibration → BCBA observation.",
+    steps: [
+      makeStep("certified_2yrs_plus", 1, "c2p_welcome", "Welcome to Blossom", "Short welcome covering Blossom systems, escalation and support.", 1, "self_paced"),
+      makeStep("certified_2yrs_plus", 2, "c2p_expedited_readiness", "Expedited readiness", "Condensed readiness checklist honoring your prior experience.", 1, "self_paced"),
+      makeStep("certified_2yrs_plus", 3, "c2p_doc_calibration", "Documentation calibration", "Calibrate session notes and data to Blossom + CentralReach standards.", 1, "zoom"),
+      makeStep("certified_2yrs_plus", 4, "c2p_bcba_observation", "BCBA observation", "One BCBA field observation, then straight to staffing.", 1, "in_person"),
     ],
   },
 };
@@ -241,7 +358,10 @@ export interface LabProgramProjection {
   };
 }
 
-export function projectProgram(state: LabState): LabProgramProjection {
+/** Projection input — `stage` is optional so callers may pass a partial state. */
+export type LabProjectionInput = { pathway: LabPathwayKey; preset: LabPreset; stage?: LabStage };
+
+export function projectProgram(state: LabProjectionInput): LabProgramProjection {
   const fixture = FIXTURES[state.pathway];
   const steps = fixture.steps;
   const rows: StepRow[] = steps.map((step, i) => ({
@@ -280,7 +400,7 @@ const SKILL_DEFS: LabSkillDef[] = [
   { key: "family_communication",  label: "Family communication",    category: "professionalism", sort_order: 60 },
 ];
 
-export function projectSkillPassport(state: LabState): { defs: LabSkillDef[]; status: Record<string, LabSkillStatus> } {
+export function projectSkillPassport(state: LabProjectionInput): { defs: LabSkillDef[]; status: Record<string, LabSkillStatus> } {
   const map: Record<string, LabSkillStatus> = {};
   const bank: import("@/pages/rbt/app/training/types").SkillState[] = (() => {
     switch (state.preset) {
@@ -312,12 +432,18 @@ export interface UseExperienceLab {
   state: LabState | null;
   setPathway: (p: LabPathwayKey) => void;
   setPreset: (p: LabPreset) => void;
+  /** Set the lifecycle stage; also re-derives the progress preset. */
+  setStage: (s: LabStage) => void;
   enable: (init?: Partial<LabState>) => void;
   exit: () => void;
   reset: () => void;
 }
 
-const DEFAULT_STATE: LabState = { pathway: "new_rbt_certification", preset: "midway" };
+const DEFAULT_STATE: LabState = {
+  pathway: "not_certified",
+  stage: "brand_new",
+  preset: presetForStage("brand_new"),
+};
 
 /**
  * React hook. `authRoles` and `authUserId` are passed in from the caller
@@ -356,6 +482,10 @@ export function useExperienceLabController(
     commit({ ...(state ?? DEFAULT_STATE), preset });
   }, [state, commit]);
 
+  const setStage = useCallback((stage: LabStage) => {
+    commit({ ...(state ?? DEFAULT_STATE), stage, preset: presetForStage(stage) });
+  }, [state, commit]);
+
   const enable = useCallback((init?: Partial<LabState>) => {
     commit({ ...(state ?? DEFAULT_STATE), ...(init ?? {}) });
   }, [state, commit]);
@@ -367,7 +497,7 @@ export function useExperienceLabController(
     eligible,
     active: eligible && state !== null,
     state: eligible ? state : null,
-    setPathway, setPreset, enable, exit, reset,
+    setPathway, setPreset, setStage, enable, exit, reset,
   };
 }
 

@@ -18,9 +18,12 @@ export default function RbtAppShell() {
   return (
     <OSRoleProvider>
       <OSShell>
-        <RbtExperienceLabBar />
-        <PreviewBanner />
         <RbtWalkthroughProvider>
+          {/* Lab bar lives inside the walkthrough provider so its
+              "Play walkthrough" / "Restart first-login tour" controls can
+              drive the tour, and stays mounted across every /rbt/app/* route. */}
+          <RbtExperienceLabBar />
+          <PreviewBanner />
           <RbtAppErrorBoundary key={location.pathname}>
             <RbtSubpageNav />
             <Outlet />
