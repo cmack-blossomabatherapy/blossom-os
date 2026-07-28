@@ -161,6 +161,7 @@ export async function loadPathways(): Promise<PathwaySummary[]> {
   const { data, error } = await supabase
     .from("rbt_pathways" as any)
     .select("id,key,name,description,metadata")
+    .eq("is_active", true)
     .order("name");
   if (error) throw error;
   const rows = (data as any[]) ?? [];
