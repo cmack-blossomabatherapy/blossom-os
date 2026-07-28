@@ -3,6 +3,7 @@ import { OSShell } from "@/pages/os/OSShell";
 import { RbtAppErrorBoundary } from "./RbtAppErrorBoundary";
 import { PreviewBanner } from "./PreviewBanner";
 import { RbtExperienceLabBar } from "./RbtExperienceLabBar";
+import { RbtSubpageNav } from "./RbtSubpageNav";
 import { OSRoleProvider } from "@/contexts/OSRoleContext";
 import { RbtWalkthroughProvider } from "./RbtWalkthrough";
 
@@ -21,6 +22,7 @@ export default function RbtAppShell() {
         <PreviewBanner />
         <RbtWalkthroughProvider>
           <RbtAppErrorBoundary key={location.pathname}>
+            <RbtSubpageNav />
             <Outlet />
           </RbtAppErrorBoundary>
         </RbtWalkthroughProvider>

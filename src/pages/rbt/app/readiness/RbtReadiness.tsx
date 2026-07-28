@@ -10,12 +10,17 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useReadiness } from "./useReadiness";
 import { READINESS_META, OWNER_LABEL, isReadinessDone, type ReadinessRow } from "./types";
+import { CompetencyPanel } from "@/components/training/CompetencyPanel";
+import { useRbtIdentity } from "../useRbtIdentity";
+import { useProgram } from "../training/useProgram";
 
 export default function RbtReadiness() {
   const { user } = useAuth();
   const { rows, loading, error, stats, reload } = useReadiness(user?.id ?? null);
   const [selected, setSelected] = useState<ReadinessRow | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
+  const { employeeId, loading: identityLoading } = useRbtIdentity();
+  const { pathway } = useProgram(employeeId);
 
   if (loading) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
   if (error) return <p className="text-sm text-destructive">{error}</p>;
@@ -99,6 +104,28 @@ export default function RbtReadiness() {
           <LifeBuoy className="h-4 w-4 mr-1.5" /> Request support
         </Button>
       </div>
+
+      <section className="space-y-2">
+        <div className="px-1">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            Initial Competency Assessment
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            All 19 BACB competency tasks. Your Lead RBT Trainer and BCBA record the
+            results — this view is read-only for you.
+          </p>
+        </div>
+        {identityLoading ? (
+          <div className="h-32 rounded-2xl bg-muted animate-pulse" />
+        ) : employeeId ? (
+          <CompetencyPanel traineeId={employeeId} trackId={pathway?.key ?? "rbt"} readOnly />
+        ) : (
+          <div className="rounded-2xl border border-border/70 bg-card p-4 text-sm text-muted-foreground">
+            Your competency record opens once your employee profile is linked. A
+            teammate is finishing that setup.
+          </div>
+        )}
+      </section>
 
       <GateDetailSheet row={selected} onClose={() => setSelected(null)} onSupport={() => { setSelected(null); setSupportOpen(true); }} />
       <SupportSheet
