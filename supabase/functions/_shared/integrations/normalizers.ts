@@ -9,7 +9,7 @@ export async function upsertNormalizedRecord(
   ctx: AdapterContext,
   integrationId: string,
   draft: NormalizedRecordDraft,
-): Promise<{ ok: boolean; id?: string; error?: string }> {
+): Promise<{ ok: boolean; id?: string; action?: "insert" | "update"; error?: string }> {
   const row = {
     integration_id: integrationId,
     provider_record_id: draft.providerRecordId ?? null,
@@ -29,13 +29,33 @@ export async function upsertNormalizedRecord(
   };
 
   if (draft.providerRecordId) {
+    // The natural key is enforced by a PARTIAL unique index
+    // (WHERE provider_record_id IS NOT NULL), which PostgREST cannot target
+    // with ON CONFLICT. Resolve the row explicitly instead.
+    const { data: existing } = await ctx.supabase
+      .from("integration_normalized_records")
+      .select("id")
+      .eq("integration_id", integrationId)
+      .eq("provider_record_id", draft.providerRecordId)
+      .eq("record_kind", draft.recordKind)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const { error } = await ctx.supabase
+        .from("integration_normalized_records")
+        .update(row)
+        .eq("id", existing.id);
+      if (error) return { ok: false, error: error.message };
+      return { ok: true, id: existing.id, action: "update" };
+    }
+
     const { data, error } = await ctx.supabase
       .from("integration_normalized_records")
-      .upsert(row, { onConflict: "integration_id,provider_record_id,record_kind" })
+      .insert(row)
       .select("id")
       .maybeSingle();
     if (error) return { ok: false, error: error.message };
-    return { ok: true, id: data?.id };
+    return { ok: true, id: data?.id, action: "insert" };
   }
 
   const { data, error } = await ctx.supabase
@@ -44,7 +64,7 @@ export async function upsertNormalizedRecord(
     .select("id")
     .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  return { ok: true, id: data?.id };
+  return { ok: true, id: data?.id, action: "insert" };
 }
 
 export async function recordIntegrationEvent(
