@@ -22,6 +22,28 @@ function json(body: unknown, status = 200) {
 }
 
 async function isAdmin(supabase: any, userId: string): Promise<boolean> {
+  return await hasAdminRole(supabase, userId);
+}
+
+/**
+ * Scheduled (pg_cron) callers present the project service-role key rather
+ * than a user JWT. Verify the role claim instead of a raw string compare so
+ * key-format rotations don't silently break the schedule.
+ */
+function isServiceRoleJwt(token: string): boolean {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return false;
+    const json = JSON.parse(
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    return json?.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
+async function hasAdminRole(supabase: any, userId: string): Promise<boolean> {
   const { data } = await supabase
     .from("user_roles")
     .select("role")
