@@ -27,14 +27,14 @@ function blockedRow(rows: ReturnType<typeof projectProgram>["rows"]) {
 }
 
 describe("RBT program step selection — every path × preset", () => {
-  it("Developing / Midway current = 'Lead RBT + client session' (index 3)", () => {
-    const proj = projectProgram({ pathway: "under_2_years", preset: "midway" });
+  it("Developing / Midway current = 'Targeted coaching'", () => {
+    const proj = projectProgram({ pathway: "certified_under_2yrs", preset: "midway" });
     const cur = currentRow(proj.rows);
-    expect(cur?.step.title).toBe("Lead RBT + client session");
-    expect(cur?.step.id).toBe("lab-under_2_years-step-4");
+    expect(cur?.step.title).toBe("Targeted coaching");
+    expect(cur?.step.id).toBe("lab-certified_under_2yrs-step-3");
     // Roadmap row at same id must resolve to the same step title.
     const byId = proj.rows.find((r) => r.step.id === cur!.step.id);
-    expect(byId?.step.title).toBe("Lead RBT + client session");
+    expect(byId?.step.title).toBe("Targeted coaching");
   });
 
   for (const pathway of LAB_PATHWAY_KEYS as readonly LabPathwayKey[]) {

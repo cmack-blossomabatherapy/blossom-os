@@ -27,7 +27,7 @@ vi.mock("@/pages/rbt/app/useRbtIdentity", () => ({
 }));
 
 const labState: { pathway: LabPathwayKey; preset: "midway" } = {
-  pathway: "under_2_years",
+  pathway: "certified_under_2yrs",
   preset: "midway",
 };
 
@@ -48,8 +48,8 @@ function renderProgram() {
 describe("RbtProgram Up Next click opens the correct step", () => {
   beforeEach(() => cleanup());
 
-  it("Developing / Midway: Up Next Open shows 'Lead RBT + client session', not step 0", async () => {
-    labState.pathway = "under_2_years";
+  it("Developing / Midway: Up Next Open shows 'Targeted coaching', not step 0", async () => {
+    labState.pathway = "certified_under_2yrs";
     renderProgram();
     const openBtn = await screen.findByTestId("rbt-upnext-open");
     const expected = projectProgram(labState).rows.find(
@@ -60,12 +60,12 @@ describe("RbtProgram Up Next click opens the correct step", () => {
     // Sheet renders the step title in its header.
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText(expected.step.title)).toBeInTheDocument();
-    expect(expected.step.title).toBe("Lead RBT + client session");
+    expect(expected.step.title).toBe("Targeted coaching");
     // And explicitly NOT the first step's title.
-    expect(within(dialog).queryByText("Zoom learning intro")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Welcome to Blossom")).not.toBeInTheDocument();
   });
 
-  for (const pathway of ["new_rbt_certification", "under_2_years", "experienced_rbt"] as const) {
+  for (const pathway of ["not_certified", "certified_under_2yrs", "certified_2yrs_plus"] as const) {
     it(`${pathway} / midway: every roadmap row opens its own step`, async () => {
       labState.pathway = pathway;
       renderProgram();

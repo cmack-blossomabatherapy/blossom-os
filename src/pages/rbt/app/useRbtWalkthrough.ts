@@ -14,12 +14,17 @@ export interface RbtWalkthroughContextValue {
   available: boolean;
   controller: UseRbtWalkthrough | null;
   openTour: () => void;
+  /** Clear demo tour state and replay from step 1 (Experience Lab). */
+  restartTour?: () => void;
+  previewActive?: boolean;
 }
 
 export const RbtWalkthroughContext = createContext<RbtWalkthroughContextValue>({
   available: false,
   controller: null,
   openTour: () => {},
+  restartTour: () => {},
+  previewActive: false,
 });
 
 export function useRbtWalkthrough(): RbtWalkthroughContextValue {

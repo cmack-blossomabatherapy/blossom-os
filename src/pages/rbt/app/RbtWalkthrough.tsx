@@ -25,13 +25,16 @@ export function RbtWalkthroughProvider({ children }: { children: React.ReactNode
 
   const controller = useRbtWalkthroughController({
     userId: user?.id ?? null,
-    previewActive,
+    previewActive: Boolean(osRole?.isPreviewing),
+    labActive: Boolean(lab.active),
   });
 
   const value = useMemo(() => ({
     available: true,
     controller,
     openTour: () => controller.start({ replay: true }),
+    restartTour: () => { controller.resetDemoTour(); controller.start({ replay: false }); },
+    previewActive,
   }), [controller]);
 
   return (
