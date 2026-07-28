@@ -22,6 +22,7 @@ import {
   useApploiIntegrationStatus,
   importApploiNormalizedRecords,
 } from "@/hooks/useApploiIntegration";
+import { ApploiSyncHealthBar } from "@/components/recruiting/ApploiSyncHealthBar";
 import {
   isRbtLikeRole,
   type RbtCertificationStatus,
@@ -202,6 +203,8 @@ export default function OSRecruitingPipeline() {
                 </button>
               </div>
             </div>
+
+            <ApploiSyncHealthBar className="mt-3" />
 
             {/* Search + filter row */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
