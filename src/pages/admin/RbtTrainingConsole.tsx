@@ -15,7 +15,7 @@ export default function RbtTrainingConsole() {
   const [pathways, setPathways] = useState<Pathway[]>([]);
 
   useEffect(() => {
-    void supabase.from("rbt_pathways" as any).select("*").order("name")
+    void supabase.from("rbt_pathways" as any).select("*").eq("is_active", true).order("name")
       .then(({ data }) => setPathways(((data as any[]) ?? []) as Pathway[]));
   }, []);
 
