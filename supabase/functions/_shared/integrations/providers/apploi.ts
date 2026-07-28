@@ -280,6 +280,7 @@ export const apploiAdapter: ProviderAdapter = {
       created,
       failed,
       details: {
+        team_id_configured: Boolean(teamId()),
         jobs: jobs.created,
         applicants: applicants.created,
         applicants_reported_total: applicants.total,
