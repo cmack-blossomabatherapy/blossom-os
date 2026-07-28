@@ -94,6 +94,7 @@ async function syncJobs(ctx: AdapterContext, limitPages: number) {
   let received = 0;
   let created = 0;
   let failed = 0;
+  const debug: unknown[] = [];
   for (let page = 0; page < limitPages; page++) {
     const res = await apploiGet<{ data?: any[] }>("/jobs/search", {
       teams: teamId(),
@@ -101,8 +102,9 @@ async function syncJobs(ctx: AdapterContext, limitPages: number) {
       size: PAGE_SIZE,
       page: page + 1,
     });
-    if (!res.ok) return { received, created, failed, error: res.error };
+    if (!res.ok) return { received, created, failed, error: res.error, debug };
     const rows = res.data?.data ?? [];
+    debug.push({ page: page + 1, http: res.status, rows: rows.length, keys: Object.keys(res.data ?? {}) });
     if (rows.length === 0) break;
     for (const j of rows) {
       received += 1;
@@ -132,7 +134,7 @@ async function syncJobs(ctx: AdapterContext, limitPages: number) {
     }
     if (rows.length < PAGE_SIZE) break;
   }
-  return { received, created, failed, error: undefined as string | undefined };
+  return { received, created, failed, error: undefined as string | undefined, debug };
 }
 
 async function syncApplicants(ctx: AdapterContext, maxPages: number) {
@@ -281,6 +283,7 @@ export const apploiAdapter: ProviderAdapter = {
       failed,
       details: {
         team_id_configured: Boolean(teamId()),
+        jobs_debug: jobs.debug,
         jobs: jobs.created,
         applicants: applicants.created,
         applicants_reported_total: applicants.total,
