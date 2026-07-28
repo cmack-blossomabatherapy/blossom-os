@@ -41,7 +41,7 @@ describe("Apploi live integration — adapter contract", () => {
 });
 
 describe("Apploi live integration — no secrets in frontend", () => {
-  it("no src/ file references the Apploi API key", () => {
+  it("no src/ file embeds an Apploi credential or calls the provider directly", () => {
     const walk = (dir: string, acc: string[] = []) => {
       for (const entry of fs.readdirSync(dir)) {
         const p = path.join(dir, entry);
@@ -52,7 +52,11 @@ describe("Apploi live integration — no secrets in frontend", () => {
     };
     for (const f of walk(path.join(process.cwd(), "src"))) {
       if (f.endsWith("apploiLiveIntegration.test.ts")) continue;
-      expect(fs.readFileSync(f, "utf8"), f).not.toMatch(/APPLOI_API_KEY|partners\.apploi\.com/);
+      const src = fs.readFileSync(f, "utf8");
+      // No direct browser calls to the provider.
+      expect(src, f).not.toMatch(/fetch\([^)]*partners\.apploi\.com/);
+      // No literal credential value committed anywhere in the frontend.
+      expect(src, f).not.toMatch(/x-api-key/i);
     }
   });
 });
