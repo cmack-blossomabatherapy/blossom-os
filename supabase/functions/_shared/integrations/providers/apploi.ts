@@ -93,8 +93,8 @@ function splitName(full: string | null): { first: string | null; last: string | 
 async function syncJobs(ctx: AdapterContext, limitPages: number) {
   let received = 0;
   let created = 0;
+  let updated = 0;
   let failed = 0;
-  const debug: unknown[] = [];
   for (let page = 0; page < limitPages; page++) {
     const res = await apploiGet<{ data?: any[] }>("/jobs/search", {
       teams: teamId(),
@@ -102,9 +102,8 @@ async function syncJobs(ctx: AdapterContext, limitPages: number) {
       size: PAGE_SIZE,
       page: page + 1,
     });
-    if (!res.ok) return { received, created, failed, error: res.error, debug };
+    if (!res.ok) return { received, created, updated, failed, error: res.error };
     const rows = res.data?.data ?? [];
-    debug.push({ page: page + 1, http: res.status, rows: rows.length, keys: Object.keys(res.data ?? {}) });
     if (rows.length === 0) break;
     for (const j of rows) {
       received += 1;
@@ -129,17 +128,19 @@ async function syncJobs(ctx: AdapterContext, limitPages: number) {
           raw: j,
         },
       });
-      if (up.ok) created += 1;
-      else failed += 1;
+      if (!up.ok) failed += 1;
+      else if (up.action === "update") updated += 1;
+      else created += 1;
     }
     if (rows.length < PAGE_SIZE) break;
   }
-  return { received, created, failed, error: undefined as string | undefined, debug };
+  return { received, created, updated, failed, error: undefined as string | undefined };
 }
 
 async function syncApplicants(ctx: AdapterContext, maxPages: number) {
   let received = 0;
   let created = 0;
+  let updated = 0;
   let failed = 0;
   let total = 0;
   for (let page = 0; page < maxPages; page++) {
@@ -148,7 +149,7 @@ async function syncApplicants(ctx: AdapterContext, maxPages: number) {
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
     });
-    if (!res.ok) return { received, created, failed, total, error: res.error };
+    if (!res.ok) return { received, created, updated, failed, total, error: res.error };
     total = res.data?.total ?? total;
     const rows = res.data?.data ?? [];
     if (rows.length === 0) break;
@@ -183,12 +184,13 @@ async function syncApplicants(ctx: AdapterContext, maxPages: number) {
           raw: a,
         },
       });
-      if (up.ok) created += 1;
-      else failed += 1;
+      if (!up.ok) failed += 1;
+      else if (up.action === "update") updated += 1;
+      else created += 1;
     }
     if (rows.length < PAGE_SIZE) break;
   }
-  return { received, created, failed, total, error: undefined as string | undefined };
+  return { received, created, updated, failed, total, error: undefined as string | undefined };
 }
 
 export const apploiAdapter: ProviderAdapter = {
@@ -245,6 +247,7 @@ export const apploiAdapter: ProviderAdapter = {
         message: sanitize(`Apploi job sync failed (${jobs.error})`),
         received: jobs.received,
         created: jobs.created,
+        updated: jobs.updated,
         failed: jobs.failed,
       };
     }
@@ -252,6 +255,7 @@ export const apploiAdapter: ProviderAdapter = {
     const applicants = await syncApplicants(ctx, pages);
     const received = jobs.received + applicants.received;
     const created = jobs.created + applicants.created;
+    const updated = jobs.updated + applicants.updated;
     const failed = jobs.failed + applicants.failed;
 
     if (applicants.error) {
@@ -259,12 +263,13 @@ export const apploiAdapter: ProviderAdapter = {
         ok: false,
         status: "partial",
         message: sanitize(
-          `Synced ${jobs.created} job postings. Applicant sync failed (${applicants.error}).`,
+          `Synced ${jobs.received} job postings. Applicant sync failed (${applicants.error}).`,
         ),
         received,
         created,
+        updated,
         failed,
-        details: { jobs: jobs.created, applicants: 0 },
+        details: { jobs: jobs.received, applicants: 0 },
       };
     }
 
@@ -277,15 +282,14 @@ export const apploiAdapter: ProviderAdapter = {
     return {
       ok: true,
       status: applicants.received === 0 ? "partial" : "success",
-      message: `Apploi sync complete: ${jobs.created} job postings, ${applicants.created} applicants.${applicantNote}`,
+      message: `Apploi sync complete: ${jobs.received} job postings, ${applicants.received} applicants.${applicantNote}`,
       received,
       created,
+      updated,
       failed,
       details: {
-        team_id_configured: Boolean(teamId()),
-        jobs_debug: jobs.debug,
-        jobs: jobs.created,
-        applicants: applicants.created,
+        jobs: jobs.received,
+        applicants: applicants.received,
         applicants_reported_total: applicants.total,
         applicants_exposed: applicants.received > 0,
       },
