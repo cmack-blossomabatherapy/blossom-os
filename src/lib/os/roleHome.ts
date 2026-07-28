@@ -13,7 +13,7 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
 
   executive:                  "/executive",
   executive_leadership:       "/executive",
-  coo:                        "/executive",
+  coo:                        "/operations/command-center",
 
   director_of_operations:     "/operations/command-center",
   operations_manager:         "/operations/command-center",
@@ -43,7 +43,7 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
 
   clinical_director:          "/clinical-director",
   clinical_lead:              "/clinical-director",
-  bcba:                       "/bcba",
+  bcba:                       "/bcba/home",
   rbt:                        "/rbt/app/home",
   behavioral_support:         "/behavioral-support",
 
