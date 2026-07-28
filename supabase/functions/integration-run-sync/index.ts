@@ -38,10 +38,16 @@ Deno.serve(async (req) => {
   if (!authHeader) return json({ error: "Unauthorized" }, 401);
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  const { data: userData } = await supabase.auth.getUser(token);
-  const user = userData?.user;
-  if (!user) return json({ error: "Unauthorized" }, 401);
-  if (!(await isAdmin(supabase, user.id))) return json({ error: "Forbidden" }, 403);
+  // Scheduled runs (pg_cron) present the service-role key instead of a user
+  // JWT. They are server-side only and never reach the browser.
+  const isScheduled = token === SERVICE_ROLE;
+  let user: any = null;
+  if (!isScheduled) {
+    const { data: userData } = await supabase.auth.getUser(token);
+    user = userData?.user;
+    if (!user) return json({ error: "Unauthorized" }, 401);
+    if (!(await isAdmin(supabase, user.id))) return json({ error: "Forbidden" }, 403);
+  }
 
   let body: any = {};
   try {
@@ -59,10 +65,10 @@ Deno.serve(async (req) => {
     .insert({
       integration_id: integrationId,
       connection_id: connectionId ?? null,
-      run_type: "manual",
+      run_type: isScheduled ? "scheduled" : "manual",
       direction: "inbound",
       status: "running",
-      created_by: user.id,
+      created_by: user?.id ?? null,
     })
     .select("id")
     .single();

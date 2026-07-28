@@ -19,6 +19,7 @@ export type NormalizedKind =
   | "lead"
   | "call"
   | "candidate"
+  | "job"
   | "document"
   | "calendar_event"
   | "eligibility"
