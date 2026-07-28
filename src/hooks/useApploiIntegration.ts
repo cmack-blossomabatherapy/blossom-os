@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
+import { classifyJobFamily } from "@/lib/recruiting/jobFamily";
 import {
   resolveApploiIdentity,
   describeIdentitySource,
@@ -153,7 +154,9 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
     .eq("integration_id", integrationId)
     .eq("record_kind", "candidate");
   if (!records || records.length === 0) {
-    toast.info("No Apploi records available to import yet.");
+    toast.info(
+      "Apploi is connected, but no applicant records are exposed to this API key yet. Job postings are syncing normally.",
+    );
     return { imported: 0, skipped: 0 };
   }
   let imported = 0; let skipped = 0;
@@ -214,7 +217,8 @@ export async function importApploiNormalizedRecords(): Promise<{ imported: numbe
       last_name: p.last_name ?? "(unknown)",
       email,
       phone: p.phone ?? (r as any).person_phone ?? null,
-      role: p.role ?? "Other",
+      role: classifyJobFamily({ role: p.role ?? null, applied_title: p.role ?? null }),
+      applied_title: p.role ?? null,
       state: p.state ?? "Other",
       city: p.city ?? null,
       source: "Apploi",
@@ -327,5 +331,81 @@ async function findApploiIntegrationId(): Promise<string | null> {
     return (data as any)?.id ?? null;
   } catch {
     return null;
+  }
+}
+
+
+/**
+ * Operator-safe Apploi sync health. Backed by the SECURITY DEFINER
+ * `apploi_sync_health()` RPC so Recruiting/HR can see connection state and
+ * counts without being granted access to raw integration diagnostics.
+ */
+export interface ApploiSyncHealth {
+  connection_status: string;
+  enabled: boolean;
+  last_synced_at: string | null;
+  last_run_status: string | null;
+  jobs_count: number;
+  candidates_count: number;
+  applicant_scope_available: boolean;
+}
+
+export function useApploiSyncHealth() {
+  const [health, setHealth] = useState<ApploiSyncHealth | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("apploi_sync_health");
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      setHealth(
+        row
+          ? {
+              connection_status: row.connection_status ?? "not_configured",
+              enabled: !!row.enabled,
+              last_synced_at: row.last_synced_at ?? null,
+              last_run_status: row.last_run_status ?? null,
+              jobs_count: Number(row.jobs_count ?? 0),
+              candidates_count: Number(row.candidates_count ?? 0),
+              applicant_scope_available: !!row.applicant_scope_available,
+            }
+          : null,
+      );
+    } catch {
+      setHealth(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { refetch(); }, [refetch]);
+
+  return { health, loading, refetch };
+}
+
+/**
+ * Manual "Sync Now". The browser never touches Apploi directly — this
+ * invokes the server-side runner, which enforces admin authorization and
+ * keeps APPLOI_API_KEY server-side. Upstream errors are already sanitized
+ * by the adapter before they reach us.
+ */
+export async function syncApploiNow(): Promise<{ ok: boolean; message: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke("integration-run-sync", {
+      body: { integrationId: "apploi" },
+    });
+    if (error) {
+      toast.error("Apploi sync could not be started. Recruiting admins can retry from System Tools \u203A Integrations.");
+      return { ok: false, message: "sync_invoke_failed" };
+    }
+    const message = String((data as any)?.message ?? "Apploi sync finished.");
+    if ((data as any)?.ok) toast.success(message);
+    else toast.warning(message);
+    return { ok: !!(data as any)?.ok, message };
+  } catch {
+    toast.error("Apploi sync could not be started.");
+    return { ok: false, message: "sync_invoke_failed" };
   }
 }

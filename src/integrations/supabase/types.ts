@@ -31277,6 +31277,18 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      apploi_sync_health: {
+        Args: never
+        Returns: {
+          applicant_scope_available: boolean
+          candidates_count: number
+          connection_status: string
+          enabled: boolean
+          jobs_count: number
+          last_run_status: string
+          last_synced_at: string
+        }[]
+      }
       apply_cr_employee_reconciliation: {
         Args: { _dry_run?: boolean }
         Returns: {

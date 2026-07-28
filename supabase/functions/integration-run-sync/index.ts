@@ -22,6 +22,28 @@ function json(body: unknown, status = 200) {
 }
 
 async function isAdmin(supabase: any, userId: string): Promise<boolean> {
+  return await hasAdminRole(supabase, userId);
+}
+
+/**
+ * Scheduled (pg_cron) callers present the project service-role key rather
+ * than a user JWT. Verify the role claim instead of a raw string compare so
+ * key-format rotations don't silently break the schedule.
+ */
+function isServiceRoleJwt(token: string): boolean {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return false;
+    const json = JSON.parse(
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    return json?.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
+async function hasAdminRole(supabase: any, userId: string): Promise<boolean> {
   const { data } = await supabase
     .from("user_roles")
     .select("role")
@@ -38,10 +60,16 @@ Deno.serve(async (req) => {
   if (!authHeader) return json({ error: "Unauthorized" }, 401);
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  const { data: userData } = await supabase.auth.getUser(token);
-  const user = userData?.user;
-  if (!user) return json({ error: "Unauthorized" }, 401);
-  if (!(await isAdmin(supabase, user.id))) return json({ error: "Forbidden" }, 403);
+  // Scheduled runs (pg_cron) present the service-role key instead of a user
+  // JWT. They are server-side only and never reach the browser.
+  const isScheduled = token === SERVICE_ROLE || isServiceRoleJwt(token);
+  let user: any = null;
+  if (!isScheduled) {
+    const { data: userData } = await supabase.auth.getUser(token);
+    user = userData?.user;
+    if (!user) return json({ error: "Unauthorized" }, 401);
+    if (!(await isAdmin(supabase, user.id))) return json({ error: "Forbidden" }, 403);
+  }
 
   let body: any = {};
   try {
@@ -59,10 +87,10 @@ Deno.serve(async (req) => {
     .insert({
       integration_id: integrationId,
       connection_id: connectionId ?? null,
-      run_type: "manual",
+      run_type: isScheduled ? "scheduled" : "manual",
       direction: "inbound",
       status: "running",
-      created_by: user.id,
+      created_by: user?.id ?? null,
     })
     .select("id")
     .single();

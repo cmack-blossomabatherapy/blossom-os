@@ -17,3 +17,5 @@ verify_jwt = false
 
 [functions.ctm-webhook]
 verify_jwt = false
+[functions.apploi-sync-cron]
+verify_jwt = false
