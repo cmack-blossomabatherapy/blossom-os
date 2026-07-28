@@ -10,7 +10,7 @@ import { upsertNormalizedRecord } from "../normalizers.ts";
  * rejected upstream with 403.
  *
  * Endpoints actually used (verified live against team 50104):
- *   GET /jobs/search?teams=<team>&include_private=1&size=&from=   → postings
+ *   GET /jobs/search?teams=<team>&include_private=1&size=&page=   → postings
  *   GET /applicants?team_id=<team>&limit=&offset=                 → applicants
  *   GET /applicants/applicant-statuses?team_id=<team>             → status set
  *
@@ -99,7 +99,7 @@ async function syncJobs(ctx: AdapterContext, limitPages: number) {
       teams: teamId(),
       include_private: 1,
       size: PAGE_SIZE,
-      from: page * PAGE_SIZE,
+      page: page + 1,
     });
     if (!res.ok) return { received, created, failed, error: res.error };
     const rows = res.data?.data ?? [];
