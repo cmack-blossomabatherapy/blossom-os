@@ -22,6 +22,8 @@ function json(body: unknown, status = 200) {
 }
 
 async function isAdmin(supabase: any, userId: string): Promise<boolean> {
+  const _ = userId;
+  void _;
   const { data } = await supabase
     .from("user_roles")
     .select("role")
