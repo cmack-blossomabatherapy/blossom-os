@@ -12,7 +12,7 @@ import ActiveHome from "./active/ActiveHome";
 import ActiveSchedule from "./active/ActiveSchedule";
 import { ProgramSetupJourney } from "./training/ProgramSetupJourney";
 import { Link } from "react-router-dom";
-import { GraduationCap, Award, ArrowRight, Users, Clock, ShieldCheck, BadgeCheck, Sparkles, Compass, LifeBuoy } from "lucide-react";
+import { GraduationCap, Award, ArrowRight, Users, Clock, ShieldCheck, BadgeCheck, Sparkles, Compass, LifeBuoy, Map, ClipboardCheck, CalendarClock, Bell, HeartHandshake } from "lucide-react";
 import {
   GreetingCard, NextBestActionCard, TodaysScheduleCard, JourneyProgressCard,
   TrainingProgressCard, SupervisionCard, CredentialAlertCard, RecognitionCard,
@@ -509,13 +509,19 @@ export function RbtMe() {
 
       <div className="grid gap-3 grid-cols-2">
         {[
+          { to: "/rbt/app/journey",     icon: Map,         label: "My Journey" },
+          { to: "/rbt/app/readiness",   icon: ClipboardCheck, label: "Readiness" },
+          { to: "/rbt/app/preboarding", icon: HeartHandshake, label: "Preboarding" },
+          { to: "/rbt/app/staffing",    icon: CalendarClock, label: "Availability" },
           { to: "/rbt/app/clients",     icon: Users,       label: "My Clients" },
           { to: "/rbt/app/hours",       icon: Clock,       label: "Hours" },
           { to: "/rbt/app/supervision", icon: ShieldCheck, label: "Supervision" },
           { to: "/rbt/app/credentials", icon: BadgeCheck,  label: "Credentials" },
           { to: "/rbt/app/performance", icon: Award,       label: "Performance" },
           { to: "/rbt/app/learn",       icon: GraduationCap, label: "Training" },
+          { to: "/rbt/app/passport",    icon: Award,       label: "Skill Passport" },
           { to: "/rbt/app/growth",      icon: Sparkles,    label: "My Growth" },
+          { to: "/rbt/app/settings/notifications", icon: Bell, label: "Notifications" },
         ].map(({ to, icon: Icon, label }) => (
           <Link key={to} to={to}
             className="rounded-2xl border border-border/70 bg-card p-4 hover:bg-muted/50 transition flex items-center gap-3 min-h-16">
