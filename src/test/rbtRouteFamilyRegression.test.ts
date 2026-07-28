@@ -130,3 +130,55 @@ describe("RBT training program matches the authoritative Blossom program", () =>
     expect(src).toMatch(/readOnly/);
   });
 });
+
+describe("RBT journey stages + hard training gates", () => {
+  it("models all nine journey stages in order and each links to a mounted page", async () => {
+    const { buildJourneyStages, JOURNEY_STAGE_KEYS } = await import("@/pages/rbt/app/journey/JourneyStages");
+    const stages = buildJourneyStages({
+      gateDone: () => false, pathwayName: null, programPercent: 0, programComplete: false,
+      hasFirstCase: false, firstSessionDone: false, checkinsDone: 0, checkinsTotal: 0,
+    });
+    expect(stages.map((s) => s.key)).toEqual([...JOURNEY_STAGE_KEYS]);
+    for (const s of stages) expect(isMounted(s.to), `${s.to} not mounted`).toBe(true);
+  });
+
+  it("marks exactly one stage active and completes stages from real data", async () => {
+    const { buildJourneyStages } = await import("@/pages/rbt/app/journey/JourneyStages");
+    const done = new Set(["employment_onboarding_complete", "background_check_cleared", "required_documents_complete"]);
+    const stages = buildJourneyStages({
+      gateDone: (k) => done.has(k), pathwayName: "New RBT — Certification Track",
+      programPercent: 40, programComplete: false, hasFirstCase: false, firstSessionDone: false,
+      checkinsDone: 0, checkinsTotal: 0,
+    });
+    expect(stages.find((s) => s.key === "hr_onboarding")!.status).toBe("complete");
+    expect(stages.find((s) => s.key === "experience_path")!.status).toBe("complete");
+    expect(stages.filter((s) => s.status === "active")).toHaveLength(1);
+    expect(stages.find((s) => s.key === "academy")!.status).toBe("active");
+  });
+
+  it("Start opens the real course runtime or the welcome page — never a dead button", async () => {
+    const { stepRuntimeHref } = await import("@/pages/rbt/app/training/types");
+    const base: any = { id: "1", pathway_id: "p", key: "x", title: "t", description: null, kind: "lesson",
+      order_index: 1, component_type: null, estimated_days: 1, delivery_mode: null, capabilities: [], required: true };
+    expect(stepRuntimeHref({ ...base, key: "welcome_to_blossom" })).toBe("/rbt/app/welcome");
+    expect(stepRuntimeHref({ ...base, ref_id: "course-1" })).toBe("/rbt/app/learn/course/course-1");
+    expect(stepRuntimeHref(base)).toBeNull();
+  });
+
+  it("every hard gate has a named human owner — no soft clears", async () => {
+    const { GATE_META } = await import("@/pages/rbt/app/training/types");
+    const keys = Object.keys(GATE_META);
+    expect(keys).toContain("competency_complete");
+    expect(keys).toContain("bcba_signoff_complete");
+    expect(keys).toContain("required_courses_complete");
+    expect(keys).toContain("session_note_practice_reviewed");
+    for (const k of keys) expect(GATE_META[k].owner.length).toBeGreaterThan(1);
+  });
+
+  it("the program page surfaces gate ownership and blocks self-completion", () => {
+    const src = fs.readFileSync("src/pages/rbt/app/training/RbtProgram.tsx", "utf8");
+    expect(src).toMatch(/Required gate/);
+    expect(src).toMatch(/cannot be self-cleared/);
+    expect(src).toMatch(/Only your trainer or BCBA can mark a stage complete/);
+  });
+});

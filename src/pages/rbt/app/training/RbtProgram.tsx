@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Circle, Clock, AlertTriangle, LifeBuoy, ArrowRight } from "lucide-react";
+import { CheckCircle2, Circle, Clock, AlertTriangle, LifeBuoy, ArrowRight, Lock, PlayCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRbtIdentity } from "../useRbtIdentity";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useProgram } from "./useProgram";
-import { STEP_META, type StepRow } from "./types";
+import { STEP_META, GATE_META, stepRuntimeHref, type StepRow } from "./types";
 import { ProgramSetupJourney } from "./ProgramSetupJourney";
 import { useExperienceLab } from "../useExperienceLab";
 
@@ -145,6 +145,12 @@ export default function RbtProgram() {
                       {r.step.delivery_mode && <> · {r.step.delivery_mode.replace("_"," ")}</>}
                       {r.step.estimated_days && <> · ~{r.step.estimated_days}d</>}
                     </p>
+                    {r.step.blocks_readiness_gate && (
+                      <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                        <Lock className="h-3 w-3" aria-hidden />
+                        {GATE_META[r.step.blocks_readiness_gate]?.owner ?? "Your trainer"} signs off
+                      </p>
+                    )}
                   </div>
                 </button>
               </li>
@@ -177,6 +183,8 @@ function StepSheet({ row, onClose, onSaved, canWrite }:
   { row: StepRow; onClose: () => void; onSaved: () => void; canWrite: boolean }) {
   const [note, setNote] = useState(row.progress.notes ?? "");
   const [saving, setSaving] = useState(false);
+  const runtimeHref = stepRuntimeHref(row.step);
+  const gate = row.step.blocks_readiness_gate ? GATE_META[row.step.blocks_readiness_gate] : null;
 
   async function update(status: "in_progress" | "submitted" | "needs_support") {
     if (!canWrite) return;
@@ -196,6 +204,29 @@ function StepSheet({ row, onClose, onSaved, canWrite }:
         <SheetHeader><SheetTitle>{row.step.title}</SheetTitle></SheetHeader>
         <div className="mt-3 space-y-4">
           {row.step.description && <p className="text-sm text-muted-foreground">{row.step.description}</p>}
+          {runtimeHref && (
+            <Button asChild className="w-full" data-testid="rbt-step-start">
+              <Link to={runtimeHref} onClick={onClose}>
+                <PlayCircle className="h-4 w-4 mr-1.5" /> Start this step
+              </Link>
+            </Button>
+          )}
+          {gate && (
+            <div className="rounded-xl border border-border/70 bg-muted/40 p-3">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <Lock className="h-3 w-3" aria-hidden /> Required gate
+              </p>
+              <p className="mt-1 text-sm font-medium">{gate.label}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {gate.owner} must sign this off before you can be staffed. It cannot be self-cleared.
+              </p>
+            </div>
+          )}
+          {row.progress.status === "complete" && row.progress.completed_at && (
+            <p className="text-xs text-emerald-600">
+              Signed off {new Date(row.progress.completed_at).toLocaleDateString()}
+            </p>
+          )}
           <div className="flex flex-wrap gap-1.5">
             {(row.step.capabilities ?? []).map((c) => (
               <span key={c} className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] text-muted-foreground capitalize">

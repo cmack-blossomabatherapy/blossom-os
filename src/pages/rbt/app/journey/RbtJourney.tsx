@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { CardFrame } from "../CardFrame";
 import { useAuth } from "@/contexts/AuthContext";
 import { useJourney } from "./useJourney";
+import { JourneyStages } from "./JourneyStages";
 import { Check, ChevronRight, Sparkles, Clock } from "lucide-react";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -17,13 +18,20 @@ export default function RbtJourney() {
   const { instances, byKey, loading } = useJourney(user?.id);
 
   if (loading) return <div className="h-40 rounded-2xl bg-muted animate-pulse" />;
+
+  const done = instances.filter((i) => i.status === "completed").length;
+
   if (!instances.length) return (
-    <CardFrame title="Your first 90 days" state="empty"
-      emptyLabel="Your check-ins appear here once your first session date is scheduled." />
+    <div className="space-y-3">
+      <JourneyStages checkinsDone={0} checkinsTotal={0} />
+      <CardFrame title="Your first 90 days" state="empty"
+        emptyLabel="Your check-ins appear here once your first session date is scheduled." />
+    </div>
   );
 
   return (
     <div className="space-y-3">
+      <JourneyStages checkinsDone={done} checkinsTotal={instances.length} />
       <CardFrame title="Your first 90 days" subtitle="Small check-ins to make sure you feel supported." state="success">
         <ul className="divide-y divide-border/70">
           {instances.map((i) => {
