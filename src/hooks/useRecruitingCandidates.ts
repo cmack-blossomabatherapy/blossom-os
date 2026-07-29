@@ -6,6 +6,16 @@ import {
   type RbtCertificationStatus,
 } from "@/lib/recruiting/rbtPathwayClassifier";
 
+/**
+ * Supabase realtime rejects a second `.on("postgres_changes", ...)` on a
+ * channel topic that is already subscribed. Two components (or React strict
+ * double-mount) using the same hook previously crashed the page, so every
+ * subscription gets its own topic.
+ */
+function rtTopic(base: string) {
+  return `${base}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export type RecruitingRole = "RBT" | "BCBA" | "BT" | "Office Staff" | "Clinic Staff" | "Other";
 export type RecruitingState = "GA" | "NC" | "TN" | "VA" | "MD" | "NJ" | "FL" | "TX" | "SC" | "Other";
 export type PipelineStage =
@@ -96,7 +106,7 @@ export function useRecruitingCandidates() {
   useEffect(() => {
     refetch();
     const channel = supabase
-      .channel("recruiting-candidates")
+      .channel(rtTopic("recruiting-candidates"))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_candidates" }, () => {
         refetch();
       })
@@ -223,7 +233,7 @@ export function useRecruitingInterviews(candidateId?: string) {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-interviews-" + (candidateId ?? "all"))
+      .channel(rtTopic("recruiting-interviews-" + (candidateId ?? "all")))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_interviews" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -262,7 +272,7 @@ export function useRecruitingOffers() {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-offers")
+      .channel(rtTopic("recruiting-offers"))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_offers" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -295,7 +305,7 @@ export function useRecruitingBackgroundChecks() {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-bg")
+      .channel(rtTopic("recruiting-bg"))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_background_checks" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -326,7 +336,7 @@ export function useRecruitingOrientation() {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-orient")
+      .channel(rtTopic("recruiting-orient"))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_orientation_slots" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -367,7 +377,7 @@ export function useRecruitingOnboarding() {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-onb")
+      .channel(rtTopic("recruiting-onb"))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_onboarding_tasks" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -402,7 +412,7 @@ export function useRecruitingStaffingNeeds() {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-needs")
+      .channel(rtTopic("recruiting-needs"))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_staffing_needs" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -442,7 +452,7 @@ export function useRecruitingFollowups() {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-followups")
+      .channel(rtTopic("recruiting-followups"))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_followups" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -483,7 +493,7 @@ export function useRecruitingEscalations() {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-escalations")
+      .channel(rtTopic("recruiting-escalations"))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_escalations" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -526,7 +536,7 @@ export function useRecruitingMessages(candidateId?: string) {
   useEffect(() => {
     refetch();
     const ch = supabase
-      .channel("recruiting-messages-" + (candidateId ?? "all"))
+      .channel(rtTopic("recruiting-messages-" + (candidateId ?? "all")))
       .on("postgres_changes", { event: "*", schema: "public", table: "recruiting_messages" }, () => refetch())
       .subscribe();
     return () => { supabase.removeChannel(ch); };

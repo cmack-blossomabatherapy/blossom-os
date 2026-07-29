@@ -393,12 +393,25 @@ export function useApploiSyncHealth() {
  */
 export async function syncApploiNow(): Promise<{ ok: boolean; message: string }> {
   try {
-    const { data, error } = await supabase.functions.invoke("integration-run-sync", {
-      body: { integrationId: "apploi" },
+    // Recruiting/HR/admin roles are authorized server-side inside the
+    // apploi-sync-cron function; the browser never sees the Apploi key.
+    const { data, error } = await supabase.functions.invoke("apploi-sync-cron", {
+      body: { trigger: "manual" },
     });
     if (error) {
-      toast.error("Apploi sync could not be started. Recruiting admins can retry from System Tools \u203A Integrations.");
+      toast.error(
+        "Apploi sync could not be started. You may not have permission, or a sync just ran.",
+      );
       return { ok: false, message: "sync_invoke_failed" };
+    }
+    if ((data as any)?.skipped) {
+      const reason = String((data as any)?.reason ?? "");
+      toast.info(
+        reason === "throttled"
+          ? "Apploi was refreshed moments ago — try again shortly."
+          : "Apploi is not connected yet.",
+      );
+      return { ok: false, message: reason || "skipped" };
     }
     const message = String((data as any)?.message ?? "Apploi sync finished.");
     if ((data as any)?.ok) toast.success(message);

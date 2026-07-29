@@ -103,7 +103,7 @@ describe("provider readiness manifest — Slice 3", () => {
 
   it("Apploi + CentralReach carry the official docs URLs", () => {
     expect(manifestById.get("apploi")!.capabilities.documentationUrl).toBe(
-      "https://integrate.apploi.com/",
+      "https://integrate.apploi.com/reference",
     );
     expect(manifestById.get("centralreach")!.capabilities.documentationUrl).toBe(
       "https://centralreach.com/resources/api/requests/",

@@ -21,6 +21,7 @@ import { useRecruitingStaffingNeeds, type RecruitingStaffingNeed } from "@/hooks
 import { useRecruitingCandidateLookup } from "@/hooks/useRecruitingCandidateLookup";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
+import { StaffingHandoffReviewQueue } from "@/components/recruiting/StaffingHandoffReviewQueue";
 
 // Recruiting → Staffing & Operations → Open Staffing Needs
 // Operational visibility layer that bridges client staffing demand,
@@ -349,6 +350,8 @@ export default function OSRecruitingStaffingNeeds() {
           <SummaryCard label="High-Risk Delays"     value={summary.highRisk}    icon={Flame}        tone="crit" onClick={() => setActiveChip("escalated")} />
           <SummaryCard label="Escalations"          value={summary.escalations} icon={Bell}         tone="crit" onClick={() => setActiveChip("escalated")} />
         </div>
+
+        <StaffingHandoffReviewQueue />
 
         {/* Live pill summary */}
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">

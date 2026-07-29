@@ -77,7 +77,7 @@ describe("provider adapter audit — capability contract", () => {
   it("Apploi + CentralReach documentationUrls point at the official pages", () => {
     const apploi = adapters.find((a) => a.id === "apploi")!;
     const cr = adapters.find((a) => a.id === "centralreach")!;
-    expect(apploi.capabilities!.documentationUrl).toBe("https://integrate.apploi.com/");
+    expect(apploi.capabilities!.documentationUrl).toBe("https://integrate.apploi.com/reference");
     expect(cr.capabilities!.documentationUrl).toBe(
       "https://centralreach.com/resources/api/requests/",
     );

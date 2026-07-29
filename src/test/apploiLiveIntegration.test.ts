@@ -52,6 +52,7 @@ describe("Apploi live integration — no secrets in frontend", () => {
     };
     for (const f of walk(path.join(process.cwd(), "src"))) {
       if (f.endsWith("apploiLiveIntegration.test.ts")) continue;
+      if (f.endsWith("recruitingProductionCompletion.test.ts")) continue;
       const src = fs.readFileSync(f, "utf8");
       // No direct browser calls to the provider.
       expect(src, f).not.toMatch(/fetch\([^)]*partners\.apploi\.com/);
@@ -66,7 +67,8 @@ describe("Apploi live integration — recruiting surfaces", () => {
     const src = read("src/hooks/useApploiIntegration.ts");
     expect(src).toMatch(/apploi_sync_health/);
     expect(src).toMatch(/export async function syncApploiNow/);
-    expect(src).toMatch(/functions\.invoke\("integration-run-sync"/);
+    // Manual sync now runs through the authorization-hardened cron function.
+    expect(src).toMatch(/functions\.invoke\("apploi-sync-cron"/);
     // Import maps candidates to a canonical job family.
     expect(src).toMatch(/classifyJobFamily/);
   });
