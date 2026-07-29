@@ -82,7 +82,7 @@ export const PROVIDER_READINESS_MANIFEST: ProviderReadinessEntry[] = [
     classification: "recruiting_ats",
     requiredSecrets: ["APPLOI_API_KEY", "APPLOI_TEAM_ID"],
     optionalSecrets: ["APPLOI_API_BASE_URL", "APPLOI_PROBE_PATH", "APPLOI_CANDIDATES_PATH"],
-    capabilities: {"probe": true, "pullSync": true, "webhook": true, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://integrate.apploi.com/", "operationalState": "read_only"},
+    capabilities: {"probe": true, "pullSync": true, "webhook": true, "oauth": false, "localOnly": false, "outboundDisabled": true, "documentationUrl": "https://integrate.apploi.com/reference", "operationalState": "read_only"},
   },
   {
     id: "centralreach",
