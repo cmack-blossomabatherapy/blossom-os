@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
-  Search, Sparkles, Brain, Send, Download, Bell, ArrowRight, Flame,
-  TrendingUp, TrendingDown, Minus, Clock, Users, Target, MapPin,
-  AlertTriangle, CheckCircle2, UserPlus, ClipboardList, RefreshCw,
+  Search, Sparkles, Download, Bell, ArrowRight, Flame,
+  TrendingUp, TrendingDown, Minus, Clock, Users, MapPin,
+  AlertTriangle, CheckCircle2, ClipboardList, RefreshCw,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
+import { useBlossomAI } from "@/components/ai/BlossomAIAssistant";
 import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import {
   useRecruitingCandidates,
@@ -116,6 +119,48 @@ function TrendIcon({ dir }: { dir: "up" | "down" | "flat" }) {
   return <Minus className="size-3.5" />;
 }
 
+/** Weekly buckets (oldest → newest) for a list of ISO dates. */
+function weeklySeries(dates: Array<string | null | undefined>, weeks = 7): number[] {
+  const now = Date.now();
+  const week = 7 * 24 * 60 * 60 * 1000;
+  const buckets = new Array(weeks).fill(0);
+  dates.forEach((d) => {
+    if (!d) return;
+    const t = new Date(d).getTime();
+    if (Number.isNaN(t)) return;
+    const idx = weeks - 1 - Math.floor((now - t) / week);
+    if (idx >= 0 && idx < weeks) buckets[idx] += 1;
+  });
+  return buckets;
+}
+
+function seriesDirection(values: number[]): "up" | "down" | "flat" {
+  if (values.length < 2) return "flat";
+  const half = Math.floor(values.length / 2);
+  const first = values.slice(0, half).reduce((a, b) => a + b, 0);
+  const last = values.slice(half).reduce((a, b) => a + b, 0);
+  if (last > first) return "up";
+  if (last < first) return "down";
+  return "flat";
+}
+
+function downloadCsv(filename: string, rows: Array<Record<string, string | number>>) {
+  if (rows.length === 0) {
+    toast.info("Nothing to export for the current filters.");
+    return;
+  }
+  const headers = Object.keys(rows[0]);
+  const escape = (v: string | number) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => escape(r[h])).join(","))].join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast.success(`Exported ${rows.length} rows`);
+}
+
 const CHIPS = [
   { key: "all",          label: "All Operations" },
   { key: "rbt",          label: "RBT Recruiting" },
@@ -131,6 +176,7 @@ const CHIPS = [
 const TIME_RANGES = ["7d", "30d", "90d", "QTD"] as const;
 
 export default function OSRecruitingPerformance() {
+  const navigate = useNavigate();
   const recruitingCandidates = useLegacyRecruitingCandidates();
   // Live operational data sources (Pass 3): used to back analytics with real tables
   // so performance metrics drift toward live persistence rather than static demo data.
@@ -140,7 +186,7 @@ export default function OSRecruitingPerformance() {
   const { items: liveBackground } = useRecruitingBackgroundChecks();
   const { items: liveOnboarding } = useRecruitingOnboarding();
   const { items: liveFollowups } = useRecruitingFollowups();
-  const { items: liveEscalations } = useRecruitingEscalations();
+  const { items: liveEscalations, createEscalation } = useRecruitingEscalations();
   const { items: liveStaffingNeeds } = useRecruitingStaffingNeeds();
   // Touch so unused-warning is silenced; presence is verified by Pass 3 tests.
   void [liveCandidates, liveInterviews, liveOffers, liveBackground, liveOnboarding, liveFollowups, liveEscalations, liveStaffingNeeds];
@@ -150,8 +196,6 @@ export default function OSRecruitingPerformance() {
   const [recruiterF, setRecruiterF] = useState("all");
   const [roleF, setRoleF] = useState<"all" | "RBT" | "BCBA">("all");
   const [range, setRange] = useState<typeof TIME_RANGES[number]>("30d");
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiQ, setAiQ] = useState("");
 
   const base = useMemo(() => {
     return recruitingCandidates.filter((c) => {
@@ -217,7 +261,11 @@ export default function OSRecruitingPerformance() {
     const offered = base.filter((c) => ["Offer Sent", "Offer Accepted", "Onboarding Handoff", "Background Check", "Orientation", "Training", "Ready for Staffing"].includes(c.candidateStatus));
     const avgOffer = offered.length ? Math.round((offered.reduce((s, c) => s + Math.min(c.daysInStage + 6, 14), 0) / offered.length) * 10) / 10 : 0;
     const onboarded = base.filter((c) => c.onboardingStatus === "Complete");
-    const avgOnboarding = onboarded.length ? 12.4 : 0;
+    const inOnboarding = base.filter((c) => stageOf(c) === "onboarding");
+    const avgOnboarding = inOnboarding.length
+      ? Math.round((inOnboarding.reduce((s, c) => s + c.daysInStage, 0) / inOnboarding.length) * 10) / 10
+      : 0;
+    void onboarded;
     const orientationEligible = base.filter((c) => c.backgroundCheck === "Clear");
     const orientationDone = orientationEligible.filter((c) => c.orientation === "Complete").length;
     const orientationRate = orientationEligible.length ? Math.round((orientationDone / orientationEligible.length) * 100) : 0;
@@ -342,14 +390,50 @@ export default function OSRecruitingPerformance() {
     }).sort((a, b) => (a.tone === "crit" ? -1 : 1) - (b.tone === "crit" ? -1 : 1) || b.days - a.days);
   }, [base, activeChip, search]);
 
-  // Trends (lightweight)
-  const trends = useMemo(() => ({
-    hiring:        { values: [12, 10, 11, 9, 8, 9, 7], dir: "down" as const, label: "Hiring speed", unit: "days", current: 9 },
-    onboarding:    { values: [62, 65, 68, 70, 72, 75, 78], dir: "up" as const, label: "Onboarding completion", unit: "%", current: 78 },
-    orientation:   { values: [70, 72, 74, 73, 76, 77, 80], dir: "up" as const, label: "Orientation completion", unit: "%", current: 80 },
-    fulfillment:   { values: [55, 58, 60, 59, 62, 63, 65], dir: "up" as const, label: "Staffing fulfillment", unit: "%", current: snapshot.fulfillRate || 65 },
-    source:        { values: [40, 42, 45, 43, 48, 50, 52], dir: "up" as const, label: "Apploi source quality", unit: "%", current: 52 },
-  }), [snapshot.fulfillRate]);
+  // Trends derived entirely from live records. Nothing here is simulated:
+  // when there is no recruiting history the cards render honest zeros.
+  const trends = useMemo(() => {
+    const applied = weeklySeries(liveCandidates.map((c) => c.applied_date));
+    const stageMoves = weeklySeries(liveCandidates.map((c) => c.stage_entered_at));
+    const offersSent = weeklySeries(liveOffers.map((o) => o.sent_at));
+    const needsOpened = weeklySeries(liveStaffingNeeds.map((n) => n.opened_at));
+    const escalations = weeklySeries(liveEscalations.map((e) => e.opened_at));
+    const mk = (label: string, unit: string, values: number[]) => ({
+      label, unit, values,
+      current: values[values.length - 1] ?? 0,
+      dir: seriesDirection(values),
+    });
+    return {
+      applications: mk("Applications received", "", applied),
+      movement:     mk("Stage movements", "", stageMoves),
+      offers:       mk("Offers sent", "", offersSent),
+      demand:       mk("Staffing requests opened", "", needsOpened),
+      escalations:  mk("Escalations raised", "", escalations),
+    };
+  }, [liveCandidates, liveOffers, liveStaffingNeeds, liveEscalations]);
+
+  const hasHistory = useMemo(
+    () => Object.values(trends).some((t) => t.values.some((v) => v > 0)),
+    [trends],
+  );
+
+  const exportSnapshot = useCallback(() => {
+    downloadCsv(
+      `recruiting-performance-${new Date().toISOString().slice(0, 10)}.csv`,
+      bottlenecks.map((b) => ({
+        Type: b.type,
+        Candidate: b.candidate,
+        Recruiter: b.recruiter,
+        State: b.state,
+        "Days in stage": b.days,
+        Impact: b.impact,
+        "Next action": b.nextAction,
+        Severity: b.tone === "crit" ? "Critical" : "Watch",
+      })),
+    );
+  }, [bottlenecks]);
+
+  const aiContext = `Recruiting Performance view. Filters: state=${stateF}, recruiter=${recruiterF}, role=${roleF}, range=${range}. ${base.length} active candidates, ${bottlenecks.length} open bottlenecks, ${clientNeeds.length} open staffing requests.`;
 
   return (
     <OSShell>
@@ -381,7 +465,7 @@ export default function OSRecruitingPerformance() {
                 <button key={r} onClick={() => setRange(r)} className={cn("h-8 px-3 rounded-lg transition", range === r ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{r}</button>
               ))}
             </div>
-            <button className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-2 text-sm">
+            <button onClick={exportSnapshot} className="h-10 px-4 rounded-xl bg-secondary text-secondary-foreground border border-border/70 hover:bg-muted transition inline-flex items-center gap-2 text-sm">
               <Download className="size-4" /> Export
             </button>
           </div>
@@ -400,14 +484,14 @@ export default function OSRecruitingPerformance() {
 
         {/* Snapshot */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <SnapCard label="Avg time to interview" value={`${snapshot.avgInterview}d`} dir="down" sparkTone="ok" spark={[10,9,9,8,8,7,7]} hint="Target ≤ 5d" />
-          <SnapCard label="Avg time to offer" value={`${snapshot.avgOffer}d`} dir="flat" sparkTone="info" spark={[11,11,10,10,11,10,10]} hint="Target ≤ 8d" />
-          <SnapCard label="Avg onboarding time" value={`${snapshot.avgOnboarding}d`} dir="down" sparkTone="ok" spark={[16,15,14,14,13,13,12]} hint="Target ≤ 10d" />
-          <SnapCard label="Orientation completion" value={`${snapshot.orientationRate}%`} dir="up" sparkTone="ok" spark={[68,70,72,74,76,78,80]} hint="Of cleared candidates" />
-          <SnapCard label="Staffing fulfillment" value={`${snapshot.fulfillRate}%`} dir="up" sparkTone="info" spark={[55,58,60,59,62,63,65]} hint="Ready vs. client need" />
-          <SnapCard label="Stalled 7+ days" value={`${snapshot.stalled}`} dir={snapshot.stalled > 4 ? "up" : "flat"} sparkTone={snapshot.stalled > 4 ? "crit" : "warn"} spark={[3,4,5,5,6,6,snapshot.stalled]} hint="Across all stages" />
-          <SnapCard label="Urgent staffing gaps" value={`${snapshot.urgentGaps}`} dir="up" sparkTone="crit" spark={[2,3,3,4,4,5,snapshot.urgentGaps]} hint="High priority clients" />
-          <SnapCard label="Overdue follow-ups" value={`${snapshot.followUps}`} dir="flat" sparkTone="warn" spark={[4,5,4,5,5,4,snapshot.followUps]} hint="Recruiter actions due" />
+          <SnapCard label="Avg time to interview" value={`${snapshot.avgInterview}d`} hint="Target ≤ 5d" />
+          <SnapCard label="Avg time to offer" value={`${snapshot.avgOffer}d`} hint="Target ≤ 8d" />
+          <SnapCard label="Avg days in onboarding" value={`${snapshot.avgOnboarding}d`} hint="Target ≤ 10d" />
+          <SnapCard label="Orientation completion" value={`${snapshot.orientationRate}%`} hint="Of cleared candidates" />
+          <SnapCard label="Staffing fulfillment" value={`${snapshot.fulfillRate}%`} hint="Ready vs. client need" />
+          <SnapCard label="Stalled 7+ days" value={`${snapshot.stalled}`} hint="Across all stages" tone={snapshot.stalled > 0 ? "crit" : "ok"} />
+          <SnapCard label="Urgent staffing gaps" value={`${snapshot.urgentGaps}`} hint="High priority clients" tone={snapshot.urgentGaps > 0 ? "crit" : "ok"} />
+          <SnapCard label="Overdue follow-ups" value={`${snapshot.followUps}`} hint="Recruiter actions due" tone={snapshot.followUps > 0 ? "warn" : "ok"} />
         </section>
 
         {/* Filter chips */}
@@ -588,13 +672,31 @@ export default function OSRecruitingPerformance() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button className="h-8 px-2.5 rounded-lg text-xs bg-card border border-border/60 hover:bg-muted transition inline-flex items-center gap-1">
+                    <button
+                      onClick={() => navigate(base.find((c) => c.name === b.candidate)?.role === "BCBA" ? "/recruiting/bcba" : "/recruiting/rbt")}
+                      className="h-8 px-2.5 rounded-lg text-xs bg-card border border-border/60 hover:bg-muted transition inline-flex items-center gap-1"
+                    >
                       <ArrowRight className="size-3.5" /> {b.nextAction}
                     </button>
-                    <button title="Escalate" className="size-8 rounded-lg bg-card border border-border/60 hover:bg-muted transition grid place-items-center">
+                    <button
+                      title="Escalate"
+                      onClick={() => createEscalation({
+                        title: `${b.type} — ${b.candidate}`,
+                        candidate_id: base.find((c) => c.name === b.candidate)?.id ?? null,
+                        reason: b.impact,
+                        severity: b.tone === "crit" ? "High" : "Medium",
+                        owner: b.recruiter,
+                        notes: `${b.days}d in stage · ${b.state} · next action: ${b.nextAction}`,
+                      })}
+                      className="size-8 rounded-lg bg-card border border-border/60 hover:bg-muted transition grid place-items-center"
+                    >
                       <Flame className="size-3.5 text-muted-foreground" />
                     </button>
-                    <button title="Notify staffing" className="size-8 rounded-lg bg-card border border-border/60 hover:bg-muted transition grid place-items-center">
+                    <button
+                      title="Open staffing requests"
+                      onClick={() => navigate("/recruiting/staffing-needs")}
+                      className="size-8 rounded-lg bg-card border border-border/60 hover:bg-muted transition grid place-items-center"
+                    >
                       <Bell className="size-3.5 text-muted-foreground" />
                     </button>
                   </div>
@@ -610,6 +712,9 @@ export default function OSRecruitingPerformance() {
             <h2 className="text-lg font-semibold tracking-tight">Trend insights</h2>
             <span className="text-xs text-muted-foreground">Last 7 weeks</span>
           </div>
+          {!hasHistory ? (
+            <EmptyState text="No recruiting activity recorded in the last 7 weeks yet. Trends appear as candidates, offers and staffing requests are logged." />
+          ) : (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {Object.entries(trends).map(([k, t]) => (
               <div key={k} className="rounded-xl border border-border/60 bg-muted/30 p-4">
@@ -621,87 +726,69 @@ export default function OSRecruitingPerformance() {
                   <Spark values={t.values} tone={t.dir === "up" ? "ok" : t.dir === "down" ? "info" : "muted"} />
                 </div>
                 <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1.5">
-                  <TrendIcon dir={t.dir} /> {t.dir === "up" ? "improving" : t.dir === "down" ? "decreasing" : "flat"}
+                  <TrendIcon dir={t.dir} /> {t.dir === "up" ? "rising" : t.dir === "down" ? "falling" : "flat"} · this week
                 </div>
               </div>
             ))}
           </div>
+          )}
         </section>
 
         {/* Quick actions */}
         <section className="rounded-2xl bg-card border border-border/70 p-4 flex flex-wrap gap-2">
-          <QA icon={Download} label="Export recruiting report" />
-          <QA icon={Flame} label="Escalate staffing delay" />
-          <QA icon={UserPlus} label="Assign recruiter" />
-          <QA icon={Bell} label="Notify staffing team" />
-          <QA icon={ClipboardList} label="Review stalled candidates" />
-          <QA icon={RefreshCw} label="Review onboarding delays" />
-          <QA icon={CheckCircle2} label="Review orientation delays" />
-          <QA icon={Target} label="Export operational snapshot" />
+          <QA icon={Download} label="Export recruiting report" onClick={exportSnapshot} />
+          <QA icon={Flame} label="High-risk bottlenecks" onClick={() => setActiveChip("highrisk")} />
+          <QA icon={Bell} label="Open staffing requests" onClick={() => navigate("/recruiting/staffing-needs")} />
+          <QA icon={ClipboardList} label="Review stalled candidates" onClick={() => setActiveChip("stalled")} />
+          <QA icon={RefreshCw} label="Review onboarding delays" onClick={() => setActiveChip("onboarding")} />
+          <QA icon={CheckCircle2} label="Review orientation delays" onClick={() => setActiveChip("orientation")} />
         </section>
 
-        {/* Operational Insights floating */}
-        <button
-          onClick={() => setAiOpen((v) => !v)}
-          className="fixed bottom-6 right-6 z-40 h-12 px-5 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition inline-flex items-center gap-2 text-sm font-medium"
-        >
-          <Sparkles className="size-4" /> Operational Insights
-        </button>
-        {aiOpen && (
-          <div className="fixed bottom-24 right-6 z-40 w-[360px] rounded-2xl bg-card border border-border/70 shadow-2xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="size-8 rounded-full bg-primary/10 text-primary grid place-items-center"><Brain className="size-4" /></div>
-              <div>
-                <div className="text-sm font-semibold leading-tight">Blossom AI</div>
-                <div className="text-[11px] text-muted-foreground">Scoped to recruiting performance</div>
-              </div>
-            </div>
-            <div className="space-y-1.5 mb-3">
-              {[
-                "Where are recruiting bottlenecks happening?",
-                "Which staffing requests are highest risk?",
-                "Show stalled onboarding workflows.",
-                "Which states need recruiting support?",
-                "Which recruiters need operational support?",
-              ].map((p) => (
-                <button key={p} onClick={() => setAiQ(p)} className="w-full text-left text-xs px-3 py-2 rounded-lg bg-muted/60 hover:bg-muted transition">
-                  {p}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                value={aiQ}
-                onChange={(e) => setAiQ(e.target.value)}
-                placeholder="Ask about recruiting operations…"
-                className="flex-1 h-9 rounded-lg bg-muted/60 border border-border px-3 text-xs outline-none"
-              />
-              <button className="size-9 rounded-lg bg-primary text-primary-foreground grid place-items-center hover:opacity-90">
-                <Send className="size-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Operational Insights — opens the real Blossom AI assistant.
+            Rendered inside <OSShell> because BlossomAIProvider lives there. */}
+        <OperationalInsightsButton contextText={aiContext} />
       </div>
     </OSShell>
   );
 }
 
+function OperationalInsightsButton({ contextText }: { contextText: string }) {
+  const blossom = useBlossomAI();
+  return (
+    <button
+      onClick={() => blossom.open({
+        title: "Recruiting performance",
+        contextText,
+        suggestions: [
+          "Where are recruiting bottlenecks happening?",
+          "Which staffing requests are highest risk?",
+          "Show stalled onboarding workflows.",
+          "Which states need recruiting support?",
+          "Which recruiters need operational support?",
+        ],
+      })}
+      className="fixed bottom-6 right-6 z-40 h-12 px-5 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition inline-flex items-center gap-2 text-sm font-medium"
+    >
+      <Sparkles className="size-4" /> Operational Insights
+    </button>
+  );
+}
+
 function SnapCard({
-  label, value, hint, dir, spark, sparkTone,
+  label, value, hint, tone = "info",
 }: {
-  label: string; value: string; hint: string;
-  dir: "up" | "down" | "flat"; spark: number[]; sparkTone: Tone;
+  label: string; value: string; hint: string; tone?: Tone;
 }) {
   return (
     <div className="rounded-2xl bg-card border border-border/70 p-4 transition hover:border-border">
       <div className="text-[11px] text-muted-foreground">{label}</div>
       <div className="flex items-end justify-between mt-1.5">
-        <div className="text-2xl font-semibold tracking-tight">{value}</div>
-        <Spark values={spark} tone={sparkTone} />
+        <div className={cn(
+          "text-2xl font-semibold tracking-tight",
+          tone === "crit" ? "text-destructive" : tone === "warn" ? "text-amber-700 dark:text-amber-400" : "text-foreground",
+        )}>{value}</div>
       </div>
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-2">
-        <TrendIcon dir={dir} />
         <span>{hint}</span>
       </div>
     </div>
@@ -726,9 +813,9 @@ function MiniStat({ label, value, tone }: { label: string; value: number; tone: 
   );
 }
 
-function QA({ icon: Icon, label }: { icon: typeof Download; label: string }) {
+function QA({ icon: Icon, label, onClick }: { icon: typeof Download; label: string; onClick: () => void }) {
   return (
-    <button className="h-9 px-3.5 rounded-xl bg-muted/60 hover:bg-muted border border-border/60 transition inline-flex items-center gap-2 text-xs font-medium">
+    <button onClick={onClick} className="h-9 px-3.5 rounded-xl bg-muted/60 hover:bg-muted border border-border/60 transition inline-flex items-center gap-2 text-xs font-medium">
       <Icon className="size-3.5" /> {label}
     </button>
   );
