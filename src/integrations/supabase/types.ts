@@ -25837,48 +25837,128 @@ export type Database = {
           },
         ]
       }
+      recruiting_staffing_need_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          from_status: string | null
+          id: string
+          need_id: string
+          note: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          need_id: string
+          note?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          need_id?: string
+          note?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_staffing_need_events_need_id_fkey"
+            columns: ["need_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_staffing_needs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recruiting_staffing_needs: {
         Row: {
+          city: string | null
+          client_id: string | null
           client_label: string
           created_at: string
+          decision_reason: string | null
+          desired_start_date: string | null
+          entered_by: string | null
           filled_at: string | null
+          handoff_blocker: string | null
+          handoff_status: string
           hours_per_week: number | null
           id: string
           matched_candidate_id: string | null
           notes: string | null
           opened_at: string
+          preference_notes: string | null
           priority: string | null
+          required_availability: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           role_needed: Database["public"]["Enums"]["recruiting_role"]
+          service_setting: string | null
+          source: string | null
           state: Database["public"]["Enums"]["recruiting_state"]
           status: string
           updated_at: string
         }
         Insert: {
+          city?: string | null
+          client_id?: string | null
           client_label: string
           created_at?: string
+          decision_reason?: string | null
+          desired_start_date?: string | null
+          entered_by?: string | null
           filled_at?: string | null
+          handoff_blocker?: string | null
+          handoff_status?: string
           hours_per_week?: number | null
           id?: string
           matched_candidate_id?: string | null
           notes?: string | null
           opened_at?: string
+          preference_notes?: string | null
           priority?: string | null
+          required_availability?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           role_needed?: Database["public"]["Enums"]["recruiting_role"]
+          service_setting?: string | null
+          source?: string | null
           state?: Database["public"]["Enums"]["recruiting_state"]
           status?: string
           updated_at?: string
         }
         Update: {
+          city?: string | null
+          client_id?: string | null
           client_label?: string
           created_at?: string
+          decision_reason?: string | null
+          desired_start_date?: string | null
+          entered_by?: string | null
           filled_at?: string | null
+          handoff_blocker?: string | null
+          handoff_status?: string
           hours_per_week?: number | null
           id?: string
           matched_candidate_id?: string | null
           notes?: string | null
           opened_at?: string
+          preference_notes?: string | null
           priority?: string | null
+          required_availability?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           role_needed?: Database["public"]["Enums"]["recruiting_role"]
+          service_setting?: string | null
+          source?: string | null
           state?: Database["public"]["Enums"]["recruiting_state"]
           status?: string
           updated_at?: string
@@ -32107,6 +32187,17 @@ export type Database = {
       }
       recruiting_can_read: { Args: { _user_id: string }; Returns: boolean }
       recruiting_can_write: { Args: { _user_id: string }; Returns: boolean }
+      recruiting_client_staffing_options: {
+        Args: { _limit?: number; _search?: string }
+        Returns: {
+          client_id: string
+          clinic: string
+          display_label: string
+          service_location: string
+          staffing_status: string
+          state: string
+        }[]
+      }
       refresh_evaluation_leadership_status: {
         Args: { _evaluation_id: string }
         Returns: undefined

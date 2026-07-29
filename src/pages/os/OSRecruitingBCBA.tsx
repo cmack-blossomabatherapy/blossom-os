@@ -17,6 +17,7 @@ import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandid
 import { useRecruitingMutations } from "@/hooks/useRecruitingMutations";
 import { getClientStaffingNeeds, type StaffingClientNeed } from "@/data/staffing";
 import { useSlideout } from "@/hooks/useSlideout";
+import { StaffingHandoffPanel } from "@/components/recruiting/StaffingHandoffPanel";
 import { cn } from "@/lib/utils";
 import { notifyApploiNotConnected } from "@/lib/recruiting/apploi";
 
@@ -711,6 +712,11 @@ function CandidateSlideout({
               </div>
             ))}
           </Block>
+
+          <StaffingHandoffPanel
+            candidate={{ id: c.id, name: c.name, state: c.state, city: c.city, stage: c.candidateStatus }}
+            roleNeeded="BCBA"
+          />
 
           {/* Stage transitions */}
           <div>
