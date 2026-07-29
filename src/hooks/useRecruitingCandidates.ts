@@ -490,6 +490,34 @@ export function useRecruitingEscalations() {
       .eq("id", id);
     if (error) toast.error("Failed to resolve escalation");
   }, []);
+  /**
+   * Real persistence for "Escalate" actions. Previously several recruiting
+   * surfaces rendered an escalate button with no backing write.
+   */
+  const createEscalation = useCallback(async (input: {
+    title: string;
+    candidate_id?: string | null;
+    reason?: string | null;
+    severity?: string;
+    owner?: string | null;
+    notes?: string | null;
+  }) => {
+    const { error } = await supabase.from("recruiting_escalations").insert({
+      title: input.title,
+      candidate_id: input.candidate_id ?? null,
+      reason: input.reason ?? null,
+      severity: input.severity ?? "High",
+      status: "Open",
+      owner: input.owner ?? null,
+      notes: input.notes ?? null,
+    });
+    if (error) {
+      toast.error("Could not raise the escalation. Please try again.");
+      return false;
+    }
+    toast.success("Escalation raised");
+    return true;
+  }, []);
   useEffect(() => {
     refetch();
     const ch = supabase
@@ -498,7 +526,7 @@ export function useRecruitingEscalations() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [refetch]);
-  return { items, loading, refetch, resolve };
+  return { items, loading, refetch, resolve, createEscalation };
 }
 
 export interface RecruitingMessage {
