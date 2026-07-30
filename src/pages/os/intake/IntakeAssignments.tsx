@@ -107,7 +107,7 @@ export default function IntakeAssignments() {
                   disabled={!director}
                   aria-label={`Select ${l.childName || l.parentName}`}
                 />
-                <LeadNameLink lead={l} />
+                <LeadNameLink leadId={l.id}>{l.childName || l.parentName || "Unknown"}</LeadNameLink>
                 <Badge variant="secondary" className="ml-auto">{canonicalIntakeStage(l.status)}</Badge>
               </label>
             ))}
@@ -156,7 +156,7 @@ export default function IntakeAssignments() {
           ) : (
             slaRisk.map((l) => (
               <div key={l.id} className="flex items-center justify-between gap-3 text-sm">
-                <LeadNameLink lead={l} />
+                <LeadNameLink leadId={l.id}>{l.childName || l.parentName || "Unknown"}</LeadNameLink>
                 <span className="text-muted-foreground whitespace-nowrap">
                   {l.daysInStage}d in {canonicalIntakeStage(l.status)}
                 </span>

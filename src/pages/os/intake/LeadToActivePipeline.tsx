@@ -79,6 +79,7 @@ export default function LeadToActivePipeline() {
       toast.error(decision.reason);
       return;
     }
+    const viaException = decision.viaException;
     const stored = INTAKE_STAGE_TO_STORED_STATUS[target] as LeadStatus;
     const preview = guardIntakeMutation(
       direction === "forward" ? "advance stage" : "revert stage",
@@ -89,9 +90,7 @@ export default function LeadToActivePipeline() {
     if (direction === "forward") moveStage([lead.id], stored);
     else revertStage(lead.id, stored, 0, "Manual workflow correction");
     toast.success(
-      decision.allowed && decision.viaException
-        ? `Moved to ${target} via Director exception.`
-        : `Moved to ${target}.`,
+      viaException ? `Moved to ${target} via Director exception.` : `Moved to ${target}.`,
     );
   };
 
