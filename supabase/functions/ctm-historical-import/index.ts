@@ -175,6 +175,8 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
   let exhausted = false;
   const responseShapes = new Set<string>(Array.isArray((job.summary as any)?.response_shapes) ? (job.summary as any).response_shapes : []);
   const pageBudget = job.dry_run ? DRY_RUN_BUDGET_PAGES : WORK_BUDGET_PAGES;
+  // Backend-driven Intake qualification config, loaded once per job run.
+  const qualSettings = await loadCtmQualificationSettings(service as any);
 
   const startUpdate = await service.from("ctm_import_jobs").update({
     status: "running",
