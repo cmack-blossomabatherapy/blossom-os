@@ -37,7 +37,9 @@ export function rolesForTitle(title: string): AppRole[] {
   if (t === "finance") return ["finance"];
   if (t === "payroll") return ["payroll_admin", "finance"];
   if (t.includes("human resources")) return ["hr_admin"];
-  if (t.includes("recruiting")) return ["recruiting_assistant", "hr_manager"];
+  if (t.includes("director of recruiting") || t.includes("recruiting director") || t.includes("recruiting lead"))
+    return ["recruiting_lead"];
+  if (t.includes("recruiting")) return ["recruiting_coordinator"];
   if (t.includes("marketing")) return ["staff"];
   if (t.includes("administrative manager") || t.includes("executive assistant") || t.includes("administrative assistant"))
     return ["staff"];
@@ -53,7 +55,7 @@ export function rolesForTitle(title: string): AppRole[] {
   if (t.includes("regional state director") || t.includes("state director")) return ["state_director"];
   if (t.includes("case manager")) return ["clinic"];
   if (t.includes("staffing")) return ["staffing"];
-  if (t.includes("recruitment")) return ["recruiting_assistant"];
+  if (t.includes("recruitment")) return ["recruiting_coordinator"];
   if (t.includes("training") || t.includes("rbt rep")) return ["staff"];
   return ["staff"];
 }
