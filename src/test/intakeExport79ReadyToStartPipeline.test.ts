@@ -74,18 +74,17 @@ describe("Export 79 — Operationalize Ready-To-Start pipeline", () => {
   it("LeadToActivePipeline uses canonical movement (no partial STAGE_TO_LEAD_STATUS map)", () => {
     const src = read("src/pages/os/intake/LeadToActivePipeline.tsx");
     expect(src).not.toMatch(/STAGE_TO_LEAD_STATUS/);
-    expect(src).toMatch(/getNextFamilyLeadStage/);
-    expect(src).toMatch(/getPreviousFamilyLeadStage/);
-    expect(src).toMatch(/FAMILY_LEAD_STAGE_OWNERS/);
-    expect(src).toMatch(/managed in a separate workflow/);
+    expect(src).toMatch(/getNextIntakeStage/);
+    expect(src).toMatch(/getPreviousIntakeStage/);
+    expect(src).toMatch(/INTAKE_STAGE_OWNERS/);
+    expect(src).toMatch(/INTAKE_STAGE_TO_STORED_STATUS/);
   });
 
-  it("LeadToActivePipeline hard-stops forward movement at Ready to Start Services", () => {
+  it("LeadToActivePipeline hard-stops Intake at Admission Ready", () => {
     const src = read("src/pages/os/intake/LeadToActivePipeline.tsx");
-    expect(src).toMatch(/isPipelineEnd/);
-    expect(src).toMatch(/Hard stop/);
-    expect(src).toMatch(/Pipeline end/);
-    expect(src).toMatch(/Active patient operations start after this point/);
+    expect(src).toMatch(/isAdmissionReady/);
+    expect(src).toMatch(/Admission Ready · Intake complete/);
+    expect(src).toMatch(/CENTRALREACH_BOUNDARY_NOTE/);
     expect(src).toMatch(/<Ban /);
   });
 
