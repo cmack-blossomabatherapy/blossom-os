@@ -1539,6 +1539,9 @@ export default function Integrations() {
           <RecruitingIntegrationHealthPanel />
         </div>
 
+        {/* Apploi applicant scope — Super Admin diagnostic entry point. */}
+        <ApploiApplicantScopeLink />
+
         {/* Source of Truth — which external system owns which operational
             domain. Blossom OS is the workflow layer, not the system of
             record for these. */}
