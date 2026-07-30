@@ -160,6 +160,43 @@ export function buildAdmissionChecklist(
   });
 }
 
+/** Packet status label shared by cards and exports. */
+export function packetStatusLabel(
+  lead: Lead,
+  admission: ReturnType<typeof evaluateAdmissionReadiness>,
+  packet?: AdmissionPacketRecord,
+): string {
+  if (packet?.handoffMarkedAt) return "Handed off to CentralReach";
+  if (admission.submissionReady) return "Approved — ready for CR";
+  if (isBlocked(lead)) return "Blocked";
+  if (!packet || packet.items.length === 0) return "Packet not created";
+  if (admission.checklistSatisfied) return "Awaiting Director approval";
+  return "In prep";
+}
+
+export function buildExportRow(lead: Lead, packet?: AdmissionPacketRecord): PacketExportRow {
+  const checklist = buildAdmissionChecklist(lead, packet?.items ?? []);
+  const admission = evaluateAdmissionReadiness(checklist, packet?.approval ?? {});
+  return {
+    leadId: lead.id,
+    childName: lead.childName ?? "",
+    parentName: lead.parentName ?? "",
+    state: lead.state ?? "",
+    owner: lead.owner ?? "",
+    insurance: lead.insurance ?? "",
+    stage: canonicalFamilyLeadStage(lead.status) ?? String(lead.status ?? ""),
+    status: packetStatusLabel(lead, admission, packet),
+    requiredComplete: admission.completeCount + admission.waivedCount,
+    requiredTotal: admission.requiredCount,
+    blockers: admission.blockers,
+    approvedBy: admission.reviewer,
+    approvedAt: admission.approvedAt,
+    handoffMarkedAt: packet?.handoffMarkedAt ?? null,
+    handoffReference: packet?.handoffReference ?? null,
+    checklist,
+  };
+}
+
 export default function CentralReachPacketPrep() {
   const { leads: allLeads, loading } = useLeads();
   const { matches } = useIntakeStateFilter();
