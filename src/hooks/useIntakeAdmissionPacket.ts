@@ -14,11 +14,15 @@ export interface AdmissionPacketRecord {
   approval: AdmissionApproval;
   handoffMarkedAt: string | null;
   handoffReference: string | null;
+  /** Most recent checklist sync timestamp (server-side). */
+  lastSyncedAt: string | null;
 }
 
 export type AdmissionPacketMap = Record<string, AdmissionPacketRecord>;
 
-const EMPTY: AdmissionPacketRecord = { items: [], approval: {}, handoffMarkedAt: null, handoffReference: null };
+const EMPTY: AdmissionPacketRecord = {
+  items: [], approval: {}, handoffMarkedAt: null, handoffReference: null, lastSyncedAt: null,
+};
 
 export function useAdmissionPackets(leadIds: string[]) {
   const key = [...leadIds].sort().join(",");
@@ -29,7 +33,7 @@ export function useAdmissionPackets(leadIds: string[]) {
       const [itemsRes, approvalsRes] = await Promise.all([
         (supabase as any)
           .from("intake_admission_checklist_items")
-          .select("lead_id,item_key,label,required,status,missing,waived_by,waived_reason")
+          .select("lead_id,item_key,label,required,status,missing,waived_by,waived_reason,updated_at")
           .in("lead_id", leadIds),
         (supabase as any)
           .from("intake_admission_approvals")
@@ -51,6 +55,9 @@ export function useAdmissionPackets(leadIds: string[]) {
           waivedBy: row.waived_by,
           waivedReason: row.waived_reason,
         });
+        if (row.updated_at && (!rec.lastSyncedAt || row.updated_at > rec.lastSyncedAt)) {
+          rec.lastSyncedAt = row.updated_at;
+        }
       }
       for (const row of approvalsRes.data ?? []) {
         const rec = (map[row.lead_id] ??= { ...EMPTY, items: [] });
@@ -135,6 +142,35 @@ export function useMarkAdmissionHandoff() {
         p_reference: input.reference ?? null,
       });
       if (error) throw error;
+    },
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * Packet creation + status syncing.
+ *
+ * Persists the derived checklist for a lead so the packet exists server-side
+ * and its statuses match the current lead record. Director waivers are never
+ * overwritten — the caller passes the merged checklist.
+ */
+export function useSyncAdmissionPacket() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: async (input: { leadId: string; items: AdmissionChecklistItem[] }) => {
+      for (const item of input.items) {
+        if (item.status === "waived") continue; // preserve Director waivers as-is
+        const { error } = await (supabase as any).rpc("intake_set_admission_item", {
+          p_lead_id: input.leadId,
+          p_item_key: item.key,
+          p_label: item.label,
+          p_required: item.required,
+          p_status: item.status,
+          p_missing: item.missing ?? [],
+          p_reason: null,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: invalidate,
   });

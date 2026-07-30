@@ -4,6 +4,7 @@ import {
   ArrowRight, CheckCircle2, Circle, FileWarning, ListChecks,
   ShieldQuestion, Users, MapPin, FileText, HeartHandshake, Inbox,
   StickyNote, AlertCircle, Filter, Search, ShieldCheck, MinusCircle,
+  Download, RefreshCw, FilePlus2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
@@ -27,9 +28,17 @@ import {
   useApproveAdmission,
   useMarkAdmissionHandoff,
   useSetAdmissionItem,
+  useSyncAdmissionPacket,
   admissionPacketErrorMessage,
   type AdmissionPacketRecord,
 } from "@/hooks/useIntakeAdmissionPacket";
+import {
+  buildPacketQueueCsv,
+  buildPacketHandoffSheet,
+  downloadTextFile,
+  packetFileSlug,
+  type PacketExportRow,
+} from "@/lib/intake/admissionPacketExport";
 import type { Lead } from "@/data/leads";
 
 type SectionKey =
@@ -151,6 +160,43 @@ export function buildAdmissionChecklist(
   });
 }
 
+/** Packet status label shared by cards and exports. */
+export function packetStatusLabel(
+  lead: Lead,
+  admission: ReturnType<typeof evaluateAdmissionReadiness>,
+  packet?: AdmissionPacketRecord,
+): string {
+  if (packet?.handoffMarkedAt) return "Handed off to CentralReach";
+  if (admission.submissionReady) return "Approved — ready for CR";
+  if (isBlocked(lead)) return "Blocked";
+  if (!packet || packet.items.length === 0) return "Packet not created";
+  if (admission.checklistSatisfied) return "Awaiting Director approval";
+  return "In prep";
+}
+
+export function buildExportRow(lead: Lead, packet?: AdmissionPacketRecord): PacketExportRow {
+  const checklist = buildAdmissionChecklist(lead, packet?.items ?? []);
+  const admission = evaluateAdmissionReadiness(checklist, packet?.approval ?? {});
+  return {
+    leadId: lead.id,
+    childName: lead.childName ?? "",
+    parentName: lead.parentName ?? "",
+    state: lead.state ?? "",
+    owner: lead.owner ?? "",
+    insurance: lead.insurance ?? "",
+    stage: canonicalFamilyLeadStage(lead.status) ?? String(lead.status ?? ""),
+    status: packetStatusLabel(lead, admission, packet),
+    requiredComplete: admission.completeCount + admission.waivedCount,
+    requiredTotal: admission.requiredCount,
+    blockers: admission.blockers,
+    approvedBy: admission.reviewer,
+    approvedAt: admission.approvedAt,
+    handoffMarkedAt: packet?.handoffMarkedAt ?? null,
+    handoffReference: packet?.handoffReference ?? null,
+    checklist,
+  };
+}
+
 export default function CentralReachPacketPrep() {
   const { leads: allLeads, loading } = useLeads();
   const { matches } = useIntakeStateFilter();
@@ -185,6 +231,50 @@ export default function CentralReachPacketPrep() {
 
   const leadIds = useMemo(() => rows.slice(0, 60).map((r) => r.lead.id), [rows]);
   const { data: packets } = useAdmissionPackets(leadIds);
+  const syncPacket = useSyncAdmissionPacket();
+  const [syncingAll, setSyncingAll] = useState(false);
+
+  const exportRows = useMemo<PacketExportRow[]>(
+    () => rows.map(({ lead }) => buildExportRow(lead, packets?.[lead.id])),
+    [rows, packets],
+  );
+
+  const exportQueue = () => {
+    if (exportRows.length === 0) {
+      toast.error("Nothing to export in this view.");
+      return;
+    }
+    downloadTextFile(
+      `centralreach-packet-queue-${new Date().toISOString().slice(0, 10)}.csv`,
+      buildPacketQueueCsv(exportRows),
+      "text/csv;charset=utf-8",
+    );
+    toast.success(`Exported ${exportRows.length} packet${exportRows.length === 1 ? "" : "s"}.`);
+  };
+
+  const syncAll = async () => {
+    const targets = rows.slice(0, 60);
+    if (targets.length === 0) return;
+    setSyncingAll(true);
+    let ok = 0;
+    try {
+      for (const { lead } of targets) {
+        try {
+          await syncPacket.mutateAsync({
+            leadId: lead.id,
+            items: buildAdmissionChecklist(lead, packets?.[lead.id]?.items ?? []),
+          });
+          ok += 1;
+        } catch (e) {
+          toast.error(admissionPacketErrorMessage(e));
+          break;
+        }
+      }
+    } finally {
+      setSyncingAll(false);
+    }
+    if (ok > 0) toast.success(`Synced ${ok} packet${ok === 1 ? "" : "s"} with the latest lead data.`);
+  };
 
   const totals = useMemo(() => {
     const ready    = rows.filter((r) => r.readiness.ready && !r.readiness.blocked).length;
@@ -202,6 +292,8 @@ export default function CentralReachPacketPrep() {
       actions={[
         { label: "CR Handoff Queue", icon: ArrowRight, variant: "default", to: "/authorizations/handoff" },
         { label: "Missing Info Queue", icon: FileWarning, to: "/intake/missing-information" },
+        { label: "Export queue (CSV)", icon: Download, onClick: exportQueue },
+        { label: syncingAll ? "Syncing…" : "Sync all packets", icon: RefreshCw, onClick: () => void syncAll() },
       ]}
     >
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -288,6 +380,7 @@ function PacketCard({
   const setItem = useSetAdmissionItem();
   const approve = useApproveAdmission();
   const markHandoff = useMarkAdmissionHandoff();
+  const syncPacket = useSyncAdmissionPacket();
 
   const checklist = useMemo(
     () => buildAdmissionChecklist(lead, packet?.items ?? []),
@@ -298,6 +391,7 @@ function PacketCard({
     [checklist, packet?.approval],
   );
   const handedOff = !!packet?.handoffMarkedAt;
+  const packetCreated = (packet?.items.length ?? 0) > 0;
 
   const pct = admission.requiredCount
     ? Math.round(((admission.completeCount + admission.waivedCount) / admission.requiredCount) * 100)
@@ -338,9 +432,26 @@ function PacketCard({
 
   const onHandoff = async () => {
     try {
-      await markHandoff.mutateAsync({ leadId: lead.id, reference: null });
+      const reference = window.prompt("CentralReach reference (chart / client ID) — optional:")?.trim() || null;
+      await markHandoff.mutateAsync({ leadId: lead.id, reference });
       toast.success("Marked as handed off to CentralReach.");
     } catch (e) { toast.error(admissionPacketErrorMessage(e)); }
+  };
+
+  const onSync = async () => {
+    try {
+      await syncPacket.mutateAsync({ leadId: lead.id, items: checklist });
+      toast.success(packetCreated ? "Packet statuses synced." : "Packet created.");
+    } catch (e) { toast.error(admissionPacketErrorMessage(e)); }
+  };
+
+  const onDownload = () => {
+    const row = buildExportRow(lead, packet);
+    downloadTextFile(
+      `${packetFileSlug(lead.childName ?? "packet", lead.id)}-cr-packet.txt`,
+      buildPacketHandoffSheet(row, admission, CENTRALREACH_BOUNDARY_NOTE),
+    );
+    toast.success("Packet handoff sheet downloaded.");
   };
 
   return (
@@ -414,8 +525,28 @@ function PacketCard({
         <div className="text-[11px] text-muted-foreground flex items-center gap-1">
           {readiness.blocked && <AlertCircle className="h-3 w-3 text-rose-500" />}
           {admission.completeCount + admission.waivedCount}/{admission.requiredCount} required complete
+          {packet?.lastSyncedAt && (
+            <span className="ml-1 opacity-80">
+              · synced {new Date(packet.lastSyncedAt).toLocaleDateString()}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
+          {!handedOff && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => void onSync()}
+              disabled={syncPacket.isPending}
+            >
+              {packetCreated ? <RefreshCw className="h-3 w-3 mr-1" /> : <FilePlus2 className="h-3 w-3 mr-1" />}
+              {packetCreated ? "Sync" : "Create packet"}
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onDownload}>
+            <Download className="h-3 w-3 mr-1" /> Packet
+          </Button>
           <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
             <Link to={`/leads/${lead.id}`}>Open lead</Link>
           </Button>
