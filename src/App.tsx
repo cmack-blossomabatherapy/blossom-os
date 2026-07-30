@@ -372,7 +372,6 @@ import OSSchedulingWorkspace from "./pages/os/OSSchedulingWorkspace";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSRecruitingWorkspace from "./pages/os/OSRecruitingWorkspace";
 import OSRecruitingPipeline from "./pages/os/OSRecruitingPipeline";
-import OSRecruitingJobs from "./pages/os/OSRecruitingJobs";
 import OSRecruitingInterviews from "./pages/os/OSRecruitingInterviews";
 import { SafeBoundary } from "@/components/common/SafeBoundary";
 import OSRecruitingOffers from "./pages/os/OSRecruitingOffers";
