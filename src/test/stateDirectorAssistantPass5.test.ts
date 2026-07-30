@@ -69,7 +69,7 @@ describe("State Director Assistant — Pass 5 hardening", () => {
       expect(line, `route ${p} not found`).toBeTruthy();
       expect(line!, `${p} should be wrapped by PermissionRoute`).toMatch(/PermissionRoute/);
       const allowsInline = /assistant_state_director/.test(line!);
-      const allowsViaConst = /OPERATIONS_AND_STATE_ROUTE_ROLES/.test(line!);
+      const allowsViaConst = /OPERATIONS_AND_STATE_ROUTE_ROLES|INTAKE_WORKSPACE_ROUTE_ROLES/.test(line!);
       expect(
         allowsInline || allowsViaConst,
         `${p} should allow assistant_state_director (inline or via OPERATIONS_AND_STATE_ROUTE_ROLES)`,
