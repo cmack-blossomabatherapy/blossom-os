@@ -14,11 +14,15 @@ export interface AdmissionPacketRecord {
   approval: AdmissionApproval;
   handoffMarkedAt: string | null;
   handoffReference: string | null;
+  /** Most recent checklist sync timestamp (server-side). */
+  lastSyncedAt: string | null;
 }
 
 export type AdmissionPacketMap = Record<string, AdmissionPacketRecord>;
 
-const EMPTY: AdmissionPacketRecord = { items: [], approval: {}, handoffMarkedAt: null, handoffReference: null };
+const EMPTY: AdmissionPacketRecord = {
+  items: [], approval: {}, handoffMarkedAt: null, handoffReference: null, lastSyncedAt: null,
+};
 
 export function useAdmissionPackets(leadIds: string[]) {
   const key = [...leadIds].sort().join(",");
@@ -29,7 +33,7 @@ export function useAdmissionPackets(leadIds: string[]) {
       const [itemsRes, approvalsRes] = await Promise.all([
         (supabase as any)
           .from("intake_admission_checklist_items")
-          .select("lead_id,item_key,label,required,status,missing,waived_by,waived_reason")
+          .select("lead_id,item_key,label,required,status,missing,waived_by,waived_reason,updated_at")
           .in("lead_id", leadIds),
         (supabase as any)
           .from("intake_admission_approvals")
@@ -51,6 +55,9 @@ export function useAdmissionPackets(leadIds: string[]) {
           waivedBy: row.waived_by,
           waivedReason: row.waived_reason,
         });
+        if (row.updated_at && (!rec.lastSyncedAt || row.updated_at > rec.lastSyncedAt)) {
+          rec.lastSyncedAt = row.updated_at;
+        }
       }
       for (const row of approvalsRes.data ?? []) {
         const rec = (map[row.lead_id] ??= { ...EMPTY, items: [] });
