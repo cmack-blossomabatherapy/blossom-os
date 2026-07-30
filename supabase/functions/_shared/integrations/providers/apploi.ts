@@ -171,18 +171,21 @@ export const apploiAdapter: ProviderAdapter = {
     if (!statuses.ok) {
       return { ok: false, status: "error", message: sanitize(`Apploi auth check failed (${statuses.error})`) };
     }
-    const jobs = await apploiGet<{ data?: any[] }>("/jobs/search", {
-      teams: teamId(),
-      include_private: 1,
-      size: 1,
+    const applicants = await apploiGet<{ data?: any[] }>("/applicants", {
+      team_id: teamId(),
+      limit: 1,
+      offset: 0,
     });
     const statusCount = statuses.data?.data?.length ?? 0;
+    const applicantsExposed = (applicants.data?.data?.length ?? 0) > 0;
     return {
       ok: true,
       status: "connected",
-      message: `Apploi authenticated for team ${teamId()} — ${statusCount} applicant statuses, jobs endpoint ${jobs.ok ? "reachable" : "unavailable"}.`,
+      message: applicantsExposed
+        ? `Apploi authenticated for team ${teamId()} — ${statusCount} applicant statuses, applicant records exposed.`
+        : `Apploi authenticated for team ${teamId()} — ${statusCount} applicant statuses, but the partner key returns no applicant records (applicant read scope not granted).`,
       accountLabel: `Apploi team ${teamId()}`,
-      details: { applicant_statuses: statusCount, jobs_reachable: jobs.ok },
+      details: { applicant_statuses: statusCount, applicants_exposed: applicantsExposed },
     };
   },
 
@@ -193,37 +196,22 @@ export const apploiAdapter: ProviderAdapter = {
     }
     const pages = options.dryRun ? 1 : MAX_PAGES;
 
-    const jobs = await syncJobs(ctx, pages);
-    if (jobs.error) {
-      return {
-        ok: false,
-        status: "failed",
-        message: sanitize(`Apploi job sync failed (${jobs.error})`),
-        received: jobs.received,
-        created: jobs.created,
-        updated: jobs.updated,
-        failed: jobs.failed,
-      };
-    }
-
     const applicants = await syncApplicants(ctx, pages);
-    const received = jobs.received + applicants.received;
-    const created = jobs.created + applicants.created;
-    const updated = jobs.updated + applicants.updated;
-    const failed = jobs.failed + applicants.failed;
+    const received = applicants.received;
+    const created = applicants.created;
+    const updated = applicants.updated;
+    const failed = applicants.failed;
 
     if (applicants.error) {
       return {
         ok: false,
-        status: "partial",
-        message: sanitize(
-          `Synced ${jobs.received} job postings. Applicant sync failed (${applicants.error}).`,
-        ),
+        status: "failed",
+        message: sanitize(`Apploi applicant sync failed (${applicants.error}).`),
         received,
         created,
         updated,
         failed,
-        details: { jobs: jobs.received, applicants: 0 },
+        details: { applicants: 0 },
       };
     }
 
@@ -236,13 +224,12 @@ export const apploiAdapter: ProviderAdapter = {
     return {
       ok: true,
       status: applicants.received === 0 ? "partial" : "success",
-      message: `Apploi sync complete: ${jobs.received} job postings, ${applicants.received} applicants.${applicantNote}`,
+      message: `Apploi sync complete: ${applicants.received} applicants.${applicantNote}`,
       received,
       created,
       updated,
       failed,
       details: {
-        jobs: jobs.received,
         applicants: applicants.received,
         applicants_reported_total: applicants.total,
         applicants_exposed: applicants.received > 0,
