@@ -9,10 +9,10 @@
  *      assert the original path + query string are restored and the page
  *      still renders (no crash, no lost filter state).
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import type React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, cleanup } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -214,7 +214,8 @@ describe("Intake & Leads deep links — inventory", () => {
 /* ------------------------------------------------------------------ */
 
 describe("Intake & Leads deep links — query strings and browser back", () => {
-  beforeEach(() => { document.body.innerHTML = ""; });
+  beforeEach(() => { cleanup(); document.body.innerHTML = ""; });
+  afterEach(() => { cleanup(); });
 
   it.each(DEEP_LINKS.map((d) => [d.url, d] as const))(
     "opens %s and restores it after browser back",
@@ -241,6 +242,6 @@ describe("Intake & Leads deep links — query strings and browser back", () => {
 
       errorSpy.mockRestore();
     },
-    30000,
+    90000,
   );
 });

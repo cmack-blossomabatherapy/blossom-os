@@ -1257,11 +1257,11 @@ const App = () => (
                       </PermissionRoute>
                     }
                   />
-                  <Route path="/intake/dashboard" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><IntakeWorkspaceLanding /></PermissionRoute>} />
+                  <Route path="/intake/dashboard" element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><IntakeWorkspaceLanding /></PermissionRoute>} />
                   {/* Canonical Intake pipeline — Lead Captured → Admission Ready. */}
-                  <Route path="/intake/lead-to-active" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "operations_leadership"]}><OSShellPage><LeadToActivePipeline /></OSShellPage></PermissionRoute>} />
-                  <Route path="/intake/assignments" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake_lead", "operations_leadership"]}><OSShellPage><IntakeAssignments /></OSShellPage></PermissionRoute>} />
-                  <Route path="/intake/configuration" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake_lead", "operations_leadership"]}><OSShellPage><IntakeConfiguration /></OSShellPage></PermissionRoute>} />
+                  <Route path="/intake/lead-to-active" element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><OSShellPage><LeadToActivePipeline /></OSShellPage></PermissionRoute>} />
+                  <Route path="/intake/assignments" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><OSShellPage><IntakeAssignments /></OSShellPage></PermissionRoute>} />
+                  <Route path="/intake/configuration" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><OSShellPage><IntakeConfiguration /></OSShellPage></PermissionRoute>} />
                   {/* Director-only: CTM Review & Health. Coordinators are excluded. */}
                   <Route path="/intake/review-queues" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><OSShellPage><IntakePromotionReviewQueues /></OSShellPage></PermissionRoute>} />
                   <Route path="/intake/referral-queue" element={<Navigate to="/intake/dashboard" replace />} />
@@ -1281,7 +1281,7 @@ const App = () => (
                   <Route path="/intake/missing-information"  element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><MissingInformation /></PermissionRoute>} />
                   {/* Family Communications — working templates + send/copy actions. */}
                   <Route path="/intake/parent-communication" element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><ParentCommunication /></PermissionRoute>} />
-                  <Route path="/intake/cr-packet-prep"       element={<PermissionRoute allowedRoles={["admin","super_admin","intake","intake_coordinator","intake_lead","intake_team","operations_leadership"]}><CentralReachPacketPrep /></PermissionRoute>} />
+                  <Route path="/intake/cr-packet-prep"       element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><CentralReachPacketPrep /></PermissionRoute>} />
                   <Route path="/ops/expiring-authorizations" element={<OSShellPage><ExpiringAuthorizations /></OSShellPage>} />
                   <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />
                   <Route path="/ops/payer-requirements"      element={<OSShellPage><PayerRequirements /></OSShellPage>} />
