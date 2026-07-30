@@ -202,10 +202,11 @@ export function evaluateIntakeStageRequirements(
     case "Packet Follow Up":
       if (flags.dob) missing.push("Date of birth");
       if (flags.insurance) missing.push("Insurance payer / plan");
-      if ((lead.consentStatus ?? "") === "Not Signed") missing.push("Signed consent");
+      if (["Not Sent", "Sent"].includes(lead.consentStatus ?? "Not Sent")) missing.push("Signed consent");
       break;
     case "Benefits Verification":
-      if (!(ctx.benefitsOutcome?.trim() || (lead.vobStatus && lead.vobStatus !== "Not Started")))
+      const vobDone = !!lead.vobStatus && !["Not Started", "Not Sent", "Sent"].includes(lead.vobStatus);
+      if (!(ctx.benefitsOutcome?.trim() || vobDone))
         missing.push("Benefits verification outcome");
       break;
     case "Clinical / Operational Readiness":
