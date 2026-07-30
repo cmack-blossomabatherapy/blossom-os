@@ -21,7 +21,7 @@ describe("Lead deep-links resolve to the canonical /leads/:id record page", () =
   });
 
   it("registers /leads/:id as a routed page and redirects legacy /intake/leads", () => {
-    expect(app).toMatch(/path="\/leads\/:id"\s+element=\{<LeadDetail/);
+    expect(app).toMatch(/path="\/leads\/:id"\s+element=\{<PermissionRoute allowedRoles=\{LEADS_ROUTE_ROLES\}><LeadDetail/);
     expect(app).toMatch(/path="\/intake\/leads"\s+element=\{<Navigate to="\/leads" replace\s*\/>\}/);
   });
 

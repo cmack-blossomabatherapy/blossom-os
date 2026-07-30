@@ -68,6 +68,12 @@ import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
 import MissingInformation from "./pages/os/intake/MissingInformation";
 import CentralReachPacketPrep from "./pages/os/intake/CentralReachPacketPrep";
 import IntakePromotionReviewQueues from "./pages/os/intake/IntakePromotionReviewQueues";
+import ParentCommunication from "./pages/os/intake/ParentCommunication";
+import {
+  INTAKE_WORKSPACE_ROUTE_ROLES,
+  INTAKE_DIRECTOR_ROUTE_ROLES,
+  LEADS_ROUTE_ROLES,
+} from "./lib/intake/intakeRouteRoles";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
@@ -1012,9 +1018,9 @@ const App = () => (
                   <Route path="/rbt/resources" element={<RbtLegacyRoute appPath="learn"><PermissionRoute allowedRoles={["rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt","admin","super_admin","bcba","clinical_director","training_admin","hr","hr_admin"]}><OSRBTResources /></PermissionRoute></RbtLegacyRoute>} />
                   <Route path="/rbt/reports" element={<Navigate to="/reports?audience=rbt" replace />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
-                  <Route path="/leads" element={<OSLeadsV2 />} />
-                  <Route path="/leads/operations" element={<OSIntakeOperations />} />
-                  <Route path="/leads/:id" element={<LeadDetail />} />
+                  <Route path="/leads" element={<PermissionRoute allowedRoles={LEADS_ROUTE_ROLES}><OSLeadsV2 /></PermissionRoute>} />
+                  <Route path="/leads/operations" element={<PermissionRoute allowedRoles={LEADS_ROUTE_ROLES}><OSIntakeOperations /></PermissionRoute>} />
+                  <Route path="/leads/:id" element={<PermissionRoute allowedRoles={LEADS_ROUTE_ROLES}><LeadDetail /></PermissionRoute>} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<ClientsRouter />} />
                   <Route path="/clients/cr/:crId" element={<CrClientRedirect />} />
@@ -1256,9 +1262,10 @@ const App = () => (
                   <Route path="/intake/lead-to-active" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "operations_leadership"]}><OSShellPage><LeadToActivePipeline /></OSShellPage></PermissionRoute>} />
                   <Route path="/intake/assignments" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake_lead", "operations_leadership"]}><OSShellPage><IntakeAssignments /></OSShellPage></PermissionRoute>} />
                   <Route path="/intake/configuration" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake_lead", "operations_leadership"]}><OSShellPage><IntakeConfiguration /></OSShellPage></PermissionRoute>} />
-                  <Route path="/intake/review-queues" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "operations_leadership"]}><IntakePromotionReviewQueues /></PermissionRoute>} />
+                  {/* Director-only: CTM Review & Health. Coordinators are excluded. */}
+                  <Route path="/intake/review-queues" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><OSShellPage><IntakePromotionReviewQueues /></OSShellPage></PermissionRoute>} />
                   <Route path="/intake/referral-queue" element={<Navigate to="/intake/dashboard" replace />} />
-                  <Route path="/intake/tasks" element={<IntakeTasks />} />
+                  <Route path="/intake/tasks" element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><IntakeTasks /></PermissionRoute>} />
                   {/* Benefits knowledge is admin-managed backend content. Old
                       intake bookmarks land on the admin surface (non-admins see
                       the standard admin-only guard). */}
@@ -1271,10 +1278,9 @@ const App = () => (
                        dedicated workspace yet. Real route, real shell, no
                        /coming-soon. Will be replaced with full workspaces in
                        future passes. --- */}
-                  <Route path="/intake/missing-information"  element={<MissingInformation />} />
-                  {/* Parent communication became admin-managed template + inline
-                      lead-drawer actions. Preserve safe redirect for old bookmarks. */}
-                  <Route path="/intake/parent-communication" element={<Navigate to="/intake/tasks" replace />} />
+                  <Route path="/intake/missing-information"  element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><MissingInformation /></PermissionRoute>} />
+                  {/* Family Communications — working templates + send/copy actions. */}
+                  <Route path="/intake/parent-communication" element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><ParentCommunication /></PermissionRoute>} />
                   <Route path="/intake/cr-packet-prep"       element={<PermissionRoute allowedRoles={["admin","super_admin","intake","intake_coordinator","intake_lead","intake_team","operations_leadership"]}><CentralReachPacketPrep /></PermissionRoute>} />
                   <Route path="/ops/expiring-authorizations" element={<OSShellPage><ExpiringAuthorizations /></OSShellPage>} />
                   <Route path="/ops/missing-docs"            element={<OSShellPage><MissingDocs /></OSShellPage>} />

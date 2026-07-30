@@ -20,7 +20,7 @@ describe("Sprint 15A — Intake Team shell hotfix", () => {
   });
 
   it("/leads/:id remains mounted in App.tsx", () => {
-    expect(app).toMatch(/path="\/leads\/:id"\s+element=\{<LeadDetail\s*\/>\}/);
+    expect(app).toMatch(/path="\/leads\/:id"\s+element=\{<PermissionRoute allowedRoles=\{LEADS_ROUTE_ROLES\}><LeadDetail\s*\/><\/PermissionRoute>\}/);
   });
 
   it("academy routes are no longer mounted inside the legacy AppLayout group", () => {

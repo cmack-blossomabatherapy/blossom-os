@@ -16,6 +16,8 @@ import {
   type PromotionState,
 } from "@/lib/intake/reviewDataLayer";
 import { toast } from "sonner";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { isDirectorOfIntake } from "@/lib/intake/intakeRoles";
 
 /**
  * Blossom OS — Intake Promotion Review Queues
@@ -60,6 +62,8 @@ type QueueId = (typeof QUEUE_TABS)[number]["id"];
 
 export default function IntakePromotionReviewQueues() {
   const { data: mode } = useIntakeOperatingMode();
+  const { role } = useOSRole();
+  const directorAccess = isDirectorOfIntake([role as unknown as string]);
   const [tab, setTab] = useState<QueueId>("staged");
   const [filter, setFilter] = useState("");
 
@@ -68,11 +72,12 @@ export default function IntakePromotionReviewQueues() {
     tab === "ctm_unmatched"
       ? { pageSize: 1 }
       : { state: tab as PromotionState, pageSize: 500, search: filter.trim() || undefined },
+    { enabled: directorAccess },
   );
 
   const unmatched = useQuery({
     queryKey: ["ctm-unmatched-tracking"],
-    enabled: tab === "ctm_unmatched",
+    enabled: directorAccess && tab === "ctm_unmatched",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ctm_unmatched_tracking_numbers")
@@ -111,6 +116,20 @@ export default function IntakePromotionReviewQueues() {
 
   return (
     <div className="p-6 space-y-6" data-page="intake-review-queues">
+      {!directorAccess ? (
+        <div
+          data-testid="intake-review-queues-director-only"
+          className="rounded-2xl border border-amber-300 bg-amber-50 p-6 text-sm text-amber-900"
+        >
+          <h1 className="text-lg font-semibold">CTM Review &amp; Health is Director-only</h1>
+          <p className="mt-1">
+            This surface reviews inbound call qualification decisions and ingestion
+            health. It is limited to the Director of Intake and operations leadership.
+            Coordinators work their families from the Intake Dashboard, Leads and Tasks.
+          </p>
+        </div>
+      ) : (
+      <>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Intake review queues</h1>
@@ -178,6 +197,8 @@ export default function IntakePromotionReviewQueues() {
           />
         )}
       </Card>
+      </>
+      )}
     </div>
   );
 }
