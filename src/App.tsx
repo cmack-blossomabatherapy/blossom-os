@@ -68,6 +68,12 @@ import LeadBenefitsCheatSheets from "./pages/os/intake/LeadBenefitsCheatSheets";
 import MissingInformation from "./pages/os/intake/MissingInformation";
 import CentralReachPacketPrep from "./pages/os/intake/CentralReachPacketPrep";
 import IntakePromotionReviewQueues from "./pages/os/intake/IntakePromotionReviewQueues";
+import ParentCommunication from "./pages/os/intake/ParentCommunication";
+import {
+  INTAKE_WORKSPACE_ROUTE_ROLES,
+  INTAKE_DIRECTOR_ROUTE_ROLES,
+  LEADS_ROUTE_ROLES,
+} from "./lib/intake/intakeRouteRoles";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
