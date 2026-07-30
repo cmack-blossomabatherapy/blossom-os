@@ -4,6 +4,7 @@ import {
   ArrowRight, CheckCircle2, Circle, FileWarning, ListChecks,
   ShieldQuestion, Users, MapPin, FileText, HeartHandshake, Inbox,
   StickyNote, AlertCircle, Filter, Search, ShieldCheck, MinusCircle,
+  Download, RefreshCw, FilePlus2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
@@ -27,9 +28,17 @@ import {
   useApproveAdmission,
   useMarkAdmissionHandoff,
   useSetAdmissionItem,
+  useSyncAdmissionPacket,
   admissionPacketErrorMessage,
   type AdmissionPacketRecord,
 } from "@/hooks/useIntakeAdmissionPacket";
+import {
+  buildPacketQueueCsv,
+  buildPacketHandoffSheet,
+  downloadTextFile,
+  packetFileSlug,
+  type PacketExportRow,
+} from "@/lib/intake/admissionPacketExport";
 import type { Lead } from "@/data/leads";
 
 type SectionKey =
