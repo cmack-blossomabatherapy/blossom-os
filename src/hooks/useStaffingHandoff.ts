@@ -226,12 +226,47 @@ export function useStaffingHandoffs(candidateId?: string | null) {
         return false;
       }
       await logEvent(needId, `handoff_${to}`, current?.handoff_status ?? null, to, reason ?? null);
-      toast.success(`Staffing handoff marked ${to.replace("_", " ")}.`);
+      toast.success(
+        to === "needs_clarification"
+          ? "Sent back to Recruiting for clarification."
+          : `Staffing handoff marked ${to.replace(/_/g, " ")}.`,
+      );
       await refetch();
       return true;
     },
     [handoffs, logEvent, refetch],
   );
 
-  return { handoffs, loading, refetch, propose, decide };
+  /** Send a proposal back to Recruiting with a specific question. */
+  const requestClarification = useCallback(
+    (needId: string, question: string) => decide(needId, "needs_clarification", question),
+    [decide],
+  );
+
+  return { handoffs, loading, refetch, propose, decide, requestClarification };
+}
+
+/**
+ * Full audit trail for a single staffing handoff, newest first.
+ * Read-only; every propose/accept/decline/clarify writes one row.
+ */
+export function useStaffingHandoffEvents(needId: string | null) {
+  const [events, setEvents] = useState<StaffingHandoffEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const refetch = useCallback(async () => {
+    if (!needId) { setEvents([]); return; }
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("recruiting_staffing_need_events")
+      .select("*")
+      .eq("need_id", needId)
+      .order("created_at", { ascending: false });
+    setEvents(error ? [] : ((data ?? []) as unknown as StaffingHandoffEvent[]));
+    setLoading(false);
+  }, [needId]);
+
+  useEffect(() => { refetch(); }, [refetch]);
+
+  return { events, loading, refetch };
 }
