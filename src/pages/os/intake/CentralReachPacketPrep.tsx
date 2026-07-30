@@ -525,8 +525,28 @@ function PacketCard({
         <div className="text-[11px] text-muted-foreground flex items-center gap-1">
           {readiness.blocked && <AlertCircle className="h-3 w-3 text-rose-500" />}
           {admission.completeCount + admission.waivedCount}/{admission.requiredCount} required complete
+          {packet?.lastSyncedAt && (
+            <span className="ml-1 opacity-80">
+              · synced {new Date(packet.lastSyncedAt).toLocaleDateString()}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
+          {!handedOff && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => void onSync()}
+              disabled={syncPacket.isPending}
+            >
+              {packetCreated ? <RefreshCw className="h-3 w-3 mr-1" /> : <FilePlus2 className="h-3 w-3 mr-1" />}
+              {packetCreated ? "Sync" : "Create packet"}
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onDownload}>
+            <Download className="h-3 w-3 mr-1" /> Packet
+          </Button>
           <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
             <Link to={`/leads/${lead.id}`}>Open lead</Link>
           </Button>
