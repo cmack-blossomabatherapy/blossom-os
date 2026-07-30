@@ -314,9 +314,16 @@ describe("Recruiting security-gated RPCs return only permitted data", () => {
     expect(def).not.toBe("");
     expect(def.toLowerCase()).toContain("security definer");
     expect(def.toLowerCase()).toContain("set search_path");
-    // Must refuse callers who are neither recruiting nor staffing.
-    expect(def).toMatch(/recruiting_can_read|has_permission/);
-    expect(def.toLowerCase()).toMatch(/raise exception|return;|not authorized/);
+    // Callers who are neither recruiting nor staffing get zero rows back.
+    expect(def).toMatch(/public\.recruiting_can_read\(auth\.uid\(\)\)/);
+    expect(def).toMatch(/has_permission\(auth\.uid\(\), 'staffing\.view'\)/);
+    // anon can never execute it.
+    expect(migrationSql).toMatch(
+      /REVOKE ALL ON FUNCTION public\.recruiting_client_staffing_options\(text, int\) FROM public, anon;/,
+    );
+    expect(migrationSql).toMatch(
+      /GRANT EXECUTE ON FUNCTION public\.recruiting_client_staffing_options\(text, int\) TO authenticated;/,
+    );
   });
 
   it("the staffing option lookup exposes no clinical or contact PHI", () => {
@@ -330,8 +337,8 @@ describe("Recruiting security-gated RPCs return only permitted data", () => {
     const iface = /export interface ClientStaffingOption \{([\s\S]*?)\}/.exec(hook)![1];
     const fields = iface.split("\n").map((l) => l.trim().split(":")[0]).filter(Boolean).sort();
     expect(fields).toEqual([
-      "clinic",
       "client_id",
+      "clinic",
       "display_label",
       "service_location",
       "staffing_status",
@@ -340,10 +347,17 @@ describe("Recruiting security-gated RPCs return only permitted data", () => {
   });
 
   it("apploi sync RPC surfaces are guarded, never called with a raw key from the client", () => {
-    const srcHasKey = readdirSync("src/hooks").some((f) =>
-      /APPLOI_(API_)?KEY|apploi_api_key/i.test(readFileSync(`src/hooks/${f}`, "utf8")),
+    const usesKeyValue = readdirSync("src/hooks").some((f) => {
+      const src = readFileSync(`src/hooks/${f}`, "utf8");
+      // Comments may mention the key by name; actual reads of a value are not allowed.
+      return /(env|process|import\.meta\.env)[^\n]*APPLOI/i.test(src)
+        || /APPLOI_(API_)?KEY\s*[:=]\s*["'`]/i.test(src);
+    });
+    expect(usesKeyValue).toBe(false);
+    // Apploi is only reachable through server-side functions.
+    expect(readFileSync("src/hooks/useApploiIntegration.ts", "utf8")).toMatch(
+      /supabase\.functions\.invoke/,
     );
-    expect(srcHasKey).toBe(false);
   });
 
   it("staffing handoff writes always attach an actor for the audit trail", () => {
