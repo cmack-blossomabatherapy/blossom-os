@@ -14,12 +14,12 @@ describe("Intake / CTM final pass — canonical wiring", () => {
     expect(src).toMatch(/INTAKE_STAGE_OWNERS/);
     expect(src).toMatch(/Canonical Intake workflow/);
     expect(src).toMatch(/Admission Ready/);
-    expect(src).toMatch(/isPipelineEnd/);
-    expect(src).toMatch(/Hard stop/);
-    expect(src).toMatch(/Pipeline end/);
-    expect(src).toMatch(/Active patient operations start after this point/);
-    expect(src).toMatch(/managed in a separate workflow/);
+    expect(src).toMatch(/isAdmissionReady/);
+    expect(src).toMatch(/Admission Ready · Intake complete/);
+    expect(src).toMatch(/CENTRALREACH_BOUNDARY_NOTE/);
     expect(src).toMatch(/<Ban /);
+    // Stage moves are persisted server-side with reason + exception audit.
+    expect(src).toMatch(/recordTransition\.mutateAsync/);
     expect(src).not.toMatch(/STAGE_TO_LEAD_STATUS/);
     expect(src).toMatch(/useLeads\(/);
     expect(src).toMatch(/moveStage/);
