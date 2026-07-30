@@ -10,9 +10,10 @@ import { upsertNormalizedRecord } from "../normalizers.ts";
  * rejected upstream with 403.
  *
  * Endpoints actually used (verified live against team 50104):
- *   GET /jobs/search?teams=<team>&include_private=1&size=&page=   → postings
  *   GET /applicants?team_id=<team>&limit=&offset=                 → applicants
  *   GET /applicants/applicant-statuses?team_id=<team>             → status set
+ *
+ * Job postings are intentionally NOT synced — Blossom OS is applicant-centric.
  *
  * No endpoint is invented. Nothing is ever written back to Apploi.
  * Upstream bodies are never returned to the client — see `sanitize()`.
