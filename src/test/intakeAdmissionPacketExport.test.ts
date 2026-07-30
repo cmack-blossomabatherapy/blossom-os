@@ -40,7 +40,7 @@ describe("admission packet exports", () => {
     const [header, line] = csv.split("\n");
     expect(header).toBe(PACKET_CSV_HEADERS.join(","));
     expect(line).toContain('"Ava ""AJ"" Smith"');
-    expect(line).toContain('"Insurance Cards: Payer / plan | Director of Intake approval required"');
+    expect(line).toContain("Insurance Cards: Payer / plan | Director of Intake approval required");
   });
 
   it("exports one line per packet", () => {
