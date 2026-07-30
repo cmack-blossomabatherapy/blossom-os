@@ -19,6 +19,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Activity, RefreshCw, ShieldAlert } from "lucide-react";
+import {
+  CTM_QUALIFICATION_LABELS,
+  CTM_QUALIFICATION_STATES,
+  type CtmQualificationState,
+} from "@/lib/intake/ctmQualification";
 
 type Verdict = "connected" | "degraded" | "disconnected" | "unknown";
 
@@ -60,6 +65,16 @@ interface WebhookEventRow {
   received_at: string;
 }
 
+interface QualificationRow {
+  id: string;
+  ctm_call_id: string;
+  source: string;
+  state: string;
+  reason: string;
+  detail: string | null;
+  created_at: string;
+}
+
 interface CtmOperationsPanelProps {
   refreshKey?: number;
 }
@@ -83,6 +98,8 @@ export function CtmOperationsPanel({ refreshKey = 0 }: CtmOperationsPanelProps) 
   const [loading, setLoading] = useState(true);
   const [webhookEvents, setWebhookEvents] = useState<WebhookEventRow[]>([]);
   const [retrying, setRetrying] = useState<string | null>(null);
+  const [qualifications, setQualifications] = useState<QualificationRow[]>([]);
+  const [configured, setConfigured] = useState<boolean | null>(null);
 
   const testConnection = useCallback(async () => {
     setTesting(true);
@@ -99,7 +116,7 @@ export function CtmOperationsPanel({ refreshKey = 0 }: CtmOperationsPanelProps) 
 
   const loadHealth = useCallback(async () => {
     setLoading(true);
-    const [{ data: r }, { data: u }, { data: w }] = await Promise.all([
+    const [{ data: r }, { data: u }, { data: w }, { data: q }, { data: cfg }] = await Promise.all([
       supabase.from("ctm_sync_runs")
         .select("id,kind,status,started_at,finished_at,calls_fetched,calls_upserted,error")
         .order("started_at", { ascending: false })
@@ -114,9 +131,19 @@ export function CtmOperationsPanel({ refreshKey = 0 }: CtmOperationsPanelProps) 
         .select("id,status,ctm_call_id,event_kind,attempt_count,error,received_at")
         .order("received_at", { ascending: false })
         .limit(20),
+      supabase.from("intake_ctm_qualification_events")
+        .select("id,ctm_call_id,source,state,reason,detail,created_at")
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabase.from("intake_ctm_qualification_config")
+        .select("id")
+        .limit(1)
+        .maybeSingle(),
     ]);
     setRuns((r ?? []) as SyncRunRow[]);
     setWebhookEvents((w ?? []) as WebhookEventRow[]);
+    setQualifications((q ?? []) as QualificationRow[]);
+    setConfigured(!!cfg);
     // Client-side aggregate for unmapped tracking numbers.
     const byNumber = new Map<string, UnmappedRow>();
     for (const row of (u ?? []) as Array<{ tracking_number: string | null; called_at: string | null }>) {
@@ -218,6 +245,60 @@ export function CtmOperationsPanel({ refreshKey = 0 }: CtmOperationsPanelProps) 
             </div>
           </div>
         )}
+
+        {configured === false && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3">
+            <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5" />
+            <div className="text-xs text-amber-900">
+              No Intake call rules are saved yet — calls are being judged with safe
+              built-in defaults (15 second minimum, standard spam/internal tags, all
+              tracking numbers accepted).
+            </div>
+          </div>
+        )}
+
+        <div>
+          <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Call outcomes (last 200)</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {CTM_QUALIFICATION_STATES.map((s: CtmQualificationState) => (
+              <div key={s} className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">{CTM_QUALIFICATION_LABELS[s]}</div>
+                <div className="mt-1 text-xl font-semibold">
+                  {qualifications.filter((q) => q.state === s).length}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 rounded-lg border">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 text-left uppercase text-muted-foreground">
+                <tr>
+                  <th className="p-2">When</th><th className="p-2">Call</th>
+                  <th className="p-2">Where from</th><th className="p-2">Outcome</th>
+                  <th className="p-2">Why</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qualifications.length === 0 && (
+                  <tr><td colSpan={5} className="p-3 text-center text-muted-foreground">No call outcomes recorded yet.</td></tr>
+                )}
+                {qualifications.slice(0, 10).map((q) => (
+                  <tr key={q.id} className="border-t align-top">
+                    <td className="p-2">{new Date(q.created_at).toLocaleString()}</td>
+                    <td className="p-2 font-mono">{q.ctm_call_id}</td>
+                    <td className="p-2">{q.source.replace(/_/g, " ")}</td>
+                    <td className="p-2">
+                      <Badge variant={q.state === "eligible" ? "default" : q.state === "error" ? "destructive" : "outline"}>
+                        {CTM_QUALIFICATION_LABELS[q.state as CtmQualificationState] ?? q.state}
+                      </Badge>
+                    </td>
+                    <td className="p-2 text-muted-foreground">{q.detail ?? q.reason}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         <div>
           <div className="mb-2 text-xs font-medium uppercase text-muted-foreground">Recent sync errors</div>
