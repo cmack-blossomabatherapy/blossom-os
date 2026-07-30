@@ -89,6 +89,8 @@ import { IntegrationCatalogSection } from "@/components/admin/IntegrationCatalog
 import { logSystemToolAction } from "@/hooks/useSystemTools";
 import { toast } from "sonner";
 import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommunicationSetupPanel";
+import { Link } from "react-router-dom";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
 /**
  * Admin > Integrations renders directly from the shared registry
@@ -1537,6 +1539,9 @@ export default function Integrations() {
           <RecruitingIntegrationHealthPanel />
         </div>
 
+        {/* Apploi applicant scope — Super Admin diagnostic entry point. */}
+        <ApploiApplicantScopeLink />
+
         {/* Source of Truth — which external system owns which operational
             domain. Blossom OS is the workflow layer, not the system of
             record for these. */}
@@ -1762,5 +1767,36 @@ export default function Integrations() {
       />
       <MarketplaceDialog open={marketplaceOpen} onOpenChange={setMarketplaceOpen} />
     </div>
+  );
+}
+/**
+ * Super Admin only: entry point to the live Apploi applicant-scope check.
+ * Hidden entirely for every other role — it exposes provider diagnostics.
+ */
+function ApploiApplicantScopeLink() {
+  const { role } = useOSRole();
+  if (String(role) !== "super_admin") return null;
+  return (
+    <Card className="mt-8 rounded-2xl border-border/70 bg-card/60 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+            <ShieldCheck className="size-4" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">
+              Apploi applicant scope
+            </h2>
+            <p className="mt-1.5 text-xs text-muted-foreground max-w-xl">
+              Check live whether the Apploi partner key is provisioned to return applicant
+              records, and see the exact reason when it is blocked.
+            </p>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" asChild>
+          <Link to="/admin/integrations/apploi-applicant-scope">Open scope status</Link>
+        </Button>
+      </div>
+    </Card>
   );
 }
