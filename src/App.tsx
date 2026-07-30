@@ -371,6 +371,7 @@ import OSParentTraining97156 from "./pages/os/OSParentTraining97156";
 import OSSchedulingWorkspace from "./pages/os/OSSchedulingWorkspace";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSRecruitingWorkspace from "./pages/os/OSRecruitingWorkspace";
+import OSRecruitingApploi from "./pages/os/OSRecruitingApploi";
 import OSRecruitingPipeline from "./pages/os/OSRecruitingPipeline";
 import OSRecruitingInterviews from "./pages/os/OSRecruitingInterviews";
 import { SafeBoundary } from "@/components/common/SafeBoundary";

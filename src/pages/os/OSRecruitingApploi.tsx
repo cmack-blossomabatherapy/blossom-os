@@ -42,7 +42,7 @@ export default function OSRecruitingApploi() {
       const { count, error } = await supabase
         .from("integration_normalized_records")
         .select("id", { count: "exact", head: true })
-        .eq("provider", "apploi")
+        .eq("integration_id", "apploi")
         .eq("record_kind", "candidate");
       if (error) throw error;
       return count ?? 0;
