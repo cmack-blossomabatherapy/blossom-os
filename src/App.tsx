@@ -867,7 +867,8 @@ const App = () => (
                   <Route path="/recruiting/workspace"      element={<OSRecruitingWorkspace />} />
                   <Route path="/recruiting/academy"        element={<Navigate to="/academy/path/recruiting" replace />} />
                   <Route path="/recruiting/pipeline"       element={<OSRecruitingPipeline />} />
-                  <Route path="/recruiting/jobs"           element={<OSRecruitingJobs />} />
+                  {/* Job postings retired — recruiting is applicant-centric. */}
+                  <Route path="/recruiting/jobs"           element={<Navigate to="/recruiting/pipeline" replace />} />
                   <Route path="/recruiting/interviews"     element={<SafeBoundary label="Interviews" fallbackTitle="Interviews could not load." showErrorDetails><OSRecruitingInterviews /></SafeBoundary>} />
                  <Route path="/recruiting/offers"         element={<OSRecruitingOffers />} />
                   <Route path="/recruiting/onboarding"     element={<OSRecruitingOnboarding />} />
