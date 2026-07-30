@@ -7,7 +7,7 @@ import {
   LayoutDashboard, AlertTriangle, MapPin, Stethoscope, CheckCircle2,
   XCircle, Gauge, LineChart, Activity, Inbox, type LucideIcon,
   FileCheck2, Clock, Eye, Flame, Library, UserPlus, Bell, List, Sparkles, ChevronRight,
-  Workflow, CalendarClock, LifeBuoy, Plug, Home, User,
+  Workflow, CalendarClock, LifeBuoy, Plug, Home, User, ArrowRightLeft, Settings,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
@@ -87,6 +87,20 @@ const DASHBOARD_ITEM: RoleMenuItem = {
  * Every role menu is a list of grouped sections. Every item routes to a real,
  * mounted page in the OS shell — no Coming Soon entries, no /coming-soon paths.
  */
+/**
+ * Canonical Intake menu shared by Director of Intake and Intake Coordinator.
+ * Every path is a mounted, working route inside the OS shell.
+ */
+const INTAKE_SHARED_ITEMS: RoleMenuItem[] = [
+  { label: "Intake Dashboard",                path: "/intake/dashboard",              icon: LayoutDashboard },
+  { label: "Leads",                           path: "/leads",                         icon: List },
+  { label: "Pipeline",                        path: "/intake/lead-to-active",         icon: ArrowRightLeft },
+  { label: "Tasks",                           path: "/intake/tasks",                  icon: ClipboardList },
+  { label: "Packet Follow Up / Missing Info", path: "/intake/missing-information",    icon: ShieldCheck },
+  { label: "Communications",                  path: "/intake/parent-communication",   icon: MessageSquare },
+  { label: "CentralReach Packet Prep",        path: "/intake/cr-packet-prep",         icon: FileCheck2 },
+];
+
 export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
 
   /* --------------------------- Executive Leadership --------------------------- */
@@ -318,14 +332,24 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   /* -------------------------------- Intake Team ------------------------------ */
   intake_coordinator: {
     sections: [
+      { id: "intake", label: "Intake", items: [...INTAKE_SHARED_ITEMS] },
+      TRAINING_AND_RESOURCES,
+    ],
+  },
+
+  /* ---------------------------- Director of Intake --------------------------- */
+  // `intake_lead` is the stored OS key for Director of Intake. Directors get
+  // every coordinator surface plus assignment/exception, CTM review/health,
+  // Intake reporting, and templates/configuration.
+  intake_lead: {
+    sections: [
+      { id: "intake", label: "Intake", items: [...INTAKE_SHARED_ITEMS] },
       {
-        id: "intake", label: "Intake", items: [
-          { label: "Intake Dashboard",           path: "/intake/dashboard",              icon: LayoutDashboard },
-          { label: "Intake Tasks",               path: "/intake/tasks",                  icon: ClipboardList },
-          { label: "Leads",                      path: "/leads",                         icon: List },
-          { label: "Packet Follow Up / Missing Info", path: "/intake/missing-information", icon: ShieldCheck },
-          { label: "After-Hours AI Calls",       path: "/phone/ai-calls",                icon: PhoneCall },
-          { label: "CentralReach Packet Prep",   path: "/intake/cr-packet-prep",         icon: FileCheck2 },
+        id: "intake_director", label: "Director Controls", items: [
+          { label: "CTM Review & Health",        path: "/intake/review-queues",          icon: PhoneCall },
+          { label: "Assignments & Exceptions",   path: "/intake/assignments",            icon: Users },
+          { label: "Intake Reporting",           path: "/reports?dept=intake",           icon: BarChart3 },
+          { label: "Templates & Configuration",  path: "/intake/configuration",          icon: Settings },
         ],
       },
       TRAINING_AND_RESOURCES,

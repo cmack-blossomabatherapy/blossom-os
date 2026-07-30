@@ -90,7 +90,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "regional_state_director", label: "Regional State Director", tier: "leadership" },
   { id: "marketing_growth_lead", label: "Marketing & Growth Lead", tier: "operations" },
   { id: "marketing_team", label: "Marketing Team", tier: "operations" },
-  { id: "intake_lead", label: "Intake Lead", tier: "operations" },
+  { id: "intake_lead", label: "Director of Intake", tier: "operations" },
   { id: "intake_coordinator", label: "Intake Coordinator", tier: "operations" },
   { id: "finance_benefits_lead", label: "Finance / Benefits Lead", tier: "operations" },
   { id: "finance_benefits_team", label: "Finance / Benefits Team", tier: "operations" },

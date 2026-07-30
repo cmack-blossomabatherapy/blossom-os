@@ -17,6 +17,11 @@ const LEADERSHIP_ROLES = new Set<string>([
   // Intake is a centralized department — coordinators see all leads org-wide.
   "intake",
   "intake_coordinator",
+  // Director of Intake — org-wide Intake access (canonical + legacy keys).
+  "intake_lead",
+  "director_of_intake",
+  "intake_director",
+  "intake_team",
 ]);
 
 /** Apply role/state-based scoping to the loaded leads list. */
