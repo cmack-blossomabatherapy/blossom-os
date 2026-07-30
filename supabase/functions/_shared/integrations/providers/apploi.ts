@@ -91,53 +91,6 @@ function splitName(full: string | null): { first: string | null; last: string | 
   return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
 }
 
-async function syncJobs(ctx: AdapterContext, limitPages: number) {
-  let received = 0;
-  let created = 0;
-  let updated = 0;
-  let failed = 0;
-  for (let page = 0; page < limitPages; page++) {
-    const res = await apploiGet<{ data?: any[] }>("/jobs/search", {
-      teams: teamId(),
-      include_private: 1,
-      size: PAGE_SIZE,
-      page: page + 1,
-    });
-    if (!res.ok) return { received, created, updated, failed, error: res.error };
-    const rows = res.data?.data ?? [];
-    if (rows.length === 0) break;
-    for (const j of rows) {
-      received += 1;
-      const up = await upsertNormalizedRecord(ctx, "apploi", {
-        providerRecordId: str(j.id),
-        recordKind: "job",
-        recordStatus: j.published ? "published" : "unpublished",
-        displayTitle: str(j.name) ?? "Job posting",
-        occurredAt: str(j.published_date),
-        sourceLabel: "Apploi",
-        externalUrl: str(j.redirect_apply_url_v2) ?? str(j.external_url),
-        metadata: {
-          job_id: j.id,
-          team_id: j.team_id,
-          title: j.name,
-          city: j.city,
-          state: j.state,
-          job_type: j.job_type,
-          open_positions: j.open_positions_count,
-          filled_positions: j.filled_positions_count,
-          owner_email: j.job_owner_email,
-          raw: j,
-        },
-      });
-      if (!up.ok) failed += 1;
-      else if (up.action === "update") updated += 1;
-      else created += 1;
-    }
-    if (rows.length < PAGE_SIZE) break;
-  }
-  return { received, created, updated, failed, error: undefined as string | undefined };
-}
-
 async function syncApplicants(ctx: AdapterContext, maxPages: number) {
   let received = 0;
   let created = 0;
