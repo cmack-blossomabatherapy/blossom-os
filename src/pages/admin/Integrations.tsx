@@ -89,6 +89,8 @@ import { IntegrationCatalogSection } from "@/components/admin/IntegrationCatalog
 import { logSystemToolAction } from "@/hooks/useSystemTools";
 import { toast } from "sonner";
 import { IntakeCommunicationSetupPanel } from "@/components/settings/IntakeCommunicationSetupPanel";
+import { Link } from "react-router-dom";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
 /**
  * Admin > Integrations renders directly from the shared registry
