@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type HandoffStatus =
   | "proposed"
   | "pending_review"
+  | "needs_clarification"
   | "accepted"
   | "declined"
   | "cancelled";
@@ -37,6 +38,18 @@ export interface StaffingHandoff {
   matched_candidate_id: string | null;
   decision_reason: string | null;
   reviewed_at: string | null;
+  created_at: string;
+}
+
+/** One audited step in a staffing handoff's life. */
+export interface StaffingHandoffEvent {
+  id: string;
+  need_id: string;
+  event_type: string;
+  from_status: string | null;
+  to_status: string | null;
+  note: string | null;
+  actor_id: string | null;
   created_at: string;
 }
 
