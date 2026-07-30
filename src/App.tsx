@@ -875,7 +875,7 @@ const App = () => (
                   <Route path="/recruiting/orientation"    element={<OSRecruitingOrientation />} />
                   <Route path="/recruiting/staffing-needs" element={<OSRecruitingStaffingNeeds />} />
                  <Route path="/recruiting/ready-to-staff" element={<Navigate to="/recruiting/staffing-needs" replace />} />
-                 <Route path="/recruiting/apploi" element={<Navigate to="/admin/integrations?connector=apploi" replace />} />
+                 <Route path="/recruiting/apploi" element={<OSRecruitingApploi />} />
                   <Route path="/recruiting/rbt"            element={<OSRecruitingRBT />} />
                   <Route path="/recruiting/bcba"           element={<OSRecruitingBCBA />} />
                   <Route path="/recruiting/office-staff"   element={<OSRecruitingOfficeStaff />} />
