@@ -1252,8 +1252,10 @@ const App = () => (
                     }
                   />
                   <Route path="/intake/dashboard" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "state_director", "assistant_state_director", "exec", "executive", "coo", "ops_manager", "director_of_operations", "operations_manager", "operations_leadership"]}><IntakeWorkspaceLanding /></PermissionRoute>} />
-                  {/* Retired staff-facing surface — redirect old bookmarks to the operator dashboard. */}
-                  <Route path="/intake/lead-to-active" element={<Navigate to="/intake/dashboard" replace />} />
+                  {/* Canonical Intake pipeline — Lead Captured → Admission Ready. */}
+                  <Route path="/intake/lead-to-active" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "operations_leadership"]}><OSShellPage><LeadToActivePipeline /></OSShellPage></PermissionRoute>} />
+                  <Route path="/intake/assignments" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake_lead", "operations_leadership"]}><OSShellPage><IntakeAssignments /></OSShellPage></PermissionRoute>} />
+                  <Route path="/intake/configuration" element={<PermissionRoute allowedRoles={["admin", "super_admin", "intake_lead", "operations_leadership"]}><OSShellPage><IntakeConfiguration /></OSShellPage></PermissionRoute>} />
                   <Route path="/intake/review-queues" element={<PermissionRoute allowedRoles={["admin", "intake", "intake_coordinator", "intake_lead", "intake_team", "operations_leadership"]}><IntakePromotionReviewQueues /></PermissionRoute>} />
                   <Route path="/intake/referral-queue" element={<Navigate to="/intake/dashboard" replace />} />
                   <Route path="/intake/tasks" element={<IntakeTasks />} />
