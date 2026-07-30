@@ -81,6 +81,11 @@ export const DEFAULT_CTM_QUALIFICATION_SETTINGS: CtmQualificationSettings = {
 };
 
 const digits = (v: unknown) => String(v ?? "").replace(/\D/g, "");
+/** Compare numbers on their national (last 10) digits so +1 prefixes match. */
+const numberKey = (v: unknown) => {
+  const d = digits(v);
+  return d.length > 10 ? d.slice(-10) : d;
+};
 const lower = (v: unknown) => String(v ?? "").trim().toLowerCase();
 
 /** Qualify a normalized CTM call against backend-driven Intake configuration. */
@@ -108,14 +113,15 @@ export function qualifyCtmCall(
   }
 
   const from = digits(call.from_number);
-  if (from && (config.excludedNumbers ?? []).some((n) => digits(n) && digits(n) === from)) {
+  const fromKey = numberKey(call.from_number);
+  if (fromKey && (config.excludedNumbers ?? []).some((n) => numberKey(n) && numberKey(n) === fromKey)) {
     return { state: "excluded", reason: "excluded_number", detail: "Caller is on the internal / blocked number list." };
   }
 
   const campaigns = (config.campaigns ?? []).map(lower).filter(Boolean);
   const callCampaign = lower(call.campaign_name) || lower(call.source_name);
-  const trackingNumbers = (config.trackingNumbers ?? []).map(digits).filter(Boolean);
-  const callTracking = digits(call.tracking_number) || digits(call.to_number);
+  const trackingNumbers = (config.trackingNumbers ?? []).map(numberKey).filter(Boolean);
+  const callTracking = numberKey(call.tracking_number) || numberKey(call.to_number);
 
   const hasRouting = trackingNumbers.length > 0 || campaigns.length > 0;
   if (hasRouting) {
