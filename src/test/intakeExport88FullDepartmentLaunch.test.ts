@@ -184,7 +184,10 @@ describe("Intake Export 88 — full department launch", () => {
     });
 
     it("appends the shared Training / Resources / Reports section", () => {
-      expect(intakeBlock).toMatch(/TRAINING_AND_RESOURCES/);
+      const roleBlock = ROLE_MENUS.slice(
+        ROLE_MENUS.indexOf("intake_coordinator: {"),
+      ).slice(0, 400);
+      expect(roleBlock).toMatch(/TRAINING_AND_RESOURCES/);
     });
   });
 
