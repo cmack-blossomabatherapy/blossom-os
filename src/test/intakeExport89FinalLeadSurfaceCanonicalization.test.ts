@@ -24,10 +24,10 @@ const REPORTS = read("src/lib/os/phase3Reports.ts");
 describe("Intake Export 89 — final lead surface canonicalization", () => {
   describe("Routes", () => {
     it("/leads routes to OSLeadsV2", () => {
-      expect(APP).toMatch(/<Route path="\/leads" element={<OSLeadsV2 \/>}/);
+      expect(APP).toMatch(/<Route path="\/leads" element={<PermissionRoute allowedRoles={LEADS_ROUTE_ROLES}><OSLeadsV2 \/>/);
     });
     it("/leads/:id routes to the canonical full-page LeadDetail record", () => {
-      expect(APP).toMatch(/path="\/leads\/:id" element={<LeadDetail/);
+      expect(APP).toMatch(/path="\/leads\/:id" element={<PermissionRoute allowedRoles={LEADS_ROUTE_ROLES}><LeadDetail/);
     });
     it("App.tsx does not keep an unused import of pages/Leads", () => {
       expect(APP).not.toMatch(/from "\.\/pages\/Leads"/);
