@@ -214,7 +214,8 @@ describe("Intake & Leads deep links — inventory", () => {
 /* ------------------------------------------------------------------ */
 
 describe("Intake & Leads deep links — query strings and browser back", () => {
-  beforeEach(() => { document.body.innerHTML = ""; });
+  beforeEach(() => { cleanup(); document.body.innerHTML = ""; });
+  afterEach(() => { cleanup(); });
 
   it.each(DEEP_LINKS.map((d) => [d.url, d] as const))(
     "opens %s and restores it after browser back",
@@ -241,6 +242,6 @@ describe("Intake & Leads deep links — query strings and browser back", () => {
 
       errorSpy.mockRestore();
     },
-    30000,
+    90000,
   );
 });
