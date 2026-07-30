@@ -59,6 +59,13 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+// recharts' ResponsiveContainer needs ResizeObserver, absent in jsdom.
+if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
+  (globalThis as { ResizeObserver?: unknown }).ResizeObserver = class {
+    observe() {} unobserve() {} disconnect() {}
+  };
+}
+
 vi.mock("sonner", () => ({
   toast: Object.assign(() => {}, { success: () => {}, error: () => {}, info: () => {}, warning: () => {}, message: () => {}, loading: () => {}, dismiss: () => {} }),
   Toaster: () => null,
@@ -92,7 +99,7 @@ const LEAD_ID = "11111111-2222-3333-4444-555555555555";
 const DEEP_LINKS: DeepLinkCase[] = [
   { pattern: "/leads", url: "/leads?q=smith&stage=insurance_verification&state=GA", loader: () => import("@/pages/os/OSLeadsV2") },
   { pattern: "/leads/operations", url: "/leads/operations?view=queue&state=NC", loader: () => import("@/pages/os/OSIntakeOperations") },
-  { pattern: "/leads/:id", url: `/leads/${LEAD_ID}?tab=journey&from=intake`, loader: () => import("@/pages/LeadDetail") },
+  { pattern: "/leads/:id", url: `/leads/${LEAD_ID}?tab=insurance&from=intake`, loader: () => import("@/pages/LeadDetail") },
   { pattern: "/intake", url: "/intake?tab=pipeline", loader: () => import("@/pages/os/OSIntakeWorkspace") },
   { pattern: "/intake-coordinator", url: "/intake-coordinator?state=GA", loader: () => import("@/pages/os/OSIntakeCoordinator") },
   { pattern: "/intake/clients", url: "/intake/clients?q=ava&state=TN", loader: () => import("@/pages/os/OSIntakeClients") },
