@@ -100,6 +100,11 @@ export function useStaffingHandoffs(candidateId?: string | null) {
     let q = supabase
       .from("recruiting_staffing_needs")
       .select("*")
+      // Only rows that originated from the manual recruiting handoff dialog.
+      // Legacy / ordinary staffing needs default to handoff_status='proposed'
+      // but never carry both a matched candidate and an entering recruiter.
+      .not("matched_candidate_id", "is", null)
+      .not("entered_by", "is", null)
       .order("created_at", { ascending: false });
     if (candidateId) q = q.eq("matched_candidate_id", candidateId);
     const { data, error } = await q;
