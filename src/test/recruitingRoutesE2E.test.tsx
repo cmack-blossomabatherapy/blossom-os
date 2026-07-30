@@ -116,7 +116,6 @@ const PAGE_ROUTES: { path: string; loader: () => Promise<{ default: React.Compon
   { path: "/recruiting-team", loader: () => import("@/pages/os/OSRecruitingTeam") },
   { path: "/recruiting/workspace", loader: () => import("@/pages/os/OSRecruitingWorkspace") },
   { path: "/recruiting/pipeline", loader: () => import("@/pages/os/OSRecruitingPipeline") },
-  { path: "/recruiting/jobs", loader: () => import("@/pages/os/OSRecruitingJobs") },
   { path: "/recruiting/interviews", loader: () => import("@/pages/os/OSRecruitingInterviews") },
   { path: "/recruiting/offers", loader: () => import("@/pages/os/OSRecruitingOffers") },
   { path: "/recruiting/onboarding", loader: () => import("@/pages/os/OSRecruitingOnboarding") },

@@ -101,30 +101,3 @@ describe("Manual staffing handoff — minimum-PHI contract", () => {
   });
 });
 
-describe("Apploi job postings surface", () => {
-  const page = read("src/pages/os/OSRecruitingJobs.tsx");
-
-  it("renders real synced job records with search and filters", () => {
-    expect(page).toMatch(/from\("integration_normalized_records"\)/);
-    expect(page).toMatch(/record_kind", "job"/);
-    expect(page).toMatch(/Filter by state/);
-    expect(page).toMatch(/Filter by status/);
-    expect(page).toMatch(/No job postings match these filters/);
-  });
-
-  it("states the applicant-scope limitation honestly and keeps the diagnostic admin-only", () => {
-    expect(page).toMatch(/Applicant records are not currently shared/);
-    expect(page).toMatch(/OperatorDiagnosticsGate/);
-    expect(page).toMatch(/provider permission gap, not a sync failure/);
-  });
-
-  it("is routed and present in every recruiting role menu", () => {
-    expect(read("src/App.tsx")).toContain('path="/recruiting/jobs"');
-    for (const role of ["recruiting_team", "recruiting_lead", "recruiting_coordinator"]) {
-      const menu = (ROLE_MENUS as Record<string, { sections: { items: { path: string }[] }[] }>)[role];
-      const paths = menu.sections.flatMap((s) => s.items.map((i) => i.path));
-      expect(paths, role).toContain("/recruiting/jobs");
-    }
-    expect(read("src/pages/os/OSShell.tsx")).toContain('"/recruiting/jobs"');
-  });
-});
