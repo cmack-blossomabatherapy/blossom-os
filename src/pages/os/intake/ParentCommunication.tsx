@@ -24,6 +24,8 @@ import {
   sendIntakePacket, sendMissingInfoReminder, sendVobUpdate,
 } from "@/lib/integrations/communications/communicationAdapters";
 import { useIntakeTasksLive } from "@/hooks/useIntakeTasksLive";
+import { useIntakeCommsLive } from "@/hooks/useIntakeCommsLive";
+import { logCommunicationResult } from "@/lib/intake/communicationLogging";
 import {
   PARENT_COMM_TEMPLATES,
   PARENT_COMM_INTERNAL_NOTES,
@@ -35,7 +37,13 @@ import {
 } from "@/lib/parent-communication/templates";
 import { cn } from "@/lib/utils";
 
-type SendMode = "sms" | "email";
+type SendMode = "sms" | "email" | "intake-packet" | "missing-info" | "vob-update";
+
+const BULK_ACTIONS: Record<string, { label: string; run: typeof sendIntakePacket }> = {
+  "intake-packet": { label: "Intake Packet", run: sendIntakePacket },
+  "missing-info": { label: "Missing Info Reminder", run: sendMissingInfoReminder },
+  "vob-update": { label: "VOB Update", run: sendVobUpdate },
+};
 
 function copy(text: string, label: string) {
   if (!text) { toast.error(`${label} is empty`); return; }
@@ -44,10 +52,11 @@ function copy(text: string, label: string) {
 }
 
 function LeadPickerDialog({
-  open, mode, template, onClose,
+  open, mode, template, onClose, onLogged,
 }: {
   open: boolean; mode: SendMode | null;
   template: ParentCommTemplate | null; onClose: () => void;
+  onLogged?: () => void;
 }) {
   const { leads } = useLeads();
   const [q, setQ] = useState("");
@@ -63,25 +72,53 @@ function LeadPickerDialog({
   }, [leads, q]);
 
   async function pick(lead: Lead) {
-    if (!template || !mode) return;
+    if (!mode) return;
     const ctx = {
       leadId: lead.id, phone: lead.phone, email: lead.email,
       parentName: lead.parentName, childName: lead.childName,
       state: lead.state, insurance: lead.primaryInsurance ?? lead.insurance ?? null,
     };
-    // Copy personalized template so the sender can paste into CTM/Mailchimp UI
-    if (mode === "sms") {
-      navigator.clipboard.writeText(template.sms || "");
-      notifyCommunicationResult(await sendLeadSms(ctx));
+    const bulk = BULK_ACTIONS[mode];
+    let result;
+    let body = "";
+    let subject: string | null = null;
+    if (bulk) {
+      result = await bulk.run(ctx);
+    } else if (mode === "sms" && template) {
+      body = template.sms || "";
+      navigator.clipboard.writeText(body);
+      result = await sendLeadSms(ctx);
+    } else if (template) {
+      subject = template.subject || null;
+      body = template.body || "";
+      navigator.clipboard.writeText(`Subject: ${template.subject}\n\n${template.body}`);
+      result = await sendLeadEmail(ctx);
     } else {
-      navigator.clipboard.writeText(
-        `Subject: ${template.subject}\n\n${template.body}`,
-      );
-      notifyCommunicationResult(await sendLeadEmail(ctx));
+      return;
     }
-    toast.success(`Template ${template.id} sent to ${lead.childName}`, {
-      description: "Message copied to clipboard and tracked on the lead.",
+    notifyCommunicationResult(result);
+
+    // Audit trail — always write a communication log record, even when the
+    // action was blocked or preview-only, and refresh lead/task context.
+    const audit = await logCommunicationResult(result, {
+      leadId: lead.id,
+      templateId: template?.id ?? mode,
+      subject,
+      body,
+      channelLabel: bulk ? bulk.label : mode === "sms" ? "SMS" : "Email",
     });
+    if (audit.logged) {
+      toast.success(`Logged on ${lead.childName}`, {
+        description: [
+          "Communication log record created",
+          audit.leadContextUpdated ? "lead contact context updated" : null,
+          audit.taskContextUpdated ? "open follow-up task annotated" : null,
+        ].filter(Boolean).join(" · "),
+      });
+      onLogged?.();
+    } else {
+      toast.error("Outreach not logged", { description: audit.reason });
+    }
     onClose();
   }
 
@@ -90,7 +127,8 @@ function LeadPickerDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            Send {mode === "sms" ? "SMS" : "Email"} · {template?.title}
+            Send {mode && BULK_ACTIONS[mode] ? BULK_ACTIONS[mode].label : mode === "sms" ? "SMS" : "Email"}
+            {template ? ` · ${template.title}` : ""}
           </DialogTitle>
         </DialogHeader>
         <div className="relative">
@@ -136,6 +174,8 @@ export default function ParentCommunication() {
   // page aligned with the shared intake operational surface.
   const { tasks: intakeTasks } = useIntakeTasksLive();
   const openTasks = intakeTasks.filter((t) => t.status !== "Completed").length;
+  // Live communication log records — the audit trail every action writes to.
+  const { comms, loading: commsLoading, refetch: refetchComms } = useIntakeCommsLive(25);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -176,19 +216,52 @@ export default function ParentCommunication() {
           adapters used everywhere else in the intake surface so that quick
           sends stay auditable. */}
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" onClick={async () => {
-          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
-          notifyCommunicationResult(await sendIntakePacket(stub));
-        }}>Send Intake Packet</Button>
-        <Button size="sm" variant="outline" onClick={async () => {
-          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
-          notifyCommunicationResult(await sendMissingInfoReminder(stub));
-        }}>Missing Info Reminder</Button>
-        <Button size="sm" variant="outline" onClick={async () => {
-          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
-          notifyCommunicationResult(await sendVobUpdate(stub));
-        }}>Send VOB Update</Button>
+        <Button size="sm" variant="outline" onClick={() => { setSendTpl(null); setSendMode("intake-packet"); }}>
+          Send Intake Packet
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => { setSendTpl(null); setSendMode("missing-info"); }}>
+          Missing Info Reminder
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => { setSendTpl(null); setSendMode("vob-update"); }}>
+          Send VOB Update
+        </Button>
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        Every send is written to the lead's communication log, refreshes the lead's
+        contact context, and annotates the newest open follow-up task.
+      </p>
+
+      <section className="rounded-xl border bg-card p-3">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h2 className="text-sm font-semibold flex items-center gap-1.5">
+            <StickyNote className="h-3.5 w-3.5" /> Recent communication log
+          </h2>
+          <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => void refetchComms()}>
+            Refresh
+          </Button>
+        </div>
+        {commsLoading ? (
+          <div className="text-xs text-muted-foreground">Loading log records…</div>
+        ) : comms.length === 0 ? (
+          <div className="text-xs text-muted-foreground">No communications logged yet.</div>
+        ) : (
+          <ul className="divide-y max-h-64 overflow-y-auto">
+            {comms.map((c) => (
+              <li key={c.id} className="py-2 flex items-start gap-2">
+                <Badge variant="secondary" className="text-[10px] shrink-0 uppercase">
+                  {c.communication_type}
+                </Badge>
+                <div className="min-w-0">
+                  <div className="text-xs truncate">{c.subject || c.preview}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {c.logged_by_name ?? "Intake"} · {new Date(c.created_at).toLocaleString()}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-xl border bg-card p-3 grid grid-cols-1 md:grid-cols-4 gap-2">
         <div className="relative md:col-span-4 lg:col-span-1">
@@ -380,10 +453,11 @@ export default function ParentCommunication() {
       </Sheet>
 
       <LeadPickerDialog
-        open={!!sendMode && !!sendTpl}
+        open={!!sendMode}
         mode={sendMode}
         template={sendTpl}
         onClose={() => { setSendMode(null); setSendTpl(null); }}
+        onLogged={() => { void refetchComms(); }}
       />
     </GrowthPageShell>
   );
