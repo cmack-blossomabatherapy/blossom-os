@@ -383,6 +383,8 @@ Deno.serve(async (req) => {
     review_queued: reviewQueued,
     link_errors: linkErrors,
     excluded: excluded,
+    qualification_configured: qualSettings?.configured ?? false,
+    qualification_config_sources: qualSettings?.sources ?? ["defaults"],
     drained,
     response_shapes: Array.from(new Set(pageShapes)),
     duration_ms: Date.now() - startedAt,

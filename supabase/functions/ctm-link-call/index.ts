@@ -7,6 +7,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { normalizePhoneE164, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
+import {
+  loadCtmQualificationSettings,
+  qualifyCtmCall,
+  recordCtmQualification,
+} from "../_shared/ctm/qualification.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -36,6 +41,8 @@ Deno.serve(async (req) => {
   let linked = 0;
   let ambiguous = 0;
   let incomplete = 0;
+  let excluded = 0;
+  const qualSettings = await loadCtmQualificationSettings(supabase as any);
   for (const ev of events ?? []) {
     const isOutbound = ev.direction?.toLowerCase().startsWith("out");
     const externalNumber = isOutbound ? ev.to_number : ev.from_number;
@@ -47,7 +54,7 @@ Deno.serve(async (req) => {
     // then unique E.164 phone; ambiguous => review queue). Only run for
     // inbound calls — outbound calls are placed by employees.
     if (!ev.matched_lead_id && !isOutbound && phone) {
-      const outcome = await linkOrCreateLeadForCall(supabase as any, {
+      const normalizedCall = {
         ctm_call_id: ev.ctm_call_id,
         ctm_account_id: ev.ctm_account_id ?? null,
         direction: ev.direction ?? null,
@@ -61,10 +68,28 @@ Deno.serve(async (req) => {
         recording_url: null, transcript: null,
         tags: [], source_name: ev.source_name ?? null, campaign_name: null,
         called_at: ev.called_at ?? null, ended_at: null, raw: {},
-      }, { resolvedState: ev.resolved_state ?? null });
-      if (outcome.state === "ambiguous_review") ambiguous++;
-      else if (outcome.state === "incomplete_review") incomplete++;
-      else if (outcome.lead_id) update.matched_lead_id = outcome.lead_id;
+      };
+      // Shared qualification before any link/create.
+      const qualification = qualifyCtmCall(normalizedCall, qualSettings.config);
+      await recordCtmQualification(supabase as any, {
+        ctmCallId: ev.ctm_call_id,
+        ctmCallEventId: ev.id,
+        source: "link_call",
+        result: qualification,
+        settings: qualSettings,
+      });
+      if (qualification.state !== "eligible") {
+        if (qualification.state === "excluded") excluded++;
+        else if (qualification.state === "ambiguous_review") ambiguous++;
+        else if (qualification.state === "incomplete_review") incomplete++;
+      } else {
+        const outcome = await linkOrCreateLeadForCall(supabase as any, normalizedCall, {
+          resolvedState: ev.resolved_state ?? null,
+        });
+        if (outcome.state === "ambiguous_review") ambiguous++;
+        else if (outcome.state === "incomplete_review") incomplete++;
+        else if (outcome.lead_id) update.matched_lead_id = outcome.lead_id;
+      }
     }
 
     const nums = phone ? [phone] : [];
@@ -114,6 +139,8 @@ Deno.serve(async (req) => {
     linked,
     ambiguous,
     incomplete,
+    excluded,
+    qualification_configured: qualSettings.configured,
   }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
