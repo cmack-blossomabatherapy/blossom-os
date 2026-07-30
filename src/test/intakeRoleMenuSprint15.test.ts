@@ -25,10 +25,9 @@ describe("Sprint 15 — Intake Team live menu", () => {
     // Export 81 — Patient Lifetime Journey is Marketing/Admin only and must
     // no longer appear in the Intake menu.
     expect(paths).not.toContain("/patient-journey");
-    // Intake simplification pass — removed operator-facing entries:
+    // Canonical Intake release — pipeline and communications are live again;
+    // only these legacy destinations stay retired:
     for (const p of [
-      "/intake/lead-to-active",
-      "/intake/parent-communication",
       "/intake/benefits-cheat-sheets",
       "/leads?view=pipeline",
     ]) {
@@ -36,13 +35,13 @@ describe("Sprint 15 — Intake Team live menu", () => {
     }
   });
 
-  it("Intake menu order: Dashboard, Tasks, then Leads", () => {
+  it("Intake menu order: Dashboard, Leads, then Pipeline", () => {
     const paths = intake!.sections
       .find((s) => s.id === "intake")!
       .items.map((i) => i.path);
     expect(paths[0]).toBe("/intake/dashboard");
-    expect(paths[1]).toBe("/intake/tasks");
-    expect(paths[2]).toBe("/leads");
+    expect(paths[1]).toBe("/leads");
+    expect(paths[2]).toBe("/intake/lead-to-active");
   });
 
   it("Intake menu does NOT include the generic /dashboard item", () => {
@@ -85,8 +84,6 @@ describe("Sprint 15 — OSShell role-specific live paths", () => {
     const block = shell.slice(start, end);
     expect(block).not.toMatch(/\/patient-journey/);
     // Retired intake surfaces should no longer be listed as live for intake:
-    expect(block).not.toMatch(/\/intake\/lead-to-active/);
-    expect(block).not.toMatch(/\/intake\/parent-communication/);
     expect(block).not.toMatch(/\/intake\/benefits-cheat-sheets/);
   });
 

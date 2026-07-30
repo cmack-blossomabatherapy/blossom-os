@@ -6,16 +6,18 @@ import { ROLE_MENUS } from "@/lib/os/roleMenus";
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
 describe("Intake menu simplification pass", () => {
-  it("Intake role menu is ordered: Dashboard → Tasks → Leads → Missing Info → After-Hours AI → CR Packet Prep", () => {
+  it("Intake role menu follows the canonical Intake workflow order", () => {
     const intake = ROLE_MENUS.intake_coordinator!;
     const paths = intake.sections
       .find((s) => s.id === "intake")!
       .items.map((i) => i.path);
     expect(paths).toEqual([
       "/intake/dashboard",
-      "/intake/tasks",
       "/leads",
+      "/intake/lead-to-active",
+      "/intake/tasks",
       "/intake/missing-information",
+      "/intake/parent-communication",
       "/phone/ai-calls",
       "/intake/cr-packet-prep",
     ]);
@@ -31,17 +33,14 @@ describe("Intake menu simplification pass", () => {
     expect(training).not.toMatch(/\/intake\/parent-communication/);
   });
 
-  it("Retired staff-facing intake destinations redirect to safe operator surfaces", () => {
+  it("Canonical Intake surfaces are mounted (pipeline + communications restored)", () => {
     const app = read("src/App.tsx");
-    // /intake/lead-to-active → /intake/dashboard
-    expect(app).toMatch(
-      /path="\/intake\/lead-to-active"\s+element=\{<Navigate to="\/intake\/dashboard"/,
+    expect(app).toMatch(/path="\/intake\/lead-to-active"/);
+    expect(app).toMatch(/path="\/intake\/parent-communication"/);
+    expect(app).not.toMatch(
+      /path="\/intake\/lead-to-active"\s+element=\{<Navigate/,
     );
-    // /intake/parent-communication → /intake/tasks (operator-safe)
-    expect(app).toMatch(
-      /path="\/intake\/parent-communication"\s+element=\{<Navigate to="\/intake\/tasks"/,
-    );
-    // /intake/benefits-cheat-sheets → /vob-decision-center (operator-safe)
+    // Benefits cheat sheets stay retired for operators.
     expect(app).toMatch(
       /path="\/intake\/benefits-cheat-sheets"\s+element=\{<Navigate to="\/vob-decision-center"/,
     );

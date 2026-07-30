@@ -153,8 +153,8 @@ describe("Intake Export 88 — full department launch", () => {
   /* ----------------------- 7. Role / menu visibility --------------------- */
   describe("Intake role menu", () => {
     const intakeBlock = (() => {
-      const start = ROLE_MENUS.indexOf("intake_coordinator: {");
-      const end = ROLE_MENUS.indexOf("recruiting_team", start);
+      const start = ROLE_MENUS.indexOf("const INTAKE_SHARED_ITEMS");
+      const end = ROLE_MENUS.indexOf("export const ROLE_MENUS", start);
       return ROLE_MENUS.slice(start, end > 0 ? end : ROLE_MENUS.length);
     })();
 
