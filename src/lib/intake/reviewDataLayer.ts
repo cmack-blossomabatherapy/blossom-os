@@ -383,11 +383,15 @@ export function useCanonicalSourceEvents(opts: SourceEventsQueryOptions = {}) {
   });
 }
 
-export function useCanonicalPromotions(opts: PromotionsQueryOptions = {}) {
+export function useCanonicalPromotions(
+  opts: PromotionsQueryOptions = {},
+  queryOpts: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: intakeReviewKeys.promotions(opts),
     queryFn: () => fetchCanonicalPromotions(opts),
     staleTime: 15_000,
+    enabled: queryOpts.enabled ?? true,
   });
 }
 
