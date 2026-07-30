@@ -116,7 +116,6 @@ const PAGE_ROUTES: { path: string; loader: () => Promise<{ default: React.Compon
   { path: "/recruiting-team", loader: () => import("@/pages/os/OSRecruitingTeam") },
   { path: "/recruiting/workspace", loader: () => import("@/pages/os/OSRecruitingWorkspace") },
   { path: "/recruiting/pipeline", loader: () => import("@/pages/os/OSRecruitingPipeline") },
-  { path: "/recruiting/jobs", loader: () => import("@/pages/os/OSRecruitingJobs") },
   { path: "/recruiting/interviews", loader: () => import("@/pages/os/OSRecruitingInterviews") },
   { path: "/recruiting/offers", loader: () => import("@/pages/os/OSRecruitingOffers") },
   { path: "/recruiting/onboarding", loader: () => import("@/pages/os/OSRecruitingOnboarding") },
@@ -132,6 +131,7 @@ const PAGE_ROUTES: { path: string; loader: () => Promise<{ default: React.Compon
   { path: "/recruiting/messages", loader: () => import("@/pages/os/OSRecruitingMessages") },
   { path: "/recruiting/escalations", loader: () => import("@/pages/os/OSRecruitingEscalations") },
   { path: "/recruiting/map", loader: () => import("@/pages/os/mapsly/RecruitingMap") },
+  { path: "/recruiting/apploi", loader: () => import("@/pages/os/OSRecruitingApploi") },
 ];
 
 describe("Recruiting routes — every destination loads", () => {
@@ -170,7 +170,7 @@ describe("Recruiting routes — every destination loads", () => {
     const map = Object.fromEntries(REDIRECTS.map((r) => [r.path, r.to]));
     expect(map["/recruiting/academy"]).toBe("/academy/path/recruiting");
     expect(map["/recruiting/ready-to-staff"]).toBe("/recruiting/staffing-needs");
-    expect(map["/recruiting/apploi"]).toBe("/admin/integrations?connector=apploi");
+    expect(map["/recruiting/jobs"]).toBe("/recruiting/pipeline");
     expect(map["/recruiting/resources"]).toBe("/resource-library");
   });
 });

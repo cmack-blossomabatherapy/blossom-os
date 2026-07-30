@@ -10,9 +10,10 @@ import { upsertNormalizedRecord } from "../normalizers.ts";
  * rejected upstream with 403.
  *
  * Endpoints actually used (verified live against team 50104):
- *   GET /jobs/search?teams=<team>&include_private=1&size=&page=   → postings
  *   GET /applicants?team_id=<team>&limit=&offset=                 → applicants
  *   GET /applicants/applicant-statuses?team_id=<team>             → status set
+ *
+ * Job postings are intentionally NOT synced — Blossom OS is applicant-centric.
  *
  * No endpoint is invented. Nothing is ever written back to Apploi.
  * Upstream bodies are never returned to the client — see `sanitize()`.
@@ -88,53 +89,6 @@ function splitName(full: string | null): { first: string | null; last: string | 
   const parts = full.split(/\s+/);
   if (parts.length === 1) return { first: parts[0], last: null };
   return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
-}
-
-async function syncJobs(ctx: AdapterContext, limitPages: number) {
-  let received = 0;
-  let created = 0;
-  let updated = 0;
-  let failed = 0;
-  for (let page = 0; page < limitPages; page++) {
-    const res = await apploiGet<{ data?: any[] }>("/jobs/search", {
-      teams: teamId(),
-      include_private: 1,
-      size: PAGE_SIZE,
-      page: page + 1,
-    });
-    if (!res.ok) return { received, created, updated, failed, error: res.error };
-    const rows = res.data?.data ?? [];
-    if (rows.length === 0) break;
-    for (const j of rows) {
-      received += 1;
-      const up = await upsertNormalizedRecord(ctx, "apploi", {
-        providerRecordId: str(j.id),
-        recordKind: "job",
-        recordStatus: j.published ? "published" : "unpublished",
-        displayTitle: str(j.name) ?? "Job posting",
-        occurredAt: str(j.published_date),
-        sourceLabel: "Apploi",
-        externalUrl: str(j.redirect_apply_url_v2) ?? str(j.external_url),
-        metadata: {
-          job_id: j.id,
-          team_id: j.team_id,
-          title: j.name,
-          city: j.city,
-          state: j.state,
-          job_type: j.job_type,
-          open_positions: j.open_positions_count,
-          filled_positions: j.filled_positions_count,
-          owner_email: j.job_owner_email,
-          raw: j,
-        },
-      });
-      if (!up.ok) failed += 1;
-      else if (up.action === "update") updated += 1;
-      else created += 1;
-    }
-    if (rows.length < PAGE_SIZE) break;
-  }
-  return { received, created, updated, failed, error: undefined as string | undefined };
 }
 
 async function syncApplicants(ctx: AdapterContext, maxPages: number) {
@@ -217,18 +171,21 @@ export const apploiAdapter: ProviderAdapter = {
     if (!statuses.ok) {
       return { ok: false, status: "error", message: sanitize(`Apploi auth check failed (${statuses.error})`) };
     }
-    const jobs = await apploiGet<{ data?: any[] }>("/jobs/search", {
-      teams: teamId(),
-      include_private: 1,
-      size: 1,
+    const applicants = await apploiGet<{ data?: any[] }>("/applicants", {
+      team_id: teamId(),
+      limit: 1,
+      offset: 0,
     });
     const statusCount = statuses.data?.data?.length ?? 0;
+    const applicantsExposed = (applicants.data?.data?.length ?? 0) > 0;
     return {
       ok: true,
       status: "connected",
-      message: `Apploi authenticated for team ${teamId()} — ${statusCount} applicant statuses, jobs endpoint ${jobs.ok ? "reachable" : "unavailable"}.`,
+      message: applicantsExposed
+        ? `Apploi authenticated for team ${teamId()} — ${statusCount} applicant statuses, applicant records exposed.`
+        : `Apploi authenticated for team ${teamId()} — ${statusCount} applicant statuses, but the partner key returns no applicant records (applicant read scope not granted).`,
       accountLabel: `Apploi team ${teamId()}`,
-      details: { applicant_statuses: statusCount, jobs_reachable: jobs.ok },
+      details: { applicant_statuses: statusCount, applicants_exposed: applicantsExposed },
     };
   },
 
@@ -239,37 +196,22 @@ export const apploiAdapter: ProviderAdapter = {
     }
     const pages = options.dryRun ? 1 : MAX_PAGES;
 
-    const jobs = await syncJobs(ctx, pages);
-    if (jobs.error) {
-      return {
-        ok: false,
-        status: "failed",
-        message: sanitize(`Apploi job sync failed (${jobs.error})`),
-        received: jobs.received,
-        created: jobs.created,
-        updated: jobs.updated,
-        failed: jobs.failed,
-      };
-    }
-
     const applicants = await syncApplicants(ctx, pages);
-    const received = jobs.received + applicants.received;
-    const created = jobs.created + applicants.created;
-    const updated = jobs.updated + applicants.updated;
-    const failed = jobs.failed + applicants.failed;
+    const received = applicants.received;
+    const created = applicants.created;
+    const updated = applicants.updated;
+    const failed = applicants.failed;
 
     if (applicants.error) {
       return {
         ok: false,
-        status: "partial",
-        message: sanitize(
-          `Synced ${jobs.received} job postings. Applicant sync failed (${applicants.error}).`,
-        ),
+        status: "failed",
+        message: sanitize(`Apploi applicant sync failed (${applicants.error}).`),
         received,
         created,
         updated,
         failed,
-        details: { jobs: jobs.received, applicants: 0 },
+        details: { applicants: 0 },
       };
     }
 
@@ -282,13 +224,12 @@ export const apploiAdapter: ProviderAdapter = {
     return {
       ok: true,
       status: applicants.received === 0 ? "partial" : "success",
-      message: `Apploi sync complete: ${jobs.received} job postings, ${applicants.received} applicants.${applicantNote}`,
+      message: `Apploi sync complete: ${applicants.received} applicants.${applicantNote}`,
       received,
       created,
       updated,
       failed,
       details: {
-        jobs: jobs.received,
         applicants: applicants.received,
         applicants_reported_total: applicants.total,
         applicants_exposed: applicants.received > 0,

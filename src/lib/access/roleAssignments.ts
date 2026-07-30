@@ -139,7 +139,7 @@ export const ROLE_GROUPS: RoleGroup[] = [
   {
     label: "Recruiting",
     roles: [
-      { key: "recruiting_lead", label: "Recruiting Lead" },
+      { key: "recruiting_lead", label: "Director of Recruiting" },
       { key: "recruiting_coordinator", label: "Recruiting Coordinator" },
     ],
   },

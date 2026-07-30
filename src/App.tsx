@@ -371,8 +371,8 @@ import OSParentTraining97156 from "./pages/os/OSParentTraining97156";
 import OSSchedulingWorkspace from "./pages/os/OSSchedulingWorkspace";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSRecruitingWorkspace from "./pages/os/OSRecruitingWorkspace";
+import OSRecruitingApploi from "./pages/os/OSRecruitingApploi";
 import OSRecruitingPipeline from "./pages/os/OSRecruitingPipeline";
-import OSRecruitingJobs from "./pages/os/OSRecruitingJobs";
 import OSRecruitingInterviews from "./pages/os/OSRecruitingInterviews";
 import { SafeBoundary } from "@/components/common/SafeBoundary";
 import OSRecruitingOffers from "./pages/os/OSRecruitingOffers";
@@ -867,7 +867,8 @@ const App = () => (
                   <Route path="/recruiting/workspace"      element={<OSRecruitingWorkspace />} />
                   <Route path="/recruiting/academy"        element={<Navigate to="/academy/path/recruiting" replace />} />
                   <Route path="/recruiting/pipeline"       element={<OSRecruitingPipeline />} />
-                  <Route path="/recruiting/jobs"           element={<OSRecruitingJobs />} />
+                  {/* Job postings retired — recruiting is applicant-centric. */}
+                  <Route path="/recruiting/jobs"           element={<Navigate to="/recruiting/pipeline" replace />} />
                   <Route path="/recruiting/interviews"     element={<SafeBoundary label="Interviews" fallbackTitle="Interviews could not load." showErrorDetails><OSRecruitingInterviews /></SafeBoundary>} />
                  <Route path="/recruiting/offers"         element={<OSRecruitingOffers />} />
                   <Route path="/recruiting/onboarding"     element={<OSRecruitingOnboarding />} />
@@ -875,7 +876,7 @@ const App = () => (
                   <Route path="/recruiting/orientation"    element={<OSRecruitingOrientation />} />
                   <Route path="/recruiting/staffing-needs" element={<OSRecruitingStaffingNeeds />} />
                  <Route path="/recruiting/ready-to-staff" element={<Navigate to="/recruiting/staffing-needs" replace />} />
-                 <Route path="/recruiting/apploi" element={<Navigate to="/admin/integrations?connector=apploi" replace />} />
+                 <Route path="/recruiting/apploi" element={<OSRecruitingApploi />} />
                   <Route path="/recruiting/rbt"            element={<OSRecruitingRBT />} />
                   <Route path="/recruiting/bcba"           element={<OSRecruitingBCBA />} />
                   <Route path="/recruiting/office-staff"   element={<OSRecruitingOfficeStaff />} />

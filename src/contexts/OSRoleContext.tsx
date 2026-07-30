@@ -32,7 +32,10 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (has("recruiting_team")) return "recruiting_team";
   if (appRoles.includes("recruiting_lead")) return "recruiting_lead";
   if (appRoles.includes("recruiting_coordinator")) return "recruiting_coordinator";
-  if (appRoles.includes("recruiting_assistant")) return "recruiting_team";
+  // Legacy recruiting role: recruiting is consolidated to Director of
+  // Recruiting + Recruiting Coordinator, so legacy accounts land on the
+  // Coordinator experience instead of the retired generic menu.
+  if (appRoles.includes("recruiting_assistant")) return "recruiting_coordinator";
   if (appRoles.includes("credentialing_lead")) return "credentialing_lead";
   if (has("credentialing_team") || has("credentialing") || has("credentialing_coordinator")) return "credentialing_team";
   // HR Lead / Admin / Manager get the HR Lead OS experience (User Management Admin).
