@@ -1,112 +1,42 @@
-# Intake Role — Release-Ready Design & Functionality Pass
+## Verified current state
 
-Scope is the signed-in Intake operator experience only. Training Academy, Resource Library, Reports, LeadDetail, and unrelated roles stay untouched. Nothing published.
+- The `app_role` enum has three recruiting values: `recruiting_assistant`, `recruiting_lead`, `recruiting_coordinator`. There is no `director_of_recruiting` value.
+- `testrecruiting@blossomabatherapy.com` holds only `recruiting_assistant`, which has **no sidebar menu entry** — that is why the account sees nothing.
+- Apploi is connected (team 50104, last success 2026-07-28) and has synced **136 job postings and 0 applicants**. `recruiting_candidates` is completely empty.
+- Sync is currently **one-way read-only**: an edge function pulls from Apploi into `integration_normalized_records`, then a manual import maps candidates into `recruiting_candidates`. Nothing is ever written back to Apploi.
 
-## Inventory (confirmed on disk)
+## 1. Collapse to two recruiting roles
 
-Intake operator menu → these routes:
+**Director of Recruiting** and **Recruiting Coordinator** become the only recruiting roles.
 
-```text
-/intake/dashboard              → src/pages/os/intake/IntakeDashboard.tsx        (APPROVED standard)
-/intake/tasks                  → src/pages/os/intake/IntakeTasks.tsx
-/leads                         → src/pages/os/OSLeadsV2.tsx (list/pipeline/follow-up)
-/leads/:id                     → src/pages/LeadDetail.tsx                        (APPROVED standard)
-/intake/missing-information    → src/pages/os/intake/MissingInformation.tsx
-/phone/ai-calls                → After-Hours AI Calls surface (Intake-scoped)
-/intake/cr-packet-prep         → src/pages/os/intake/CentralReachPacketPrep.tsx
-```
+- Reuse the existing enum value `recruiting_lead` as the backing value for **Director of Recruiting** (relabel only — no enum churn, no data migration risk). Add a `director_of_recruiting` alias only if you'd rather the raw value read cleanly; say the word and I'll add it as a new enum value with a backfill.
+- Retire `recruiting_assistant` and the legacy `recruiting_team` key from every selectable list: user management / add-new-hire role picker, bulk provisioning, role management, and the "View as role" preview switcher. Existing holders keep working (permission functions continue to accept the legacy values) so nothing breaks mid-flight.
+- Reassign the test account to **Recruiting Coordinator** so it lands on a real menu immediately.
+- Align the label and description everywhere: role catalog, role menus, role home, permissions matrix, AI permissions, training journey assignments, reports catalog, workspaces, department dashboards.
+- Both roles get a full recruiting menu. Director of Recruiting additionally sees Recruiting Performance, Escalations, Staffing Handoff review, and the Apploi Integration page; Coordinator sees the day-to-day pipeline surfaces.
 
-Approved visual/product benchmarks: `IntakeDashboard.tsx` + `LeadDetail.tsx`.
-Shared kit already exists: `IntakeVisuals.tsx` (`IntakeSectionHeader`, `IntakePulseStrip`, `IntakeToneCard`), `GlassHero`, `PermissionGate`, `PipelineProgress`, `StatusBadge`.
+## 2. Remove Job Postings — applicants only
 
-## Product rules to enforce on every Intake page
+- Delete the "Job Postings" menu item from every recruiting menu and retire the `/recruiting/jobs` route (redirect to the pipeline so old links don't 404).
+- Stop syncing jobs in the Apploi runner; the sync becomes applicants-only.
+- Keep the 136 already-synced job records in place but stop surfacing them — no UI reads them after this change.
+- Recruiting surfaces (Pipeline, RBT/BCBA/Office/Clinic pipelines, Interviews, Offers) all read `recruiting_candidates`, which is applicant-only. No change needed there beyond the honest empty state below.
 
-1. **Header/shell**: `OSShell` + `GlassHero` welcome band (state filter, primary CTA), `max-w-7xl mx-auto px-6`, section spacing `space-y-6`, no horizontal overflow at any breakpoint.
-2. **Operator IA per row/card**: what needs attention → why → owner → age/SLA → next step → primary action. No technical language.
-3. **No diagnostics for Intake role**: provider health, webhook state, credentials/scopes, raw payloads, mapping counters, ingestion metrics — hidden behind `PermissionGate module="admin"` (Super Admin only). Operators only see human-readable readiness ("Call linked", "Import pending").
-4. **Offline/integration-ready**: real data first, fall back to imported/local persistence, honest empty states. Never fabricate success. Preserve CTM `INGEST_ONLY`, CentralReach, Monday, comms adapter contracts.
-5. **Every clickable → real destination**: audit each button/row; remove decorative/no-op controls; wire to existing dialogs, hooks, or routes. No new popout patient drawers — always route to `/leads/:id`.
+## 3. Two-way Apploi (applicants)
 
-## Shared primitives (create once, reuse across 5 non-Dashboard Intake pages)
+**Inbound (already built, currently returns nothing):** Apploi `/applicants` → normalized records → `recruiting_candidates`, keyed on the durable Apploi applicant id, with recruiter-owned fields (stage, notes, next action) protected from being clobbered on re-sync.
 
-New file: `src/components/os/intake/IntakePageShell.tsx`
-- Wraps `OSShell` + `GlassHero` (eyebrow, title, subtitle, state chip, right slot).
-- Standard content container: `max-w-7xl mx-auto px-4 md:px-6 space-y-6`.
-- Standard slots: `filters`, `metrics`, `children`.
+**Outbound (new):** when a recruiter changes a candidate's stage or disposition in Blossom OS, push that status back to Apploi via the applicant status-update endpoint, mapped through a Blossom-stage → Apploi-status table. Writes are queued and retried, and every push is written to `recruiting_activity_events` so there's an audit trail. A conflict rule decides the winner when both sides changed since the last sync (last-write-wins by timestamp, with the losing value logged).
 
-New file: `src/components/os/intake/IntakeQueueRow.tsx`
-- Standard queue row (avatar/initials, title, subtitle, owner chip, age chip, SLA/urgency badge, next-step line, primary action button, overflow menu).
-- Renders as `<Link to="/leads/:id">` when a lead is present; otherwise button.
+**Blocker, stated plainly:** the current partner key returns **zero applicants** and has no documented write scope. Both the inbound applicant feed and any write-back require Apploi to enable applicant read + write scope on this key. I'll build the plumbing behind a feature flag that stays dark until the scope check passes, so the moment Apploi grants access it turns on without another release. Until then the pipeline will show an honest banner: "Apploi is connected, but applicant access is not enabled on the current API key."
 
-New file: `src/components/os/intake/IntakeEmptyState.tsx`, `IntakeLoadingState.tsx`, `IntakeErrorState.tsx`
-- Calm, honest, action-suggestive copy consistent with LeadDetail.
+## 4. Email to Apploi
 
-New file: `src/components/os/intake/OperatorDiagnosticsGate.tsx`
-- `<PermissionGate module="admin" fallback={null}>` wrapper for any diagnostics block; forces the "hidden for Intake" rule to be one line at each callsite.
+I'll draft a ready-to-send email in chat requesting: applicant read scope on the partner key for team 50104, applicant status write-back scope, webhook support for real-time applicant events, and the endpoint/field documentation for status values — including the exact evidence (endpoint called, response, timestamps) so their support team can act without a back-and-forth.
 
-## Page-by-page changes
+## Technical notes
 
-### 1. Intake Dashboard (`IntakeDashboard.tsx`)
-- Already the standard. Only change: audit each KPI/queue card → confirm it navigates to the correct filtered working page (`/intake/tasks?filter=…`, `/leads?stage=…`, `/intake/missing-information?blocker=…`, `/phone/ai-calls?state=unreviewed`, `/intake/cr-packet-prep?ready=false`). Fix any that route to a bare page.
-- Ensure system-health strip stays wrapped in `OperatorDiagnosticsGate` (Super Admin only).
-
-### 2. Intake Tasks (`IntakeTasks.tsx`)
-- Convert to `IntakePageShell`. Real task queue: ownership picker, urgency badge, due/overdue with age, linked lead chip, next-step line.
-- Row actions: **Start** (opens `/leads/:id?tab=tasks`), **Complete**, **Snooze** (existing dialog), **Reassign** (existing `AssigneePicker`). Bulk complete/reassign in a footer bar.
-- URL-addressable filters: `?owner=me|team&status=open|overdue|done&urgency=high`.
-- Empty / loading / error via new primitives.
-
-### 3. Leads list/pipeline/follow-up (`OSLeadsV2.tsx`)
-- Keep dedicated full patient record at `/leads/:id` (no drawer). 
-- Ensure list/pipeline/follow-up tabs share: filters state, URL params (`?tab=…&stage=…&owner=…&q=…`), selection model, bulk actions (assign coordinator, add tag, export), create/import CTAs. Every row → `navigate('/leads/:id')`.
-- Header/shell consistent with Dashboard via `IntakePageShell`.
-
-### 4. Missing Information (`MissingInformation.tsx`)
-- Convert to `IntakePageShell` + `IntakeQueueRow`. Columns: blocker type, aging, owner, last attempt, next action.
-- Real actions only: **Send reminder** (uses existing comms adapter — will no-op with clear toast if adapter inactive per `INGEST_ONLY`), **Create task**, **Add note**, **Open family** → `/leads/:id?tab=documents`.
-- Filter chips by blocker type; URL state.
-- Diagnostics (ingestion counters, adapter states) removed from operator view.
-
-### 5. After-Hours AI Calls (`/phone/ai-calls` for Intake)
-- Operator inbox view: caller, family match confidence (human phrase, not score), urgency, transcript/summary excerpt, disposition, owner.
-- Actions: **Link to lead** (search + attach), **Create lead from call** (opens Add Lead dialog pre-filled), **Assign owner**, **Mark reviewed**, **Open lead** → `/leads/:id?tab=communications`.
-- Remove CTM/webhook/provider diagnostics from this Intake-facing route; keep them only under Super Admin CTM Operations panel (existing).
-
-### 6. CentralReach Packet Prep (`CentralReachPacketPrep.tsx`)
-- Readiness queue with required-document checklist per family, missing items, validation state, owner, handoff button.
-- Row → `/leads/:id?tab=documents`. Handoff action logs to activity and marks stage advance (existing hook).
-- Remove import-diagnostic panels; expose only human-readable "Import pending" chip. Full diagnostics remain in Super Admin CentralReach admin route.
-
-## Permission gating
-
-- Any block that contains: provider status, webhook delivery, API credentials, mapping tables, raw payloads, ingestion counters → wrap in `<OperatorDiagnosticsGate>`.
-- `useOSRole` `role === "intake_coordinator"` (and other intake_* variants) MUST NOT see diagnostics anywhere in the 6 pages above.
-- Super Admin unchanged — sees everything via existing admin routes.
-
-## Functional states (all pages)
-
-Support: persisted UUID + imported ID lookup, missing fields (dash placeholders + "Add" inline), empty datasets (`IntakeEmptyState`), loading (`IntakeLoadingState` skeletons), permission denied (redirect via existing route guard), backend error (`IntakeErrorState` with retry), stale data (soft toast), direct deep link (route resolves without crashing on unknown params).
-
-## Testing
-
-New test files (Vitest, React Testing Library):
-
-- `src/test/intakePageShellPrimitives.test.tsx` — every Intake page renders `IntakePageShell`, has hero + max-w container, no horizontal overflow (assert wrapper class).
-- `src/test/intakeCtaContracts.test.tsx` — snapshot of clickable elements per page: every button has an `onClick` OR is a `Link` with a valid path; zero no-ops.
-- `src/test/intakeDrilldownRoutes.test.tsx` — dashboard KPI/queue tiles navigate to the exact filtered URLs; every row in Tasks/Missing/CR-Packet navigates to `/leads/:id...`.
-- `src/test/intakeDiagnosticsGating.test.tsx` — render each page under role `intake_coordinator` → diagnostics blocks absent; under `super_admin` → present. Covers system-health, provider readiness, webhook state, ingestion counters.
-- `src/test/intakeStates.test.tsx` — empty / loading / error / imported-ID / unknown-deep-link render without crash.
-
-Verification: run these focused tests + `tsgo` typecheck + production build. Fix change-caused failures. Do not touch the 50 pre-existing unrelated failures.
-
-## Explicitly out of scope
-
-- Training Academy, Resource Library, Reports (content untouched, shell only stays consistent).
-- LeadDetail rebuild (already approved standard — no changes).
-- Other roles' menus/pages.
-- Publishing.
-- Enabling any outbound automation or notification currently disabled.
-
-## Deliverable
-
-One PR-sized change set touching: 4 new shared primitives + 5 Intake page files + Dashboard CTA audit + 5 new test files. Report exact typecheck/build/test status and file list on completion.
+- Files: `src/lib/roles.ts`, `src/lib/os/roleMenus.ts`, `src/lib/os/roleHome.ts`, `src/lib/os/permissions.ts`, `src/lib/access/roleAssignments.ts`, `src/components/team/BulkProvisionDialog.tsx`, `src/App.tsx`, plus the label references in AI permissions, training journeys, reports catalog, and workspaces.
+- Edge function: `supabase/functions/_shared/integrations/providers/apploi.ts` (drop job sync, add write-back) and `apploi-sync-cron`.
+- Small migration: an outbound push queue table with grants + RLS, and a role reassignment for the test account. No enum change unless you want the literal `director_of_recruiting` value.
+- Existing tests in `recruitingRoutesE2E.test.tsx` and the Apploi identity tests get updated for the two-role model and the removed jobs route.
