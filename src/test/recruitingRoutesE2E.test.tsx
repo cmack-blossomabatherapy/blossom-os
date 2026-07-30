@@ -131,6 +131,7 @@ const PAGE_ROUTES: { path: string; loader: () => Promise<{ default: React.Compon
   { path: "/recruiting/messages", loader: () => import("@/pages/os/OSRecruitingMessages") },
   { path: "/recruiting/escalations", loader: () => import("@/pages/os/OSRecruitingEscalations") },
   { path: "/recruiting/map", loader: () => import("@/pages/os/mapsly/RecruitingMap") },
+  { path: "/recruiting/apploi", loader: () => import("@/pages/os/OSRecruitingApploi") },
 ];
 
 describe("Recruiting routes — every destination loads", () => {
@@ -169,7 +170,7 @@ describe("Recruiting routes — every destination loads", () => {
     const map = Object.fromEntries(REDIRECTS.map((r) => [r.path, r.to]));
     expect(map["/recruiting/academy"]).toBe("/academy/path/recruiting");
     expect(map["/recruiting/ready-to-staff"]).toBe("/recruiting/staffing-needs");
-    expect(map["/recruiting/apploi"]).toBe("/admin/integrations?connector=apploi");
+    expect(map["/recruiting/jobs"]).toBe("/recruiting/pipeline");
     expect(map["/recruiting/resources"]).toBe("/resource-library");
   });
 });
