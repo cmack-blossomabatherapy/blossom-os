@@ -74,7 +74,8 @@ const INTAKE_STAGE_ALIASES: Record<string, IntakeCanonicalStage> = {
   "QA / Treatment Plan Authorization": "Clinical / Operational Readiness",
   "Authorization Pending": "Clinical / Operational Readiness",
   "Staffing Needed": "Clinical / Operational Readiness",
-  "Staffing Match": "Clinical / Operational Readiness",
+  // Stored label written back for CentralReach Packet Prep — must round-trip.
+  "Staffing Match": "CentralReach Packet Prep",
   "Ready for Start": "Admission Ready",
   "Pending Start": "Admission Ready",
   "Ready to Start Services": "Admission Ready",

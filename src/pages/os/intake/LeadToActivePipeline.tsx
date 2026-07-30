@@ -27,6 +27,11 @@ import type { LeadStatus } from "@/data/leads";
 import { guardIntakeMutation } from "@/lib/intake/actionGuard";
 import { useIntakeOperatingMode } from "@/lib/intake/operatingMode";
 import { LeadActionPanel } from "@/components/intake/LeadActionPanel";
+import {
+  useIntakeStageHistory,
+  useRecordIntakeStageTransition,
+  intakeTransitionErrorMessage,
+} from "@/hooks/useIntakeStageAudit";
 
 /**
  * Blossom OS — canonical Intake pipeline (/intake/lead-to-active).
@@ -43,6 +48,8 @@ export default function LeadToActivePipeline() {
   const director = isDirectorOfIntake([ctx?.role ?? null]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [exceptionReason, setExceptionReason] = useState("");
+  const recordTransition = useRecordIntakeStageTransition();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -69,8 +76,14 @@ export default function LeadToActivePipeline() {
 
   const modeBanner = modeState?.mode === "INGEST_ONLY";
 
-  const move = (target: typeof canonical | null, direction: "forward" | "back", useException = false) => {
+  const { data: history = [] } = useIntakeStageHistory(lead?.id ?? null);
+
+  const move = async (target: typeof canonical | null, direction: "forward" | "back", useException = false) => {
     if (!lead || !target) return;
+    if (useException && !exceptionReason.trim()) {
+      toast.error("Add a reason before approving a Director exception.");
+      return;
+    }
     const decision = guardIntakeStageTransition(lead, target, {
       isDirector: director,
       directorException: useException,
@@ -87,8 +100,26 @@ export default function LeadToActivePipeline() {
       { from: lead.status, to: stored },
     );
     if (preview) return;
+
+    // Server-side record first: it enforces Director-only exceptions and
+    // stores the reason alongside the stage change.
+    try {
+      await recordTransition.mutateAsync({
+        leadId: lead.id,
+        toStage: stored,
+        direction: direction === "forward" ? "forward" : "backward",
+        reason: viaException ? exceptionReason.trim() : direction === "back" ? "Manual workflow correction" : null,
+        isException: viaException,
+        missing: requirements.missing,
+      });
+    } catch (e) {
+      toast.error(intakeTransitionErrorMessage(e));
+      return;
+    }
+
     if (direction === "forward") moveStage([lead.id], stored);
     else revertStage(lead.id, stored, 0, "Manual workflow correction");
+    setExceptionReason("");
     toast.success(
       viaException ? `Moved to ${target} via Director exception.` : `Moved to ${target}.`,
     );
@@ -194,14 +225,23 @@ export default function LeadToActivePipeline() {
                     <div className="font-semibold">Advancement blocked</div>
                     <div className="text-sm mt-1">Missing: {requirements.missing.join(", ")}.</div>
                     {director && nextStage && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-3"
-                        onClick={() => move(nextStage, "forward", true)}
-                      >
-                        Approve Director exception & advance
-                      </Button>
+                      <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+                        <Input
+                          value={exceptionReason}
+                          onChange={(e) => setExceptionReason(e.target.value)}
+                          placeholder="Reason for the Director exception"
+                          aria-label="Director exception reason"
+                          className="sm:max-w-xs bg-background"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!exceptionReason.trim() || recordTransition.isPending}
+                          onClick={() => move(nextStage, "forward", true)}
+                        >
+                          Approve Director exception & advance
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -254,6 +294,32 @@ export default function LeadToActivePipeline() {
 
               <div className="rounded-xl border bg-card/50 p-4">
                 <LeadActionPanel lead={lead} sourcePage="lead-to-active-pipeline" />
+              </div>
+
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Stage history
+                </div>
+                {history.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No recorded stage changes yet.</div>
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {history.slice(0, 10).map((h) => (
+                      <li key={h.id} className="flex flex-wrap items-center gap-2">
+                        <span className="text-muted-foreground">
+                          {new Date(h.created_at).toLocaleDateString()}
+                        </span>
+                        <span>{h.from_stage ?? "—"} → {h.to_stage}</span>
+                        {h.is_exception && (
+                          <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 text-[10px]">
+                            Director exception
+                          </Badge>
+                        )}
+                        {h.reason && <span className="text-muted-foreground">· {h.reason}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </>
           ) : (

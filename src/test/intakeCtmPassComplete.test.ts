@@ -6,19 +6,20 @@ const read = (p: string) => fs.readFileSync(p, "utf8");
 describe("Intake / CTM final pass — canonical wiring", () => {
   it("LeadToActivePipeline page exists and satisfies canonical contract", () => {
     const src = read("src/pages/os/intake/LeadToActivePipeline.tsx");
-    expect(src).toMatch(/FAMILY_LEAD_PIPELINE_STAGES/);
-    expect(src).toMatch(/canonicalFamilyLeadStage/);
-    expect(src).toMatch(/getNextFamilyLeadStage/);
-    expect(src).toMatch(/getPreviousFamilyLeadStage/);
-    expect(src).toMatch(/FAMILY_LEAD_STAGE_OWNERS/);
-    expect(src).toMatch(/Family lead workflow/);
-    expect(src).toMatch(/Ready to Start Services/);
-    expect(src).toMatch(/isPipelineEnd/);
-    expect(src).toMatch(/Hard stop/);
-    expect(src).toMatch(/Pipeline end/);
-    expect(src).toMatch(/Active patient operations start after this point/);
-    expect(src).toMatch(/managed in a separate workflow/);
+    // Canonical Intake-owned 8-stage model (Lead Captured → Admission Ready).
+    expect(src).toMatch(/INTAKE_CANONICAL_STAGES/);
+    expect(src).toMatch(/canonicalIntakeStage/);
+    expect(src).toMatch(/getNextIntakeStage/);
+    expect(src).toMatch(/getPreviousIntakeStage/);
+    expect(src).toMatch(/INTAKE_STAGE_OWNERS/);
+    expect(src).toMatch(/Canonical Intake workflow/);
+    expect(src).toMatch(/Admission Ready/);
+    expect(src).toMatch(/isAdmissionReady/);
+    expect(src).toMatch(/Admission Ready · Intake complete/);
+    expect(src).toMatch(/CENTRALREACH_BOUNDARY_NOTE/);
     expect(src).toMatch(/<Ban /);
+    // Stage moves are persisted server-side with reason + exception audit.
+    expect(src).toMatch(/recordTransition\.mutateAsync/);
     expect(src).not.toMatch(/STAGE_TO_LEAD_STATUS/);
     expect(src).toMatch(/useLeads\(/);
     expect(src).toMatch(/moveStage/);

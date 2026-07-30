@@ -62,10 +62,10 @@ describe("Export 78 — canonical lead pipeline alignment", () => {
 
   it("LeadToActivePipeline renders the canonical family lead stages", () => {
     const src = read("src/pages/os/intake/LeadToActivePipeline.tsx");
-    expect(src).toMatch(/FAMILY_LEAD_PIPELINE_STAGES/);
-    expect(src).toMatch(/canonicalFamilyLeadStage/);
-    expect(src).toMatch(/Ready to Start Services/);
-    expect(src).toMatch(/Family lead workflow/);
+    expect(src).toMatch(/INTAKE_CANONICAL_STAGES/);
+    expect(src).toMatch(/canonicalIntakeStage/);
+    expect(src).toMatch(/Admission Ready/);
+    expect(src).toMatch(/Canonical Intake workflow/);
   });
 
   it.skip("IntakeDashboard uses Ready to Start (not Converted) for endpoint metric and keeps top buttons", () => {

@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight, CheckCircle2, Circle, FileWarning, ListChecks,
   ShieldQuestion, Users, MapPin, FileText, HeartHandshake, Inbox,
-  StickyNote, AlertCircle, Filter, Search,
+  StickyNote, AlertCircle, Filter, Search, ShieldCheck, MinusCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { GrowthPageShell, ReadyForDataNotice } from "@/components/os/growth/GrowthPageShell";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,21 @@ import { useLeads } from "@/contexts/LeadsContext";
 import { LeadNameLink } from "@/contexts/LeadDrawerContext";
 import { getMissingInfoFlags, canonicalFamilyLeadStage } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
+import { isDirectorOfIntake } from "@/lib/intake/intakeRoles";
+import {
+  evaluateAdmissionReadiness,
+  CENTRALREACH_BOUNDARY_NOTE,
+  type AdmissionChecklistItem,
+} from "@/lib/intake/admissionReadiness";
+import {
+  useAdmissionPackets,
+  useApproveAdmission,
+  useMarkAdmissionHandoff,
+  useSetAdmissionItem,
+  admissionPacketErrorMessage,
+  type AdmissionPacketRecord,
+} from "@/hooks/useIntakeAdmissionPacket";
 import type { Lead } from "@/data/leads";
 
 type SectionKey =
@@ -113,9 +129,33 @@ function computeReadiness(lead: Lead) {
   };
 }
 
+/** Derived lead checks + persisted Director waivers → admission checklist. */
+export function buildAdmissionChecklist(
+  lead: Lead,
+  persisted: AdmissionChecklistItem[] = [],
+): AdmissionChecklistItem[] {
+  const byKey = new Map(persisted.map((p) => [p.key, p]));
+  return SECTIONS.map((s) => {
+    const result = s.check(lead);
+    const saved = byKey.get(s.key);
+    if (saved?.status === "waived") {
+      return { ...saved, label: s.label, required: s.required, status: "waived" as const };
+    }
+    return {
+      key: s.key,
+      label: s.label,
+      required: s.required,
+      status: (result.ok ? "complete" : "missing") as AdmissionChecklistItem["status"],
+      missing: result.missing,
+    };
+  });
+}
+
 export default function CentralReachPacketPrep() {
   const { leads: allLeads, loading } = useLeads();
   const { matches } = useIntakeStateFilter();
+  const roleCtx = useOSRoleSafe();
+  const director = isDirectorOfIntake([roleCtx?.role ?? null]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "incomplete" | "ready" | "blocked">("all");
 
@@ -142,6 +182,9 @@ export default function CentralReachPacketPrep() {
       })
       .sort((a, b) => a.readiness.completeRequired - b.readiness.completeRequired);
   }, [scoped, filter, query]);
+
+  const leadIds = useMemo(() => rows.slice(0, 60).map((r) => r.lead.id), [rows]);
+  const { data: packets } = useAdmissionPackets(leadIds);
 
   const totals = useMemo(() => {
     const ready    = rows.filter((r) => r.readiness.ready && !r.readiness.blocked).length;
@@ -199,10 +242,17 @@ export default function CentralReachPacketPrep() {
       ) : (
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {rows.map(({ lead, readiness }) => (
-            <PacketCard key={lead.id} lead={lead} readiness={readiness} />
+            <PacketCard
+              key={lead.id}
+              lead={lead}
+              readiness={readiness}
+              packet={packets?.[lead.id]}
+              director={director}
+            />
           ))}
         </section>
       )}
+      <p className="text-xs text-muted-foreground">{CENTRALREACH_BOUNDARY_NOTE}</p>
     </GrowthPageShell>
   );
 }
@@ -227,16 +277,71 @@ function SummaryTile({
 function PacketCard({
   lead,
   readiness,
+  packet,
+  director,
 }: {
   lead: Lead;
   readiness: ReturnType<typeof computeReadiness>;
+  packet?: AdmissionPacketRecord;
+  director: boolean;
 }) {
-  const pct = Math.round((readiness.completeRequired / readiness.totalRequired) * 100);
-  const statusBadge = readiness.blocked
+  const setItem = useSetAdmissionItem();
+  const approve = useApproveAdmission();
+  const markHandoff = useMarkAdmissionHandoff();
+
+  const checklist = useMemo(
+    () => buildAdmissionChecklist(lead, packet?.items ?? []),
+    [lead, packet?.items],
+  );
+  const admission = useMemo(
+    () => evaluateAdmissionReadiness(checklist, packet?.approval ?? {}),
+    [checklist, packet?.approval],
+  );
+  const handedOff = !!packet?.handoffMarkedAt;
+
+  const pct = admission.requiredCount
+    ? Math.round(((admission.completeCount + admission.waivedCount) / admission.requiredCount) * 100)
+    : 100;
+  const statusBadge = handedOff
+    ? { label: "Handed off to CentralReach", cls: "bg-sky-50 text-sky-700 border-sky-200" }
+    : admission.submissionReady
+    ? { label: "Approved — ready for CR", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+    : readiness.blocked
     ? { label: "Blocked", cls: "bg-rose-50 text-rose-700 border-rose-200" }
-    : readiness.ready
-    ? { label: "Ready for CR", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+    : admission.checklistSatisfied
+    ? { label: "Awaiting Director approval", cls: "bg-indigo-50 text-indigo-700 border-indigo-200" }
     : { label: `${pct}% complete`, cls: "bg-amber-50 text-amber-800 border-amber-200" };
+
+  const waive = async (item: AdmissionChecklistItem) => {
+    const reason = window.prompt(`Reason for waiving "${item.label}"`)?.trim();
+    if (!reason) return;
+    try {
+      await setItem.mutateAsync({
+        leadId: lead.id, itemKey: item.key, label: item.label,
+        required: item.required, status: "waived", missing: item.missing ?? [], reason,
+      });
+      toast.success(`${item.label} waived.`);
+    } catch (e) { toast.error(admissionPacketErrorMessage(e)); }
+  };
+
+  const onApprove = async () => {
+    const needsException = !admission.checklistSatisfied;
+    const reason = needsException
+      ? window.prompt("Required items are still missing. Reason for approving anyway:")?.trim()
+      : null;
+    if (needsException && !reason) return;
+    try {
+      await approve.mutateAsync({ leadId: lead.id, exceptionReason: reason });
+      toast.success("Admission packet approved.");
+    } catch (e) { toast.error(admissionPacketErrorMessage(e)); }
+  };
+
+  const onHandoff = async () => {
+    try {
+      await markHandoff.mutateAsync({ leadId: lead.id, reference: null });
+      toast.success("Marked as handed off to CentralReach.");
+    } catch (e) { toast.error(admissionPacketErrorMessage(e)); }
+  };
 
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-4 space-y-3">
@@ -255,44 +360,86 @@ function PacketCard({
       </div>
 
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-        {readiness.results.map(({ key, label, icon: Icon, required, result }) => (
-          <li key={key} className="flex items-start gap-2 text-xs">
-            {result.ok ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
-            ) : (
-              <Circle className={cn("h-3.5 w-3.5 mt-0.5 shrink-0",
-                required ? "text-rose-500" : "text-muted-foreground")} />
-            )}
-            <div className="min-w-0">
-              <div className="flex items-center gap-1">
-                <Icon className="h-3 w-3 text-muted-foreground" />
-                <span className={cn("truncate", result.ok && "text-muted-foreground line-through")}>
-                  {label}{required ? "" : " (optional)"}
-                </span>
-              </div>
-              {!result.ok && result.missing.length > 0 && (
-                <div className="text-[11px] text-muted-foreground truncate">{result.missing.join(" · ")}</div>
+        {checklist.map((item) => {
+          const Icon = SECTIONS.find((s) => s.key === item.key)?.icon ?? ListChecks;
+          const ok = item.status !== "missing";
+          return (
+            <li key={item.key} className="flex items-start gap-2 text-xs">
+              {item.status === "complete" ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
+              ) : item.status === "waived" ? (
+                <MinusCircle className="h-3.5 w-3.5 text-indigo-500 mt-0.5 shrink-0" />
+              ) : (
+                <Circle className={cn("h-3.5 w-3.5 mt-0.5 shrink-0",
+                  item.required ? "text-rose-500" : "text-muted-foreground")} />
               )}
-            </div>
-          </li>
-        ))}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1">
+                  <Icon className="h-3 w-3 text-muted-foreground" />
+                  <span className={cn("truncate", ok && "text-muted-foreground line-through")}>
+                    {item.label}{item.required ? "" : " (optional)"}
+                  </span>
+                </div>
+                {item.status === "missing" && (item.missing?.length ?? 0) > 0 && (
+                  <div className="text-[11px] text-muted-foreground truncate">{item.missing!.join(" · ")}</div>
+                )}
+                {item.status === "waived" && (
+                  <div className="text-[11px] text-indigo-600 truncate">Waived — {item.waivedReason}</div>
+                )}
+                {item.status === "missing" && item.required && director && !handedOff && (
+                  <button
+                    type="button"
+                    onClick={() => waive(item)}
+                    className="text-[11px] underline text-muted-foreground hover:text-foreground"
+                  >
+                    Waive
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ul>
+
+      {!admission.submissionReady && admission.blockers.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-2 text-[11px] text-amber-900">
+          <span className="font-medium">Blocking handoff:</span> {admission.blockers.join(" · ")}
+        </div>
+      )}
+      {admission.exceptionReason && (
+        <div className="text-[11px] text-indigo-700">Director exception — {admission.exceptionReason}</div>
+      )}
 
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
         <div className="text-[11px] text-muted-foreground flex items-center gap-1">
           {readiness.blocked && <AlertCircle className="h-3 w-3 text-rose-500" />}
-          {readiness.completeRequired}/{readiness.totalRequired} required complete
+          {admission.completeCount + admission.waivedCount}/{admission.requiredCount} required complete
         </div>
         <div className="flex items-center gap-1">
           <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
             <Link to={`/leads/${lead.id}`}>Open lead</Link>
           </Button>
-          {readiness.ready ? (
+          {handedOff ? (
+            <Badge variant="outline" className="text-[10px] bg-sky-50 text-sky-700 border-sky-200">
+              Handed off
+            </Badge>
+          ) : director && !admission.submissionReady ? (
+            <Button size="sm" className="h-7 text-xs" onClick={onApprove} disabled={approve.isPending}>
+              <ShieldCheck className="h-3 w-3 mr-1" /> Approve packet
+            </Button>
+          ) : admission.handoffEligible ? (
+            <>
+              {director && (
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onHandoff} disabled={markHandoff.isPending}>
+                  Mark handed off
+                </Button>
+              )}
             <Button asChild size="sm" className="h-7 text-xs">
               <Link to={`/authorizations/handoff?leadId=${lead.id}`}>
                 Send to CR Handoff <ArrowRight className="h-3 w-3 ml-1" />
               </Link>
             </Button>
+            </>
           ) : (
             <Button asChild size="sm" variant="outline" className="h-7 text-xs">
               <Link to={`/intake/missing-information?leadId=${lead.id}`}>Resolve missing</Link>

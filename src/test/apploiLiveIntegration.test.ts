@@ -9,7 +9,8 @@ describe("Apploi live integration — adapter contract", () => {
 
   it("uses only the verified Apploi Partner endpoints", () => {
     expect(adapter).toMatch(/https:\/\/partners\.apploi\.com/);
-    expect(adapter).toMatch(/"\/jobs\/search"/);
+    // Job postings retired — applicants-only ingest.
+    expect(adapter).not.toMatch(/"\/jobs\/search"/);
     expect(adapter).toMatch(/"\/applicants"/);
     expect(adapter).toMatch(/"\/applicants\/applicant-statuses"/);
     // No invented endpoints / no write-back.
@@ -23,7 +24,7 @@ describe("Apploi live integration — adapter contract", () => {
   });
 
   it("paginates, retries with backoff, and times out", () => {
-    expect(adapter).toMatch(/page: page \+ 1/);
+    expect(adapter).toMatch(/offset: page \* PAGE_SIZE/);
     expect(adapter).toMatch(/attempt < 4/);
     expect(adapter).toMatch(/res\.status === 429/);
     expect(adapter).toMatch(/TIMEOUT_MS/);

@@ -31,6 +31,7 @@ import {
   isLeadOutOfPipeline,
 } from "@/lib/intake/intakeWorkflow";
 import { IntakeStateFilterToggle, useIntakeStateFilter } from "@/lib/intake/intakeStateFilter";
+import { isDirectorOfIntake } from "@/lib/intake/intakeRoles";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -90,9 +91,22 @@ export default function IntakeDashboard() {
   // /intake/lead-to-active, /intake/missing-information, etc.).
   const { matches: matchesIntakeState, stateFilter } = useIntakeStateFilter();
   const stateScopeLabel = stateFilter === "ALL" ? "All states" : stateFilter;
-  const leads = useMemo(
+  // Coordinators land on their own caseload; Directors land on the team view.
+  const isDirector = isDirectorOfIntake([role as unknown as string]);
+  const [workScope, setWorkScope] = useState<"mine" | "team">(isDirector ? "team" : "mine");
+  const ownsLead = (owner?: string | null) => {
+    const me = (displayName ?? "").trim().toLowerCase();
+    if (!me) return false;
+    return (owner ?? "").trim().toLowerCase() === me;
+  };
+  const stateScoped = useMemo(
     () => allLeads.filter((l) => matchesIntakeState(l.state)),
     [allLeads, matchesIntakeState],
+  );
+  const leads = useMemo(
+    () => (workScope === "mine" ? stateScoped.filter((l) => ownsLead(l.owner)) : stateScoped),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stateScoped, workScope, displayName],
   );
 
   const counts = useMemo(() => {
@@ -202,6 +216,19 @@ export default function IntakeDashboard() {
       description="A calm workspace for the families in your care — surface who needs you now, where they are in the journey, and movement from lead capture through ready to start services."
       headerRight={
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1" role="group" aria-label="Work scope">
+            {(["mine", "team"] as const).map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={workScope === s ? "default" : "outline"}
+                className="h-7 px-2 text-xs"
+                onClick={() => setWorkScope(s)}
+              >
+                {s === "mine" ? "My work" : "Team"}
+              </Button>
+            ))}
+          </div>
           <IntakeStateFilterToggle />
         </div>
       }

@@ -98,6 +98,7 @@ const INTAKE_SHARED_ITEMS: RoleMenuItem[] = [
   { label: "Tasks",                           path: "/intake/tasks",                  icon: ClipboardList },
   { label: "Packet Follow Up / Missing Info", path: "/intake/missing-information",    icon: ShieldCheck },
   { label: "Communications",                  path: "/intake/parent-communication",   icon: MessageSquare },
+  { label: "After-Hours AI Calls",            path: "/phone/ai-calls",                icon: PhoneCall },
   { label: "CentralReach Packet Prep",        path: "/intake/cr-packet-prep",         icon: FileCheck2 },
 ];
 

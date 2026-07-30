@@ -153,8 +153,8 @@ describe("Intake Export 88 — full department launch", () => {
   /* ----------------------- 7. Role / menu visibility --------------------- */
   describe("Intake role menu", () => {
     const intakeBlock = (() => {
-      const start = ROLE_MENUS.indexOf("intake_coordinator: {");
-      const end = ROLE_MENUS.indexOf("recruiting_team", start);
+      const start = ROLE_MENUS.indexOf("const INTAKE_SHARED_ITEMS");
+      const end = ROLE_MENUS.indexOf("export const ROLE_MENUS", start);
       return ROLE_MENUS.slice(start, end > 0 ? end : ROLE_MENUS.length);
     })();
 
@@ -184,7 +184,10 @@ describe("Intake Export 88 — full department launch", () => {
     });
 
     it("appends the shared Training / Resources / Reports section", () => {
-      expect(intakeBlock).toMatch(/TRAINING_AND_RESOURCES/);
+      const roleBlock = ROLE_MENUS.slice(
+        ROLE_MENUS.indexOf("intake_coordinator: {"),
+      ).slice(0, 400);
+      expect(roleBlock).toMatch(/TRAINING_AND_RESOURCES/);
     });
   });
 

@@ -55,8 +55,10 @@ describe("Export 81 — Access, Naming, Communication Actions", () => {
 
   it("Intake menu keeps After-Hours AI Calls but not full /phone", () => {
     const src = read("src/lib/os/roleMenus.ts");
-    const start = src.indexOf("intake_coordinator");
-    const end = src.indexOf("recruiting_team", start);
+    // Intake menu items live in the shared INTAKE_SHARED_ITEMS block consumed
+    // by both Director of Intake and Intake Coordinator.
+    const start = src.indexOf("const INTAKE_SHARED_ITEMS");
+    const end = src.indexOf("export const ROLE_MENUS", start);
     const intake = src.slice(start, end);
     expect(intake).toMatch(/After-Hours AI Calls/);
     expect(intake).toMatch(/\/phone\/ai-calls/);
