@@ -22,6 +22,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { normalizeCtmPayload, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
+import {
+  loadCtmQualificationSettings,
+  qualifyCtmCall,
+  recordCtmQualification,
+} from "../_shared/ctm/qualification.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -225,6 +230,16 @@ async function processJob(service: ReturnType<typeof createClient>, jobId: strin
 
         for (const n of normalized) {
           try {
+            // Shared qualification before any link/create — backfill must
+            // reach the same verdict as the live webhook.
+            const qualification = qualifyCtmCall(n, qualSettings.config);
+            await recordCtmQualification(service as any, {
+              ctmCallId: n.ctm_call_id,
+              source: "historical_import",
+              result: qualification,
+              settings: qualSettings,
+            });
+            if (qualification.state !== "eligible") continue;
             const outcome = await linkOrCreateLeadForCall(service as any, n, { resolvedState: null });
             if (outcome.state === "linked_existing") linked += 1;
             else if (outcome.state === "promoted") { created += 1; linked += 1; }
