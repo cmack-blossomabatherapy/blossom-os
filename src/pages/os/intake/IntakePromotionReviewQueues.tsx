@@ -72,6 +72,7 @@ export default function IntakePromotionReviewQueues() {
     tab === "ctm_unmatched"
       ? { pageSize: 1 }
       : { state: tab as PromotionState, pageSize: 500, search: filter.trim() || undefined },
+    { enabled: directorAccess },
   );
 
   const unmatched = useQuery({
