@@ -8989,6 +8989,10 @@ export type Database = {
           matched_client_id: string | null
           matched_employee_id: string | null
           matched_lead_id: string | null
+          qualification_detail: string | null
+          qualification_reason: string | null
+          qualification_state: string | null
+          qualified_at: string | null
           raw: Json | null
           recording_url: string | null
           resolved_campaign_id: string | null
@@ -9025,6 +9029,10 @@ export type Database = {
           matched_client_id?: string | null
           matched_employee_id?: string | null
           matched_lead_id?: string | null
+          qualification_detail?: string | null
+          qualification_reason?: string | null
+          qualification_state?: string | null
+          qualified_at?: string | null
           raw?: Json | null
           recording_url?: string | null
           resolved_campaign_id?: string | null
@@ -9061,6 +9069,10 @@ export type Database = {
           matched_client_id?: string | null
           matched_employee_id?: string | null
           matched_lead_id?: string | null
+          qualification_detail?: string | null
+          qualification_reason?: string | null
+          qualification_state?: string | null
+          qualified_at?: string | null
           raw?: Json | null
           recording_url?: string | null
           resolved_campaign_id?: string | null
@@ -14075,6 +14087,165 @@ export type Database = {
         }
         Relationships: []
       }
+      intake_admission_approvals: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          exception_reason: string | null
+          handoff_marked_at: string | null
+          handoff_marked_by: string | null
+          handoff_reference: string | null
+          id: string
+          lead_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          exception_reason?: string | null
+          handoff_marked_at?: string | null
+          handoff_marked_by?: string | null
+          handoff_reference?: string | null
+          id?: string
+          lead_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          exception_reason?: string | null
+          handoff_marked_at?: string | null
+          handoff_marked_by?: string | null
+          handoff_reference?: string | null
+          id?: string
+          lead_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_admission_approvals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_admission_checklist_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_key: string
+          label: string
+          lead_id: string
+          missing: string[]
+          notes: string | null
+          required: boolean
+          status: string
+          updated_at: string
+          updated_by: string | null
+          waived_at: string | null
+          waived_by: string | null
+          waived_reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_key: string
+          label: string
+          lead_id: string
+          missing?: string[]
+          notes?: string | null
+          required?: boolean
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          waived_at?: string | null
+          waived_by?: string | null
+          waived_reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_key?: string
+          label?: string
+          lead_id?: string
+          missing?: string[]
+          notes?: string | null
+          required?: boolean
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          waived_at?: string | null
+          waived_by?: string | null
+          waived_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_admission_checklist_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_admission_events: {
+        Row: {
+          actor_id: string | null
+          actor_is_director: boolean
+          created_at: string
+          event_type: string
+          from_status: string | null
+          id: string
+          item_key: string | null
+          lead_id: string
+          reason: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_is_director?: boolean
+          created_at?: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          item_key?: string | null
+          lead_id: string
+          reason?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_is_director?: boolean
+          created_at?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          item_key?: string | null
+          lead_id?: string
+          reason?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_admission_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intake_communication_templates: {
         Row: {
           body: string
@@ -14191,6 +14362,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      intake_ctm_qualification_config: {
+        Row: {
+          campaigns: string[]
+          created_at: string
+          excluded_numbers: string[]
+          excluded_tags: string[]
+          id: string
+          min_duration_seconds: number
+          singleton: boolean
+          tracking_numbers: string[]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          campaigns?: string[]
+          created_at?: string
+          excluded_numbers?: string[]
+          excluded_tags?: string[]
+          id?: string
+          min_duration_seconds?: number
+          singleton?: boolean
+          tracking_numbers?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          campaigns?: string[]
+          created_at?: string
+          excluded_numbers?: string[]
+          excluded_tags?: string[]
+          id?: string
+          min_duration_seconds?: number
+          singleton?: boolean
+          tracking_numbers?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      intake_ctm_qualification_events: {
+        Row: {
+          candidate_lead_ids: string[]
+          created_at: string
+          ctm_call_event_id: string | null
+          ctm_call_id: string
+          detail: string | null
+          id: string
+          lead_id: string | null
+          metadata: Json
+          reason: string
+          source: string
+          state: string
+        }
+        Insert: {
+          candidate_lead_ids?: string[]
+          created_at?: string
+          ctm_call_event_id?: string | null
+          ctm_call_id: string
+          detail?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          reason: string
+          source: string
+          state: string
+        }
+        Update: {
+          candidate_lead_ids?: string[]
+          created_at?: string
+          ctm_call_event_id?: string | null
+          ctm_call_id?: string
+          detail?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json
+          reason?: string
+          source?: string
+          state?: string
+        }
+        Relationships: []
       }
       intake_documents: {
         Row: {
@@ -14695,6 +14947,59 @@ export type Database = {
             columns: ["normalized_record_id"]
             isOneToOne: true
             referencedRelation: "integration_normalized_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_stage_transitions: {
+        Row: {
+          actor_id: string | null
+          actor_is_director: boolean
+          created_at: string
+          direction: string
+          from_stage: string | null
+          id: string
+          is_exception: boolean
+          lead_id: string
+          missing_requirements: string[]
+          reason: string | null
+          reverted_transition_id: string | null
+          to_stage: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_is_director?: boolean
+          created_at?: string
+          direction: string
+          from_stage?: string | null
+          id?: string
+          is_exception?: boolean
+          lead_id: string
+          missing_requirements?: string[]
+          reason?: string | null
+          reverted_transition_id?: string | null
+          to_stage: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_is_director?: boolean
+          created_at?: string
+          direction?: string
+          from_stage?: string | null
+          id?: string
+          is_exception?: boolean
+          lead_id?: string
+          missing_requirements?: string[]
+          reason?: string | null
+          reverted_transition_id?: string | null
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_stage_transitions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
             referencedColumns: ["id"]
           },
         ]
@@ -31959,6 +32264,7 @@ export type Database = {
         Args: { _fellow_id: string; _user_id: string }
         Returns: boolean
       }
+      has_intake_access: { Args: { _user_id?: string }; Returns: boolean }
       has_permission: {
         Args: { _perm: string; _user_id: string }
         Returns: boolean
@@ -32000,7 +32306,19 @@ export type Database = {
         Args: { _record_id: string }
         Returns: Json
       }
+      intake_approve_admission: {
+        Args: {
+          p_exception_reason?: string
+          p_lead_id: string
+          p_revoke?: boolean
+        }
+        Returns: string
+      }
       intake_is_authorized_reader: { Args: never; Returns: boolean }
+      intake_mark_admission_handoff: {
+        Args: { p_lead_id: string; p_reference?: string }
+        Returns: string
+      }
       intake_provider_readiness: {
         Args: never
         Returns: {
@@ -32016,7 +32334,30 @@ export type Database = {
           status: string
         }[]
       }
+      intake_record_stage_transition: {
+        Args: {
+          p_direction: string
+          p_is_exception?: boolean
+          p_lead_id: string
+          p_missing?: string[]
+          p_reason?: string
+          p_to_stage: string
+        }
+        Returns: string
+      }
       intake_review_stats: { Args: never; Returns: Json }
+      intake_set_admission_item: {
+        Args: {
+          p_item_key: string
+          p_label: string
+          p_lead_id: string
+          p_missing?: string[]
+          p_reason?: string
+          p_required: boolean
+          p_status: string
+        }
+        Returns: string
+      }
       is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
       is_access_request_reviewer: {
         Args: { _user_id: string }
@@ -32031,6 +32372,7 @@ export type Database = {
       is_cm_oversight: { Args: never; Returns: boolean }
       is_employee_self: { Args: { _employee_id: string }; Returns: boolean }
       is_hr_operator: { Args: { _user_id: string }; Returns: boolean }
+      is_intake_director: { Args: { _user_id?: string }; Returns: boolean }
       is_leadership: { Args: { _user_id: string }; Returns: boolean }
       is_marketing_user: { Args: { _uid: string }; Returns: boolean }
       is_people_manager: { Args: { _user_id: string }; Returns: boolean }

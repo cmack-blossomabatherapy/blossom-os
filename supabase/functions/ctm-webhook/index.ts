@@ -5,6 +5,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { normalizeCtmPayload, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
+import {
+  loadCtmQualificationConfig,
+  qualifyCtmCall,
+  recordCtmQualification,
+} from "../_shared/ctm/qualification.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -127,9 +132,21 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Shared qualification — identical judgement on webhook, sync and review.
+  const qualConfig = await loadCtmQualificationConfig(supabase as any);
+  const qualification = qualifyCtmCall(call, qualConfig);
+  await recordCtmQualification(supabase as any, {
+    ctmCallId: call.ctm_call_id,
+    ctmCallEventId: upserted.id,
+    source: "webhook",
+    result: qualification,
+    leadId: upserted.intake_lead_id ?? null,
+    metadata: { resolved_state },
+  });
+
   // INGEST_ONLY: deterministic external-id → phone linking (no comms/tasks).
   let leadOutcome: Awaited<ReturnType<typeof linkOrCreateLeadForCall>> | null = null;
-  if (!upserted.intake_lead_id) {
+  if (qualification.state === "eligible" && !upserted.intake_lead_id) {
     leadOutcome = await linkOrCreateLeadForCall(supabase as any, call, { resolvedState: resolved_state });
     if (leadOutcome.lead_id) {
       await supabase
@@ -137,6 +154,19 @@ Deno.serve(async (req) => {
         .update({ intake_lead_id: leadOutcome.lead_id, matched_lead_id: leadOutcome.lead_id })
         .eq("id", upserted.id);
     } else if (leadOutcome.state === "ambiguous_review" || leadOutcome.state === "incomplete_review") {
+      await recordCtmQualification(supabase as any, {
+        ctmCallId: call.ctm_call_id,
+        ctmCallEventId: upserted.id,
+        source: "webhook",
+        result: {
+          state: leadOutcome.state,
+          reason: (leadOutcome as any).reason ?? "no_lead_match",
+          detail: leadOutcome.state === "ambiguous_review"
+            ? "More than one existing family matches this caller — a person must pick the right one."
+            : "Not enough caller information to match or create a family record.",
+        },
+        candidateLeadIds: (leadOutcome as any).candidates ?? [],
+      });
       // Enqueue unknown/ambiguous caller for review.
       await supabase.from("ctm_unknown_caller_reviews").upsert({
         ctm_call_event_id: upserted.id,
@@ -172,6 +202,8 @@ Deno.serve(async (req) => {
   return new Response(JSON.stringify({
     ok: true,
     call_id: call.ctm_call_id,
+    qualification_state: qualification.state,
+    qualification_reason: qualification.reason,
     lead_state: leadOutcome?.state ?? (upserted.intake_lead_id ? "linked_existing" : "unlinked"),
     lead_id: leadOutcome?.lead_id ?? upserted.intake_lead_id ?? null,
     event_id: webhookEventId,

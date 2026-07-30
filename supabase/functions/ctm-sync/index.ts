@@ -5,6 +5,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { normalizeCtmPayload, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
+import {
+  loadCtmQualificationConfig,
+  qualifyCtmCall,
+  recordCtmQualification,
+} from "../_shared/ctm/qualification.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -197,6 +202,8 @@ Deno.serve(async (req) => {
   let leadsCreated = 0;
   let reviewQueued = 0;
   let linkErrors = 0;
+  let excluded = 0;
+  let qualConfig: Awaited<ReturnType<typeof loadCtmQualificationConfig>> = {};
   let pagesProcessed = 0;
   let drained = false;
   let page = 1;
@@ -209,6 +216,9 @@ Deno.serve(async (req) => {
   try {
     if (!runId) throw new Error(err ?? "failed_to_create_sync_run");
     if (!CTM_KEY || !CTM_SECRET || !CTM_ACCOUNT_ID) throw new Error("CTM credentials not configured");
+
+    // Backend-driven Intake qualification config, loaded once per run.
+    qualConfig = await loadCtmQualificationConfig(supabase as any);
 
     if (typeof body.start_date === "string" && body.start_date) startIso = new Date(body.start_date).toISOString();
     if (typeof body.end_date === "string" && body.end_date) endIso = new Date(body.end_date).toISOString();
@@ -305,6 +315,18 @@ Deno.serve(async (req) => {
         for (const n of normalized) {
           if (linked + reviewQueued + linkErrors >= LINK_BUDGET) break;
           try {
+            const qualification = qualifyCtmCall(n, qualConfig);
+            await recordCtmQualification(supabase as any, {
+              ctmCallId: n.ctm_call_id,
+              source: "sync",
+              result: qualification,
+            });
+            if (qualification.state !== "eligible") {
+              if (qualification.state === "excluded") excluded++;
+              else if (qualification.state === "error") linkErrors++;
+              else reviewQueued++;
+              continue;
+            }
             const outcome = await linkOrCreateLeadForCall(supabase as any, n, {
               resolvedState: null,
             });
@@ -312,7 +334,21 @@ Deno.serve(async (req) => {
               linked++;
               if (outcome.state === "promoted") leadsCreated++;
             }
-            else if (outcome.state === "ambiguous_review" || outcome.state === "incomplete_review") reviewQueued++;
+            else if (outcome.state === "ambiguous_review" || outcome.state === "incomplete_review") {
+              reviewQueued++;
+              await recordCtmQualification(supabase as any, {
+                ctmCallId: n.ctm_call_id,
+                source: "sync",
+                result: {
+                  state: outcome.state,
+                  reason: (outcome as any).reason ?? "no_lead_match",
+                  detail: outcome.state === "ambiguous_review"
+                    ? "More than one existing family matches this caller — a person must pick the right one."
+                    : "Not enough caller information to match or create a family record.",
+                },
+                candidateLeadIds: (outcome as any).candidates ?? [],
+              });
+            }
             else if (outcome.state === "error") linkErrors++;
           } catch (_e) {
             // Never fail the sync run on a single-call link error.
@@ -344,6 +380,7 @@ Deno.serve(async (req) => {
     leads_created: leadsCreated,
     review_queued: reviewQueued,
     link_errors: linkErrors,
+    excluded: excluded,
     drained,
     response_shapes: Array.from(new Set(pageShapes)),
     duration_ms: Date.now() - startedAt,
