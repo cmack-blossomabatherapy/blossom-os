@@ -6,7 +6,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { normalizeCtmPayload, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
 import {
-  loadCtmQualificationConfig,
+  loadCtmQualificationSettings,
   qualifyCtmCall,
   recordCtmQualification,
 } from "../_shared/ctm/qualification.ts";
@@ -133,8 +133,8 @@ Deno.serve(async (req) => {
   }
 
   // Shared qualification — identical judgement on webhook, sync and review.
-  const qualConfig = await loadCtmQualificationConfig(supabase as any);
-  const qualification = qualifyCtmCall(call, qualConfig);
+  const qualSettings = await loadCtmQualificationSettings(supabase as any);
+  const qualification = qualifyCtmCall(call, qualSettings.config);
   await recordCtmQualification(supabase as any, {
     ctmCallId: call.ctm_call_id,
     ctmCallEventId: upserted.id,
@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
     result: qualification,
     leadId: upserted.intake_lead_id ?? null,
     metadata: { resolved_state },
+    settings: qualSettings,
   });
 
   // INGEST_ONLY: deterministic external-id → phone linking (no comms/tasks).
@@ -166,6 +167,7 @@ Deno.serve(async (req) => {
             : "Not enough caller information to match or create a family record.",
         },
         candidateLeadIds: (leadOutcome as any).candidates ?? [],
+        settings: qualSettings,
       });
       // Enqueue unknown/ambiguous caller for review.
       await supabase.from("ctm_unknown_caller_reviews").upsert({
@@ -204,6 +206,7 @@ Deno.serve(async (req) => {
     call_id: call.ctm_call_id,
     qualification_state: qualification.state,
     qualification_reason: qualification.reason,
+    qualification_configured: qualSettings.configured,
     lead_state: leadOutcome?.state ?? (upserted.intake_lead_id ? "linked_existing" : "unlinked"),
     lead_id: leadOutcome?.lead_id ?? upserted.intake_lead_id ?? null,
     event_id: webhookEventId,

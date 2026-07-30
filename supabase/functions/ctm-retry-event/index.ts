@@ -4,6 +4,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { normalizeCtmPayload, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
+import {
+  loadCtmQualificationSettings,
+  qualifyCtmCall,
+  recordCtmQualification,
+} from "../_shared/ctm/qualification.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -56,12 +61,51 @@ Deno.serve(async (req) => {
   }
 
   let outcome: Awaited<ReturnType<typeof linkOrCreateLeadForCall>> | null = null;
-  if (!upserted.intake_lead_id) {
+  // Shared qualification runs before any link/create, exactly as on the
+  // webhook and sync paths — a retry can never mint a lead the live path
+  // would have excluded.
+  const qualSettings = await loadCtmQualificationSettings(svc as any);
+  const qualification = qualifyCtmCall(call, qualSettings.config);
+  await recordCtmQualification(svc as any, {
+    ctmCallId: call.ctm_call_id,
+    ctmCallEventId: upserted.id,
+    source: "retry",
+    result: qualification,
+    leadId: upserted.intake_lead_id ?? null,
+    settings: qualSettings,
+  });
+
+  if (qualification.state === "eligible" && !upserted.intake_lead_id) {
     outcome = await linkOrCreateLeadForCall(svc as any, call, { resolvedState: null });
     if (outcome.lead_id) {
       await svc.from("ctm_call_events").update({
         intake_lead_id: outcome.lead_id, matched_lead_id: outcome.lead_id,
       }).eq("id", upserted.id);
+    } else if (outcome.state === "ambiguous_review" || outcome.state === "incomplete_review") {
+      await recordCtmQualification(svc as any, {
+        ctmCallId: call.ctm_call_id,
+        ctmCallEventId: upserted.id,
+        source: "retry",
+        result: {
+          state: outcome.state,
+          reason: (outcome as any).reason ?? "no_lead_match",
+          detail: outcome.state === "ambiguous_review"
+            ? "More than one existing family matches this caller — a person must pick the right one."
+            : "Not enough caller information to match or create a family record.",
+        },
+        candidateLeadIds: (outcome as any).candidates ?? [],
+        settings: qualSettings,
+      });
+      await svc.from("ctm_unknown_caller_reviews").upsert({
+        ctm_call_event_id: upserted.id,
+        ctm_call_id: call.ctm_call_id,
+        reason: outcome.state === "ambiguous_review" ? "ambiguous_phone_match" : outcome.reason ?? "no_lead_match",
+        candidate_lead_ids: outcome.state === "ambiguous_review" ? (outcome as any).candidates ?? [] : [],
+        from_number: call.from_number,
+        tracking_number: call.tracking_number,
+        caller_name: call.caller_name,
+        status: "open",
+      }, { onConflict: "ctm_call_event_id" });
     }
   }
 
@@ -72,5 +116,13 @@ Deno.serve(async (req) => {
     linked_call_event_id: upserted.id,
   }).eq("id", eventId);
 
-  return j({ ok: true, call_id: call.ctm_call_id, lead_state: outcome?.state ?? "linked_existing", lead_id: outcome?.lead_id ?? upserted.intake_lead_id ?? null });
+  return j({
+    ok: true,
+    call_id: call.ctm_call_id,
+    qualification_state: qualification.state,
+    qualification_reason: qualification.reason,
+    qualification_configured: qualSettings.configured,
+    lead_state: outcome?.state ?? (upserted.intake_lead_id ? "linked_existing" : "unlinked"),
+    lead_id: outcome?.lead_id ?? upserted.intake_lead_id ?? null,
+  });
 });

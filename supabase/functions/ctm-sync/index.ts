@@ -6,7 +6,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { normalizeCtmPayload, linkOrCreateLeadForCall } from "../_shared/ctm/normalizer.ts";
 import {
-  loadCtmQualificationConfig,
+  loadCtmQualificationSettings,
   qualifyCtmCall,
   recordCtmQualification,
 } from "../_shared/ctm/qualification.ts";
@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
   let reviewQueued = 0;
   let linkErrors = 0;
   let excluded = 0;
-  let qualConfig: Awaited<ReturnType<typeof loadCtmQualificationConfig>> = {};
+  let qualSettings: Awaited<ReturnType<typeof loadCtmQualificationSettings>> | null = null;
   let pagesProcessed = 0;
   let drained = false;
   let page = 1;
@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
     if (!CTM_KEY || !CTM_SECRET || !CTM_ACCOUNT_ID) throw new Error("CTM credentials not configured");
 
     // Backend-driven Intake qualification config, loaded once per run.
-    qualConfig = await loadCtmQualificationConfig(supabase as any);
+    qualSettings = await loadCtmQualificationSettings(supabase as any);
 
     if (typeof body.start_date === "string" && body.start_date) startIso = new Date(body.start_date).toISOString();
     if (typeof body.end_date === "string" && body.end_date) endIso = new Date(body.end_date).toISOString();
@@ -315,11 +315,12 @@ Deno.serve(async (req) => {
         for (const n of normalized) {
           if (linked + reviewQueued + linkErrors >= LINK_BUDGET) break;
           try {
-            const qualification = qualifyCtmCall(n, qualConfig);
+            const qualification = qualifyCtmCall(n, qualSettings?.config ?? {});
             await recordCtmQualification(supabase as any, {
               ctmCallId: n.ctm_call_id,
               source: "sync",
               result: qualification,
+              settings: qualSettings ?? undefined,
             });
             if (qualification.state !== "eligible") {
               if (qualification.state === "excluded") excluded++;
@@ -347,6 +348,7 @@ Deno.serve(async (req) => {
                     : "Not enough caller information to match or create a family record.",
                 },
                 candidateLeadIds: (outcome as any).candidates ?? [],
+                settings: qualSettings ?? undefined,
               });
             }
             else if (outcome.state === "error") linkErrors++;
@@ -381,6 +383,8 @@ Deno.serve(async (req) => {
     review_queued: reviewQueued,
     link_errors: linkErrors,
     excluded: excluded,
+    qualification_configured: qualSettings?.configured ?? false,
+    qualification_config_sources: qualSettings?.sources ?? ["defaults"],
     drained,
     response_shapes: Array.from(new Set(pageShapes)),
     duration_ms: Date.now() - startedAt,

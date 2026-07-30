@@ -9,6 +9,12 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { getAdapter } from "../_shared/integrations/providerRegistry.ts";
 import { upsertNormalizedRecord, recordIntegrationEvent } from "../_shared/integrations/normalizers.ts";
 import { verifyJotformToken } from "../_shared/integrations/providers/jotform.ts";
+import { normalizeCtmPayload } from "../_shared/ctm/normalizer.ts";
+import {
+  loadCtmQualificationSettings,
+  qualifyCtmCall,
+  recordCtmQualification,
+} from "../_shared/ctm/qualification.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -196,6 +202,41 @@ Deno.serve(async (req) => {
   const adapter = getAdapter(integrationId);
   let processingStatus = "received";
   let normalizationError: string | null = null;
+  // CTM path: the shared Intake qualification decides whether this event may
+  // reach the lead spine at all. Same rules as ctm-webhook / ctm-sync.
+  let ctmQualified = true;
+  if (integrationId === "ctm") {
+    const call = normalizeCtmPayload((parsed ?? {}) as Record<string, unknown>);
+    const qualSettings = await loadCtmQualificationSettings(supabase as any);
+    const qualification = qualifyCtmCall(call, qualSettings.config);
+    ctmQualified = qualification.state === "eligible";
+    if (call?.ctm_call_id) {
+      await recordCtmQualification(supabase as any, {
+        ctmCallId: call.ctm_call_id,
+        source: "integration_webhook",
+        result: qualification,
+        settings: qualSettings,
+        metadata: { integration_webhook_event_id: inserted.id },
+      });
+    }
+    if (!ctmQualified) {
+      await supabase
+        .from("integration_webhook_events")
+        .update({
+          processing_status: `ctm_${qualification.state}`,
+          processed_at: new Date().toISOString(),
+          error_message: qualification.reason,
+        })
+        .eq("id", inserted.id);
+      return json({
+        ok: true,
+        id: inserted.id,
+        verification,
+        processingStatus: `ctm_${qualification.state}`,
+        qualification: { state: qualification.state, reason: qualification.reason },
+      });
+    }
+  }
   try {
     if (adapter) {
       const headerMap: Record<string, string> = {};

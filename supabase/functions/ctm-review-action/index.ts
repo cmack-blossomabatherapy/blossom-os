@@ -15,6 +15,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { normalizePhoneE164 } from "../_shared/ctm/normalizer.ts";
+import { recordCtmQualification } from "../_shared/ctm/qualification.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -91,6 +92,22 @@ Deno.serve(async (req) => {
       decided_at: stamp,
       decision_reason: String(body.reason ?? ""),
     }).eq("id", reviewId);
+
+    // 4. Audit the manual decision on the shared qualification trail.
+    await recordCtmQualification(service as any, {
+      ctmCallId: callEvent!.ctm_call_id,
+      ctmCallEventId: callEvent!.id,
+      source: "manual_review",
+      result: {
+        state: "eligible",
+        reason: kind === "created_lead" ? "manual_created_lead" : "manual_attached_lead",
+        detail: kind === "created_lead"
+          ? "A reviewer created a new family record for this call."
+          : "A reviewer attached this call to an existing family record.",
+      },
+      leadId,
+      metadata: { review_id: reviewId, decided_by: userId },
+    });
   }
 
   if (action === "attach") {
@@ -133,6 +150,17 @@ Deno.serve(async (req) => {
     await service.from("ctm_unknown_caller_reviews").update({
       status: "ignored", decided_by: userId, decided_at: stamp, decision_reason: reason,
     }).eq("id", reviewId);
+    await recordCtmQualification(service as any, {
+      ctmCallId: callEvent.ctm_call_id,
+      ctmCallEventId: callEvent.id,
+      source: "manual_review",
+      result: {
+        state: "excluded",
+        reason: "manual_ignored",
+        detail: "A reviewer marked this call as not an Intake lead.",
+      },
+      metadata: { review_id: reviewId, decided_by: userId, decision_reason: reason },
+    });
     return j({ ok: true, review_id: reviewId });
   }
 

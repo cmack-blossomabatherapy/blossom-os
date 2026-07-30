@@ -1,208 +1,126 @@
 /**
-* Blossom OS — shared CTM call qualification (edge copy).
+ * Blossom OS — CTM qualification, edge entry point.
  *
- * Single mapping/qualification source used by the webhook path, the
- * sync/backfill path, and the manual Director review surface, so an
- * inbound call is judged identically no matter how it arrives.
- *
- * Deliberately pure so both the browser bundle and the edge-function
- * replay fixtures can exercise it.
+ * Pure rules are re-exported from ./qualificationCore.ts (shared with the
+ * browser bundle). This module adds the backend-only pieces: loading the
+ * Intake configuration and persisting/auditing every outcome.
  */
+export * from "./qualificationCore.ts";
 
-export type CtmQualificationState =
-  | "eligible"
-  | "excluded"
-  | "ambiguous_review"
-  | "incomplete_review"
-  | "error";
+import {
+  CtmQualificationConfig,
+  CtmQualificationResult,
+  CtmQualificationSettings,
+  DEFAULT_CTM_QUALIFICATION_SETTINGS,
+  DEFAULT_EXCLUDED_TAGS,
+  DEFAULT_MIN_DURATION_SECONDS,
+} from "./qualificationCore.ts";
 
-export interface CtmQualificationResult {
-  state: CtmQualificationState;
-  /** Stable machine reason, safe to persist for review/health surfaces. */
-  reason: string;
-  /** Operator-facing explanation, no technical jargon. */
-  detail: string;
-}
+type Supa = { from: (t: string) => any };
 
-export interface CtmQualificationConfig {
-  /** Intake tracking numbers (any format — compared on digits). */
-  trackingNumbers?: string[];
-  /** Intake campaign / source names (case-insensitive). */
-  campaigns?: string[];
-  /** Tags that mark a call as internal or spam. */
-  excludedTags?: string[];
-  /** Caller numbers that are always excluded (internal staff, known spam). */
-  excludedNumbers?: string[];
-  /** Calls shorter than this are treated as non-actionable. Default 15s. */
-  minDurationSeconds?: number;
-}
+export type CtmQualificationSource =
+  | "webhook"
+  | "sync"
+  | "historical_import"
+  | "integration_webhook"
+  | "link_call"
+  | "retry"
+  | "manual_review";
 
-export interface CtmQualifiableCall {
-  ctm_call_id?: string | null;
-  direction?: string | null;
-  from_number?: string | null;
-  to_number?: string | null;
-  tracking_number?: string | null;
-  duration_seconds?: number | null;
-  talk_time_seconds?: number | null;
-  tags?: string[] | null;
-  campaign_name?: string | null;
-  source_name?: string | null;
-  caller_email?: string | null;
-}
+/**
+ * Load the effective Intake qualification configuration.
+ *
+ * Sources, merged in this order:
+ *   1. intake_ctm_qualification_config (the Director-managed row)
+ *   2. ctm_number_mapping tracking numbers (legacy routing config)
+ *   3. built-in safe defaults for anything still absent
+ *
+ * Never throws — ingestion must not stop because config could not be read.
+ */
+export async function loadCtmQualificationSettings(supabase: Supa): Promise<CtmQualificationSettings> {
+  const sources: string[] = [];
+  const defaultsApplied: string[] = [];
+  let configured = false;
+  const config: CtmQualificationConfig = {
+    trackingNumbers: [],
+    campaigns: [],
+    excludedTags: [],
+    excludedNumbers: [],
+  };
 
-const DEFAULT_EXCLUDED_TAGS = ["spam", "internal", "test", "robocall", "wrong number"];
-
-const digits = (v: unknown) => String(v ?? "").replace(/\D/g, "");
-const lower = (v: unknown) => String(v ?? "").trim().toLowerCase();
-
-/** Qualify a normalized CTM call against backend-driven Intake configuration. */
-export function qualifyCtmCall(
-  call: CtmQualifiableCall | null | undefined,
-  config: CtmQualificationConfig = {},
-): CtmQualificationResult {
-  if (!call || typeof call !== "object") {
-    return { state: "error", reason: "malformed_payload", detail: "The call record could not be read." };
-  }
-  if (!call.ctm_call_id) {
-    return { state: "error", reason: "missing_call_id", detail: "The call is missing its unique call identifier." };
-  }
-
-  const direction = lower(call.direction);
-  if (direction && direction !== "inbound") {
-    return { state: "excluded", reason: "not_inbound", detail: "Outbound calls are not Intake leads." };
-  }
-
-  const tags = (call.tags ?? []).map(lower);
-  const excludedTags = (config.excludedTags?.length ? config.excludedTags : DEFAULT_EXCLUDED_TAGS).map(lower);
-  const hitTag = tags.find((t) => excludedTags.some((e) => t.includes(e)));
-  if (hitTag) {
-    return { state: "excluded", reason: "excluded_tag", detail: `Call tagged "${hitTag}" and is not an Intake lead.` };
-  }
-
-  const from = digits(call.from_number);
-  if (from && (config.excludedNumbers ?? []).some((n) => digits(n) && digits(n) === from)) {
-    return { state: "excluded", reason: "excluded_number", detail: "Caller is on the internal / blocked number list." };
-  }
-
-  const campaigns = (config.campaigns ?? []).map(lower).filter(Boolean);
-  const callCampaign = lower(call.campaign_name) || lower(call.source_name);
-  const trackingNumbers = (config.trackingNumbers ?? []).map(digits).filter(Boolean);
-  const callTracking = digits(call.tracking_number) || digits(call.to_number);
-
-  const hasRouting = trackingNumbers.length > 0 || campaigns.length > 0;
-  if (hasRouting) {
-    const trackingMatch = trackingNumbers.length > 0 && !!callTracking && trackingNumbers.includes(callTracking);
-    const campaignMatch = campaigns.length > 0 && !!callCampaign && campaigns.some((c) => callCampaign.includes(c));
-    if (!trackingMatch && !campaignMatch) {
-      return {
-        state: "excluded",
-        reason: "not_intake_routing",
-        detail: "Call did not arrive on a configured Intake tracking number or campaign.",
-      };
-    }
-  }
-
-  const minDuration = config.minDurationSeconds ?? 15;
-  const duration = call.talk_time_seconds ?? call.duration_seconds ?? null;
-  if (duration != null && duration < minDuration) {
-    return {
-      state: "excluded",
-      reason: "too_short",
-      detail: `Call lasted ${duration}s, below the ${minDuration}s Intake threshold.`,
-    };
-  }
-
-  if (!from && !lower(call.caller_email)) {
-    return {
-      state: "incomplete_review",
-      reason: "missing_identifier",
-      detail: "No caller phone number or email — needs manual review before a lead can be created.",
-    };
-  }
-
-  return { state: "eligible", reason: "qualified", detail: "Qualified inbound Intake call." };
-}
-
-/** Match candidates → resolution decision. Never guesses between matches. */
-export type CtmMatchResolution =
-  | { action: "link_existing"; leadId: string; via: "provenance" | "identifier" }
-  | { action: "create_lead" }
-  | { action: "review"; state: CtmQualificationState; reason: string; detail: string };
-
-export function resolveCtmLeadMatch(input: {
-  provenanceLeadId?: string | null;
-  identifierMatches?: string[];
-}): CtmMatchResolution {
-  if (input.provenanceLeadId) {
-    return { action: "link_existing", leadId: input.provenanceLeadId, via: "provenance" };
-  }
-  const matches = Array.from(new Set((input.identifierMatches ?? []).filter(Boolean)));
-  if (matches.length === 1) {
-    return { action: "link_existing", leadId: matches[0], via: "identifier" };
-  }
-  if (matches.length > 1) {
-    return {
-      action: "review",
-      state: "ambiguous_review",
-      reason: "multiple_matches",
-      detail: `${matches.length} existing leads share this phone or email — a person must pick the right one.`,
-    };
-  }
-  return { action: "create_lead" };
-}
-
-/** Human labels for the Director CTM health surface. */
-export const CTM_QUALIFICATION_LABELS: Record<CtmQualificationState, string> = {
-  eligible: "Eligible",
-  excluded: "Excluded",
-  ambiguous_review: "Needs review — multiple matches",
-  incomplete_review: "Needs review — incomplete",
-  error: "Mapping error",
-};
-
-/* -------------------------------------------------------------------------- */
-/* Backend-driven config + audit persistence (edge only)                      */
-/* -------------------------------------------------------------------------- */
-
-type Supa = {
-  from: (t: string) => any;
-};
-
-/** Load the single Intake qualification config row. Never throws. */
-export async function loadCtmQualificationConfig(supabase: Supa): Promise<CtmQualificationConfig> {
   try {
     const { data } = await supabase
       .from("intake_ctm_qualification_config")
       .select("tracking_numbers,campaigns,excluded_tags,excluded_numbers,min_duration_seconds")
       .limit(1)
       .maybeSingle();
-    if (!data) return {};
-    return {
-      trackingNumbers: data.tracking_numbers ?? [],
-      campaigns: data.campaigns ?? [],
-      excludedTags: data.excluded_tags ?? [],
-      excludedNumbers: data.excluded_numbers ?? [],
-      minDurationSeconds: data.min_duration_seconds ?? 15,
-    };
-  } catch (_e) {
-    return {};
+    if (data) {
+      configured = true;
+      sources.push("intake_ctm_qualification_config");
+      config.trackingNumbers = (data.tracking_numbers ?? []) as string[];
+      config.campaigns = (data.campaigns ?? []) as string[];
+      config.excludedTags = (data.excluded_tags ?? []) as string[];
+      config.excludedNumbers = (data.excluded_numbers ?? []) as string[];
+      if (typeof data.min_duration_seconds === "number") {
+        config.minDurationSeconds = data.min_duration_seconds;
+      }
+    }
+  } catch (_e) { /* fall through to defaults */ }
+
+  // Legacy/companion routing config: mapped tracking numbers count as Intake.
+  try {
+    const { data: mapped } = await supabase
+      .from("ctm_number_mapping")
+      .select("tracking_number")
+      .limit(500);
+    const extra = ((mapped ?? []) as Array<{ tracking_number: string | null }>)
+      .map((r) => r.tracking_number)
+      .filter((n): n is string => !!n);
+    if (extra.length) {
+      sources.push("ctm_number_mapping");
+      config.trackingNumbers = Array.from(new Set([...(config.trackingNumbers ?? []), ...extra]));
+    }
+  } catch (_e) { /* optional source */ }
+
+  if (!config.excludedTags?.length) {
+    config.excludedTags = [...DEFAULT_EXCLUDED_TAGS];
+    defaultsApplied.push("excludedTags");
   }
+  if (config.minDurationSeconds == null) {
+    config.minDurationSeconds = DEFAULT_MIN_DURATION_SECONDS;
+    defaultsApplied.push("minDurationSeconds");
+  }
+  if (!config.trackingNumbers?.length) defaultsApplied.push("trackingNumbers");
+  if (!config.campaigns?.length) defaultsApplied.push("campaigns");
+  if (!config.excludedNumbers?.length) defaultsApplied.push("excludedNumbers");
+
+  if (!sources.length) {
+    return { ...DEFAULT_CTM_QUALIFICATION_SETTINGS, config: { ...config } };
+  }
+  return { config, configured, defaultsApplied, sources };
+}
+
+/** Backwards-compatible helper returning just the effective config object. */
+export async function loadCtmQualificationConfig(supabase: Supa): Promise<CtmQualificationConfig> {
+  return (await loadCtmQualificationSettings(supabase)).config;
 }
 
 export interface RecordQualificationInput {
   ctmCallId: string;
   ctmCallEventId?: string | null;
-  source: "webhook" | "sync" | "retry" | "manual_review";
+  source: CtmQualificationSource;
   result: CtmQualificationResult;
   leadId?: string | null;
   candidateLeadIds?: string[];
   metadata?: Record<string, unknown>;
+  settings?: CtmQualificationSettings;
 }
 
 /**
  * Persist the qualification outcome on the call row and append an audit event.
- * Idempotent: replays of the same call/source/outcome do not duplicate rows.
+ * Every outcome — including `eligible` — is audited with the integration id and
+ * the provider event id. Idempotent: replays of the same call/source/outcome
+ * do not duplicate rows.
  */
 export async function recordCtmQualification(
   supabase: Supa,
@@ -221,8 +139,6 @@ export async function recordCtmQualification(
       .eq("ctm_call_id", input.ctmCallId);
   } catch (_e) { /* never fail ingest on audit write */ }
 
-  if (result.state === "eligible") return;
-
   try {
     await supabase.from("intake_ctm_qualification_events").upsert(
       {
@@ -234,7 +150,14 @@ export async function recordCtmQualification(
         detail: result.detail,
         lead_id: input.leadId ?? null,
         candidate_lead_ids: input.candidateLeadIds ?? [],
-        metadata: input.metadata ?? {},
+        metadata: {
+          integration_id: "ctm",
+          provider_event_id: input.ctmCallId,
+          config_configured: input.settings?.configured ?? null,
+          config_sources: input.settings?.sources ?? null,
+          config_defaults_applied: input.settings?.defaultsApplied ?? null,
+          ...(input.metadata ?? {}),
+        },
       },
       { onConflict: "ctm_call_id,source,state,reason", ignoreDuplicates: true },
     );
