@@ -864,6 +864,14 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   },
 };
 
+/**
+ * Recruiting is consolidated to two live roles: Director of Recruiting
+ * (`recruiting_lead`) and Recruiting Coordinator (`recruiting_coordinator`).
+ * Legacy recruiting role keys stay mapped so existing accounts keep a working
+ * menu instead of falling through to the empty default.
+ */
+ROLE_MENUS.recruiting_assistant = ROLE_MENUS.recruiting_coordinator;
+
 /** Fallback for any role without an explicit menu definition. */
 export const DEFAULT_ROLE_MENU: RoleMenu = {
   sections: [
