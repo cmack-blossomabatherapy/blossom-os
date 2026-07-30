@@ -131,7 +131,7 @@ const PAGE_ROUTES: { path: string; loader: () => Promise<{ default: React.Compon
   { path: "/recruiting/follow-ups", loader: () => import("@/pages/os/OSRecruitingFollowUps") },
   { path: "/recruiting/messages", loader: () => import("@/pages/os/OSRecruitingMessages") },
   { path: "/recruiting/escalations", loader: () => import("@/pages/os/OSRecruitingEscalations") },
-  { path: "/recruiting/map", loader: () => import("@/pages/RecruitingMap") },
+  { path: "/recruiting/map", loader: () => import("@/pages/os/mapsly/RecruitingMap") },
 ];
 
 describe("Recruiting routes — every destination loads", () => {
