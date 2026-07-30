@@ -18,6 +18,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OSRoleProvider } from "@/contexts/OSRoleContext";
+import { LeadsProvider } from "@/contexts/LeadsContext";
+import { LeadDrawerProvider } from "@/contexts/LeadDrawerContext";
+import { ClientsProvider } from "@/contexts/ClientsContext";
+import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
+import { PhoneSystemProvider } from "@/contexts/PhoneSystemContext";
+import { OperatorDialogsProvider } from "@/components/os/OperatorDialogs";
 
 /* ------------------------------------------------------------------ */
 /* Backend + toast stubs (empty-but-valid backend)                     */
@@ -125,14 +131,26 @@ function Harness({ url, pattern, Page }: { url: string; pattern: string; Page: R
       <TooltipProvider>
         <AuthProvider>
           <OSRoleProvider>
-            <MemoryRouter initialEntries={[url]}>
-              <LocationProbe />
-              <Routes>
-                <Route path={pattern} element={<Page />} />
-                <Route path="/tasks" element={<div>away-destination</div>} />
-                <Route path="*" element={<div>no-match</div>} />
-              </Routes>
-            </MemoryRouter>
+            <LeadsProvider>
+              <LeadDrawerProvider>
+                <ClientsProvider>
+                  <JourneyOverridesProvider>
+                    <PhoneSystemProvider>
+                      <OperatorDialogsProvider>
+                        <MemoryRouter initialEntries={[url]}>
+                          <LocationProbe />
+                          <Routes>
+                            <Route path={pattern} element={<Page />} />
+                            <Route path="/tasks" element={<div>away-destination</div>} />
+                            <Route path="*" element={<div>no-match</div>} />
+                          </Routes>
+                        </MemoryRouter>
+                      </OperatorDialogsProvider>
+                    </PhoneSystemProvider>
+                  </JourneyOverridesProvider>
+                </ClientsProvider>
+              </LeadDrawerProvider>
+            </LeadsProvider>
           </OSRoleProvider>
         </AuthProvider>
       </TooltipProvider>
