@@ -380,6 +380,7 @@ function PacketCard({
   const setItem = useSetAdmissionItem();
   const approve = useApproveAdmission();
   const markHandoff = useMarkAdmissionHandoff();
+  const syncPacket = useSyncAdmissionPacket();
 
   const checklist = useMemo(
     () => buildAdmissionChecklist(lead, packet?.items ?? []),
@@ -390,6 +391,7 @@ function PacketCard({
     [checklist, packet?.approval],
   );
   const handedOff = !!packet?.handoffMarkedAt;
+  const packetCreated = (packet?.items.length ?? 0) > 0;
 
   const pct = admission.requiredCount
     ? Math.round(((admission.completeCount + admission.waivedCount) / admission.requiredCount) * 100)
@@ -430,9 +432,26 @@ function PacketCard({
 
   const onHandoff = async () => {
     try {
-      await markHandoff.mutateAsync({ leadId: lead.id, reference: null });
+      const reference = window.prompt("CentralReach reference (chart / client ID) — optional:")?.trim() || null;
+      await markHandoff.mutateAsync({ leadId: lead.id, reference });
       toast.success("Marked as handed off to CentralReach.");
     } catch (e) { toast.error(admissionPacketErrorMessage(e)); }
+  };
+
+  const onSync = async () => {
+    try {
+      await syncPacket.mutateAsync({ leadId: lead.id, items: checklist });
+      toast.success(packetCreated ? "Packet statuses synced." : "Packet created.");
+    } catch (e) { toast.error(admissionPacketErrorMessage(e)); }
+  };
+
+  const onDownload = () => {
+    const row = buildExportRow(lead, packet);
+    downloadTextFile(
+      `${packetFileSlug(lead.childName ?? "packet", lead.id)}-cr-packet.txt`,
+      buildPacketHandoffSheet(row, admission, CENTRALREACH_BOUNDARY_NOTE),
+    );
+    toast.success("Packet handoff sheet downloaded.");
   };
 
   return (
