@@ -9,10 +9,10 @@
  *      assert the original path + query string are restored and the page
  *      still renders (no crash, no lost filter state).
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import type React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, cleanup } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";

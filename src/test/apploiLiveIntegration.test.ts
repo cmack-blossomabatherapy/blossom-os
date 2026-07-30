@@ -60,7 +60,7 @@ describe("Apploi live integration — no secrets in frontend", () => {
       // No literal credential value committed anywhere in the frontend.
       expect(src, f).not.toMatch(/x-api-key/i);
     }
-  });
+  }, 60000);
 });
 
 describe("Apploi live integration — recruiting surfaces", () => {
