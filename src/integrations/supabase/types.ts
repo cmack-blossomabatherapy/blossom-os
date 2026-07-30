@@ -1465,6 +1465,59 @@ export type Database = {
         }
         Relationships: []
       }
+      apploi_outbound_status_queue: {
+        Row: {
+          attempts: number
+          candidate_id: string
+          created_at: string
+          external_candidate_id: string
+          from_stage: string | null
+          id: string
+          last_error: string | null
+          processed_at: string | null
+          requested_by: string | null
+          status: string
+          to_stage: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          candidate_id: string
+          created_at?: string
+          external_candidate_id: string
+          from_stage?: string | null
+          id?: string
+          last_error?: string | null
+          processed_at?: string | null
+          requested_by?: string | null
+          status?: string
+          to_stage: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          candidate_id?: string
+          created_at?: string
+          external_candidate_id?: string
+          from_stage?: string | null
+          id?: string
+          last_error?: string | null
+          processed_at?: string | null
+          requested_by?: string | null
+          status?: string
+          to_stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apploi_outbound_status_queue_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_documents: {
         Row: {
           assessment_id: string
