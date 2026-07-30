@@ -174,6 +174,8 @@ export default function ParentCommunication() {
   // page aligned with the shared intake operational surface.
   const { tasks: intakeTasks } = useIntakeTasksLive();
   const openTasks = intakeTasks.filter((t) => t.status !== "Completed").length;
+  // Live communication log records — the audit trail every action writes to.
+  const { comms, loading: commsLoading, refetch: refetchComms } = useIntakeCommsLive(25);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -214,19 +216,52 @@ export default function ParentCommunication() {
           adapters used everywhere else in the intake surface so that quick
           sends stay auditable. */}
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" onClick={async () => {
-          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
-          notifyCommunicationResult(await sendIntakePacket(stub));
-        }}>Send Intake Packet</Button>
-        <Button size="sm" variant="outline" onClick={async () => {
-          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
-          notifyCommunicationResult(await sendMissingInfoReminder(stub));
-        }}>Missing Info Reminder</Button>
-        <Button size="sm" variant="outline" onClick={async () => {
-          const stub = { leadId: "", phone: null, email: null, parentName: null, childName: null, state: null, insurance: null };
-          notifyCommunicationResult(await sendVobUpdate(stub));
-        }}>Send VOB Update</Button>
+        <Button size="sm" variant="outline" onClick={() => { setSendTpl(null); setSendMode("intake-packet"); }}>
+          Send Intake Packet
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => { setSendTpl(null); setSendMode("missing-info"); }}>
+          Missing Info Reminder
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => { setSendTpl(null); setSendMode("vob-update"); }}>
+          Send VOB Update
+        </Button>
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        Every send is written to the lead's communication log, refreshes the lead's
+        contact context, and annotates the newest open follow-up task.
+      </p>
+
+      <section className="rounded-xl border bg-card p-3">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h2 className="text-sm font-semibold flex items-center gap-1.5">
+            <StickyNote className="h-3.5 w-3.5" /> Recent communication log
+          </h2>
+          <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => void refetchComms()}>
+            Refresh
+          </Button>
+        </div>
+        {commsLoading ? (
+          <div className="text-xs text-muted-foreground">Loading log records…</div>
+        ) : comms.length === 0 ? (
+          <div className="text-xs text-muted-foreground">No communications logged yet.</div>
+        ) : (
+          <ul className="divide-y max-h-64 overflow-y-auto">
+            {comms.map((c) => (
+              <li key={c.id} className="py-2 flex items-start gap-2">
+                <Badge variant="secondary" className="text-[10px] shrink-0 uppercase">
+                  {c.communication_type}
+                </Badge>
+                <div className="min-w-0">
+                  <div className="text-xs truncate">{c.subject || c.preview}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {c.logged_by_name ?? "Intake"} · {new Date(c.created_at).toLocaleString()}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-xl border bg-card p-3 grid grid-cols-1 md:grid-cols-4 gap-2">
         <div className="relative md:col-span-4 lg:col-span-1">
@@ -418,10 +453,11 @@ export default function ParentCommunication() {
       </Sheet>
 
       <LeadPickerDialog
-        open={!!sendMode && !!sendTpl}
+        open={!!sendMode}
         mode={sendMode}
         template={sendTpl}
         onClose={() => { setSendMode(null); setSendTpl(null); }}
+        onLogged={() => { void refetchComms(); }}
       />
     </GrowthPageShell>
   );
