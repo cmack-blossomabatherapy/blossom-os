@@ -86,7 +86,7 @@ describe("Sprint 20 — Recruiting Team menu & routing", () => {
   it("OSRoleContext maps Recruiting app roles to the correct OS roles", () => {
     expect(ctx).toMatch(/recruiting_lead.*return "recruiting_lead"/s);
     expect(ctx).toMatch(/recruiting_coordinator.*return "recruiting_coordinator"/s);
-    expect(ctx).toMatch(/recruiting_assistant.*return "recruiting_team"/s);
+    expect(ctx).toMatch(/recruiting_assistant.*return "recruiting_coordinator"/s);
   });
 
   it("App.tsx dashboard redirect maps every Recruiting app role", () => {
