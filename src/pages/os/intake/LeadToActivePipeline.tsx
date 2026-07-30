@@ -75,11 +75,11 @@ export default function LeadToActivePipeline() {
       isDirector: director,
       directorException: useException,
     });
-    if (!decision.allowed) {
-      toast.error(decision.reason);
+    if (decision.allowed !== true) {
+      toast.error("reason" in decision ? decision.reason : "Transition not allowed.");
       return;
     }
-    const viaException = decision.viaException;
+    const viaException = decision.viaException === true;
     const stored = INTAKE_STAGE_TO_STORED_STATUS[target] as LeadStatus;
     const preview = guardIntakeMutation(
       direction === "forward" ? "advance stage" : "revert stage",
