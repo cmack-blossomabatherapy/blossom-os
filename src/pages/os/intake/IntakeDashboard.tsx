@@ -16,6 +16,7 @@ import { buildLeadSourceDefaults } from "@/lib/leads/leadSourceConfig";
 import { cn } from "@/lib/utils";
 import { StateDirectorSnapshotBanner } from "@/components/stateDirector/StateDirectorSnapshotBanner";
 import { IntakeSystemHealthPanel } from "@/components/intake/IntakeSystemHealthPanel";
+import { IntakeDirectorInsights } from "@/components/intake/IntakeDirectorInsights";
 import { useIntakeTasksLive } from "@/hooks/useIntakeTasksLive";
 import {
   callParent,
@@ -287,6 +288,10 @@ export default function IntakeDashboard() {
           counts.inPipeline ? `${counts.inPipeline} open pipeline` : null,
         ].filter(Boolean) as string[]}
       />
+
+      {/* Director command view — always department-wide, independent of the
+          My work / Team toggle so leadership never sees a partial picture. */}
+      {isDirector && <IntakeDirectorInsights leads={stateScoped} loading={loading} />}
 
       {/* ---------- Today — priority queue ---------- */}
       <section>
