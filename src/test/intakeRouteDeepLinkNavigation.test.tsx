@@ -91,6 +91,12 @@ type DeepLinkCase = {
   pattern: string;
   /** Concrete deep link, including query string. */
   url: string;
+  /**
+   * URL expected after mount. Defaults to `url`. `/leads/:id` intentionally
+   * consumes one-shot deep-link params (tab/focus/task) out of the URL, so
+   * that route asserts the reduced form.
+   */
+  settledUrl?: string;
   loader: () => Promise<{ default: React.ComponentType }>;
 };
 
@@ -99,7 +105,7 @@ const LEAD_ID = "11111111-2222-3333-4444-555555555555";
 const DEEP_LINKS: DeepLinkCase[] = [
   { pattern: "/leads", url: "/leads?q=smith&stage=insurance_verification&state=GA", loader: () => import("@/pages/os/OSLeadsV2") },
   { pattern: "/leads/operations", url: "/leads/operations?view=queue&state=NC", loader: () => import("@/pages/os/OSIntakeOperations") },
-  { pattern: "/leads/:id", url: `/leads/${LEAD_ID}?tab=insurance&from=intake`, loader: () => import("@/pages/LeadDetail") },
+  { pattern: "/leads/:id", url: `/leads/${LEAD_ID}?tab=insurance&from=intake`, settledUrl: `/leads/${LEAD_ID}?from=intake`, loader: () => import("@/pages/LeadDetail") },
   { pattern: "/intake", url: "/intake?tab=pipeline", loader: () => import("@/pages/os/OSIntakeWorkspace") },
   { pattern: "/intake-coordinator", url: "/intake-coordinator?state=GA", loader: () => import("@/pages/os/OSIntakeCoordinator") },
   { pattern: "/intake/clients", url: "/intake/clients?q=ava&state=TN", loader: () => import("@/pages/os/OSIntakeClients") },
@@ -220,7 +226,8 @@ describe("Intake & Leads deep links — query strings and browser back", () => {
       await waitFor(() => expect(document.body.textContent).toBeTruthy());
 
       // Deep link mounted with its query string intact.
-      expect(screen.getByTestId("loc").textContent).toBe(url);
+      const settled = route.settledUrl ?? url;
+      expect(screen.getByTestId("loc").textContent).toBe(settled);
       healthy(errorSpy);
 
       // Navigate away…
@@ -229,7 +236,7 @@ describe("Intake & Leads deep links — query strings and browser back", () => {
 
       // …then hit the browser Back button.
       await act(async () => { screen.getByText("go-back").click(); });
-      await waitFor(() => expect(screen.getByTestId("loc").textContent).toBe(url));
+      await waitFor(() => expect(screen.getByTestId("loc").textContent).toBe(settled));
       healthy(errorSpy);
 
       errorSpy.mockRestore();
