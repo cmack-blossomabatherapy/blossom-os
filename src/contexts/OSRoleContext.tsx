@@ -23,7 +23,11 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("state_director")) return "state_director";
   if (appRoles.includes("exec")) return "executive_leadership";
   if (appRoles.includes("ops_manager")) return "operations_leadership";
-  if (appRoles.includes("intake")) return "intake_coordinator";
+  // Intake supports exactly two experiences. `intake_lead` stays the stored
+  // OS key for Director of Intake; `director_of_intake` is the canonical
+  // identifier and is normalized onto it.
+  if (has("director_of_intake") || has("intake_lead") || has("intake_director") || has("intake_leadership") || has("intake_manager")) return "intake_lead";
+  if (has("intake") || has("intake_coordinator") || has("intake_team")) return "intake_coordinator";
   if (appRoles.includes("auth_team")) return "authorization_coordinator";
   if (appRoles.includes("scheduling")) return "scheduling_team";
   if (appRoles.includes("staffing_lead")) return "staffing_lead";

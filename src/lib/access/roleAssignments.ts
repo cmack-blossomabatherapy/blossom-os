@@ -132,7 +132,7 @@ export const ROLE_GROUPS: RoleGroup[] = [
   {
     label: "Intake & Admissions",
     roles: [
-      { key: "intake_lead", label: "Intake Lead" },
+      { key: "intake_lead", label: "Director of Intake" },
       { key: "intake_coordinator", label: "Intake Coordinator" },
     ],
   },
