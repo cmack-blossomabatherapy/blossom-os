@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { ROLE_GROUPS as CANONICAL_ROLE_GROUPS } from "@/lib/access/roleAssignments";
 
 /* -------------------------------------------------------------------------- */
 /* Shared layout                                                              */
