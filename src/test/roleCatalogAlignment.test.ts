@@ -77,6 +77,52 @@ describe("canonical role catalog", () => {
     expect(mapRoleKeyToOSRole("director_of_operations")).toBe("operations_leadership");
   });
 
+  it("maps canonical keys to the expected OS roles", () => {
+    const expected: Record<string, string> = {
+      director_of_marketing: "marketing_growth_lead",
+      director_of_intake: "intake_lead",
+      director_of_recruiting: "recruiting_lead",
+      director_of_staffing: "staffing_lead",
+      director_of_scheduling: "scheduling_lead",
+      director_of_authorizations: "authorization_manager",
+      cfo: "billing_finance",
+      controller: "billing_finance",
+      billing_coordinator: "billing_finance",
+      finance_benefits_coordinator: "finance_benefits_team",
+      credentialing_coordinator: "credentialing_team",
+      operations_manager: "operations_leadership",
+      regional_state_director: "regional_state_director",
+      state_va: "state_va",
+      office_manager: "office_manager",
+      training_manager: "training_manager",
+      clinic_growth: "clinic_growth",
+      clinical_director: "clinical_director",
+      case_manager: "case_manager",
+    };
+    for (const [key, os] of Object.entries(expected)) {
+      expect(mapRoleKeyToOSRole(key), key).toBe(os);
+    }
+  });
+
+  it("still maps legacy aliases for backwards compatibility", () => {
+    const legacy: Record<string, string> = {
+      admin: "super_admin",
+      ops_manager: "operations_leadership",
+      intake_lead: "intake_lead",
+      recruiting_lead: "recruiting_lead",
+      auth_team: "authorization_coordinator",
+      qa: "qa_team",
+      payroll_admin: "payroll_coordinator",
+      marketing: "marketing_team",
+      credentialing: "credentialing_team",
+      staffing: "staffing_team",
+      scheduling: "scheduling_team",
+    };
+    for (const [key, os] of Object.entries(legacy)) {
+      expect(mapRoleKeyToOSRole(key), key).toBe(os);
+    }
+  });
+
   it("every preview role has a resolvable menu", () => {
     const missing: string[] = [];
     for (const entry of ROLE_PREVIEW_LIST) {

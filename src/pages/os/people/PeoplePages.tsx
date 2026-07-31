@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { ROLE_GROUPS as CANONICAL_ROLE_GROUPS } from "@/lib/access/roleAssignments";
 
 /* -------------------------------------------------------------------------- */
 /* Shared layout                                                              */
@@ -82,17 +83,12 @@ function SectionCard({ title, description, children }: { title: string; descript
 /* 1. Role Management                                                         */
 /* -------------------------------------------------------------------------- */
 
-const ROLE_GROUPS = [
-  {
-    group: "Executive & Admin",
-    roles: ["Super Admin", "Executive Leadership", "Operations Leadership"],
-  },
-  { group: "State Operations", roles: ["State Director", "Assistant State Director"] },
-  { group: "Growth & Admissions", roles: ["Marketing Team", "Intake Team", "Business Development", "Recruiting Team"] },
-  { group: "Clinical & Care Delivery", roles: ["Clinical Director", "BCBA", "Case Manager", "RBT", "Behavioral Support"] },
-  { group: "Operations Execution", roles: ["Authorizations Team", "Scheduling Team", "Staffing Team", "QA Team"] },
-  { group: "Business Office", roles: ["HR Team", "Credentialing Team"] },
-];
+// Canonical assignable role catalog — same source User Management uses when
+// assigning hats, so this page can never drift back to legacy labels.
+const ROLE_GROUPS = CANONICAL_ROLE_GROUPS.map((g) => ({
+  group: g.label,
+  roles: g.roles.map((r) => r.label),
+}));
 
 export function RoleManagementPage() {
   return (
