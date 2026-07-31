@@ -1259,9 +1259,11 @@ const App = () => (
                   />
                   <Route path="/intake/dashboard" element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><IntakeWorkspaceLanding /></PermissionRoute>} />
                   {/* Canonical Intake pipeline — Lead Captured → Admission Ready. */}
-                  <Route path="/intake/lead-to-active" element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><OSShellPage><LeadToActivePipeline /></OSShellPage></PermissionRoute>} />
-                  <Route path="/intake/assignments" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><OSShellPage><IntakeAssignments /></OSShellPage></PermissionRoute>} />
-                  <Route path="/intake/configuration" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><OSShellPage><IntakeConfiguration /></OSShellPage></PermissionRoute>} />
+                  {/* These pages render their own Blossom OS shell via GrowthPageShell —
+                      do NOT wrap them in OSShellPage (nested sidebar/topbar bug). */}
+                  <Route path="/intake/lead-to-active" element={<PermissionRoute allowedRoles={INTAKE_WORKSPACE_ROUTE_ROLES}><LeadToActivePipeline /></PermissionRoute>} />
+                  <Route path="/intake/assignments" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><IntakeAssignments /></PermissionRoute>} />
+                  <Route path="/intake/configuration" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><IntakeConfiguration /></PermissionRoute>} />
                   {/* Director-only: CTM Review & Health. Coordinators are excluded. */}
                   <Route path="/intake/review-queues" element={<PermissionRoute allowedRoles={INTAKE_DIRECTOR_ROUTE_ROLES}><OSShellPage><IntakePromotionReviewQueues /></OSShellPage></PermissionRoute>} />
                   <Route path="/intake/referral-queue" element={<Navigate to="/intake/dashboard" replace />} />
