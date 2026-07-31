@@ -15,8 +15,9 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (has("admin") || has("super_admin")) return "super_admin";
   if (has("systems_admin")) return "systems_admin";
   if (appRoles.includes("coo")) return "coo";
+  if (has("cfo") || has("controller")) return "billing_finance";
   if (appRoles.includes("executive")) return "executive_leadership";
-  if (appRoles.includes("director_of_operations") || appRoles.includes("operations_manager")) return "operations_leadership";
+  if (has("director_of_operations") || has("operations_manager") || has("operations_leadership")) return "operations_leadership";
   if (appRoles.includes("assistant_state_director")) return "assistant_state_director";
   if (has("state_va") || has("virtual_assistant") || has("state_virtual_assistant")) return "state_va";
   if (has("regional_state_director") || has("regional_director") || has("state_director_mentor")) return "regional_state_director";
@@ -28,13 +29,16 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   // identifier and is normalized onto it.
   if (has("director_of_intake") || has("intake_lead") || has("intake_director") || has("intake_leadership") || has("intake_manager")) return "intake_lead";
   if (has("intake") || has("intake_coordinator") || has("intake_team")) return "intake_coordinator";
-  if (appRoles.includes("auth_team")) return "authorization_coordinator";
+  if (has("director_of_authorizations") || has("authorization_manager")) return "authorization_manager";
+  if (has("authorization_coordinator") || appRoles.includes("auth_team")) return "authorization_coordinator";
+  if (has("director_of_scheduling") || has("scheduling_lead")) return "scheduling_lead";
+  if (has("scheduling_coordinator")) return "scheduling_coordinator";
   if (appRoles.includes("scheduling")) return "scheduling_team";
-  if (appRoles.includes("staffing_lead")) return "staffing_lead";
+  if (has("director_of_staffing") || appRoles.includes("staffing_lead")) return "staffing_lead";
   if (appRoles.includes("staffing_coordinator")) return "staffing_coordinator";
   if (appRoles.includes("staffing")) return "staffing_team";
   if (has("recruiting_team")) return "recruiting_team";
-  if (appRoles.includes("recruiting_lead")) return "recruiting_lead";
+  if (has("director_of_recruiting") || appRoles.includes("recruiting_lead")) return "recruiting_lead";
   if (appRoles.includes("recruiting_coordinator")) return "recruiting_coordinator";
   // Legacy recruiting role: recruiting is consolidated to Director of
   // Recruiting + Recruiting Coordinator, so legacy accounts land on the
@@ -60,18 +64,23 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
     has("rcm_lead") ||
     has("billing_finance") ||
     has("billing_lead") ||
+    has("billing_coordinator") ||
     has("rcm_team") ||
-    has("finance_benefits_lead") ||
-    has("finance_benefits_team")
+    has("finance_benefits_lead")
   ) return "billing_finance";
+  if (
+    has("finance_benefits_coordinator") ||
+    has("finance_benefits_team")
+  ) return "finance_benefits_team";
   if (appRoles.includes("qa_director")) return "qa_director";
   if (appRoles.includes("qa_specialist")) return "qa_specialist";
-  if (appRoles.includes("qa")) return "qa_team";
-  if (appRoles.includes("payroll_admin")) return "payroll_coordinator";
+  if (has("qa_team") || appRoles.includes("qa")) return "qa_team";
+  if (has("payroll_lead") || has("payroll_coordinator") || appRoles.includes("payroll_admin")) return "payroll_coordinator";
+  if (has("case_manager")) return "case_manager";
   if (appRoles.includes("bcba")) return "bcba";
   if (appRoles.includes("rbt")) return "rbt";
   if (has("business_development")) return "business_development";
-  if (appRoles.includes("marketing_growth_lead")) return "marketing_growth_lead";
+  if (has("director_of_marketing") || appRoles.includes("marketing_growth_lead")) return "marketing_growth_lead";
   if (appRoles.includes("marketing") || appRoles.includes("marketing_team")) return "marketing_team";
   if (appRoles.includes("behavioral_support")) return "behavioral_support";
   // The Clinical Director OS role covers three DB app_role aliases:
@@ -160,7 +169,7 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   });
   // Fall back to the lowest-privilege OS role if none of the user's app roles
   // map to a known OS role — never silently elevate to State Director.
-  const derivedRole = mapAuthRoleToOS(appRoles) ?? "rbt";
+  const derivedRole = mapAuthRoleToOS(appRoles) ?? "viewer";
   // Admin eligibility for "View as role" MUST match the signal that gates
   // <RoleSwitcher /> (useAuth().isAdmin) — any auth role of
   // admin / super_admin / systems_admin qualifies. Deriving this from the

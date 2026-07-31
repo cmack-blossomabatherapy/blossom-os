@@ -901,6 +901,27 @@ export const DEFAULT_ROLE_MENU: RoleMenu = {
 };
 
 /**
+ * Canonical lead/coordinator role keys share the department menu of their
+ * team role. Registering the aliases keeps the sidebar correct instead of
+ * silently degrading to DEFAULT_ROLE_MENU.
+ */
+const MENU_ALIASES: Partial<Record<OSRole, OSRole>> = {
+  scheduling_lead: "scheduling_team",
+  scheduling_coordinator: "scheduling_team",
+  staffing_lead: "staffing_team",
+  staffing_coordinator: "staffing_team",
+  billing_lead: "billing_finance",
+  finance_benefits_team: "billing_finance",
+  finance_benefits_lead: "billing_finance",
+  rcm_team: "billing_finance",
+  payroll_coordinator: "hr_team",
+};
+
+for (const [alias, source] of Object.entries(MENU_ALIASES) as [OSRole, OSRole][]) {
+  if (!ROLE_MENUS[alias] && ROLE_MENUS[source]) ROLE_MENUS[alias] = ROLE_MENUS[source];
+}
+
+/**
  * Roles surfaced in the Super Admin "View as Role" preview switcher.
  * Order matters - this is what shows up in the dropdown.
  */
@@ -908,26 +929,35 @@ export const ROLE_PREVIEW_LIST: { label: string; role: OSRole }[] = [
   { label: "Super Admin",                 role: "super_admin" },
   { label: "COO / Operating Owner",       role: "coo" },
   { label: "Executive Leadership",        role: "executive_leadership" },
-  { label: "Operations Leadership",       role: "operations_leadership" },
+  { label: "Director of Operations",      role: "operations_leadership" },
   { label: "State Director",              role: "state_director" },
   { label: "State Director Assistant",    role: "assistant_state_director" },
   { label: "Regional State Director",     role: "regional_state_director" },
+  { label: "Director of Marketing",       role: "marketing_growth_lead" },
   { label: "Marketing Team",              role: "marketing_team" },
   { label: "Business Development",        role: "business_development" },
+  { label: "Director of Intake",          role: "intake_lead" },
   { label: "Intake Team",                 role: "intake_coordinator" },
-  { label: "Recruiting Team",             role: "recruiting_team" },
-  { label: "Authorizations Team",         role: "authorization_coordinator" },
-  { label: "Scheduling Team",             role: "scheduling_team" },
-  { label: "Staffing Team",               role: "staffing_team" },
+  { label: "Director of Recruiting",      role: "recruiting_lead" },
+  { label: "Recruiting Coordinator",      role: "recruiting_coordinator" },
+  { label: "Director of Authorizations",  role: "authorization_manager" },
+  { label: "Authorization Coordinator",   role: "authorization_coordinator" },
+  { label: "Director of Scheduling",      role: "scheduling_lead" },
+  { label: "Scheduling Coordinator",      role: "scheduling_coordinator" },
+  { label: "Director of Staffing",        role: "staffing_lead" },
+  { label: "Staffing Coordinator",        role: "staffing_coordinator" },
   { label: "HR Team",                     role: "hr_team" },
-  { label: "Credentialing Team",          role: "credentialing_team" },
+  { label: "Credentialing Coordinator",   role: "credentialing_team" },
   { label: "QA Team",                     role: "qa_team" },
   { label: "Clinical Director",           role: "clinical_director" },
   { label: "BCBA",                        role: "bcba" },
   { label: "Case Manager",                role: "case_manager" },
   { label: "RBT",                         role: "rbt" },
   { label: "Behavioral Support",          role: "behavioral_support" },
-  { label: "Director of RCM / Benefits",  role: "billing_finance" },
+  { label: "CFO / Controller",            role: "billing_finance" },
+  { label: "Billing Coordinator",         role: "billing_lead" },
+  { label: "Finance / Benefits Coordinator", role: "finance_benefits_team" },
+  { label: "Payroll Coordinator",         role: "payroll_coordinator" },
   { label: "Training Manager / Enablement", role: "training_manager" },
   { label: "Office Manager / HR Assistant", role: "office_manager" },
   { label: "Clinic Growth-to-Launch",       role: "clinic_growth" },
