@@ -32837,6 +32837,22 @@ export type Database = {
         | "lead_rbt"
         | "floater_rbt"
         | "traveling_lead_rbt"
+        | "director_of_marketing"
+        | "director_of_intake"
+        | "director_of_recruiting"
+        | "director_of_staffing"
+        | "director_of_scheduling"
+        | "director_of_authorizations"
+        | "cfo"
+        | "controller"
+        | "finance_benefits_coordinator"
+        | "billing_coordinator"
+        | "payroll_coordinator"
+        | "regional_state_director"
+        | "state_va"
+        | "office_manager"
+        | "training_manager"
+        | "clinic_growth"
       assessment_document_type: "Assessment Notes" | "Treatment Plan"
       assessment_location: "Home" | "School" | "Clinic"
       assessment_status:
@@ -33670,6 +33686,22 @@ export const Constants = {
         "lead_rbt",
         "floater_rbt",
         "traveling_lead_rbt",
+        "director_of_marketing",
+        "director_of_intake",
+        "director_of_recruiting",
+        "director_of_staffing",
+        "director_of_scheduling",
+        "director_of_authorizations",
+        "cfo",
+        "controller",
+        "finance_benefits_coordinator",
+        "billing_coordinator",
+        "payroll_coordinator",
+        "regional_state_director",
+        "state_va",
+        "office_manager",
+        "training_manager",
+        "clinic_growth",
       ],
       assessment_document_type: ["Assessment Notes", "Treatment Plan"],
       assessment_location: ["Home", "School", "Clinic"],

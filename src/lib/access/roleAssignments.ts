@@ -104,11 +104,15 @@ export interface RoleGroup {
 
 export const ROLE_GROUPS: RoleGroup[] = [
   {
-    label: "Executive / Leadership",
+    label: "Platform",
     roles: [
       { key: "super_admin", label: "Super Admin" },
       { key: "systems_admin", label: "Systems Admin" },
-      { key: "executive", label: "Executive" },
+    ],
+  },
+  {
+    label: "Executive / Leadership",
+    roles: [
       { key: "coo", label: "COO" },
       { key: "director_of_operations", label: "Director of Operations" },
       { key: "operations_manager", label: "Operations Manager" },
@@ -119,12 +123,14 @@ export const ROLE_GROUPS: RoleGroup[] = [
     roles: [
       { key: "state_director", label: "State Director" },
       { key: "assistant_state_director", label: "Assistant State Director" },
+      { key: "regional_state_director", label: "Regional State Director" },
+      { key: "state_va", label: "State VA" },
     ],
   },
   {
     label: "Growth & Marketing",
     roles: [
-      { key: "marketing_growth_lead", label: "Marketing & Growth Lead" },
+      { key: "director_of_marketing", label: "Director of Marketing" },
       { key: "marketing_team", label: "Marketing Team" },
       { key: "business_development", label: "Business Development" },
     ],
@@ -132,20 +138,21 @@ export const ROLE_GROUPS: RoleGroup[] = [
   {
     label: "Intake & Admissions",
     roles: [
-      { key: "intake_lead", label: "Director of Intake" },
+      { key: "director_of_intake", label: "Director of Intake" },
       { key: "intake_coordinator", label: "Intake Coordinator" },
     ],
   },
   {
     label: "Recruiting",
     roles: [
-      { key: "recruiting_lead", label: "Director of Recruiting" },
+      { key: "director_of_recruiting", label: "Director of Recruiting" },
       { key: "recruiting_coordinator", label: "Recruiting Coordinator" },
     ],
   },
   {
     label: "Staffing",
     roles: [
+      { key: "director_of_staffing", label: "Director of Staffing" },
       { key: "staffing_lead", label: "Staffing Lead" },
       { key: "staffing_coordinator", label: "Staffing Coordinator" },
     ],
@@ -153,6 +160,7 @@ export const ROLE_GROUPS: RoleGroup[] = [
   {
     label: "Scheduling",
     roles: [
+      { key: "director_of_scheduling", label: "Director of Scheduling" },
       { key: "scheduling_lead", label: "Scheduling Lead" },
       { key: "scheduling_coordinator", label: "Scheduling Coordinator" },
     ],
@@ -160,22 +168,24 @@ export const ROLE_GROUPS: RoleGroup[] = [
   {
     label: "Authorizations",
     roles: [
+      { key: "director_of_authorizations", label: "Director of Authorizations" },
       { key: "authorization_manager", label: "Authorization Manager" },
       { key: "authorization_coordinator", label: "Authorization Coordinator" },
     ],
   },
   {
-    label: "QA",
+    label: "QA / Compliance",
     roles: [
       { key: "qa_director", label: "QA Director" },
       { key: "qa_specialist", label: "QA Specialist" },
+      { key: "qa_team", label: "QA / Compliance Team" },
     ],
   },
   {
     label: "Credentialing / RCM",
     roles: [
       { key: "credentialing_lead", label: "Credentialing Lead" },
-      { key: "credentialing_team", label: "Credentialing Team" },
+      { key: "credentialing_coordinator", label: "Credentialing Coordinator" },
       { key: "rcm_team", label: "RCM Team" },
     ],
   },
@@ -185,43 +195,90 @@ export const ROLE_GROUPS: RoleGroup[] = [
       { key: "hr_lead", label: "HR Lead" },
       { key: "hr_team", label: "HR Team" },
       { key: "payroll_lead", label: "Payroll Lead" },
-      { key: "payroll_admin", label: "Payroll Coordinator" },
+      { key: "payroll_coordinator", label: "Payroll Coordinator" },
+      { key: "office_manager", label: "Office Manager / HR Assistant" },
     ],
   },
   {
     label: "Clinical",
     roles: [
+      { key: "clinic_growth", label: "Clinic Growth-to-Launch / Director of Clinics" },
+      { key: "clinical_director", label: "Clinical Director" },
       { key: "clinical_lead", label: "Clinical Lead" },
       { key: "bcba", label: "BCBA" },
       { key: "rbt", label: "RBT" },
       { key: "behavioral_support", label: "Behavioral Support" },
+      { key: "case_manager", label: "Case Manager" },
     ],
   },
   {
-    label: "Finance",
+    label: "Finance / Billing",
     roles: [
+      { key: "cfo", label: "CFO" },
+      { key: "controller", label: "Controller" },
       { key: "finance_benefits_lead", label: "Finance / Benefits Lead" },
-      { key: "finance_benefits_team", label: "Finance / Benefits Team" },
+      { key: "finance_benefits_coordinator", label: "Finance / Benefits Coordinator" },
       { key: "billing_lead", label: "Billing Lead" },
+      { key: "billing_coordinator", label: "Billing Coordinator" },
     ],
   },
   {
     label: "Training",
-    roles: [{ key: "training_admin", label: "Training Admin" }],
-  },
-  {
-    label: "Systems",
-    roles: [
-      { key: "admin", label: "Super Admin (legacy)" },
-    ],
+    roles: [{ key: "training_manager", label: "Training Manager / Enablement" }],
   },
 ];
+
+/**
+ * Retired / legacy role keys. These are NEVER assignable in User Management,
+ * but they must remain readable so existing records render a human label and
+ * still map to an OS role for backwards compatibility.
+ */
+export const LEGACY_ROLE_LABELS: Record<string, string> = {
+  admin: "Super Admin (legacy)",
+  exec: "Executive (legacy)",
+  executive: "Executive (legacy)",
+  executive_leadership: "Executive Leadership (legacy)",
+  operations_leadership: "Operations Leadership (legacy)",
+  ops_manager: "Operations Leadership (legacy)",
+  intake: "Intake Team (legacy)",
+  intake_lead: "Director of Intake (legacy key)",
+  auth_team: "Authorization Team (legacy)",
+  recruiting_lead: "Director of Recruiting (legacy key)",
+  recruiting_team: "Recruiting Team (legacy)",
+  recruiting_assistant: "Recruiting Team (legacy)",
+  staffing: "Staffing Team (legacy)",
+  staffing_team: "Staffing Team (legacy)",
+  scheduling: "Scheduling Team (legacy)",
+  scheduling_team: "Scheduling Team (legacy)",
+  qa: "QA / Compliance (legacy)",
+  credentialing: "Credentialing (legacy)",
+  credentialing_team: "Credentialing Team (legacy)",
+  hr: "HR (legacy)",
+  finance: "Finance (legacy)",
+  billing_finance: "Billing / Finance (legacy)",
+  finance_benefits_team: "Finance / Benefits Team (legacy)",
+  marketing: "Marketing (legacy)",
+  marketing_growth_lead: "Marketing & Growth Lead (legacy key)",
+  payroll_admin: "Payroll Coordinator (legacy)",
+  training_admin: "Training Admin (legacy)",
+  viewer: "Viewer (legacy)",
+};
+
+/** Flat list of assignable role keys (User Management dropdowns). */
+export const ASSIGNABLE_ROLE_KEYS: string[] = ROLE_GROUPS.flatMap((g) =>
+  g.roles.map((r) => r.key),
+);
+
+export function isAssignableRoleKey(roleKey: string): boolean {
+  return ASSIGNABLE_ROLE_KEYS.includes(roleKey);
+}
 
 export function findRoleLabel(roleKey: string): string {
   for (const group of ROLE_GROUPS) {
     const hit = group.roles.find((r) => r.key === roleKey);
     if (hit) return hit.label;
   }
+  if (LEGACY_ROLE_LABELS[roleKey]) return LEGACY_ROLE_LABELS[roleKey];
   return roleKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -241,27 +298,36 @@ const ROLE_KEY_TO_OS: Record<string, OSRole> = {
   ops_manager: "operations_leadership",
   state_director: "state_director",
   assistant_state_director: "assistant_state_director",
+  regional_state_director: "regional_state_director",
+  state_va: "state_va",
+  director_of_intake: "intake_lead",
   intake_lead: "intake_lead",
   intake_coordinator: "intake_coordinator",
   intake: "intake_coordinator",
+  director_of_recruiting: "recruiting_lead",
   recruiting_lead: "recruiting_lead",
   recruiting_coordinator: "recruiting_coordinator",
   recruiting_assistant: "recruiting_team",
+  director_of_staffing: "staffing_lead",
   staffing_lead: "staffing_lead",
   staffing_coordinator: "staffing_coordinator",
   staffing: "staffing_team",
+  director_of_scheduling: "scheduling_lead",
   scheduling_lead: "scheduling_lead",
   scheduling_coordinator: "scheduling_coordinator",
   scheduling: "scheduling_team",
+  director_of_authorizations: "authorization_manager",
   authorization_manager: "authorization_manager",
   authorization_coordinator: "authorization_coordinator",
   auth_team: "authorization_coordinator",
   qa_director: "qa_director",
   qa_specialist: "qa_specialist",
+  qa_team: "qa_team",
   qa: "qa_team",
   credentialing_lead: "credentialing_lead",
   credentialing_team: "credentialing_team",
   credentialing: "credentialing_team",
+  credentialing_coordinator: "credentialing_team",
   hr_lead: "hr_lead",
   hr_admin: "hr_lead",
   hr_manager: "hr_lead",
@@ -270,19 +336,30 @@ const ROLE_KEY_TO_OS: Record<string, OSRole> = {
   payroll_lead: "payroll_coordinator",
   payroll_admin: "payroll_coordinator",
   payroll_coordinator: "payroll_coordinator",
+  office_manager: "office_manager",
+  cfo: "billing_finance",
+  controller: "billing_finance",
   finance_benefits_lead: "finance_benefits_lead",
   finance_benefits_team: "finance_benefits_team",
+  finance_benefits_coordinator: "finance_benefits_team",
   finance: "billing_finance",
   billing_lead: "billing_lead",
+  billing_coordinator: "billing_finance",
+  billing_finance: "billing_finance",
   rcm_team: "rcm_team",
+  clinic_growth: "clinic_growth",
+  clinical_director: "clinical_director",
   clinical_lead: "clinical_director",
   bcba: "bcba",
   rbt: "rbt",
   behavioral_support: "behavioral_support",
+  case_manager: "case_manager",
+  director_of_marketing: "marketing_growth_lead",
   marketing_growth_lead: "marketing_growth_lead",
   marketing_team: "marketing_team",
   marketing: "marketing_team",
   business_development: "business_development",
+  training_manager: "training_manager",
   training_admin: "hr_team",
 };
 
