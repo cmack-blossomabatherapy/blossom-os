@@ -190,12 +190,14 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   async function refresh() {
     setRefreshing(true);
     try {
-      const [b, s, shared, counts, batches] = await Promise.all([
+      const [b, s, shared, counts, batches, runs, pre] = await Promise.all([
         settle(listBcbaProductivityUploadBatches()),
         settle(getBcbaProductivityDatasetStatus()),
         Promise.all(SHARED_KEYS.map((k) => settle(listSharedReportDatasets(k)))),
         settle(fetchCrNormalizedCounts()),
         settle(listCrImportBatches(100)),
+        settle(listCrSyncRuns(25)),
+        settle(crUploadPreflight()),
       ]);
       const failures: string[] = [];
 
@@ -204,6 +206,12 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
 
       if (batches.status === "fulfilled") setCrBatches(batches.value);
       else failures.push(`Import batches: ${readableError(batches.reason)}`);
+
+      if (runs.status === "fulfilled") setCrRuns(runs.value);
+      else failures.push(`Upload runs: ${readableError(runs.reason)}`);
+
+      if (pre.status === "fulfilled") setPreflight(pre.value);
+      else setPreflight({ canWrite: false, reason: `Write access check failed: ${readableError(pre.reason)}` });
 
       if (b.status === "fulfilled") {
         setBcbaBatches(b.value);
