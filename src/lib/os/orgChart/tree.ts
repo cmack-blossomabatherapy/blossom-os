@@ -352,6 +352,107 @@ export interface OrgViventiumAuditRow {
   status?: string | null;
 }
 
+/** ---------------------------------------------------------------------
+ * Department grouping + drill-in scoping
+ * ------------------------------------------------------------------- */
+
+export const UNASSIGNED_DEPARTMENT = "Unassigned";
+
+export function departmentNameOf(person: OrgPersonInput | null | undefined): string {
+  const raw = (person?.departmentName ?? "").trim();
+  return raw || UNASSIGNED_DEPARTMENT;
+}
+
+export interface OrgDepartmentSummary {
+  name: string;
+  /** Highest-ranking person in the department, if any. */
+  head: OrgPersonInput | null;
+  /** Node id to drill into (the head, else the shallowest member). */
+  anchorId: string | null;
+  headcount: number;
+  leaders: number;
+  states: string[];
+  /** Top role labels by headcount, most common first. */
+  topRoles: Array<{ label: string; count: number }>;
+}
+
+/**
+ * Group the tree by department for the "by department" overview. Pure: takes
+ * the built tree plus a role-label resolver so it stays independent of the
+ * responsibilities catalog.
+ */
+export function departmentSummaries(
+  tree: OrgTree,
+  roleLabelFor: (title?: string | null) => string,
+): OrgDepartmentSummary[] {
+  const byDept = new Map<string, OrgTreeNode[]>();
+  for (const node of tree.nodes.values()) {
+    if (node.isRoot || !node.person) continue;
+    const dept = departmentNameOf(node.person);
+    const list = byDept.get(dept);
+    if (list) list.push(node);
+    else byDept.set(dept, [node]);
+  }
+
+  const out: OrgDepartmentSummary[] = [];
+  for (const [name, members] of byDept) {
+    const sorted = [...members].sort((a, b) => {
+      const ra = leadershipRank(a.person?.leadershipLevel);
+      const rb = leadershipRank(b.person?.leadershipLevel);
+      if (ra !== rb) return ra - rb;
+      if (a.depth !== b.depth) return a.depth - b.depth;
+      if (a.totalReports !== b.totalReports) return b.totalReports - a.totalReports;
+      return (a.person?.name ?? "").localeCompare(b.person?.name ?? "");
+    });
+    const headNode = sorted[0] ?? null;
+    const hasHead = headNode ? leadershipRank(headNode.person?.leadershipLevel) <= 3 : false;
+
+    const roleCounts = new Map<string, number>();
+    const states = new Set<string>();
+    let leaders = 0;
+    for (const m of members) {
+      const label = roleLabelFor(m.person?.title);
+      roleCounts.set(label, (roleCounts.get(label) ?? 0) + 1);
+      if (m.person?.state) states.add(m.person.state);
+      if (leadershipRank(m.person?.leadershipLevel) <= 3) leaders++;
+    }
+
+    out.push({
+      name,
+      head: hasHead ? (headNode?.person ?? null) : null,
+      anchorId: headNode?.id ?? null,
+      headcount: members.length,
+      leaders,
+      states: Array.from(states).sort((a, b) => a.localeCompare(b)),
+      topRoles: Array.from(roleCounts.entries())
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => (b.count - a.count) || a.label.localeCompare(b.label))
+        .slice(0, 4),
+    });
+  }
+
+  return out.sort(
+    (a, b) => b.headcount - a.headcount || a.name.localeCompare(b.name),
+  );
+}
+
+/**
+ * Ids visible when drilling into a section: the scope root plus every
+ * descendant. Returns null when the scope is the whole company (no filtering).
+ */
+export function scopeIds(tree: OrgTree, scopeId: string | null): Set<string> | null {
+  if (!scopeId || scopeId === tree.rootId || !tree.nodes.has(scopeId)) return null;
+  const set = new Set<string>([scopeId]);
+  for (const id of descendantsOf(tree, scopeId)) set.add(id);
+  return set;
+}
+
+/** Breadcrumb trail from the company root down to the scoped node. */
+export function scopeTrail(tree: OrgTree, scopeId: string | null): string[] {
+  if (!scopeId || !tree.nodes.has(scopeId) || scopeId === tree.rootId) return [];
+  return [...ancestorsOf(tree, scopeId).filter((id) => id !== tree.rootId).reverse(), scopeId];
+}
+
 export interface OrgViventiumAudit {
   total: number;
   synced: number;

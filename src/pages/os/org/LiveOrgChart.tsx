@@ -17,13 +17,13 @@ import { Link } from "react-router-dom";
 import {
   Background,
   BackgroundVariant,
-  Controls,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
   useReactFlow,
+  useViewport,
   type Connection,
   type Edge,
   type Node,
@@ -31,11 +31,20 @@ import {
 import "@xyflow/react/dist/style.css";
 import { toast } from "sonner";
 import {
+  ArrowLeft,
+  Building2,
   ChevronsDownUp,
+  CornerLeftUp,
+  Crosshair,
   Filter,
+  Home,
   Loader2,
   Lock,
+  Maximize2,
+  Minus,
+  Network,
   Pencil,
+  Plus,
   RefreshCw,
   Search,
   Users,
@@ -57,11 +66,15 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import { OrgTreeNodeCard, type OrgTreeNodeData } from "@/components/org/OrgTreeNodeCard";
 import { OrgPersonDrawer } from "@/components/org/OrgPersonDrawer";
 import { OrgViventiumAuditPanel } from "@/components/org/OrgViventiumAuditPanel";
+import { OrgDepartmentGrid } from "@/components/org/OrgDepartmentGrid";
 import {
   ORG_ROOT_ID,
   buildOrgTree,
   canReparent,
+  departmentSummaries,
   descendantsOf,
+  scopeIds,
+  scopeTrail,
   type OrgPersonInput,
 } from "@/lib/os/orgChart/tree";
 import { cleanJobTitle, roleProfileForTitle } from "@/lib/os/orgChart/responsibilities";
@@ -79,16 +92,21 @@ const EDITOR_ROLES = new Set([
 
 const NODE_TYPES = { orgPerson: OrgTreeNodeCard };
 
+type OrgView = "tree" | "departments";
+
 function InnerLiveOrgChart() {
   const { members, loading } = useEmployeeDirectory();
   const { overrides, save, saveMany, resetAll } = useOrgChartLayout();
   const { role } = useOSRole();
   const canEdit = EDITOR_ROLES.has(role as string);
-  const { fitView } = useReactFlow();
+  const { fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
+  const { zoom } = useViewport();
 
   const [query, setQuery] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState<OrgView>("tree");
+  const [scopeId, setScopeId] = useState<string | null>(null);
 
   const people = useMemo<OrgPersonInput[]>(
     () =>
@@ -116,6 +134,27 @@ function InnerLiveOrgChart() {
   const tree = useMemo(() => buildOrgTree(people, overrides), [people, overrides]);
 
   const departments = useMemo(
+    () => departmentSummaries(tree, (t) => roleProfileForTitle(t).label),
+    [tree],
+  );
+
+  /** Ids visible in the current drill-in scope (null = whole company). */
+  const scoped = useMemo(() => scopeIds(tree, scopeId), [tree, scopeId]);
+  const trail = useMemo(() => scopeTrail(tree, scopeId), [tree, scopeId]);
+  const scopeNode = scopeId ? tree.nodes.get(scopeId) ?? null : null;
+
+  const drillInto = useCallback((id: string | null) => {
+    setScopeId(id && id !== ORG_ROOT_ID ? id : null);
+    setView("tree");
+  }, []);
+
+  const drillOut = useCallback(() => {
+    if (!scopeId) return;
+    const parent = tree.nodes.get(scopeId)?.parentId ?? null;
+    setScopeId(parent && parent !== ORG_ROOT_ID ? parent : null);
+  }, [scopeId, tree]);
+
+  const departmentNames = useMemo(
     () =>
       Array.from(
         new Set(people.map((p) => (p.departmentName ?? "Unassigned").trim())),
@@ -164,6 +203,7 @@ function InnerLiveOrgChart() {
     const nextNodes: Node<OrgTreeNodeData>[] = [];
     for (const node of tree.nodes.values()) {
       if (tree.hidden.has(node.id)) continue;
+      if (scoped && !scoped.has(node.id)) continue;
       const p = node.person;
       const roleProfile = roleProfileForTitle(p?.title);
       nextNodes.push({
@@ -190,8 +230,13 @@ function InnerLiveOrgChart() {
           headcount: people.length,
           overridden: node.parentSource === "override",
           dimmed: !!matchedIds && !node.isRoot && !matchedIds.has(node.id),
+          isScopeRoot: node.id === scopeId,
           onToggleCollapse: () => void toggleCollapse(node.id),
           onOpen: node.isRoot ? undefined : () => setSelectedId(node.id),
+          onDrillIn:
+            node.isRoot || node.childIds.length === 0
+              ? undefined
+              : () => drillInto(node.id),
         },
       });
     }
@@ -200,6 +245,7 @@ function InnerLiveOrgChart() {
     for (const node of tree.nodes.values()) {
       if (!node.parentId || tree.hidden.has(node.id) || tree.hidden.has(node.parentId))
         continue;
+      if (scoped && (!scoped.has(node.id) || !scoped.has(node.parentId))) continue;
       const active =
         !matchedIds || matchedIds.has(node.id) || matchedIds.has(node.parentId);
       nextEdges.push({
@@ -217,7 +263,27 @@ function InnerLiveOrgChart() {
 
     setNodes(nextNodes);
     setEdges(nextEdges);
-  }, [tree, canEdit, matchedIds, people.length, toggleCollapse, setNodes, setEdges]);
+  }, [
+    tree,
+    canEdit,
+    matchedIds,
+    people.length,
+    toggleCollapse,
+    setNodes,
+    setEdges,
+    scoped,
+    scopeId,
+    drillInto,
+  ]);
+
+  // Re-frame whenever the drill-in scope changes.
+  useEffect(() => {
+    if (view !== "tree") return;
+    const t = window.setTimeout(() => {
+      fitView({ padding: 0.25, duration: 400, maxZoom: 1.1 });
+    }, 90);
+    return () => window.clearTimeout(t);
+  }, [scopeId, view, fitView]);
 
   // Focus matches
   useEffect(() => {
@@ -375,8 +441,138 @@ function InnerLiveOrgChart() {
     [fitView],
   );
 
+  const zoomPct = Math.round(zoom * 100);
+
   return (
     <div className="flex h-[calc(100vh-9rem)] flex-col gap-3">
+      {/* view + drill-in breadcrumb */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/60 px-4 py-2.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1 rounded-xl border border-border/70 bg-muted/50 p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("tree")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                view === "tree"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Network className="size-3.5" /> Tree
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("departments")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                view === "departments"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Building2 className="size-3.5" /> Departments
+              <span className="tabular-nums opacity-70">{departments.length}</span>
+            </button>
+          </div>
+
+          {view === "tree" && (
+            <nav aria-label="Org chart section" className="flex flex-wrap items-center gap-1 text-xs">
+              <button
+                type="button"
+                onClick={() => drillInto(null)}
+                className={cn(
+                  "flex items-center gap-1 rounded-lg px-2 py-1 font-medium transition-colors",
+                  scopeId
+                    ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "bg-muted/60 text-foreground",
+                )}
+              >
+                <Home className="size-3" /> Whole company
+              </button>
+              {trail.map((id, i) => {
+                const n = tree.nodes.get(id);
+                const isLast = i === trail.length - 1;
+                return (
+                  <span key={id} className="flex items-center gap-1">
+                    <span className="text-muted-foreground/60" aria-hidden>
+                      /
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => drillInto(id)}
+                      className={cn(
+                        "max-w-[190px] truncate rounded-lg px-2 py-1 font-medium transition-colors",
+                        isLast
+                          ? "bg-muted/60 text-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      {n?.person?.name ?? "—"}
+                    </button>
+                  </span>
+                );
+              })}
+            </nav>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {view === "tree" && scopeId && (
+            <>
+              <span className="hidden rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground sm:inline-flex">
+                {(scopeNode?.totalReports ?? 0) + 1} in this section
+              </span>
+              <Button size="sm" variant="outline" className="h-9 rounded-xl" onClick={drillOut}>
+                <CornerLeftUp className="size-4" /> Back out
+              </Button>
+              <Button size="sm" variant="outline" className="h-9 rounded-xl" onClick={() => drillInto(null)}>
+                <ArrowLeft className="size-4" /> Whole company
+              </Button>
+            </>
+          )}
+          {view === "tree" && (
+            <div className="flex items-center gap-0.5 rounded-xl border border-border/70 bg-card/70 p-0.5">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-8 rounded-lg"
+                aria-label="Zoom out"
+                onClick={() => zoomOut({ duration: 200 })}
+              >
+                <Minus className="size-4" />
+              </Button>
+              <button
+                type="button"
+                onClick={() => zoomTo(1, { duration: 200 })}
+                title="Reset zoom to 100%"
+                className="min-w-[52px] rounded-lg px-1 py-1 text-xs font-medium tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                {zoomPct}%
+              </button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-8 rounded-lg"
+                aria-label="Zoom in"
+                onClick={() => zoomIn({ duration: 200 })}
+              >
+                <Plus className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-8 rounded-lg"
+                aria-label="Fit chart to screen"
+                onClick={() => fitView({ padding: 0.2, duration: 300 })}
+              >
+                <Maximize2 className="size-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/60 px-4 py-3 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
@@ -405,7 +601,7 @@ function InnerLiveOrgChart() {
             </SelectTrigger>
             <SelectContent className="max-h-72">
               <SelectItem value="all">All departments</SelectItem>
-              {departments.map((d) => (
+              {departmentNames.map((d) => (
                 <SelectItem key={d} value={d}>
                   {d}
                 </SelectItem>
@@ -470,6 +666,21 @@ function InnerLiveOrgChart() {
             </Button>
           </div>
         ) : (
+          view === "departments" ? (
+            <OrgDepartmentGrid
+              departments={departments}
+              onOpenDepartment={(dept) => {
+                if (dept.anchorId) {
+                  setDeptFilter(dept.name);
+                  drillInto(dept.anchorId);
+                } else {
+                  setDeptFilter(dept.name);
+                  setView("tree");
+                }
+              }}
+              onOpenPerson={(id) => setSelectedId(id)}
+            />
+          ) : (
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -480,6 +691,9 @@ function InnerLiveOrgChart() {
             onNodeDragStart={onNodeDragStart}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
+            onNodeDoubleClick={(_e, node) => {
+              if (node.id !== ORG_ROOT_ID) drillInto(node.id);
+            }}
             nodesDraggable={canEdit}
             nodesConnectable={canEdit}
             elementsSelectable
@@ -487,13 +701,13 @@ function InnerLiveOrgChart() {
             fitViewOptions={{ padding: 0.2 }}
             minZoom={0.08}
             maxZoom={1.6}
+            zoomOnScroll
+            zoomOnPinch
+            zoomOnDoubleClick={false}
+            panOnScroll={false}
             proOptions={{ hideAttribution: true }}
           >
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="hsl(var(--border))" />
-            <Controls
-              showInteractive={false}
-              className="!rounded-xl !border !border-border/70 !bg-card/80 !shadow-none backdrop-blur"
-            />
             <MiniMap
               pannable
               zoomable
@@ -501,12 +715,13 @@ function InnerLiveOrgChart() {
               className="!rounded-xl !border !border-border/70 !bg-card/80 backdrop-blur"
             />
           </ReactFlow>
+          )
         )}
         <div className={cn(
           "pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-card/80 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur",
-          !canEdit && "hidden",
+          (view !== "tree" || !canEdit) && "hidden",
         )}>
-          Drag cards to arrange · drag from a card's bottom dot onto another card to change who they report to
+          Scroll or pinch to zoom · double-click a card to drill into their section · drag from a card's bottom dot onto another card to change who they report to
         </div>
       </div>
 
@@ -516,6 +731,10 @@ function InnerLiveOrgChart() {
         onOpenChange={(open) => !open && setSelectedId(null)}
         onSelect={setSelectedId}
         onFocus={focusNode}
+        onDrillIn={(id) => {
+          setSelectedId(null);
+          drillInto(id);
+        }}
         canEdit={canEdit}
         onReparent={(child, parent) => void reparent(child, parent)}
         onResetParent={(child) => void resetParent(child)}

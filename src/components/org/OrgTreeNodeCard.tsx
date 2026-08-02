@@ -4,7 +4,14 @@
  */
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { ChevronDown, ChevronRight, Users, Building2, ShieldCheck } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Users,
+  Building2,
+  ShieldCheck,
+  Layers,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { OrgLeadershipLevel } from "@/lib/os/orgChart/tree";
 
@@ -25,8 +32,12 @@ export type OrgTreeNodeData = {
   headcount?: number;
   overridden?: boolean;
   dimmed?: boolean;
+  /** This card is the root of the current drill-in scope. */
+  isScopeRoot?: boolean;
   onToggleCollapse?: () => void;
   onOpen?: () => void;
+  /** Drill into this person's section of the tree. */
+  onDrillIn?: () => void;
 };
 
 const LEVEL_STYLE: Record<string, string> = {
@@ -79,6 +90,7 @@ function OrgTreeNodeCardImpl({ data, selected }: NodeProps) {
         "relative w-[236px] cursor-pointer rounded-2xl border px-3 py-2.5 text-left shadow-[0_10px_26px_-20px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-lg",
         tone,
         selected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+        d.isScopeRoot && "ring-2 ring-primary/70 ring-offset-2 ring-offset-background",
         d.dimmed && "opacity-25",
       )}
     >
@@ -136,6 +148,25 @@ function OrgTreeNodeCardImpl({ data, selected }: NodeProps) {
           )}
         </div>
       </div>
+      {d.onDrillIn && (
+        <button
+          type="button"
+          aria-label={`Drill into ${d.name}'s section`}
+          title="Drill into this section"
+          onClick={(e) => {
+            e.stopPropagation();
+            d.onDrillIn?.();
+          }}
+          className={cn(
+            "nodrag absolute right-1.5 top-1.5 z-10 grid size-6 place-items-center rounded-full border transition-colors",
+            isLight
+              ? "border-border/70 bg-background/80 text-muted-foreground hover:bg-muted"
+              : "border-white/30 bg-white/15 text-white hover:bg-white/25",
+          )}
+        >
+          <Layers className="size-3" />
+        </button>
+      )}
       <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-primary/60" />
       {d.hasChildren && (
         <button
