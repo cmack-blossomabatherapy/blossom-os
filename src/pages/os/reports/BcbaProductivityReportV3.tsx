@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Upload, FileSpreadsheet, Download, Search, ChevronRight, ChevronDown,
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterCombobox } from "@/components/reports/crPrimary/FilterCombobox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -198,6 +199,9 @@ export default function BcbaProductivityReportV3() {
   const [payorF, setPayorF] = useState("all");
   const [codeF, setCodeF] = useState("all");
   const [search, setSearch] = useState("");
+  // 57k+ rows flow through the ownership/KPI/table memo chain, so keep the
+  // text input responsive by filtering against a deferred copy of the query.
+  const deferredSearch = useDeferredValue(search);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [editing, setEditing] = useState<BcbaAssignmentV3 | null>(null);
@@ -585,7 +589,7 @@ export default function BcbaProductivityReportV3() {
   const filtered: OwnedRow[] = useMemo(() => {
     const fromMs = dateFrom ? Date.parse(dateFrom) : -Infinity;
     const toMs = dateTo ? Date.parse(dateTo) + 24 * 3600 * 1000 : Infinity;
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     return ownedRows.filter(r => {
       const ms = Date.parse(r.date);
       if (!(ms >= fromMs && ms <= toMs)) return false;
@@ -601,7 +605,7 @@ export default function BcbaProductivityReportV3() {
                  r.code.toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [ownedRows, dateFrom, dateTo, bcbaF, clientF, rbtF, stateF, payorF, codeF, search]);
+  }, [ownedRows, dateFrom, dateTo, bcbaF, clientF, rbtF, stateF, payorF, codeF, deferredSearch]);
 
   /* ----- KPIs ----- */
   const kpis = useMemo(() => {
@@ -1679,13 +1683,14 @@ function FilterSelect({ label, value, onChange, options }: {
   return (
     <div>
       <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">{label}</label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8"><SelectValue placeholder={`All ${label}s`} /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All {label}s</SelectItem>
-          {options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-        </SelectContent>
-      </Select>
+      <FilterCombobox
+        label={label}
+        allLabel={`All ${label}s`}
+        value={value === "all" ? "" : value}
+        options={options}
+        onChange={(v) => onChange(v || "all")}
+        className="w-full"
+      />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterCombobox } from "@/components/reports/crPrimary/FilterCombobox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { KpiTile } from "@/components/dashboards/KpiTile";
@@ -768,22 +769,24 @@ export default function QaCancellationDashboard() {
                   </SelectContent>
                 </Select>
                 {providers.length > 0 && (
-                  <Select value={providerFilter} onValueChange={setProviderFilter}>
-                    <SelectTrigger className="h-8 w-[160px] text-[12px]"><SelectValue placeholder="Provider" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All providers</SelectItem>
-                      {providers.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <FilterCombobox
+                    label="Provider"
+                    allLabel="All providers"
+                    value={providerFilter === "all" ? "" : providerFilter}
+                    options={providers}
+                    onChange={(v) => setProviderFilter(v || "all")}
+                    className="w-[160px]"
+                  />
                 )}
                 {clients.length > 0 && (
-                  <Select value={clientFilter} onValueChange={setClientFilter}>
-                    <SelectTrigger className="h-8 w-[160px] text-[12px]"><SelectValue placeholder="Client" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All clients</SelectItem>
-                      {clients.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <FilterCombobox
+                    label="Client"
+                    allLabel="All clients"
+                    value={clientFilter === "all" ? "" : clientFilter}
+                    options={clients}
+                    onChange={(v) => setClientFilter(v || "all")}
+                    className="w-[160px]"
+                  />
                 )}
                 {states.length > 0 && (
                   <Select value={stateFilter} onValueChange={setStateFilter}>
