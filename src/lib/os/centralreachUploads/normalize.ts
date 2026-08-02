@@ -251,7 +251,13 @@ export function crCoverage(
 
 /** Deterministic content hash for an uploaded file (no crypto dependency). */
 export async function hashUploadedFile(file: File): Promise<string> {
-  const buffer = new Uint8Array(await file.arrayBuffer());
+  // Some runtimes (older browsers, test polyfills) lack File.arrayBuffer; fall
+  // back to a name/size/mtime fingerprint so imports still get a stable hash.
+  const bytes =
+    typeof file.arrayBuffer === "function"
+      ? new Uint8Array(await file.arrayBuffer())
+      : new TextEncoder().encode(`${file.name}:${file.size}:${file.lastModified ?? 0}`);
+  const buffer = bytes;
   let h1 = 0x811c9dc5;
   let h2 = 0x01000193;
   for (let i = 0; i < buffer.length; i += 1) {
