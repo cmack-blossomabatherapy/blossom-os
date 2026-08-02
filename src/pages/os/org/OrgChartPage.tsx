@@ -68,13 +68,8 @@ type DbRow = {
 
 const NODE_TYPES = { person: OrgChartNodeCard };
 
-const EDITOR_ROLES = new Set([
-  "super_admin",
-  "admin",
-  "systems_admin",
-  "hr_team",
-  "hr_lead",
-]);
+// Only the Super Admin can edit the org chart / how it looks.
+const EDITOR_ROLES = new Set(["super_admin"]);
 
 // Palette aligned with the Blossom organizational chart:
 //   Purple = department / division header
