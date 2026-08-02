@@ -77,6 +77,13 @@ import {
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
 import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
+// Primary CentralReach-backed report pages (dedicated, non-placeholder).
+import CrAuthorizationAnalysisPage from "./pages/os/reports/AuthorizationAnalysisPage";
+import CrAuthorizationUtilizationPage from "./pages/os/reports/AuthorizationUtilizationPage";
+import CrBcbaSupervisionPage from "./pages/os/reports/BcbaSupervisionPage";
+import CrParentTrainingPage from "./pages/os/reports/ParentTrainingPage";
+import CrBcbaPerformancePage from "./pages/os/reports/BcbaPerformancePage";
+import CrProgressReportsPage from "./pages/os/reports/ProgressReportsPage";
 import QaCancellationDashboard from "./pages/os/reports/QaCancellationDashboard";
 import HrPayrollCommandCenter from "./pages/os/reports/HrPayrollCommandCenter";
 import HrEmployeeComplianceDashboard from "./pages/os/reports/HrEmployeeComplianceDashboard";
@@ -1055,7 +1062,8 @@ const App = () => (
                   <Route path="/reports" element={<ReportsHome />} />
                   <Route path="/reports/catalog" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/landing" element={<Navigate to="/reports" replace />} />
-                  <Route path="/reports/bcba-performance" element={<ReportRoleGuard reportId="bcba-performance"><OSReportBcbaPerformance /></ReportRoleGuard>} />
+                  <Route path="/reports/bcba-performance" element={<ReportRoleGuard reportId="bcba-performance"><CrBcbaPerformancePage /></ReportRoleGuard>} />
+                  <Route path="/reports/bcba-performance-legacy" element={<ReportRoleGuard reportId="bcba-performance"><OSReportBcbaPerformance /></ReportRoleGuard>} />
                   {/* Legacy QA report routes redirect to the approved-six replacements. */}
                   <Route path="/reports/qa-supervision-pt" element={<NavigateWithSearch to="/reports/bcba-supervision" />} />
                   <Route path="/reports/qa-auth-utilization" element={<NavigateWithSearch to="/reports/authorization-utilization-hour-based" />} />
@@ -1068,16 +1076,20 @@ const App = () => (
                  <Route path="/reports/bcba-productivity-report" element={<NavigateWithSearch to="/reports/bcba-productivity-report-v3" />} />
                  <Route path="/reports/bcba-productivity-report-v3" element={<ReportRoleGuard reportId="bcba-productivity-report-v3"><BcbaProductivityReportV3 /></ReportRoleGuard>} />
                   <Route path="/reports/cancellation-command-center" element={<ReportRoleGuard reportId="cancellation-command-center"><CancellationCommandCenter /></ReportRoleGuard>} />
-                  {/* Approved-Six aliases: Authorization Analysis + Hour-Based Utilization share the CR auth
-                      utilization dashboard; Parent Training + BCBA Supervision share the QA supervision & PT dashboard. */}
-                  <Route path="/reports/authorization-analysis" element={<ReportRoleGuard reportId="authorization-analysis"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
-                  <Route path="/reports/authorization-utilization-hour-based" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
-                  <Route path="/reports/parent-training" element={<ReportRoleGuard reportId="parent-training"><QaSupervisionPtDashboard /></ReportRoleGuard>} />
-                  <Route path="/reports/bcba-supervision" element={<ReportRoleGuard reportId="bcba-supervision"><QaSupervisionPtDashboard /></ReportRoleGuard>} />
+                  {/* Primary CentralReach-backed reports — each has its own dedicated page
+                      reading normalized cr_* data. Legacy QA dashboards stay reachable at
+                      their -legacy paths for comparison during rollout. */}
+                  <Route path="/reports/authorization-analysis" element={<ReportRoleGuard reportId="authorization-analysis"><CrAuthorizationAnalysisPage /></ReportRoleGuard>} />
+                  <Route path="/reports/authorization-utilization-hour-based" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><CrAuthorizationUtilizationPage /></ReportRoleGuard>} />
+                  <Route path="/reports/parent-training" element={<ReportRoleGuard reportId="parent-training"><CrParentTrainingPage /></ReportRoleGuard>} />
+                  <Route path="/reports/bcba-supervision" element={<ReportRoleGuard reportId="bcba-supervision"><CrBcbaSupervisionPage /></ReportRoleGuard>} />
+                  <Route path="/reports/authorization-utilization-hour-based-legacy" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
+                  <Route path="/reports/bcba-supervision-legacy" element={<ReportRoleGuard reportId="bcba-supervision"><QaSupervisionPtDashboard /></ReportRoleGuard>} />
                   {/* Legacy report routes → redirect to the approved replacements. */}
                   <Route path="/reports/intake-perf" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/intake-performance" element={<Navigate to="/reports" replace />} />
-                  <Route path="/reports/progress-reports" element={<ReportRoleGuard reportId="progress-reports"><OSQAProgressReports /></ReportRoleGuard>} />
+                  <Route path="/reports/progress-reports" element={<ReportRoleGuard reportId="progress-reports"><CrProgressReportsPage /></ReportRoleGuard>} />
+                  <Route path="/reports/progress-reports-legacy" element={<ReportRoleGuard reportId="progress-reports"><OSQAProgressReports /></ReportRoleGuard>} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
                   <Route path="/reports/ai/new" element={<Navigate to="/reports" replace />} />
