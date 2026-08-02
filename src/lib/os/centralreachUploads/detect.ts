@@ -6,7 +6,14 @@
  * signature.
  */
 
-export type CRUploadKind = "billing" | "scheduling" | "authorization" | "unknown";
+export type CRUploadKind =
+  | "billing"
+  | "scheduling"
+  | "authorization"
+  | "utilization"
+  | "claims"
+  | "contacts"
+  | "unknown";
 
 export interface CRUploadDetection {
   kind: CRUploadKind;
@@ -29,6 +36,32 @@ function hasAny(set: Set<string>, cands: string[]) {
  */
 export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
   const set = new Set(headers.map(norm));
+
+  // Authorization utilization export — hour-based utilization by week.
+  if (
+    hasAny(set, ["UtilizationPercent", "Utilization %", "UtilizationPct"]) &&
+    hasAny(set, ["WeekStart", "Week Start", "WeekOf", "WeekEnding"])
+  ) {
+    return {
+      kind: "utilization",
+      confidence: 0.94,
+      label: "Authorization utilization export",
+      targets: ["Authorization Utilization - Hour Based"],
+    };
+  }
+
+  // Claims export — claim identifiers + billed/paid amounts.
+  if (
+    hasAny(set, ["ClaimNumber", "Claim Number", "ClaimId"]) &&
+    hasAny(set, ["BilledAmount", "Billed Amount", "PaidAmount", "Paid Amount"])
+  ) {
+    return {
+      kind: "claims",
+      confidence: 0.93,
+      label: "Claims export",
+      targets: ["Authorization Analysis (claim coverage)"],
+    };
+  }
 
   // Scheduling export — has Course/Segment/Event columns.
   if (
@@ -76,6 +109,19 @@ export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
         "BCBA Supervision",
         "Cancellation Command Center (lost revenue)",
       ],
+    };
+  }
+
+  // Contacts export — CentralReach contact directory.
+  if (
+    hasAny(set, ["ContactId", "Contact Id", "ContactID"]) &&
+    hasAny(set, ["ContactType", "Contact Type", "ContactLabels", "Labels"])
+  ) {
+    return {
+      kind: "contacts",
+      confidence: 0.9,
+      label: "Contacts export",
+      targets: ["Client & staff match queues"],
     };
   }
 
