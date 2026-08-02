@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import {
   planAppendRows,
   applyAppendBatch,
@@ -116,26 +117,11 @@ describe("BCBA Productivity — inactive historical rows excluded from reports",
 });
 
 describe("Migration — cross-batch dedupe on normalized CR tables", () => {
-  const sql = readFileSync(
-    require("node:fs")
-      .readdirSync("supabase/migrations")
-      .filter((f: string) => f.endsWith(".sql"))
-      .map((f: string) => `supabase/migrations/${f}`)
-      .join("\u0000")
-      .split("\u0000")
-      .map((p: string) => p)
-      .slice(-1)[0],
-    "utf8",
-  );
-  const allSql = require("node:fs")
-    .readdirSync("supabase/migrations")
-    .filter((f: string) => f.endsWith(".sql"))
-    .map((f: string) => readFileSync(`supabase/migrations/${f}`, "utf8"))
+  const dir = "supabase/migrations";
+  const allSql = readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .map((f) => readFileSync(join(dir, f), "utf8"))
     .join("\n");
-
-  it("latest migration file is readable", () => {
-    expect(typeof sql).toBe("string");
-  });
 
   for (const t of [
     "cr_billing_sessions",
