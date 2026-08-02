@@ -22,7 +22,7 @@ const AREA_LABELS: Record<SystemToolArea, string> = {
   issue_tracker: "Issue Tracker",
   request_intake: "Request Intake",
   bcba_productivity_uploads: "BCBA Productivity Uploads",
-  centralreach_uploads: "CentralReach Uploads",
+  centralreach_uploads: "CentralReach Data Hub",
   integrations: "Integrations",
 };
 

@@ -292,7 +292,7 @@ export default function QaSupervisionPtDashboard() {
         const shared = await getBcbaProductivitySharedRows();
         setSharedRowCount(shared.length);
         if (!shared.length) {
-          if (!silent) toast.info("No CentralReach rows are available yet. Upload a file above or in Admin → CentralReach Uploads.");
+          if (!silent) toast.info("No CentralReach rows are available yet. Upload a file above or in Admin → CentralReach Data Hub.");
           return;
         }
         ingestSharedRows(shared as BcbaSharedBillingRow[], "Shared admin billing dataset (legacy)");
