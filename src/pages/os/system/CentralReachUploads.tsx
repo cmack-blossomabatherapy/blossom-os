@@ -88,8 +88,21 @@ const SHARED_KEYS: SharedReportKey[] = [
   "authorization",
 ];
 
+const NORMALIZED_CARDS: Array<{
+  key: "billing" | "scheduling" | "authorization" | "utilization" | "claims" | "contacts";
+  label: string;
+  table: string;
+  reports: string;
+}> = [
+  { key: "billing", label: "Billing sessions", table: "cr_billing_sessions", reports: "BCBA Performance, Supervision, Parent Training, Cancellation revenue" },
+  { key: "scheduling", label: "Schedule events", table: "cr_schedule_events", reports: "Cancellation Command Center" },
+  { key: "authorization", label: "Authorizations", table: "cr_authorizations", reports: "Authorization Analysis" },
+  { key: "utilization", label: "Auth utilization", table: "cr_authorization_utilization", reports: "Authorization Utilization" },
+  { key: "claims", label: "Claims", table: "cr_claims", reports: "Authorization claim coverage" },
+  { key: "contacts", label: "Contacts", table: "cr_contacts", reports: "Client & staff match queues" },
+];
+
 const SHARED_LABELS: Record<SharedReportKey, { label: string; reports: string }> = {
-*** MARKER ***
   "cancellation-scheduling": { label: "Scheduling (Cancellation)", reports: "Cancellation Command Center" },
   "cancellation-billing":    { label: "Billing (Cancellation)",    reports: "Cancellation Command Center" },
   "cancellation-authorization": { label: "Auth (Cancellation)", reports: "Cancellation Command Center" },
