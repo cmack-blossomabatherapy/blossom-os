@@ -1193,7 +1193,7 @@ const App = () => (
                   {/* CentralReach Data Hub — unified entry point for every CentralReach import */}
                   <Route path="/system/centralreach" element={<AdminRoute><CentralReachHub /></AdminRoute>} />
                   <Route path="/system/centralreach-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
-                  <Route path="/system/centralreach-data-hub" element={<Navigate to="/system/centralreach?tab=overview" replace />} />
+                  <Route path="/system/centralreach-data-hub" element={<AdminRoute><Navigate to="/system/centralreach?tab=overview" replace /></AdminRoute>} />
                   <Route path="/system/bcba-productivity-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
                   <Route path="/system/authorization-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
                   <Route path="/system/cancellation-uploads" element={<Navigate to="/system/centralreach?tab=reporting" replace />} />
