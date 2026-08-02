@@ -658,6 +658,79 @@ async function callUploadFn(
 
 /* ----- queries ----- */
 
+/* ----- CentralReach Data Hub billing (source of truth) ----- */
+
+const CR_PAGE = 5000;
+const CR_SAFETY_CAP = 250000;
+
+/** Map a normalized `cr_billing_sessions` row into the shared report shape. */
+export function mapCrBillingSessionRow(r: {
+  client_cr_id?: string | null;
+  client_name?: string | null;
+  rendering_provider_name?: string | null;
+  provider_contact_labels?: string | null;
+  procedure_code?: string | null;
+  hours?: number | string | null;
+  date_of_service?: string | null;
+  state?: string | null;
+  payor?: string | null;
+}): BcbaSharedBillingRow {
+  const code = String(r.procedure_code ?? "").trim();
+  const renderingProvider = String(r.rendering_provider_name ?? "").trim();
+  const hoursNum = numVal(r.hours);
+  return {
+    clientId: String(r.client_cr_id ?? "").trim(),
+    clientName: String(r.client_name ?? "").trim(),
+    rbt: /^97153/.test(code) ? renderingProvider : "",
+    renderingProvider,
+    providerLabels: String(r.provider_contact_labels ?? "").trim(),
+    code,
+    hours: isFinite(hoursNum) ? hoursNum : 0,
+    date: isoDate(String(r.date_of_service ?? "").trim()),
+    state: normalizeUsState(String(r.state ?? "").trim()),
+    payor: String(r.payor ?? "").trim(),
+  };
+}
+
+/** Row count of the Data Hub billing store (0 when it has never been loaded). */
+export async function countCrDataHubBillingRows(): Promise<number> {
+  const { count, error } = await supabase
+    .from("cr_billing_sessions")
+    .select("id", { count: "exact", head: true });
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/** Paginated read of every Data Hub billing row (no 20k cap). */
+async function readAllCrDataHubBillingRows(
+  opts: { limit?: number; onProgress?: (loaded: number, total: number) => void; total?: number } = {},
+): Promise<BcbaSharedBillingRow[]> {
+  const max = Math.min(opts.limit ?? CR_SAFETY_CAP, CR_SAFETY_CAP);
+  const out: BcbaSharedBillingRow[] = [];
+  let offset = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (offset < max) {
+    const to = Math.min(offset + CR_PAGE - 1, max - 1);
+    const { data, error } = await supabase
+      .from("cr_billing_sessions")
+      .select(
+        "client_cr_id,client_name,rendering_provider_name,provider_contact_labels,procedure_code,hours,date_of_service,state,payor",
+      )
+      .order("date_of_service", { ascending: true })
+      .range(offset, to);
+    if (error) throw error;
+    const arr = data ?? [];
+    for (const d of arr) {
+      const mapped = mapCrBillingSessionRow(d as Record<string, unknown>);
+      if (mapped.date && mapped.code) out.push(mapped);
+    }
+    opts.onProgress?.(out.length, opts.total ?? out.length);
+    if (arr.length < CR_PAGE) break;
+    offset += CR_PAGE;
+  }
+  return out;
+}
+
 function mapBatch(b: any): BcbaUploadBatch {
   return {
     id: b.id,
