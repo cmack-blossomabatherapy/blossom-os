@@ -33,6 +33,10 @@ import { renderAuthReport, AUTH_REPORT_IDS } from "@/components/reports/Authoriz
 import { SdFilterBar, loadLastFilters, summarizeFilters, type SdFilters } from "@/components/reports/SdFilterBar";
 import { DEPARTMENT_DASHBOARD_IDS, getDepartmentDashboard } from "@/data/departmentDashboards";
 import { ResolvedDepartmentDashboard } from "@/components/reports/ResolvedDepartmentDashboard";
+import {
+  isPrimaryCrReport,
+  renderPrimaryCrReport,
+} from "@/pages/os/reports/CentralReachPrimaryReports";
 
 export default function ReportDetail() {
   const { reportId } = useParams<{ reportId: string }>();
@@ -122,6 +126,17 @@ export default function ReportDetail() {
     );
   }
 
+  // PRIMARY CENTRALREACH REPORTS — resolved before SD / AUTH / generic
+  // placeholder handling. These 8 reports own their own full-page experience
+  // (freshness card, KPIs, charts, filters, drilldowns, CSV export), so the
+  // generic report shell and skeleton fallback never render for them.
+  // When the catalog declares a `drilldownPath` the redirect above is already
+  // in flight; render nothing for that tick so the dedicated route wins.
+  if (isPrimaryCrReport(report.id)) {
+    if (report.drilldownPath) return null;
+    return renderPrimaryCrReport(report.id);
+  }
+
   return (
     <OSShell>
       {/* Breadcrumb / back */}
@@ -201,7 +216,9 @@ export default function ReportDetail() {
           {["This month", "All states", "All payors", "All BCBAs"].map(c => (
             <button key={c} className="rounded-full border border-border/60 bg-secondary/40 px-2.5 py-1 text-[11.5px] font-medium text-foreground hover:bg-secondary/60">{c}</button>
           ))}
-          <span className="ml-auto text-[11px] text-muted-foreground">Live report shell · connect source data to populate</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">
+            Legacy report shell · connect source data to populate
+          </span>
         </section>
       )}
 
@@ -270,6 +287,11 @@ export default function ReportDetail() {
 
 /** Renders KPI + chart blocks for each detail view. Falls back to a clean empty preview. */
 function ReportContent({ view, reportId }: { view?: string; reportId?: string }) {
+  // Defensive: primary CentralReach reports must never fall into the generic
+  // content branches or the skeleton fallback below.
+  if (isPrimaryCrReport(reportId)) {
+    return renderPrimaryCrReport(reportId);
+  }
   if (reportId && DEPARTMENT_DASHBOARD_IDS.has(reportId)) {
     const def = getDepartmentDashboard(reportId);
     if (def) return <ResolvedDepartmentDashboard def={def} />;
