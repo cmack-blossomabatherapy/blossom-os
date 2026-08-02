@@ -42,6 +42,8 @@ export interface CrRunCounts {
   rowsUnchanged: number;
   rowsRejected: number;
   rowsUpdated?: number;
+  /** Plain-English explanation stored on the run (e.g. duplicate no-change). */
+  notes?: string | null;
 }
 
 export interface CrRunErrorRow {
@@ -123,6 +125,7 @@ export function createSupabaseCrRunTracker(): CrRunTracker {
           rows_updated: counts.rowsUpdated ?? 0,
           rows_unchanged: counts.rowsUnchanged,
           rows_rejected: counts.rowsRejected,
+          notes: counts.notes ?? null,
           committed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
