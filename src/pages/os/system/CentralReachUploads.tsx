@@ -26,6 +26,14 @@ import {
   type BcbaUploadBatch, type BcbaDatasetStatus,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
 import { runWithSystemToolAudit } from "@/hooks/useSystemTools";
+import {
+  importCentralReachFiles, summarizeCrImport, type CrFileImportOutcome,
+} from "@/lib/os/centralreachUploads/importService";
+import {
+  fetchCrNormalizedCounts, listCrImportBatches,
+  type CrBatchRecord, type CrNormalizedCounts,
+} from "@/lib/os/centralreachUploads/supabaseStore";
+import { reprocessLegacySharedDatasets } from "@/lib/os/centralreachUploads/legacyReprocess";
 
 type QueueStatus =
   | "queued" | "detecting" | "detected" | "uploading" | "appending"
@@ -146,15 +154,28 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   const [bcbaStatus, setBcbaStatus] = useState<BcbaDatasetStatus | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Normalized Data Hub state — the source of truth for readiness.
+  const [crCounts, setCrCounts] = useState<CrNormalizedCounts | null>(null);
+  const [crBatches, setCrBatches] = useState<CrBatchRecord[]>([]);
+  const [reprocessing, setReprocessing] = useState(false);
+
   async function refresh() {
     setRefreshing(true);
     try {
-      const [b, s, shared] = await Promise.all([
+      const [b, s, shared, counts, batches] = await Promise.all([
         settle(listBcbaProductivityUploadBatches()),
         settle(getBcbaProductivityDatasetStatus()),
         Promise.all(SHARED_KEYS.map((k) => settle(listSharedReportDatasets(k)))),
+        settle(fetchCrNormalizedCounts()),
+        settle(listCrImportBatches(100)),
       ]);
       const failures: string[] = [];
+
+      if (counts.status === "fulfilled") setCrCounts(counts.value);
+      else failures.push(`Normalized row counts: ${readableError(counts.reason)}`);
+
+      if (batches.status === "fulfilled") setCrBatches(batches.value);
+      else failures.push(`Import batches: ${readableError(batches.reason)}`);
 
       if (b.status === "fulfilled") {
         setBcbaBatches(b.value);
@@ -237,31 +258,60 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
             continue;
           }
 
-          // 2. Route by kind.
-          if (det.kind === "scheduling") {
-            updateItem(id, { status: "uploading", progressText: "Saving scheduling dataset…" });
-            await uploadSharedReportDataset("cancellation-scheduling", item.file, notes || undefined);
-            updateItem(id, { status: "done", message: "Live in Cancellation Command Center." });
-          } else if (det.kind === "authorization") {
-            updateItem(id, { status: "uploading", progressText: "Saving authorization dataset…" });
-            await uploadSharedReportDataset("authorization", item.file, notes || undefined);
-            // Same file also feeds cancellation coverage.
-            await uploadSharedReportDataset("cancellation-authorization", item.file, notes || undefined);
-            updateItem(id, { status: "done", message: "Live in Authorization + Cancellation reports." });
-          } else if (det.kind === "billing") {
-            updateItem(id, { status: "uploading", progressText: "Saving billing dataset (Cancellation)…" });
-            await uploadSharedReportDataset("cancellation-billing", item.file, notes || undefined);
+          // 2. PRIMARY PATH — normalize into the cr_* reporting tables.
+          updateItem(id, { status: "uploading", progressText: "Normalizing into CentralReach report tables…" });
+          const outcomes = await importCentralReachFiles([item.file], {
+            notes: notes || null,
+            onProgress: (p) =>
+              updateItem(id, {
+                progressText:
+                  p.phase === "writing"
+                    ? `Appending ${p.detail} rows…`
+                    : p.phase === "normalizing"
+                      ? `Normalizing ${p.detail} rows…`
+                      : "Parsing file…",
+              }),
+          });
+          const summary = summarizeCrImport(outcomes);
+          if (!summary.ok) {
+            const detail = summary.failed
+              .map((o) => `${o.exportType}: ${o.errors.join("; ") || "no rows written"}`)
+              .join(" | ");
+            updateItem(id, {
+              status: "error",
+              progressText: undefined,
+              message: `Normalized import failed — ${detail || "no normalized rows were written"}`,
+            });
+            continue;
+          }
+          const normalizedMsg =
+            `${summary.appendedRowCount.toLocaleString()} rows appended · ` +
+            `${summary.duplicateRowCount.toLocaleString()} duplicates skipped · ` +
+            outcomes.map((o) => o.table).filter(Boolean).join(", ");
 
-            // Append into BCBA productivity billing rows (dedupes automatically).
-            updateItem(id, { status: "appending", progressText: "Parsing for BCBA Productivity…" });
+          // 3. SECONDARY (legacy, best-effort) — keeps existing dashboards fed.
+          const legacyNotes: string[] = [];
+          try {
+            if (det.kind === "scheduling") {
+              await uploadSharedReportDataset("cancellation-scheduling", item.file, notes || undefined);
+            } else if (det.kind === "authorization") {
+              await uploadSharedReportDataset("authorization", item.file, notes || undefined);
+              await uploadSharedReportDataset("cancellation-authorization", item.file, notes || undefined);
+            } else if (det.kind === "billing") {
+              await uploadSharedReportDataset("cancellation-billing", item.file, notes || undefined);
+            }
+          } catch (e) {
+            legacyNotes.push(`legacy dataset copy skipped (${readableError(e)})`);
+          }
+
+          if (det.kind === "billing") {
+            // Keep BCBA Productivity V3 fed from its own active table.
+            updateItem(id, { status: "appending", progressText: "Appending BCBA Productivity rows…" });
+            try {
             const preview = await previewBcbaProductivityUpload(item.file);
             if (preview.missingColumns.length) {
-              updateItem(id, {
-                status: "done",
-                message: `Cancellation ready. BCBA Productivity skipped: missing ${preview.missingColumns.join(", ")}`,
-              });
-              continue;
-            }
+              legacyNotes.push(`BCBA Productivity skipped: missing ${preview.missingColumns.join(", ")}`);
+            } else {
             const res = await runWithSystemToolAudit({
               mutation: () => appendBcbaProductivityUpload({
                 file: item.file,
@@ -295,11 +345,18 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
                 metadata: { fileName: item.file.name },
               }),
             });
-            updateItem(id, {
-              status: "done",
-              message: `Appended ${res.appendedRowCount.toLocaleString()} rows · ${res.duplicateRowCount.toLocaleString()} duplicates skipped.`,
-            });
+              legacyNotes.push(`BCBA Productivity +${res.appendedRowCount.toLocaleString()} rows`);
+            }
+            } catch (e) {
+              legacyNotes.push(`BCBA Productivity append failed (${readableError(e)})`);
+            }
           }
+
+          updateItem(id, {
+            status: "done",
+            progressText: undefined,
+            message: legacyNotes.length ? `${normalizedMsg} — ${legacyNotes.join("; ")}` : normalizedMsg,
+          });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           updateItem(id, { status: "error", message: msg });
@@ -335,6 +392,24 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
       await refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleReprocessLegacy() {
+    if (!confirm("Reprocess recent legacy uploads into the normalized report tables? Duplicates are skipped automatically.")) return;
+    setReprocessing(true);
+    try {
+      const result = await reprocessLegacySharedDatasets();
+      const summary = summarizeCrImport(result.outcomes);
+      if (result.errors.length) toast.error(`Some files failed: ${result.errors.join(" | ")}`);
+      toast.success(
+        `Reprocessed ${result.datasets} legacy file(s) — ${summary.appendedRowCount.toLocaleString()} rows appended, ${summary.duplicateRowCount.toLocaleString()} duplicates skipped.`,
+      );
+      await refresh();
+    } catch (e) {
+      toast.error(`Reprocess failed: ${readableError(e)}`);
+    } finally {
+      setReprocessing(false);
     }
   }
 
@@ -389,6 +464,10 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="outline" onClick={refresh} disabled={refreshing}>
               <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+            <Button size="sm" variant="outline" disabled={reprocessing} onClick={handleReprocessLegacy}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
+              {reprocessing ? "Reprocessing…" : "Reprocess legacy uploads"}
             </Button>
             <Button size="sm" asChild variant="outline">
               <Link to="/reports">Open Reports <ExternalLink className="ml-1 h-3 w-3" /></Link>
@@ -519,23 +598,22 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
             <Database className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Report readiness</h2>
           </div>
+          <p className="mb-3 text-[11.5px] text-muted-foreground">
+            Readiness reflects true normalized row counts in the report tables — not upload metadata.
+          </p>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            {SHARED_KEYS.map((k) => {
-              const active = sharedByKey[k].find((d) => d.isActive) || null;
+            {NORMALIZED_CARDS.map((card) => {
+              const rows = crCounts ? crCounts[card.key] : 0;
               return (
-                <div key={k} className="rounded-xl border border-border/60 p-3">
+                <div key={card.key} className="rounded-xl border border-border/60 p-3">
                   <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    {SHARED_LABELS[k].label}
+                    {card.label}
                   </div>
                   <div className="mt-1 text-[13px] font-semibold tracking-tight">
-                    {active ? "Active" : "Not connected"}
+                    {rows > 0 ? `${rows.toLocaleString()} rows` : "No data yet"}
                   </div>
-                  <div className="mt-0.5 text-[11.5px] text-muted-foreground truncate" title={active?.fileName}>
-                    {active ? active.fileName : "Upload one file to activate"}
-                  </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    Feeds: {SHARED_LABELS[k].reports}
-                  </div>
+                  <div className="mt-0.5 text-[11.5px] text-muted-foreground">{card.table}</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">Feeds: {card.reports}</div>
                 </div>
               );
             })}
@@ -550,9 +628,79 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
                 {bcbaStatus?.earliestServiceDate ?? "—"} → {bcbaStatus?.latestServiceDate ?? "—"}
               </div>
               <div className="mt-1 text-[11px] text-muted-foreground">
-                Feeds: BCBA Productivity + Parent Training + Supervision
+                Feeds: BCBA Productivity V3
+              </div>
+              {(bcbaStatus?.activeRowCount ?? 0) === 0 && (bcbaStatus?.batchCount ?? 0) > 0 && (
+                <div className="mt-1 text-[11px] text-amber-700">
+                  {bcbaStatus?.batchCount} batch record(s) exist but 0 active rows — upload again to repopulate.
+                </div>
+              )}
+            </div>
+            <div className="rounded-xl border border-border/60 p-3">
+              <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Import batches
+              </div>
+              <div className="mt-1 text-[13px] font-semibold tracking-tight">
+                {(crCounts?.batches ?? 0).toLocaleString()} recorded
+              </div>
+              <div className="mt-0.5 text-[11.5px] text-muted-foreground">cr_import_batches</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Raw provenance rows: {(crCounts?.rawRows ?? 0).toLocaleString()}
               </div>
             </div>
+          </div>
+        </Card>
+
+        {/* Normalized import batches */}
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Database className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Normalized import batches
+            </h2>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-border/60">
+            <table className="w-full text-[12.5px]">
+              <thead className="bg-muted/40 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2">File</th>
+                  <th className="px-3 py-2">Export</th>
+                  <th className="px-3 py-2">Parsed</th>
+                  <th className="px-3 py-2">Appended</th>
+                  <th className="px-3 py-2">Duplicates</th>
+                  <th className="px-3 py-2">Coverage</th>
+                  <th className="px-3 py-2">Uploaded</th>
+                  <th className="px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {crBatches.length === 0 ? (
+                  <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
+                    No normalized imports yet. Drop a CentralReach export above, or reprocess legacy uploads.
+                  </td></tr>
+                ) : crBatches.map((b) => (
+                  <tr key={b.id} className="border-t border-border/50">
+                    <td className="px-3 py-2 font-medium">
+                      <span className="truncate max-w-[300px] inline-block" title={b.fileName}>{b.fileName}</span>
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{b.exportType}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{b.parsedRowCount.toLocaleString()}</td>
+                    <td className="px-3 py-2 font-medium">{b.appendedRowCount.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{b.duplicateRowCount.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {b.coverageStart ?? "—"} → {b.coverageEnd ?? "—"}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{fmtDate(b.createdAt)}</td>
+                    <td className="px-3 py-2">
+                      <Badge variant="outline"
+                        className={b.status === "active" ? "border-emerald-200 text-emerald-700" : ""}>
+                        {b.status ?? "—"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Card>
 
@@ -560,7 +708,9 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <Database className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Upload history</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Legacy upload history (reference only)
+            </h2>
           </div>
           <div className="overflow-x-auto rounded-xl border border-border/60">
             <table className="w-full text-[12.5px]">
