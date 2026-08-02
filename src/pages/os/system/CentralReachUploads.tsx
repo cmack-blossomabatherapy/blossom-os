@@ -176,6 +176,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   // Normalized Data Hub state — the source of truth for readiness.
   const [crCounts, setCrCounts] = useState<CrNormalizedCounts | null>(null);
   const [crBatches, setCrBatches] = useState<CrBatchRecord[]>([]);
+  const [lastOutcomes, setLastOutcomes] = useState<CrFileImportOutcome[]>([]);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessReport, setReprocessReport] = useState<LegacyReprocessReport | null>(null);
   const autoStartedRef = useRef(false);
@@ -257,6 +258,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
 
   async function processQueue() {
     setProcessing(true);
+    const sessionOutcomes: CrFileImportOutcome[] = [];
     try {
       // Snapshot ids at start; process sequentially so BCBA batches don't collide.
       const ids = queue.filter((q) => q.status === "queued" || q.status === "detected").map((q) => q.id);
@@ -294,6 +296,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
               }),
           });
           const summary = summarizeCrImport(outcomes);
+          sessionOutcomes.push(...outcomes);
+          setLastOutcomes([...sessionOutcomes]);
           if (!summary.ok) {
             const detail = summary.failed
               .map((o) => `${o.exportType}: ${o.errors.join("; ") || "no rows written"}`)
@@ -308,7 +312,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
           const normalizedMsg =
             `${summary.appendedRowCount.toLocaleString()} rows appended · ` +
             `${summary.duplicateRowCount.toLocaleString()} duplicates skipped · ` +
-            outcomes.map((o) => o.table).filter(Boolean).join(", ");
+            outcomes.map((o) => o.table).filter(Boolean).join(", ") +
+            (outcomes.length ? ` — ${outcomes.map((o) => o.statusReason).join(" ")}` : "");
 
           // 3. SECONDARY (legacy, best-effort) — keeps existing dashboards fed.
           const legacyNotes: string[] = [];
