@@ -118,7 +118,7 @@ describe("ownership carry-forward and gaps", () => {
     ]).rows;
     const feb = rows.find((r) => r.monthKey === "2026-02");
     expect(feb?.owner).toBe("Brandy Roden");
-    expect(feb?.ownerReason).toBe("carried_forward");
+    expect(feb?.ownerReason).toBe("carry_forward");
   });
 
   it("leaves clients with no anchor unassigned", () => {
