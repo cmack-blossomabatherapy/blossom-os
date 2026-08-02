@@ -158,7 +158,7 @@ describe("CentralReach upload — durable run tracking", () => {
     expect(second[0].statusReason).toMatch(/already imported/i);
     expect(state.inserted).toHaveLength(1); // no second write
     expect(r.calls).toHaveLength(1); // support tables untouched by a pure duplicate
-    expect(t.audits.map((a) => a.action)).toContain("upload_duplicate");
+    expect(t.audits.map((a) => a.action)).toContain("duplicate_no_change");
   });
 
   it("appends only the extra rows when a newer file extends coverage", async () => {
