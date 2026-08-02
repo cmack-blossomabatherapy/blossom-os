@@ -42,6 +42,10 @@ export interface CrRunCounts {
   rowsUnchanged: number;
   rowsRejected: number;
   rowsUpdated?: number;
+  /** Plain-English explanation stored on the run (e.g. duplicate no-change). */
+  notes?: string | null;
+  /** Duplicate reuploads changed nothing, so no commit timestamp is recorded. */
+  duplicateNoChange?: boolean;
 }
 
 export interface CrRunErrorRow {
@@ -114,6 +118,7 @@ export function createSupabaseCrRunTracker(): CrRunTracker {
 
     async commit(runId, counts) {
       if (!runId) return;
+      const noChange = counts.duplicateNoChange === true;
       const { error } = await db()
         .from("cr_sync_runs")
         .update({
@@ -123,7 +128,8 @@ export function createSupabaseCrRunTracker(): CrRunTracker {
           rows_updated: counts.rowsUpdated ?? 0,
           rows_unchanged: counts.rowsUnchanged,
           rows_rejected: counts.rowsRejected,
-          committed_at: new Date().toISOString(),
+          notes: counts.notes ?? null,
+          committed_at: noChange ? null : new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", runId);
