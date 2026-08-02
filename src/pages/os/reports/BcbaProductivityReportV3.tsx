@@ -26,12 +26,16 @@ import {
   type BcbaSharedBillingRow,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
 import {
-  aggregate, applyFilters, activeFilterCount, buildOwnership, filterOptions,
-  fmtCount, fmtHours, fmtPct, supervisionStatus, toCsv, drilldownRowToCells,
+  applyFilters, activeFilterCount, buildOwnership, filterOptions,
+  fmtCount, fmtHours, fmtPct, toCsv, drilldownRowToCells,
   DRILLDOWN_COLUMNS, EMPTY_FILTERS, OWNERSHIP_REASON_LABELS, UNASSIGNED_LABEL,
   type BcbaProductivityFilters, type OwnedBillingRow, type OwnershipResult,
-  type SupervisionStatus,
 } from "@/lib/os/bcbaProductivityV3/engine";
+import {
+  bcbaSupervisionStatus,
+  buildBcbaProductivityModelFromOwnedRows,
+  type BcbaSupervisionStatus,
+} from "@/lib/os/bcbaProductivityV3/model";
 
 /* ---------------- small presentational pieces ---------------- */
 
@@ -40,15 +44,15 @@ const CHART_COLORS = [
   "#0ea5e9", "#22c55e", "#ec4899", "#64748b", "#a3620b",
 ];
 
-const SUP_TONE: Record<SupervisionStatus, string> = {
+const SUP_TONE: Record<BcbaSupervisionStatus, string> = {
   none: "bg-muted text-muted-foreground",
-  red: "bg-destructive/10 text-destructive border border-destructive/30",
-  yellow: "bg-amber-500/10 text-amber-600 border border-amber-500/30",
-  green: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30",
+  urgent: "bg-destructive/10 text-destructive border border-destructive/30",
+  monitor: "bg-amber-500/10 text-amber-600 border border-amber-500/30",
+  healthy: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30",
 };
 
 function SupervisionBadge({ pct }: { pct: number | null }) {
-  const status = supervisionStatus(pct);
+  const status = bcbaSupervisionStatus(pct);
   return (
     <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold", SUP_TONE[status])}>
       {fmtPct(pct)}
@@ -204,7 +208,11 @@ export default function BcbaProductivityReportV3() {
     [ownership.rows, effectiveFilters],
   );
 
-  const agg = useMemo(() => aggregate(filteredRows), [filteredRows]);
+  const model = useMemo(
+    () => buildBcbaProductivityModelFromOwnedRows(filteredRows, ownership),
+    [filteredRows, ownership],
+  );
+  const agg = model.kpis;
   const filterCount = activeFilterCount(effectiveFilters);
 
   const setFilter = (key: keyof BcbaProductivityFilters) => (value: string) =>
@@ -235,15 +243,15 @@ export default function BcbaProductivityReportV3() {
   /* ---- chart data ---- */
 
   const hoursByBcba = useMemo(
-    () => agg.bcbaSummary.slice(0, 15).map((b) => ({
+    () => model.bcbaSummaries.slice(0, 15).map((b) => ({
       name: b.bcba, hours: b.totalHours, key: b.bcba,
     })),
-    [agg.bcbaSummary],
+    [model.bcbaSummaries],
   );
 
   const top10 = useMemo(
-    () => agg.bcbaSummary.filter((b) => !b.isUnassigned).slice(0, 10),
-    [agg.bcbaSummary],
+    () => model.bcbaSummaries.filter((b) => !b.isUnassigned).slice(0, 10),
+    [model.bcbaSummaries],
   );
 
   const compositionData = useMemo(() => ([
@@ -253,22 +261,22 @@ export default function BcbaProductivityReportV3() {
   ]), [agg]);
 
   const supervisionByBcba = useMemo(
-    () => agg.bcbaSummary
+    () => model.supervisionSummaries
       .filter((b) => !b.isUnassigned && b.supervisionPct !== null)
       .slice(0, 15)
-      .map((b) => ({ name: b.bcba, pct: b.supervisionPct as number, status: b.supervisionStatus })),
-    [agg.bcbaSummary],
+      .map((b) => ({ name: b.bcba, pct: b.supervisionPct as number, status: b.status })),
+    [model.supervisionSummaries],
   );
 
   const codeMix = useMemo(
-    () => agg.codeBreakdown.slice(0, 8).map((c) => ({ name: c.normalizedCode, value: c.hours })),
-    [agg.codeBreakdown],
+    () => model.codeSummaries.slice(0, 8).map((c) => ({ name: c.normalizedCode, value: c.hours })),
+    [model.codeSummaries],
   );
 
   const unassignedClients = useMemo(() => {
-    const names = new Set(ownership.clientsWithoutAnchors.map((c) => c.clientName.toLowerCase()));
+    const names = new Set(model.unassignedAudit.clients.map((c) => c.clientName.toLowerCase()));
     return authContext.filter((a) => names.has(String(a.client_name ?? "").toLowerCase()));
-  }, [authContext, ownership.clientsWithoutAnchors]);
+  }, [authContext, model.unassignedAudit.clients]);
 
   /* ---- render ---- */
 
@@ -395,7 +403,7 @@ export default function BcbaProductivityReportV3() {
             hint="Non-97153 rendered by BCBAs"
             onClick={() => openDrilldown("Direct BCBA Hours", (r) => r.isAnchor)} />
           <KpiCard label="Supervision %" value={fmtPct(agg.supervisionPct)} icon={ShieldCheck}
-            tone={agg.supervisionStatus === "red" ? "danger" : agg.supervisionStatus === "yellow" ? "warn" : "default"}
+            tone={agg.supervisionStatus === "urgent" ? "danger" : agg.supervisionStatus === "monitor" ? "warn" : "default"}
             hint="97155 ÷ 97153"
             onClick={() => openDrilldown("Supervision inputs (97153 + 97155)",
               (r) => r.normalizedCode === "97153" || r.normalizedCode === "97155")} />
@@ -492,7 +500,7 @@ export default function BcbaProductivityReportV3() {
 
             <Panel title="Monthly trend" subtitle="97153, 97155 and other hours by service month">
               <ChartFrame height={260}>
-                <LineChart data={agg.monthlyTrend}>
+                <LineChart data={model.monthlyTrend}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                   <XAxis dataKey="monthKey" fontSize={11} />
                   <YAxis tickFormatter={(v) => fmtHours(v)} fontSize={11} />
@@ -511,7 +519,7 @@ export default function BcbaProductivityReportV3() {
             <Panel title="BCBA summary" subtitle="Every BCBA in the current filter. Click a row for the exact source rows.">
               <DataTable
                 headers={["BCBA", "Total hrs", "97153", "97155", "Direct BCBA", "Supervision %", "Clients", "RBTs", "Rows", "States"]}
-                rows={agg.bcbaSummary.map((b) => ({
+                rows={model.bcbaSummaries.map((b) => ({
                   key: b.bcba,
                   onClick: () => openDrilldown(`Source rows — ${b.bcba}`,
                     (r) => (r.owner ?? UNASSIGNED_LABEL) === b.bcba),
@@ -532,7 +540,7 @@ export default function BcbaProductivityReportV3() {
             <Panel title="Code breakdown" subtitle="Normalized by prefix; raw codes preserved in the drilldown.">
               <DataTable
                 headers={["Normalized code", "Hours", "Rows", "BCBAs", "Clients", "Raw code variants"]}
-                rows={agg.codeBreakdown.map((c) => ({
+                rows={model.codeSummaries.map((c) => ({
                   key: c.normalizedCode,
                   onClick: () => openDrilldown(`Code ${c.normalizedCode}`,
                     (r) => r.normalizedCode === c.normalizedCode),
@@ -560,7 +568,7 @@ export default function BcbaProductivityReportV3() {
                       `Supervision inputs — ${d.name}`,
                       (r) => r.owner === d.name && (r.normalizedCode === "97153" || r.normalizedCode === "97155"))}>
                     {supervisionByBcba.map((d, i) => (
-                      <Cell key={i} fill={d.status === "red" ? "#ef4444" : d.status === "yellow" ? "#f59e0b" : "#22c55e"} />
+                      <Cell key={i} fill={d.status === "urgent" ? "#ef4444" : d.status === "monitor" ? "#f59e0b" : "#22c55e"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -569,18 +577,18 @@ export default function BcbaProductivityReportV3() {
             <Panel title="Supervision compliance" subtitle="Dash means the BCBA has no 97153 hours in this filter.">
               <DataTable
                 headers={["BCBA", "97155 hrs", "97153 hrs", "Supervision %", "Status", "Clients"]}
-                rows={agg.bcbaSummary.map((b) => ({
+                rows={model.supervisionSummaries.map((b) => ({
                   key: b.bcba,
                   onClick: () => openDrilldown(`Supervision inputs — ${b.bcba}`,
                     (r) => (r.owner ?? UNASSIGNED_LABEL) === b.bcba &&
                       (r.normalizedCode === "97153" || r.normalizedCode === "97155")),
                   cells: [
                     <span className="font-medium">{b.bcba}</span>,
-                    fmtHours(b.hours97155), fmtHours(b.hours97153),
+                    fmtHours(b.supervisionHours), fmtHours(b.direct97153Hours),
                     <SupervisionBadge pct={b.supervisionPct} />,
-                    b.supervisionStatus === "none" ? "No 97153" :
-                      b.supervisionStatus === "red" ? "Below 5%" :
-                        b.supervisionStatus === "yellow" ? "5–9.9%" : "At or above 10%",
+                    b.status === "none" ? "No 97153" :
+                      b.status === "urgent" ? "Urgent (below 5%)" :
+                        b.status === "monitor" ? "Monitor (5–9.9%)" : "Healthy (10%+)",
                     fmtCount(b.clientCount),
                   ],
                 }))}
@@ -593,7 +601,7 @@ export default function BcbaProductivityReportV3() {
             <Panel title="Clients" subtitle="Attributed to the inferred BCBA owner at DOS.">
               <DataTable
                 headers={["Client", "Client ID", "Owner", "Total hrs", "97153", "Sup %", "RBTs", "State"]}
-                rows={agg.clientSummary.slice(0, 500).map((c) => ({
+                rows={model.clientSummaries.slice(0, 500).map((c) => ({
                   key: c.clientKey,
                   onClick: () => openDrilldown(`Source rows — ${c.clientName}`, (r) => r.clientKey === c.clientKey),
                   cells: [
@@ -610,7 +618,7 @@ export default function BcbaProductivityReportV3() {
             <Panel title="RBTs" subtitle="97153 direct hours by rendering provider.">
               <DataTable
                 headers={["RBT", "97153 hrs", "Clients", "BCBAs", "Rows"]}
-                rows={agg.rbtSummary.slice(0, 500).map((rb) => ({
+                rows={model.rbtSummaries.slice(0, 500).map((rb) => ({
                   key: rb.rbt,
                   onClick: () => openDrilldown(`97153 rows — ${rb.rbt}`,
                     (r) => r.normalizedCode === "97153" && r.renderingProvider === rb.rbt),
@@ -629,7 +637,7 @@ export default function BcbaProductivityReportV3() {
             <Panel title="Ownership segments" subtitle="Month-first inference from BCBA anchor rows.">
               <DataTable
                 headers={["Client", "Month", "BCBA", "From", "To", "Reason", "Anchors"]}
-                rows={ownership.segments.slice(0, 800).map((s, i) => ({
+                rows={model.ownershipAudit.segments.slice(0, 800).map((s, i) => ({
                   key: `${s.clientKey}-${s.monthKey}-${s.bcba}-${i}`,
                   onClick: () => openDrilldown(`${s.clientName} — ${s.monthKey}`,
                     (r) => r.clientKey === s.clientKey && r.date >= s.startDate &&
@@ -646,7 +654,7 @@ export default function BcbaProductivityReportV3() {
             <Panel title="Same-month conflicts" subtitle="Months where more than one BCBA anchored the client.">
               <DataTable
                 headers={["Client", "Month", "BCBAs (first anchor date)"]}
-                rows={ownership.conflicts.slice(0, 400).map((c, i) => ({
+                rows={model.ownershipAudit.conflicts.slice(0, 400).map((c, i) => ({
                   key: `${c.clientKey}-${c.monthKey}-${i}`,
                   onClick: () => openDrilldown(`${c.clientName} — ${c.monthKey}`,
                     (r) => r.clientKey === c.clientKey && r.monthKey === c.monthKey),
@@ -660,7 +668,7 @@ export default function BcbaProductivityReportV3() {
             <Panel title="Gaps & carried-forward months" subtitle="Months with no anchor, backfilled months, and clients with no anchor at all.">
               <DataTable
                 headers={["Client", "Month", "Owner applied", "Hours", "Reason"]}
-                rows={ownership.gaps.slice(0, 400).map((g, i) => ({
+                rows={model.ownershipAudit.gaps.slice(0, 400).map((g, i) => ({
                   key: `${g.clientKey}-${g.monthKey}-${i}`,
                   onClick: () => openDrilldown(`${g.clientName} — ${g.monthKey}`,
                     (r) => r.clientKey === g.clientKey && r.monthKey === g.monthKey),
