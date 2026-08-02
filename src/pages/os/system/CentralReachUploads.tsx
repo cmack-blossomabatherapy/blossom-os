@@ -340,7 +340,11 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
             });
             continue;
           }
-          const normalizedMsg =
+          const allDuplicate =
+            summary.appendedRowCount === 0 && summary.duplicateRowCount > 0;
+          const normalizedMsg = allDuplicate
+            ? `Already loaded: no report totals changed — ${summary.duplicateRowCount.toLocaleString()} rows were already imported.`
+            :
             `${summary.appendedRowCount.toLocaleString()} rows appended · ` +
             `${summary.duplicateRowCount.toLocaleString()} duplicates skipped · ` +
             outcomes.map((o) => o.table).filter(Boolean).join(", ") +
