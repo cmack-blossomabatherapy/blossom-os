@@ -109,6 +109,7 @@ describe("BCBA Productivity V3 → CentralReach Data Hub wiring", () => {
       date: "2026-03-21",
       state: "GA",
       payor: "Aetna",
+      location: "",
     });
     const rbt = store.mapCrBillingSessionRow(
       crRow({ procedure_code: "97153", rendering_provider_name: "Tech One" }),

@@ -98,7 +98,8 @@ describe("filter option lists are not truncated", () => {
     expect(src).toContain("FilterCombobox");
     expect(src).toContain("useDeferredValue");
     expect(src).toContain("deferredSearch");
-    expect(src).toContain('options={["— Unassigned —", ...bcbaOptions]}');
+    expect(src).toContain("options={options.bcbas}");
+    expect(src).toContain("options={options.clients}");
   });
 });
 

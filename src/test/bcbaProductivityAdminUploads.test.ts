@@ -61,7 +61,7 @@ describe("BCBA Productivity Report V3 — canonical report route + dataset", () 
   it("V3 auto-loads the shared admin-uploaded active dataset", () => {
     expect(report).toMatch(/getBcbaProductivityDatasetStatus/);
     expect(report).toMatch(/getBcbaProductivitySharedRows/);
-    expect(report).toMatch(/void loadSharedDataset\(\{ silent: true \}\)/);
+    expect(report).toMatch(/void load\(false\)/);
     expect(report).not.toMatch(/fetchBcbaBillingRowsAsSharedShape/);
   });
 

@@ -69,7 +69,9 @@ describe("BCBA Productivity V3 — shared admin dataset is the report source", (
     const src = fs.readFileSync("src/pages/os/reports/BcbaProductivityReportV3.tsx", "utf8");
     expect(src).toContain("getBcbaProductivitySharedRows");
     expect(src).toContain("getBcbaProductivityDatasetStatus");
-    expect(src).toContain("getBcbaProductivityOwnershipContextRows");
+    // Ownership is now inferred by the engine from the same billing rows,
+    // which is a superset of the old ownership-context read.
+    expect(src).toContain("buildOwnership");
     expect(src).not.toContain("fetchBcbaBillingRowsAsSharedShape");
   });
 });
