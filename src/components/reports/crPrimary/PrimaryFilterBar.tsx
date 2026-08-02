@@ -2,13 +2,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FilterCombobox } from "./FilterCombobox";
 import type { PrimaryReportFilters } from "@/lib/os/reports/crPrimary/types";
 import { activeFilterCount } from "@/lib/os/reports/crPrimary/filters";
 
@@ -73,22 +67,12 @@ export function PrimaryFilterBar({
           <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             {f.label}
           </span>
-          <Select
-            value={filters[f.key] || "__all"}
-            onValueChange={(v) => set(f.key, v === "__all" ? "" : v)}
-          >
-            <SelectTrigger className="h-8 w-[165px] text-xs" aria-label={f.label}>
-              <SelectValue placeholder={`All ${f.label}`} />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              <SelectItem value="__all">All {f.label}</SelectItem>
-              {f.options.slice(0, 400).map((o) => (
-                <SelectItem key={o} value={o}>
-                  {o}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FilterCombobox
+            label={f.label}
+            value={filters[f.key] || ""}
+            options={f.options}
+            onChange={(v) => set(f.key, v)}
+          />
         </div>
       ))}
 
