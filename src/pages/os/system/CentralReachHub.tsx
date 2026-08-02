@@ -656,3 +656,109 @@ function IdentityTab() {
     </Card>
   );
 }
+// ---------- Backup & Reset (guarded, CR report data only) ----------
+function BackupResetTab() {
+  const [phrase, setPhrase] = useState("");
+  const [label, setLabel] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [backups, setBackups] = useState<any[]>([]);
+
+  const loadBackups = async () => {
+    const { data } = await supabase
+      .from("cr_import_backups" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(25);
+    setBackups((data as any[]) ?? []);
+  };
+
+  useEffect(() => { loadBackups(); }, []);
+
+  const plan = planCrReset({ confirmationPhrase: phrase, backupLabel: label });
+
+  const runReset = async () => {
+    if (!plan.allowed) {
+      toast({ title: "Confirmation required", description: plan.errors.join(" "), variant: "destructive" });
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("cr_reset_report_data" as any, {
+        _confirmation: CR_RESET_CONFIRMATION_PHRASE,
+        _backup_label: plan.backupLabel,
+      });
+      if (error) throw error;
+      toast({ title: "CentralReach report data reset", description: `Backup saved as ${plan.backupLabel}.` });
+      setPhrase("");
+      setLabel("");
+      await loadBackups();
+    } catch (e: any) {
+      toast({ title: "Reset failed", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 space-y-4 border-destructive/30">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+          <div>
+            <h3 className="text-sm font-semibold">Reset CentralReach report data</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+              This clears only CentralReach-derived reporting tables ({CR_RESETTABLE_TABLES.length} tables).
+              Employees, clients, HR, and operational records are never touched. A backup snapshot is
+              recorded before anything is cleared.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Backup label (optional)</label>
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="pre-reset snapshot" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Type <span className="font-mono">{CR_RESET_CONFIRMATION_PHRASE}</span> to confirm
+            </label>
+            <Input value={phrase} onChange={(e) => setPhrase(e.target.value)} placeholder={CR_RESET_CONFIRMATION_PHRASE} />
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="destructive" size="sm" disabled={!plan.allowed || busy} onClick={runReset}>
+            {busy ? "Resetting…" : "Backup & reset report data"}
+          </Button>
+          {!plan.allowed && phrase.length > 0 && (
+            <span className="text-xs text-muted-foreground">{plan.errors[0]}</span>
+          )}
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="text-sm font-semibold mb-3">Backup history</h3>
+        {backups.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No backups recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground border-b">
+                <tr><th className="text-left py-2">When</th><th className="text-left">Label</th><th className="text-left">Tables</th><th className="text-right">Rows</th></tr>
+              </thead>
+              <tbody>
+                {backups.map((b) => (
+                  <tr key={b.id} className="border-b border-border/40">
+                    <td className="py-2">{new Date(b.created_at).toLocaleString()}</td>
+                    <td>{b.label ?? "—"}</td>
+                    <td className="text-muted-foreground">{Array.isArray(b.tables) ? b.tables.length : "—"}</td>
+                    <td className="text-right">{b.row_count?.toLocaleString?.("en-US") ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
