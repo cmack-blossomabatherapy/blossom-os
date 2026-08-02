@@ -79,7 +79,22 @@ export interface BcbaDatasetStatus {
   latestServiceDate: string | null;
   lastUploadAt: string | null;
   lastUploadedByEmail: string | null;
+  /**
+   * Which billing store the report is reading. `centralreach_data_hub`
+   * means normalized `cr_billing_sessions` rows loaded through the
+   * CentralReach Data Hub; `legacy_upload` is the older report-side
+   * `bcba_productivity_billing_rows` upload table (fallback only).
+   */
+  source?: BcbaBillingSource;
+  sourceLabel?: string;
 }
+
+export type BcbaBillingSource = "centralreach_data_hub" | "legacy_upload";
+
+export const BCBA_SOURCE_LABELS: Record<BcbaBillingSource, string> = {
+  centralreach_data_hub: "CentralReach Data Hub billing",
+  legacy_upload: "Legacy report-side upload",
+};
 
 /* ----- internal types ----- */
 
