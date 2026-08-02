@@ -34,6 +34,11 @@ import {
   type CrBatchRecord, type CrNormalizedCounts,
 } from "@/lib/os/centralreachUploads/supabaseStore";
 import { reprocessLegacySharedDatasets } from "@/lib/os/centralreachUploads/legacyReprocess";
+import {
+  needsLegacyNormalization, summarizeLegacyReprocess,
+  hasAutoNormalizeAttempted, markAutoNormalizeAttempted,
+  type LegacyReprocessReport,
+} from "@/lib/os/centralreachUploads/legacyNormalizationState";
 
 type QueueStatus =
   | "queued" | "detecting" | "detected" | "uploading" | "appending"
@@ -172,6 +177,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   const [crCounts, setCrCounts] = useState<CrNormalizedCounts | null>(null);
   const [crBatches, setCrBatches] = useState<CrBatchRecord[]>([]);
   const [reprocessing, setReprocessing] = useState(false);
+  const [reprocessReport, setReprocessReport] = useState<LegacyReprocessReport | null>(null);
+  const autoStartedRef = useRef(false);
 
   async function refresh() {
     setRefreshing(true);
