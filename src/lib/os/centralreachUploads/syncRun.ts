@@ -170,6 +170,40 @@ export interface CrSyncRunRecord {
   createdAt: string;
 }
 
+/**
+ * Can the signed-in operator actually write to the CentralReach tables?
+ *
+ * Uploads used to look successful while every insert was rejected by grants or
+ * RLS. Checking up front turns that class of silent no-op into a visible,
+ * actionable message before any file is parsed.
+ */
+export interface CrUploadPreflight {
+  canWrite: boolean;
+  reason: string;
+}
+
+export async function crUploadPreflight(): Promise<CrUploadPreflight> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user?.id) {
+    return { canWrite: false, reason: "You are not signed in, so uploads cannot be saved. Sign in and reload." };
+  }
+  const { data, error } = await db().rpc("cr_hub_can_manage");
+  if (error) {
+    return {
+      canWrite: false,
+      reason: `Could not verify CentralReach write access: ${error.message ?? String(error)}`,
+    };
+  }
+  if (data !== true) {
+    return {
+      canWrite: false,
+      reason:
+        "Your account does not have CentralReach Data Hub write access, so uploads would be rejected by the database. Ask a Super Admin to grant it.",
+    };
+  }
+  return { canWrite: true, reason: "Write access confirmed — uploads will be saved to the report tables." };
+}
+
 export async function listCrSyncRuns(limit = 25): Promise<CrSyncRunRecord[]> {
   const { data, error } = await db()
     .from("cr_sync_runs")

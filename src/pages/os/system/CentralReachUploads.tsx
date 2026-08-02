@@ -33,6 +33,10 @@ import {
   fetchCrNormalizedCounts, listCrImportBatches,
   type CrBatchRecord, type CrNormalizedCounts,
 } from "@/lib/os/centralreachUploads/supabaseStore";
+import {
+  crUploadPreflight, listCrSyncRuns,
+  type CrSyncRunRecord, type CrUploadPreflight,
+} from "@/lib/os/centralreachUploads/syncRun";
 import { reprocessLegacySharedDatasets } from "@/lib/os/centralreachUploads/legacyReprocess";
 import {
   needsLegacyNormalization, summarizeLegacyReprocess,
@@ -176,6 +180,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   // Normalized Data Hub state — the source of truth for readiness.
   const [crCounts, setCrCounts] = useState<CrNormalizedCounts | null>(null);
   const [crBatches, setCrBatches] = useState<CrBatchRecord[]>([]);
+  const [crRuns, setCrRuns] = useState<CrSyncRunRecord[]>([]);
+  const [preflight, setPreflight] = useState<CrUploadPreflight | null>(null);
   const [lastOutcomes, setLastOutcomes] = useState<CrFileImportOutcome[]>([]);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessReport, setReprocessReport] = useState<LegacyReprocessReport | null>(null);
@@ -184,12 +190,14 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   async function refresh() {
     setRefreshing(true);
     try {
-      const [b, s, shared, counts, batches] = await Promise.all([
+      const [b, s, shared, counts, batches, runs, pre] = await Promise.all([
         settle(listBcbaProductivityUploadBatches()),
         settle(getBcbaProductivityDatasetStatus()),
         Promise.all(SHARED_KEYS.map((k) => settle(listSharedReportDatasets(k)))),
         settle(fetchCrNormalizedCounts()),
         settle(listCrImportBatches(100)),
+        settle(listCrSyncRuns(25)),
+        settle(crUploadPreflight()),
       ]);
       const failures: string[] = [];
 
@@ -198,6 +206,12 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
 
       if (batches.status === "fulfilled") setCrBatches(batches.value);
       else failures.push(`Import batches: ${readableError(batches.reason)}`);
+
+      if (runs.status === "fulfilled") setCrRuns(runs.value);
+      else failures.push(`Upload runs: ${readableError(runs.reason)}`);
+
+      if (pre.status === "fulfilled") setPreflight(pre.value);
+      else setPreflight({ canWrite: false, reason: `Write access check failed: ${readableError(pre.reason)}` });
 
       if (b.status === "fulfilled") {
         setBcbaBatches(b.value);
@@ -257,6 +271,23 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   }
 
   async function processQueue() {
+    // Verify database write access first — a blocked upload must never look
+    // like a silent success.
+    const gate = preflight ?? (await settle(crUploadPreflight()).then((r) =>
+      r.status === "fulfilled" ? r.value : { canWrite: false, reason: `Write access check failed: ${readableError(r.reason)}` },
+    ));
+    setPreflight(gate);
+    if (!gate.canWrite) {
+      toast.error(gate.reason);
+      setQueue((prev) =>
+        prev.map((q) =>
+          q.status === "queued" || q.status === "detected"
+            ? { ...q, status: "error", message: gate.reason }
+            : q,
+        ),
+      );
+      return;
+    }
     setProcessing(true);
     const sessionOutcomes: CrFileImportOutcome[] = [];
     try {
@@ -596,6 +627,18 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
           </Card>
         )}
 
+        {preflight && !preflight.canWrite && (
+          <Card className="border-destructive/50 bg-destructive/5 p-5" data-testid="cr-upload-preflight">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div>
+                <h2 className="text-sm font-semibold text-destructive">Uploads cannot be saved right now</h2>
+                <p className="mt-1 text-[12.5px] text-muted-foreground">{preflight.reason}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {lastOutcomes.length > 0 && (
           <Card className="p-5" data-testid="cr-upload-results">
             <div className="mb-3 flex items-center gap-2">
@@ -651,6 +694,60 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
             </div>
           </Card>
         )}
+
+        {/* Durable proof: read straight back from cr_sync_runs, never local state. */}
+        <Card className="p-5" data-testid="cr-sync-runs">
+          <div className="mb-3 flex items-center gap-2">
+            <Database className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Upload runs recorded in the database
+            </h2>
+          </div>
+          {crRuns.length === 0 ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              No upload runs recorded yet. Every upload attempt writes a row here — if an upload finishes and
+              nothing appears, the write was rejected and the error is shown above.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead className="text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <tr className="border-b border-border/60 text-left">
+                    <th className="py-2 pr-3">When</th>
+                    <th className="py-2 pr-3">File</th>
+                    <th className="py-2 pr-3">Type</th>
+                    <th className="py-2 pr-3 text-right">Parsed</th>
+                    <th className="py-2 pr-3 text-right">Added</th>
+                    <th className="py-2 pr-3 text-right">Unchanged</th>
+                    <th className="py-2 pr-3 text-right">Rejected</th>
+                    <th className="py-2 pr-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {crRuns.map((r) => (
+                    <tr key={r.id} className="border-b border-border/40 align-top">
+                      <td className="py-2 pr-3 whitespace-nowrap">{new Date(r.createdAt).toLocaleString()}</td>
+                      <td className="py-2 pr-3 font-medium">{r.fileName}</td>
+                      <td className="py-2 pr-3">{r.typeKey}</td>
+                      <td className="py-2 pr-3 text-right">{r.rowCountTotal.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right font-semibold text-emerald-700">{r.rowsAdded.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right">{r.rowsUnchanged.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right">{r.rowsRejected.toLocaleString()}</td>
+                      <td className="py-2 pr-3">
+                        <Badge variant={r.status === "committed" ? "default" : r.status === "failed" ? "destructive" : "secondary"}>
+                          {r.status}
+                        </Badge>
+                        {r.notes && (
+                          <div className="mt-1 max-w-[320px] text-[11px] text-muted-foreground">{r.notes}</div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
 
         {/* Drop / choose */}
         <Card className="p-6">
