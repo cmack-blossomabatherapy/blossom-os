@@ -271,6 +271,23 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   }
 
   async function processQueue() {
+    // Verify database write access first — a blocked upload must never look
+    // like a silent success.
+    const gate = preflight ?? (await settle(crUploadPreflight()).then((r) =>
+      r.status === "fulfilled" ? r.value : { canWrite: false, reason: `Write access check failed: ${readableError(r.reason)}` },
+    ));
+    setPreflight(gate);
+    if (!gate.canWrite) {
+      toast.error(gate.reason);
+      setQueue((prev) =>
+        prev.map((q) =>
+          q.status === "queued" || q.status === "detected"
+            ? { ...q, status: "error", message: gate.reason }
+            : q,
+        ),
+      );
+      return;
+    }
     setProcessing(true);
     const sessionOutcomes: CrFileImportOutcome[] = [];
     try {
