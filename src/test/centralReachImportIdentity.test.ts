@@ -83,7 +83,7 @@ describe("CR import identity — raw CentralReach Id is the primary dedupe ident
   it("appends two rows with identical normalized fields but different raw Ids", async () => {
     const { store, tables } = makeStore();
     const result = await runCrImportSession(store, tableFor, [
-      file("a", [
+      file("a.csv", [
         withRaw(normalized(), { Id: "1001" }),
         withRaw(normalized(), { Id: "1002" }),
       ]),
@@ -96,9 +96,9 @@ describe("CR import identity — raw CentralReach Id is the primary dedupe ident
 
   it("skips reuploads of the same raw Id across sessions", async () => {
     const { store, tables } = makeStore();
-    await runCrImportSession(store, tableFor, [file("a", [withRaw(normalized(), { Id: "1001" })])]);
+    await runCrImportSession(store, tableFor, [file("a.csv", [withRaw(normalized(), { Id: "1001" })])]);
     const second = await runCrImportSession(store, tableFor, [
-      file("b", [withRaw(normalized(), { Id: "1001" }), withRaw(normalized(), { Id: "1003" })]),
+      file("b.csv", [withRaw(normalized(), { Id: "1001" }), withRaw(normalized(), { Id: "1003" })]),
     ]);
     expect(second.appendedRowCount).toBe(1);
     expect(second.duplicateRowCount).toBe(1);
@@ -108,7 +108,7 @@ describe("CR import identity — raw CentralReach Id is the primary dedupe ident
   it("dedupes identical rows with no source id via the hash fallback", async () => {
     const { store, tables } = makeStore();
     const result = await runCrImportSession(store, tableFor, [
-      file("a", [normalized(), { ...normalized() }]),
+      file("a.csv", [normalized(), { ...normalized() }]),
     ]);
     expect(result.appendedRowCount).toBe(1);
     expect(result.duplicateRowCount).toBe(1);
