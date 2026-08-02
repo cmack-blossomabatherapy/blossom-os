@@ -35,6 +35,25 @@ const US_STATE_NAME_TO_CODE: Record<string, string> = {
 
 const US_STATE_CODES = new Set<string>(Object.values(US_STATE_NAME_TO_CODE));
 
+/**
+ * Find a US state inside free text such as a CentralReach location string
+ * ("ORGANIZATION: Georgia Clinic 3850 ...") or a provider contact label
+ * ("BCBA ,North Carolina Location"). Longest names are matched first so
+ * "North Carolina" wins over "Carolina"-less partial matches.
+ */
+const FREE_TEXT_STATE_NAMES = Object.keys(US_STATE_NAME_TO_CODE).sort(
+  (a, b) => b.length - a.length,
+);
+export function stateFromFreeText(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const text = String(value).toLowerCase().replace(/\s+/g, " ");
+  if (!text.trim()) return "";
+  for (const name of FREE_TEXT_STATE_NAMES) {
+    if (text.includes(name)) return US_STATE_NAME_TO_CODE[name];
+  }
+  return "";
+}
+
 export function normalizeUsState(value: unknown): string {
   if (value === null || value === undefined) return "";
   const raw = String(value).trim();
