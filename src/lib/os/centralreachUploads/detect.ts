@@ -77,19 +77,6 @@ export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
     };
   }
 
-  // Payor-level authorization utilization summary (no WeekStart column).
-  if (
-    hasAny(set, ["PayorName", "Payor"]) &&
-    hasAny(set, ["authHours", "authHoursWkd", "authHoursRem", "authUnits", "authAmount"])
-  ) {
-    return {
-      kind: "utilization",
-      confidence: 0.88,
-      label: "Authorization utilization summary export",
-      targets: ["Authorization Utilization - Hour Based"],
-    };
-  }
-
   // Scheduling export — has Course/Segment/Event columns.
   if (
     hasAll(set, ["Course", "Segment", "Event"]) &&
