@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterCombobox } from "@/components/reports/crPrimary/FilterCombobox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { KpiTile } from "@/components/dashboards/KpiTile";
