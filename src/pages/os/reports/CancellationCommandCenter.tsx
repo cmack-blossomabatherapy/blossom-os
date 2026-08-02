@@ -1501,15 +1501,14 @@ function FilterSelect({ label, value, setValue, options }: {
   label: string; value: string; setValue: (v: string) => void; options: string[];
 }) {
   return (
-    <Select value={value} onValueChange={setValue}>
-      <SelectTrigger className="h-8 w-auto min-w-[110px] text-xs">
-        <SelectValue placeholder={label} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">{label}: All</SelectItem>
-        {options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-      </SelectContent>
-    </Select>
+    <FilterCombobox
+      label={label}
+      allLabel={`${label}: All`}
+      value={value === "all" ? "" : value}
+      options={options}
+      onChange={(v) => setValue(v || "all")}
+      className="min-w-[110px]"
+    />
   );
 }
 
