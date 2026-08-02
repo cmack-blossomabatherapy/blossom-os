@@ -15,6 +15,7 @@
  */
 import type { ReactElement } from "react";
 import BcbaProductivityReportV3 from "@/pages/os/reports/BcbaProductivityReportV3";
+import { CentralReachPrimaryReport } from "@/pages/os/reports/CentralReachPrimaryReport";
 import CancellationCommandCenter from "@/pages/os/reports/CancellationCommandCenter";
 import AuthorizationAnalysisPage from "@/pages/os/reports/AuthorizationAnalysisPage";
 import AuthorizationUtilizationPage from "@/pages/os/reports/AuthorizationUtilizationPage";
@@ -56,6 +57,23 @@ export const PRIMARY_CR_REPORT_ROUTES: Record<PrimaryCrReportId, string> = {
 };
 
 /**
+ * Canonical `/reports/<id>` page components, still mounted directly by the
+ * router in `App.tsx`. `ReportDetail` renders the shared operator dashboard
+ * (`CentralReachPrimaryReport`) for the 7 non-BCBA reports instead, so the
+ * generic placeholder shell can never appear for them.
+ */
+export const PRIMARY_CR_REPORT_PAGES = {
+  "bcba-productivity-report-v3": BcbaProductivityReportV3,
+  "cancellation-command-center": CancellationCommandCenter,
+  "authorization-analysis": AuthorizationAnalysisPage,
+  "authorization-utilization-hour-based": AuthorizationUtilizationPage,
+  "bcba-performance": BcbaPerformancePage,
+  "bcba-supervision": BcbaSupervisionPage,
+  "parent-training": ParentTrainingPage,
+  "progress-reports": ProgressReportsPage,
+} as const;
+
+/**
  * Returns the dedicated page element for a primary report ID, or `null` when
  * the ID is not one of the 8 primary reports.
  */
@@ -68,19 +86,15 @@ export function renderPrimaryCrReport(
       // owned entirely by this page — rendered as-is, never re-implemented.
       return <BcbaProductivityReportV3 />;
     case "cancellation-command-center":
-      return <CancellationCommandCenter />;
     case "authorization-analysis":
-      return <AuthorizationAnalysisPage />;
     case "authorization-utilization-hour-based":
-      return <AuthorizationUtilizationPage />;
     case "bcba-performance":
-      return <BcbaPerformancePage />;
     case "bcba-supervision":
-      return <BcbaSupervisionPage />;
     case "parent-training":
-      return <ParentTrainingPage />;
     case "progress-reports":
-      return <ProgressReportsPage />;
+      // Shared operator dashboard: freshness, filters, KPIs, Recharts,
+      // grouped table, source-row drilldown, and CSV export.
+      return <CentralReachPrimaryReport reportId={reportId} />;
     default:
       return null;
   }
