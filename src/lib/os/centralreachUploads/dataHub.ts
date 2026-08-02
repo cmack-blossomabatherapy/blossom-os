@@ -1,9 +1,11 @@
 /**
- * CentralReach Data Hub — batch validation, snapshot dedupe, and guarded reset.
+ * CentralReach Data Hub — batch validation, append-mode dedupe, and guarded reset.
  *
- * Daily CentralReach exports are FULL SNAPSHOTS by default: a new batch of the
- * same export type replaces the prior active batch, and stable rows are deduped
- * by CentralReach row id when present, otherwise by a deterministic row hash.
+ * Uploads APPEND by default. A Data Hub import session may contain many files,
+ * and many sessions accumulate over time. Rows are deduplicated GLOBALLY per
+ * normalized table / export type on a stable identity (CentralReach row id when
+ * present, else a deterministic row hash) — never merely per batch. Existing
+ * report rows are only cleared by an explicit reset action.
  */
 
 import type { CRUploadKind } from "./detect";
@@ -21,6 +23,12 @@ export interface CRBatchDescriptor {
   status?: CRBatchStatus;
   warnings?: string[];
   isActive?: boolean;
+  /** Rows parsed out of the file. */
+  parsedRowCount?: number;
+  /** New unique rows actually inserted by this batch. */
+  appendedRowCount?: number;
+  /** Rows skipped because their identity already exists (any batch). */
+  duplicateRowCount?: number;
 }
 
 export interface CRBatchValidation {
@@ -123,6 +131,80 @@ export function isDuplicateBatch(existing: CRBatchDescriptor[], incoming: CRBatc
   return existing.some(
     (batch) => batch.fileHash === incoming.fileHash && batch.exportType === incoming.exportType,
   );
+}
+
+/* ---------------- append mode (default) ---------------- */
+
+export interface AppendPlanResult<T> {
+  /** New unique rows to insert. */
+  toInsert: T[];
+  /** Rows skipped: identity already stored (any earlier batch) or repeated in this session. */
+  duplicates: T[];
+  parsedRowCount: number;
+  appendedRowCount: number;
+  duplicateRowCount: number;
+  /** Identity set after the append, for chaining across files in one session. */
+  identities: Set<string>;
+}
+
+/**
+ * Plan an APPEND of one or more parsed files against the identities already
+ * stored for this normalized table / export type.
+ *
+ * Dedupe is global: an identity that exists in ANY previous batch is skipped,
+ * and repeats across the files of the current session are skipped too. Nothing
+ * existing is replaced or deactivated.
+ */
+export function planAppendRows<T extends Record<string, unknown>>(
+  existingIdentities: Iterable<string>,
+  incomingFiles: T[][] | T[],
+): AppendPlanResult<T> {
+  const files: T[][] = Array.isArray(incomingFiles[0]) || incomingFiles.length === 0
+    ? (incomingFiles as T[][])
+    : [incomingFiles as T[]];
+
+  const identities = new Set<string>(existingIdentities);
+  const toInsert: T[] = [];
+  const duplicates: T[] = [];
+  let parsedRowCount = 0;
+
+  for (const rows of files) {
+    for (const row of rows ?? []) {
+      parsedRowCount += 1;
+      const identity = crRowIdentity(row);
+      if (identities.has(identity)) {
+        duplicates.push(row);
+        continue;
+      }
+      identities.add(identity);
+      toInsert.push(row);
+    }
+  }
+
+  return {
+    toInsert,
+    duplicates,
+    parsedRowCount,
+    appendedRowCount: toInsert.length,
+    duplicateRowCount: duplicates.length,
+    identities,
+  };
+}
+
+/**
+ * Record an append batch. Unlike the snapshot path, prior batches of the same
+ * export type stay ACTIVE — new rows are added next to them.
+ */
+export function applyAppendBatch(
+  existing: CRBatchDescriptor[],
+  incoming: CRBatchDescriptor,
+): CRBatchDescriptor[] {
+  return [...existing, { ...incoming, isActive: true, status: "active" as CRBatchStatus }];
+}
+
+/** Only ACTIVE batch rows may feed reports; archived/failed batches are excluded. */
+export function activeReportBatches(batches: CRBatchDescriptor[]): CRBatchDescriptor[] {
+  return batches.filter((b) => b.isActive !== false && b.status !== "archived" && b.status !== "failed");
 }
 
 /* ---------------- guarded reset ---------------- */
