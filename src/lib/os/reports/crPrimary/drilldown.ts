@@ -10,6 +10,7 @@ import type {
   CrUtilizationRow,
 } from "./types";
 import { normalizeCode } from "./metrics/codes";
+import { pickNumber, pickText } from "./tolerant";
 
 export const BILLING_DRILLDOWN_COLUMNS = [
   { key: "date", label: "Date of Service" },
@@ -33,21 +34,41 @@ export function projectBillingRows(
   clientToBcba?: Map<string, string>,
 ): Record<string, unknown>[] {
   return rows.map((r) => {
-    const client = (r.client_name ?? "").trim();
+    // Typed columns win; raw payload columns are the tolerant fallback.
+    const client = pickText(r as unknown as Record<string, unknown>, [
+      "client_name",
+      "clientName",
+      "client",
+      "patient_name",
+    ]);
     const matched = clientToBcba?.get(client);
     return {
-      date: r.date_of_service ?? "",
+      date: pickText(r as unknown as Record<string, unknown>, [
+        "date_of_service",
+        "dateOfService",
+        "service_date",
+        "date",
+      ]),
       code: normalizeCode(r.procedure_code),
-      hours: Number(r.hours ?? 0).toFixed(1),
+      hours: pickNumber(r as unknown as Record<string, unknown>, [
+        "hours",
+        "units_hours",
+        "billed_hours",
+      ]).toFixed(1),
       client: client || "Unknown client",
       clientCrId: r.client_cr_id ?? "",
-      provider: r.rendering_provider_name ?? "",
+      provider: pickText(r as unknown as Record<string, unknown>, [
+        "rendering_provider_name",
+        "renderingProviderName",
+        "provider_name",
+        "provider",
+      ]),
       providerCrId: r.rendering_provider_cr_id ?? "",
       matchedBcba: matched ?? "Unassigned",
       matchStatus: matched ? "Matched to BCBA" : "Unmatched — no 97155/97156 anchor",
-      payor: r.payor ?? "",
-      state: r.state ?? "",
-      location: r.location ?? "",
+      payor: pickText(r as unknown as Record<string, unknown>, ["payor", "payer", "insurance"]),
+      state: pickText(r as unknown as Record<string, unknown>, ["state", "service_state"]),
+      location: pickText(r as unknown as Record<string, unknown>, ["location", "office", "clinic"]),
       status: r.status ?? "",
       batchId: r.batch_id ?? "",
     };
@@ -75,20 +96,56 @@ export function projectScheduleRows(
   mapReason: (r: CrScheduleEventRow) => string,
 ): Record<string, unknown>[] {
   return rows.map((r) => ({
-    date: r.event_date ?? "",
+    date: pickText(r as unknown as Record<string, unknown>, [
+      "event_date",
+      "eventDate",
+      "date",
+      "appointment_date",
+    ]),
     code: normalizeCode(r.procedure_code),
-    hours: Number(r.scheduled_hours ?? 0).toFixed(1),
-    client: r.client_name ?? "",
-    provider: r.provider_name ?? "",
+    hours: pickNumber(r as unknown as Record<string, unknown>, [
+      "scheduled_hours",
+      "scheduledHours",
+      "hours",
+    ]).toFixed(1),
+    client: pickText(r as unknown as Record<string, unknown>, ["client_name", "clientName", "client"]),
+    provider: pickText(r as unknown as Record<string, unknown>, [
+      "provider_name",
+      "providerName",
+      "provider",
+    ]),
     status: r.status ?? "",
-    reasonRaw: r.cancellation_reason ?? "",
+    reasonRaw: pickText(r as unknown as Record<string, unknown>, [
+      "cancellation_reason",
+      "cancellationReason",
+      "reason",
+    ]),
     reasonBucket: mapReason(r),
     cancelledBy: r.cancelled_by ?? "",
-    payor: r.payor ?? "",
-    state: r.state ?? "",
-    location: r.location ?? "",
+    payor: pickText(r as unknown as Record<string, unknown>, ["payor", "payer", "insurance"]),
+    state: pickText(r as unknown as Record<string, unknown>, ["state", "service_state"]),
+    location: pickText(r as unknown as Record<string, unknown>, ["location", "office", "clinic"]),
     batchId: r.batch_id ?? "",
   }));
+}
+
+/**
+ * Filters already-projected drilldown rows by exact (case-insensitive) field
+ * values. Used when a KPI, chart segment, or table row narrows the source
+ * rows shown inside the drilldown drawer.
+ */
+export function filterDrilldownRows(
+  rows: Record<string, unknown>[],
+  matchers: Record<string, string | undefined>,
+): Record<string, unknown>[] {
+  const active = Object.entries(matchers).filter(([, v]) => !!v && String(v).trim() !== "");
+  if (!active.length) return rows;
+  return rows.filter((row) =>
+    active.every(
+      ([key, value]) =>
+        String(row[key] ?? "").trim().toLowerCase() === String(value).trim().toLowerCase(),
+    ),
+  );
 }
 
 export const AUTH_DRILLDOWN_COLUMNS = [
