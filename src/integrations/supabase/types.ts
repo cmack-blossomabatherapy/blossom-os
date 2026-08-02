@@ -18683,6 +18683,116 @@ export type Database = {
         }
         Relationships: []
       }
+      org_chart_layout: {
+        Row: {
+          collapsed: boolean
+          created_at: string
+          employee_id: string
+          id: string
+          parent_employee_id: string | null
+          parent_override: boolean
+          position_x: number | null
+          position_y: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          collapsed?: boolean
+          created_at?: string
+          employee_id: string
+          id?: string
+          parent_employee_id?: string | null
+          parent_override?: boolean
+          position_x?: number | null
+          position_y?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          collapsed?: boolean
+          created_at?: string
+          employee_id?: string
+          id?: string
+          parent_employee_id?: string | null
+          parent_override?: boolean
+          position_x?: number | null
+          position_y?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_chart_layout_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_parent_employee_id_fkey"
+            columns: ["parent_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_parent_employee_id_fkey"
+            columns: ["parent_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_parent_employee_id_fkey"
+            columns: ["parent_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_parent_employee_id_fkey"
+            columns: ["parent_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "org_chart_layout_parent_employee_id_fkey"
+            columns: ["parent_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_chart_nodes: {
         Row: {
           accent_color: string | null
