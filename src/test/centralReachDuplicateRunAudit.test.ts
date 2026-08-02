@@ -46,6 +46,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 const { createSupabaseCrRunTracker } = await import("@/lib/os/centralreachUploads/syncRun");
 const { importCentralReachFiles } = await import("@/lib/os/centralreachUploads/importService");
+const { rowHashToIdentity } = await import("@/lib/os/centralreachUploads/supabaseStore");
 
 const HEADERS = ["Date of Service", "Time Worked In Hours", "Procedure Code", "Client", "Provider", "Billing Id"];
 const RAW = [
@@ -58,23 +59,23 @@ vi.mock("@/lib/os/dashboardEngine/excelParser", () => ({ parseAnyFile: (f: File)
 
 /** In-memory fact store so dedupe behaviour is exercised for real. */
 function makeStore() {
-  const existing = new Set<string>();
   const writes: Record<string, unknown>[][] = [];
+  const identities = new Map<string, string[]>();
   return {
     writes,
     store: {
-      async findActiveBatch() { return null; },
-      async existingRowHashes(_table: string, hashes: string[]) {
-        return new Set(hashes.filter((h) => existing.has(h)));
+      async loadExistingIdentities(table: string) {
+        return identities.get(table) ?? [];
+      },
+      async insertRows(_table: string, rowsIn: Record<string, unknown>[]) {
+        identities.set(_table, [
+          ...(identities.get(_table) ?? []),
+          ...rowsIn.map((r) => rowHashToIdentity(String(r.row_hash))),
+        ]);
+        writes.push(rowsIn);
       },
       async createBatch() { return "batch-1"; },
-      async insertRows(_table: string, rowsIn: Record<string, unknown>[]) {
-        rowsIn.forEach((r) => existing.add(String(r.row_hash)));
-        writes.push(rowsIn);
-        return rowsIn.length;
-      },
       async finalizeBatch() {},
-      async archiveBatch() {},
     } as never,
   };
 }
