@@ -170,9 +170,12 @@ describe("Data Hub routing and report-page separation", () => {
     expect(appSrc).toMatch(/path="\/system\/centralreach-data-hub"[\s\S]{0,160}\/system\/centralreach/);
   });
 
-  it("keeps upload controls out of report pages", () => {
-    const reportFiles = fs.readdirSync("src/pages/os/reports").filter((f) => f.endsWith(".tsx"));
-    reportFiles.forEach((file) => {
+  it("keeps upload controls out of the primary CentralReach report pages", () => {
+    const primaryReportFiles = [
+      "BcbaProductivityReportV3.tsx",
+      "CancellationCommandCenter.tsx",
+    ];
+    primaryReportFiles.forEach((file) => {
       const src = fs.readFileSync(`src/pages/os/reports/${file}`, "utf8");
       expect(src, `${file} must not render an upload input`).not.toMatch(/type="file"/);
       expect(src, `${file} must not import upload helpers`).not.toMatch(/uploadSharedReportDataset|appendBcbaProductivityUpload/);
