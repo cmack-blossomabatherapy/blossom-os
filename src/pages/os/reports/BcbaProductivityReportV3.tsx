@@ -212,7 +212,7 @@ export default function BcbaProductivityReportV3() {
     () => buildBcbaProductivityModelFromOwnedRows(filteredRows, ownership),
     [filteredRows, ownership],
   );
-  const agg = model.kpis;
+  const kpis = model.kpis;
   const filterCount = activeFilterCount(effectiveFilters);
 
   const setFilter = (key: keyof BcbaProductivityFilters) => (value: string) =>
@@ -255,9 +255,9 @@ export default function BcbaProductivityReportV3() {
   );
 
   const compositionData = useMemo(() => ([
-    { name: "97153 (RBT direct)", value: agg.hours97153 },
-    { name: "97155 (Supervision)", value: agg.hours97155 },
-    { name: "Other direct BCBA", value: Math.max(0, Math.round((agg.directBcbaHours - agg.hours97155) * 10) / 10) },
+    { name: "97153 (RBT direct)", value: kpis.hours97153 },
+    { name: "97155 (Supervision)", value: kpis.hours97155 },
+    { name: "Other direct BCBA", value: Math.max(0, Math.round((kpis.directBcbaHours - kpis.hours97155) * 10) / 10) },
   ]), [agg]);
 
   const supervisionByBcba = useMemo(
@@ -391,31 +391,31 @@ export default function BcbaProductivityReportV3() {
 
         {/* KPIs */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <KpiCard label="Total Hours" value={fmtHours(agg.totalHours)} icon={Clock}
-            hint={`${fmtCount(agg.rowCount)} billing rows`}
+          <KpiCard label="Total Hours" value={fmtHours(kpis.totalHours)} icon={Clock}
+            hint={`${fmtCount(kpis.rowCount)} billing rows`}
             onClick={() => openDrilldown("Total Hours", () => true)} />
-          <KpiCard label="97153 Hours" value={fmtHours(agg.hours97153)} icon={Activity}
+          <KpiCard label="97153 Hours" value={fmtHours(kpis.hours97153)} icon={Activity}
             hint="RBT direct service"
             onClick={() => openDrilldown("97153 Hours", (r) => r.normalizedCode === "97153")} />
-          <KpiCard label="97155 Supervision" value={fmtHours(agg.hours97155)} icon={ShieldCheck}
+          <KpiCard label="97155 Supervision" value={fmtHours(kpis.hours97155)} icon={ShieldCheck}
             onClick={() => openDrilldown("97155 Supervision Hours", (r) => r.normalizedCode === "97155")} />
-          <KpiCard label="Direct BCBA Hours" value={fmtHours(agg.directBcbaHours)} icon={UserCheck}
+          <KpiCard label="Direct BCBA Hours" value={fmtHours(kpis.directBcbaHours)} icon={UserCheck}
             hint="Non-97153 rendered by BCBAs"
             onClick={() => openDrilldown("Direct BCBA Hours", (r) => r.isAnchor)} />
-          <KpiCard label="Supervision %" value={fmtPct(agg.supervisionPct)} icon={ShieldCheck}
-            tone={agg.supervisionStatus === "urgent" ? "danger" : agg.supervisionStatus === "monitor" ? "warn" : "default"}
+          <KpiCard label="Supervision %" value={fmtPct(kpis.supervisionPct)} icon={ShieldCheck}
+            tone={kpis.supervisionStatus === "urgent" ? "danger" : kpis.supervisionStatus === "monitor" ? "warn" : "default"}
             hint="97155 ÷ 97153"
             onClick={() => openDrilldown("Supervision inputs (97153 + 97155)",
               (r) => r.normalizedCode === "97153" || r.normalizedCode === "97155")} />
-          <KpiCard label="Active BCBAs" value={fmtCount(agg.activeBcbas)} icon={Users}
+          <KpiCard label="Active BCBAs" value={fmtCount(kpis.activeBcbas)} icon={Users}
             onClick={() => openDrilldown("Rows with an inferred BCBA owner", (r) => !!r.owner)} />
-          <KpiCard label="Active Clients" value={fmtCount(agg.activeClients)} icon={Users}
+          <KpiCard label="Active Clients" value={fmtCount(kpis.activeClients)} icon={Users}
             onClick={() => openDrilldown("All client rows", () => true)} />
-          <KpiCard label="Active RBTs" value={fmtCount(agg.activeRbts)} icon={Users}
+          <KpiCard label="Active RBTs" value={fmtCount(kpis.activeRbts)} icon={Users}
             onClick={() => openDrilldown("97153 rows by RBT", (r) => r.normalizedCode === "97153")} />
-          <KpiCard label="Unassigned Hours" value={fmtHours(agg.unassignedHours)} icon={AlertTriangle}
-            tone={agg.unassignedHours > 0 ? "warn" : "default"}
-            hint={`${fmtCount(agg.unassignedRowCount)} rows without an anchor`}
+          <KpiCard label="Unassigned Hours" value={fmtHours(kpis.unassignedHours)} icon={AlertTriangle}
+            tone={kpis.unassignedHours > 0 ? "warn" : "default"}
+            hint={`${fmtCount(kpis.unassignedRowCount)} rows without an anchor`}
             onClick={() => openDrilldown("Unassigned hours", (r) => !r.owner)} />
         </div>
 
