@@ -211,7 +211,7 @@ export const SUPER_ADMIN_MENU: SuperAdminNavSection[] = [
       { label: "CTM Operations",            to: "/admin/ctm",                          icon: Phone },
       { label: "Email Command Center",      to: "/system/email-command-center",        icon: Mail },
       { label: "Automated Emails",          to: "/admin/automated-emails",             icon: Mail },
-      { label: "CentralReach Uploads",      to: "/system/centralreach-uploads",        icon: UploadCloud },
+      { label: "CentralReach Data Hub",     to: "/system/centralreach-data-hub",       icon: UploadCloud },
       { label: "Workflow Inventory",        to: "/system/workflow-inventory",          icon: Workflow },
       { label: "Request Intake",            to: "/system/request-intake",              icon: Inbox },
       { label: "Issue Tracker",             to: "/system/issue-tracker",               icon: Bug },
