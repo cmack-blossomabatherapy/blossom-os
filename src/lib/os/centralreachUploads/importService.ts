@@ -17,11 +17,7 @@ import {
   noopCrRunTracker,
   type CrRunTracker,
 } from "./syncRun";
-import {
-  createSupabaseCrSupportRefresher,
-  noopCrSupportRefresher,
-  type CrSupportRefresher,
-} from "./supportTables";
+import { createSupabaseCrSupportRefresher, type CrSupportRefresher } from "./supportTables";
 import {
   CR_RAW_PAYLOAD,
   crCoverage,
@@ -138,11 +134,8 @@ export async function importCentralReachFiles(
           notes: options.notes ?? null,
         });
         await tracker.audit(runId, "upload_started", { fileName: file.name, exportType: kind });
-      } catch (error) {
+      } catch {
         // Run tracking must never block the actual data write.
-        outcomes.push(
-          ...[] as CrFileImportOutcome[],
-        );
         runId = null;
       }
 
