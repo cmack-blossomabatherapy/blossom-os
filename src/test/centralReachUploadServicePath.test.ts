@@ -6,6 +6,7 @@ vi.mock("@/lib/os/dashboardEngine/excelParser", () => ({ parseAnyFile: (f: File)
 
 import { importCentralReachFiles, summarizeCrImport } from "@/lib/os/centralreachUploads/importService";
 import type { CrImportStore } from "@/lib/os/centralreachUploads/importSession";
+import { rowHashToIdentity } from "@/lib/os/centralreachUploads/supabaseStore";
 
 const BILLING_HEADERS = ["Date of Service", "Time Worked In Hours", "Procedure Code", "Client", "Provider", "Billing Id"];
 const SCHED_HEADERS = ["Course", "Segment", "Event", "Cancelled", "Client", "Provider", "Date"];
@@ -25,7 +26,7 @@ function makeFakeStore(state: { rows: Captured[]; batches: any[]; identities: Ma
     insertRows: async (table, rows) => {
       state.rows.push({ table, rows });
       const prev = state.identities.get(table) ?? [];
-      state.identities.set(table, [...prev, ...rows.map((r) => String(r.row_hash))]);
+      state.identities.set(table, [...prev, ...rows.map((r) => rowHashToIdentity(String(r.row_hash)))]);
     },
     createBatch: async (batch) => {
       state.batches.push({ ...batch, id: `batch-${state.batches.length + 1}` });
