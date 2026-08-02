@@ -496,7 +496,11 @@ export function supervisionStatus(pct: number | null): SupervisionStatus {
 
 /* ---------------- aggregation ---------------- */
 
-const r1 = (n: number) => Math.round(n * 10) / 10;
+/**
+ * Hours are stored at 2-decimal precision (CentralReach bills quarter hours,
+ * e.g. 146.75) and only formatted to 1 decimal for display.
+ */
+const r1 = (n: number) => Math.round(n * 100) / 100;
 
 export interface BcbaSummaryRow {
   bcba: string;

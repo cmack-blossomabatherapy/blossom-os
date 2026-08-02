@@ -118,7 +118,7 @@ describe("ownership carry-forward and gaps", () => {
     ]).rows;
     const feb = rows.find((r) => r.monthKey === "2026-02");
     expect(feb?.owner).toBe("Brandy Roden");
-    expect(feb?.ownershipReason).toBe("carried_forward");
+    expect(feb?.ownerReason).toBe("carried_forward");
   });
 
   it("leaves clients with no anchor unassigned", () => {
@@ -182,19 +182,19 @@ describe("drilldown integrity and export", () => {
   const rows = buildOwnership(AREEB_ROWS).rows;
 
   it("exposes every required drilldown column", () => {
-    expect(DRILLDOWN_COLUMNS).toContain("DOS");
+    expect(DRILLDOWN_COLUMNS).toContain("Date of Service");
     expect(DRILLDOWN_COLUMNS).toContain("Client");
     expect(DRILLDOWN_COLUMNS).toContain("Client ID");
-    expect(DRILLDOWN_COLUMNS).toContain("Inferred BCBA owner");
-    expect(DRILLDOWN_COLUMNS).toContain("Rendering provider");
-    expect(DRILLDOWN_COLUMNS).toContain("Normalized code");
-    expect(DRILLDOWN_COLUMNS).toContain("Raw code");
+    expect(DRILLDOWN_COLUMNS).toContain("Inferred BCBA Owner");
+    expect(DRILLDOWN_COLUMNS).toContain("Rendering Provider");
+    expect(DRILLDOWN_COLUMNS).toContain("Normalized Code");
+    expect(DRILLDOWN_COLUMNS).toContain("Raw Code");
     expect(DRILLDOWN_COLUMNS).toContain("Hours");
     expect(DRILLDOWN_COLUMNS).toContain("State");
     expect(DRILLDOWN_COLUMNS).toContain("Payor");
     expect(DRILLDOWN_COLUMNS).toContain("Location");
-    expect(DRILLDOWN_COLUMNS).toContain("Provider labels");
-    expect(DRILLDOWN_COLUMNS).toContain("Ownership reason");
+    expect(DRILLDOWN_COLUMNS).toContain("Provider Labels");
+    expect(DRILLDOWN_COLUMNS).toContain("Ownership Reason");
   });
 
   it("preserves the raw code next to the normalized code", () => {
@@ -207,7 +207,7 @@ describe("drilldown integrity and export", () => {
   it("builds CSV with a header row per drilldown column", () => {
     const csv = toCsv(DRILLDOWN_COLUMNS, rows.map(drilldownRowToCells));
     const lines = csv.trim().split("\n");
-    expect(lines[0]).toContain("Inferred BCBA owner");
+    expect(lines[0]).toContain("Inferred BCBA Owner");
     expect(lines.length).toBe(rows.length + 1);
   });
 });
