@@ -8663,16 +8663,19 @@ export type Database = {
       }
       cr_import_batches: {
         Row: {
+          appended_row_count: number
           coverage_end: string | null
           coverage_start: string | null
           created_at: string
           deduped_row_count: number | null
+          duplicate_row_count: number
           export_type: string
           file_hash: string
           file_name: string
           id: string
           is_active: boolean
           notes: string | null
+          parsed_row_count: number
           row_count: number
           status: string
           updated_at: string
@@ -8680,16 +8683,19 @@ export type Database = {
           warnings: Json
         }
         Insert: {
+          appended_row_count?: number
           coverage_end?: string | null
           coverage_start?: string | null
           created_at?: string
           deduped_row_count?: number | null
+          duplicate_row_count?: number
           export_type: string
           file_hash: string
           file_name: string
           id?: string
           is_active?: boolean
           notes?: string | null
+          parsed_row_count?: number
           row_count?: number
           status?: string
           updated_at?: string
@@ -8697,16 +8703,19 @@ export type Database = {
           warnings?: Json
         }
         Update: {
+          appended_row_count?: number
           coverage_end?: string | null
           coverage_start?: string | null
           created_at?: string
           deduped_row_count?: number | null
+          duplicate_row_count?: number
           export_type?: string
           file_hash?: string
           file_name?: string
           id?: string
           is_active?: boolean
           notes?: string | null
+          parsed_row_count?: number
           row_count?: number
           status?: string
           updated_at?: string
