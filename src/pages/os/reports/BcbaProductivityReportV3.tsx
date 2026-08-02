@@ -287,7 +287,7 @@ export default function BcbaProductivityReportV3() {
         (ownershipContext.length ? ownershipContext : shared) as unknown as BillingRow[],
       );
       setFileName(
-        `Shared admin dataset · ${status.activeRowCount.toLocaleString()} active rows · ${status.earliestServiceDate ?? "—"} → ${status.latestServiceDate ?? "—"}`,
+        `${status.sourceLabel ?? "CentralReach Data Hub billing"} · ${status.activeRowCount.toLocaleString()} rows · ${status.earliestServiceDate ?? "—"} → ${status.latestServiceDate ?? "—"}`,
       );
       if (!opts?.silent) {
         toast.success(`Loaded ${shared.length.toLocaleString()} active rows`);
