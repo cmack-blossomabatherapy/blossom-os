@@ -6,7 +6,7 @@
  * 2. Filter UI: option lists must be fully addressable (no truncation cap)
  *    and searchable, for both the shared primary filter bar and BCBA V3.
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
@@ -15,6 +15,17 @@ import { ownerForClientAtDateV3, normalizeName } from "@/lib/os/bcbaProductivity
 import { FilterCombobox } from "@/components/reports/crPrimary/FilterCombobox";
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
+
+beforeAll(() => {
+  // cmdk requires ResizeObserver, which jsdom does not implement.
+  if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
+    (globalThis as { ResizeObserver?: unknown }).ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+});
 
 function row(o: Partial<InferBillingRow>): InferBillingRow {
   return {
