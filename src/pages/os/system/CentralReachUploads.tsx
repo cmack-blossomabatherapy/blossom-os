@@ -176,6 +176,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   // Normalized Data Hub state — the source of truth for readiness.
   const [crCounts, setCrCounts] = useState<CrNormalizedCounts | null>(null);
   const [crBatches, setCrBatches] = useState<CrBatchRecord[]>([]);
+  const [lastOutcomes, setLastOutcomes] = useState<CrFileImportOutcome[]>([]);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessReport, setReprocessReport] = useState<LegacyReprocessReport | null>(null);
   const autoStartedRef = useRef(false);
@@ -257,6 +258,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
 
   async function processQueue() {
     setProcessing(true);
+    const sessionOutcomes: CrFileImportOutcome[] = [];
     try {
       // Snapshot ids at start; process sequentially so BCBA batches don't collide.
       const ids = queue.filter((q) => q.status === "queued" || q.status === "detected").map((q) => q.id);
@@ -294,6 +296,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
               }),
           });
           const summary = summarizeCrImport(outcomes);
+          sessionOutcomes.push(...outcomes);
+          setLastOutcomes([...sessionOutcomes]);
           if (!summary.ok) {
             const detail = summary.failed
               .map((o) => `${o.exportType}: ${o.errors.join("; ") || "no rows written"}`)
@@ -308,7 +312,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
           const normalizedMsg =
             `${summary.appendedRowCount.toLocaleString()} rows appended · ` +
             `${summary.duplicateRowCount.toLocaleString()} duplicates skipped · ` +
-            outcomes.map((o) => o.table).filter(Boolean).join(", ");
+            outcomes.map((o) => o.table).filter(Boolean).join(", ") +
+            (outcomes.length ? ` — ${outcomes.map((o) => o.statusReason).join(" ")}` : "");
 
           // 3. SECONDARY (legacy, best-effort) — keeps existing dashboards fed.
           const legacyNotes: string[] = [];
@@ -588,6 +593,62 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
                 ))}
               </ul>
             )}
+          </Card>
+        )}
+
+        {lastOutcomes.length > 0 && (
+          <Card className="p-5" data-testid="cr-upload-results">
+            <div className="mb-3 flex items-center gap-2">
+              <Database className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Last upload results
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead className="text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <tr className="border-b border-border/60 text-left">
+                    <th className="py-2 pr-3">File</th>
+                    <th className="py-2 pr-3">Detected</th>
+                    <th className="py-2 pr-3">Table</th>
+                    <th className="py-2 pr-3 text-right">Parsed</th>
+                    <th className="py-2 pr-3 text-right">Appended</th>
+                    <th className="py-2 pr-3 text-right">Duplicate</th>
+                    <th className="py-2 pr-3 text-right">Rejected</th>
+                    <th className="py-2 pr-3">Coverage</th>
+                    <th className="py-2 pr-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lastOutcomes.map((o, i) => (
+                    <tr key={`${o.fileName}-${o.exportType}-${i}`} className="border-b border-border/40 align-top">
+                      <td className="py-2 pr-3 font-medium">{o.fileName}</td>
+                      <td className="py-2 pr-3">{o.exportType}</td>
+                      <td className="py-2 pr-3 font-mono text-[11px]">{o.table ?? "—"}</td>
+                      <td className="py-2 pr-3 text-right">{o.parsedRowCount.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right font-semibold text-emerald-700">{o.appendedRowCount.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right">{o.duplicateRowCount.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right">{o.rejectedRowCount.toLocaleString()}</td>
+                      <td className="py-2 pr-3">{o.coverageStart ?? "—"} → {o.coverageEnd ?? "—"}</td>
+                      <td className="py-2 pr-3">
+                        <Badge
+                          variant={o.batchStatus === "active" ? "default" : o.batchStatus === "archived" ? "secondary" : "destructive"}
+                        >
+                          {o.batchStatus}
+                        </Badge>
+                        <div className="mt-1 max-w-[320px] text-[11px] text-muted-foreground">{o.statusReason}</div>
+                        {o.errors.map((err) => (
+                          <div key={err} className="mt-1 max-w-[320px] text-[11px] font-medium text-destructive">{err}</div>
+                        ))}
+                        {o.warnings.map((warn) => (
+                          <div key={warn} className="mt-1 max-w-[320px] text-[11px] text-amber-700">{warn}</div>
+                        ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
         )}
 

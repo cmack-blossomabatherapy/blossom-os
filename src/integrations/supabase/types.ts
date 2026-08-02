@@ -33713,6 +33713,11 @@ export type Database = {
         | "assignments"
         | "documentation"
         | "dashboard_audit"
+        | "billing"
+        | "scheduling"
+        | "utilization"
+        | "claims"
+        | "contacts"
       directory_onboarding_status:
         | "not_started"
         | "welcome"
@@ -34575,6 +34580,11 @@ export const Constants = {
         "assignments",
         "documentation",
         "dashboard_audit",
+        "billing",
+        "scheduling",
+        "utilization",
+        "claims",
+        "contacts",
       ],
       directory_onboarding_status: [
         "not_started",
