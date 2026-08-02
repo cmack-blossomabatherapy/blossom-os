@@ -627,6 +627,18 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
           </Card>
         )}
 
+        {preflight && !preflight.canWrite && (
+          <Card className="border-destructive/50 bg-destructive/5 p-5" data-testid="cr-upload-preflight">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div>
+                <h2 className="text-sm font-semibold text-destructive">Uploads cannot be saved right now</h2>
+                <p className="mt-1 text-[12.5px] text-muted-foreground">{preflight.reason}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {lastOutcomes.length > 0 && (
           <Card className="p-5" data-testid="cr-upload-results">
             <div className="mb-3 flex items-center gap-2">
@@ -682,6 +694,60 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
             </div>
           </Card>
         )}
+
+        {/* Durable proof: read straight back from cr_sync_runs, never local state. */}
+        <Card className="p-5" data-testid="cr-sync-runs">
+          <div className="mb-3 flex items-center gap-2">
+            <Database className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Upload runs recorded in the database
+            </h2>
+          </div>
+          {crRuns.length === 0 ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              No upload runs recorded yet. Every upload attempt writes a row here — if an upload finishes and
+              nothing appears, the write was rejected and the error is shown above.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead className="text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <tr className="border-b border-border/60 text-left">
+                    <th className="py-2 pr-3">When</th>
+                    <th className="py-2 pr-3">File</th>
+                    <th className="py-2 pr-3">Type</th>
+                    <th className="py-2 pr-3 text-right">Parsed</th>
+                    <th className="py-2 pr-3 text-right">Added</th>
+                    <th className="py-2 pr-3 text-right">Unchanged</th>
+                    <th className="py-2 pr-3 text-right">Rejected</th>
+                    <th className="py-2 pr-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {crRuns.map((r) => (
+                    <tr key={r.id} className="border-b border-border/40 align-top">
+                      <td className="py-2 pr-3 whitespace-nowrap">{new Date(r.createdAt).toLocaleString()}</td>
+                      <td className="py-2 pr-3 font-medium">{r.fileName}</td>
+                      <td className="py-2 pr-3">{r.typeKey}</td>
+                      <td className="py-2 pr-3 text-right">{r.rowCountTotal.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right font-semibold text-emerald-700">{r.rowsAdded.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right">{r.rowsUnchanged.toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right">{r.rowsRejected.toLocaleString()}</td>
+                      <td className="py-2 pr-3">
+                        <Badge variant={r.status === "committed" ? "default" : r.status === "failed" ? "destructive" : "secondary"}>
+                          {r.status}
+                        </Badge>
+                        {r.notes && (
+                          <div className="mt-1 max-w-[320px] text-[11px] text-muted-foreground">{r.notes}</div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
 
         {/* Drop / choose */}
         <Card className="p-6">
