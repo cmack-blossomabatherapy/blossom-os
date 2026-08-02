@@ -287,7 +287,7 @@ export default function BcbaProductivityReportV3() {
         (ownershipContext.length ? ownershipContext : shared) as unknown as BillingRow[],
       );
       setFileName(
-        `Shared admin dataset · ${status.activeRowCount.toLocaleString()} active rows · ${status.earliestServiceDate ?? "—"} → ${status.latestServiceDate ?? "—"}`,
+        `${status.sourceLabel ?? "CentralReach Data Hub billing"} · ${status.activeRowCount.toLocaleString()} rows · ${status.earliestServiceDate ?? "—"} → ${status.latestServiceDate ?? "—"}`,
       );
       if (!opts?.silent) {
         toast.success(`Loaded ${shared.length.toLocaleString()} active rows`);
@@ -1221,7 +1221,7 @@ export default function BcbaProductivityReportV3() {
                     {sharedStatus && sharedStatus.activeRowCount > 0 ? (
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5">
-                          Using shared admin dataset
+                          Loaded from {sharedStatus.sourceLabel ?? "CentralReach Data Hub billing"}
                         </span>
                         <span>{sharedStatus.activeRowCount.toLocaleString()} rows</span>
                         {sharedStatus.earliestServiceDate && sharedStatus.latestServiceDate && (
