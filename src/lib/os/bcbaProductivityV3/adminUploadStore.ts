@@ -23,6 +23,7 @@ export interface BcbaSharedBillingRow {
   date: string; // ISO YYYY-MM-DD
   state: string;
   payor: string;
+  location?: string;
 }
 
 export interface BcbaUploadBatch {
@@ -674,6 +675,7 @@ export function mapCrBillingSessionRow(r: {
   date_of_service?: string | null;
   state?: string | null;
   payor?: string | null;
+  location?: string | null;
 }): BcbaSharedBillingRow {
   const code = String(r.procedure_code ?? "").trim();
   const renderingProvider = String(r.rendering_provider_name ?? "").trim();
@@ -689,6 +691,7 @@ export function mapCrBillingSessionRow(r: {
     date: isoDate(String(r.date_of_service ?? "").trim()),
     state: normalizeUsState(String(r.state ?? "").trim()),
     payor: String(r.payor ?? "").trim(),
+    location: String(r.location ?? "").trim(),
   };
 }
 
@@ -714,7 +717,7 @@ async function readAllCrDataHubBillingRows(
     const { data, error } = await supabase
       .from("cr_billing_sessions")
       .select(
-        "client_cr_id,client_name,rendering_provider_name,provider_contact_labels,procedure_code,hours,date_of_service,state,payor",
+        "client_cr_id,client_name,rendering_provider_name,provider_contact_labels,procedure_code,hours,date_of_service,state,payor,location",
       )
       .order("date_of_service", { ascending: true })
       .range(offset, to);
