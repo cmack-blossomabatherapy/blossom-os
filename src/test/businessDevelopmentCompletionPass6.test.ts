@@ -30,19 +30,9 @@ describe("Business Development — Completion Pass 6 (generic /reports/:reportId
     }
   });
 
-  it("BD report IDs and BCBA Productivity V3 remain visible to business_development", () => {
+  it("business_development sees the canonical uniform report catalog", () => {
     const ids = new Set(visibleReportsForRole("business_development").map(r => r.id));
-    for (const shown of [
-      "bd-referral-sources",
-      "bd-outreach-followup",
-      "bd-partner-activity",
-      "bd-follow-up-risk",
-      "bd-source-handoff",
-      "bd-provider-relationships",
-      "bd-community-relationships",
-      "bcba-productivity-report-v3",
-    ]) {
-      expect(ids.has(shown)).toBe(true);
-    }
+    expect(ids.has("bcba-productivity-report-v3")).toBe(true);
+    expect(ids.size).toBe(8);
   });
 });
