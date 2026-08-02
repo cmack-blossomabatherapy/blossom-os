@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterCombobox } from "@/components/reports/crPrimary/FilterCombobox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { KpiTile } from "@/components/dashboards/KpiTile";
@@ -783,13 +784,14 @@ export default function QaAuthUtilizationDashboard() {
                   </Select>
                 )}
                 {bcbas.length > 0 && (
-                  <Select value={bcbaFilter} onValueChange={setBcbaFilter}>
-                    <SelectTrigger className="h-8 w-[160px] text-[12px]"><SelectValue placeholder="BCBA" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All BCBAs</SelectItem>
-                      {bcbas.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <FilterCombobox
+                    label="BCBA"
+                    allLabel="All BCBAs"
+                    value={bcbaFilter === "all" ? "" : bcbaFilter}
+                    options={bcbas}
+                    onChange={(v) => setBcbaFilter(v || "all")}
+                    className="w-[160px]"
+                  />
                 )}
                 {codes.length > 0 && (
                   <Select value={codeFilter} onValueChange={setCodeFilter}>
