@@ -188,8 +188,10 @@ describe("Areeb Hasan ownership from Data Hub rows", () => {
   it("April 10-30 → Zestine Roberts only", () => {
     for (const d of ["2026-04-10", "2026-04-20", "2026-04-29"]) expect(ownerOn(d)).toEqual(["Zestine Roberts"]);
   });
-  it("ownership still keys off ProviderContactLabels", () => {
-    const src = new URL("../lib/os/bcbaProductivityV3/inferAssignments.ts", import.meta.url).pathname;
-    expect(src).toContain("inferAssignments");
+  it("ownership context maps ProviderContactLabels, never ClientContactLabels", () => {
+    const mapped = store.mapCrBillingSessionRow(
+      crRow({ provider_contact_labels: "BCBA, Supervisor" }),
+    );
+    expect(mapped.providerLabels).toBe("BCBA, Supervisor");
   });
 });
