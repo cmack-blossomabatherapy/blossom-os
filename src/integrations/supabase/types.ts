@@ -32817,10 +32817,6 @@ export type Database = {
           unmapped_sample: Json
         }[]
       }
-      codex_temp_insert_cr_rows: {
-        Args: { rows: Json; target_table: string }
-        Returns: number
-      }
       compute_profile_completion: {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }
         Returns: number
