@@ -4,6 +4,7 @@ import {
   identityToRowHash,
   type CrImportStore,
 } from "@/lib/os/centralreachUploads/importSession";
+import { normalizeCrRow } from "@/lib/os/centralreachUploads/normalize";
 import { billingFacts, groupFacts, utilizationFacts } from "@/lib/os/reports/crPrimary/sharedReport";
 
 type Row = Record<string, unknown>;
@@ -161,5 +162,66 @@ describe("Reports show empty states when normalized CR tables are empty", () => 
     expect(billingFacts([])).toEqual([]);
     expect(utilizationFacts([])).toEqual([]);
     expect(groupFacts([], "provider")).toEqual([]);
+  });
+});
+describe("CR import session — real normalized rows dedupe on raw CentralReach Id", () => {
+  const rawBilling = (id: string): Row => ({
+    Id: id,
+    ClientName: "Jane Doe",
+    ProviderName: "Bob RBT",
+    "Date of Service": "2026-07-01",
+    Code: "97153",
+    Hours: 2,
+  });
+
+  it("appends two normalized rows with identical facts but different raw Ids", async () => {
+    const { store, tables } = makeStore();
+    const rows = [normalizeCrRow("billing", rawBilling("100")), normalizeCrRow("billing", rawBilling("101"))];
+    const result = await runCrImportSession(store, tableFor, [
+      { fileName: "billing.csv", fileHash: "hash-b-100", exportType: "billing", rows },
+    ]);
+    expect(result.appendedRowCount).toBe(2);
+    expect(result.duplicateRowCount).toBe(0);
+    expect(tables.get("cr_billing_sessions")!.map((r) => r.row_hash)).toEqual(["id:100", "id:101"]);
+  });
+
+  it("skips a reupload of raw Id 100 as a duplicate", async () => {
+    const { store, tables } = makeStore();
+    await runCrImportSession(store, tableFor, [
+      {
+        fileName: "billing.csv",
+        fileHash: "hash-b-100",
+        exportType: "billing",
+        rows: [normalizeCrRow("billing", rawBilling("100"))],
+      },
+    ]);
+    const second = await runCrImportSession(store, tableFor, [
+      {
+        fileName: "billing2.csv",
+        fileHash: "hash-b-200",
+        exportType: "billing",
+        rows: [normalizeCrRow("billing", rawBilling("100")), normalizeCrRow("billing", rawBilling("102"))],
+      },
+    ]);
+    expect(second.appendedRowCount).toBe(1);
+    expect(second.duplicateRowCount).toBe(1);
+    expect(tables.get("cr_billing_sessions")!.map((r) => r.row_hash)).toEqual(["id:100", "id:102"]);
+  });
+
+  it("falls back to a deterministic hash when the raw export has no Id", async () => {
+    const { store, tables } = makeStore();
+    const noId = { ...rawBilling("1") };
+    delete noId.Id;
+    const result = await runCrImportSession(store, tableFor, [
+      {
+        fileName: "billing.csv",
+        fileHash: "hash-b-300",
+        exportType: "billing",
+        rows: [normalizeCrRow("billing", noId), normalizeCrRow("billing", { ...noId })],
+      },
+    ]);
+    expect(result.appendedRowCount).toBe(1);
+    expect(result.duplicateRowCount).toBe(1);
+    expect(tables.get("cr_billing_sessions")![0].row_hash.startsWith("id:")).toBe(false);
   });
 });
