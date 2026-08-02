@@ -4,7 +4,7 @@ import {
   identityToRowHash,
   type CrImportStore,
 } from "@/lib/os/centralreachUploads/importSession";
-import { buildSharedReportModel } from "@/lib/os/reports/crPrimary/sharedReport";
+import { billingFacts, groupFacts, utilizationFacts } from "@/lib/os/reports/crPrimary/sharedReport";
 
 type Row = Record<string, unknown>;
 
@@ -157,8 +157,9 @@ describe("CR import session — append mode across files and sessions", () => {
 });
 
 describe("Reports show empty states when normalized CR tables are empty", () => {
-  it("shared primary report model is empty with no rows", () => {
-    const model = buildSharedReportModel("utilization", [], {});
-    expect(model.empty).toBe(true);
+  it("empty normalized CR tables produce no facts and no groups (empty state)", () => {
+    expect(billingFacts([])).toEqual([]);
+    expect(utilizationFacts([])).toEqual([]);
+    expect(groupFacts([], "provider")).toEqual([]);
   });
 });
