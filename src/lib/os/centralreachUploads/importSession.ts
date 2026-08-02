@@ -14,10 +14,96 @@ import {
   applyAppendBatch,
   crRowHash,
   crRowIdentity,
-  planAppendRows,
   validateCrBatch,
   type CRBatchDescriptor,
+  type AppendPlanResult,
 } from "./dataHub";
+import { CR_RAW_PAYLOAD } from "./normalize";
+
+/**
+ * Id-like headers found in CentralReach exports. The source row id is the
+ * primary dedupe identity: normalized facts alone can legitimately repeat
+ * (same client/date/provider/code/hours) and must never be collapsed.
+ */
+const RAW_ID_KEYS = [
+  "crrowid",
+  "rowid",
+  "rownum",
+  "id",
+  "billingid",
+  "appointmentid",
+  "authorizationid",
+  "claimid",
+  "contactid",
+  "eventid",
+  "serviceid",
+  "sessionid",
+  "scheduleid",
+];
+
+function normKey(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function findRawId(source: Record<string, unknown> | undefined): string | null {
+  if (!source) return null;
+  for (const key of Object.keys(source)) {
+    if (RAW_ID_KEYS.includes(normKey(key))) {
+      const value = String(source[key] ?? "").trim();
+      if (value) return value;
+    }
+  }
+  return null;
+}
+
+function rawPayloadOf(row: Record<string, unknown>): Record<string, unknown> | undefined {
+  return (row as Record<symbol, unknown>)[CR_RAW_PAYLOAD] as Record<string, unknown> | undefined;
+}
+
+/**
+ * Import-time identity: direct id-like column, else the CentralReach raw
+ * payload's id, else a deterministic hash of the normalized fields.
+ */
+export function crImportRowIdentity(row: Record<string, unknown>): string {
+  const direct = crRowIdentity(row);
+  if (direct.startsWith("id:")) return direct;
+  const rawId = findRawId(rawPayloadOf(row));
+  if (rawId) return `id:${rawId}`;
+  return direct;
+}
+
+/** Persisted row_hash for a row (matches the identity used for dedupe). */
+export function crImportRowHash(row: Record<string, unknown>): string {
+  const identity = crImportRowIdentity(row);
+  return identity.startsWith("id:") ? identity : crRowHash(row);
+}
+
+/** Append planning that uses the import-specific (raw-id aware) identity. */
+function planImportRows<T extends Record<string, unknown>>(
+  existingIdentities: Iterable<string>,
+  rows: T[],
+): AppendPlanResult<T> {
+  const identities = new Set<string>(existingIdentities);
+  const toInsert: T[] = [];
+  const duplicates: T[] = [];
+  for (const row of rows ?? []) {
+    const identity = crImportRowIdentity(row);
+    if (identities.has(identity)) {
+      duplicates.push(row);
+      continue;
+    }
+    identities.add(identity);
+    toInsert.push(row);
+  }
+  return {
+    toInsert,
+    duplicates,
+    parsedRowCount: rows?.length ?? 0,
+    appendedRowCount: toInsert.length,
+    duplicateRowCount: duplicates.length,
+    identities,
+  };
+}
 
 export interface CrImportFile<T extends Record<string, unknown> = Record<string, unknown>> {
   fileName: string;
@@ -110,7 +196,7 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
     }
     const identities = identitiesByTable.get(table)!;
 
-    const plan = planAppendRows<T>(identities, [file.rows]);
+    const plan = planImportRows<T>(identities, file.rows);
     plan.identities.forEach((id) => identities.add(id));
 
     const descriptor: CRBatchDescriptor = {
@@ -160,6 +246,5 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
  * global unique index on row_hash matches the in-memory identity used for dedupe.
  */
 export function identityToRowHash(row: Record<string, unknown>): string {
-  const identity = crRowIdentity(row);
-  return identity.startsWith("id:") ? identity : crRowHash(row);
+  return crImportRowHash(row);
 }
