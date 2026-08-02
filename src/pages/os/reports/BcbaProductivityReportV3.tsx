@@ -1449,11 +1449,6 @@ export default function BcbaProductivityReportV3() {
               <Button variant="outline" size="sm" onClick={refreshAssignments} disabled={assignmentLoading}>
                 <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", assignmentLoading && "animate-spin")} /> Refresh
               </Button>
-            <input ref={assignImportRef} type="file" hidden accept={SUPPORTED_EXTENSIONS}
-              onChange={e => e.target.files?.[0] && importAssignmentsCsv(e.target.files[0])} />
-            <Button variant="outline" size="sm" onClick={() => assignImportRef.current?.click()}>
-              <Upload className="mr-1.5 h-3.5 w-3.5" /> Import CSV
-            </Button>
             <Button variant="outline" size="sm" onClick={exportAssignmentsCsv} disabled={!assignments.length}>
               <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
             </Button>

@@ -970,15 +970,6 @@ export default function CancellationCommandCenter() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <ReportAIButton preset="cancellation-center" />
-            <Button variant="outline" size="sm" onClick={() => scheduleInput.current?.click()}>
-              <Upload className="mr-1 h-3.5 w-3.5" />Scheduling
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => billingInput.current?.click()}>
-              <Upload className="mr-1 h-3.5 w-3.5" />Billing
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => authInput.current?.click()}>
-              <Upload className="mr-1 h-3.5 w-3.5" />Authorizations
-            </Button>
             {hasData && (
               <Button size="sm" className="bg-[hsl(345_70%_50%)] hover:bg-[hsl(345_70%_45%)]" onClick={handleSaveReport}>
                 <Save className="mr-1 h-3.5 w-3.5" />Save Report
@@ -992,14 +983,6 @@ export default function CancellationCommandCenter() {
           </div>
         </div>
 
-        {/* hidden file inputs */}
-        <input ref={scheduleInput} type="file" accept={SUPPORTED_EXTENSIONS} className="hidden"
-          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-scheduling": "manual-override" })); handleSchedule(e.target.files); }} />
-        <input ref={billingInput} type="file" accept={SUPPORTED_EXTENSIONS} className="hidden"
-          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-billing": "manual-override" })); handleBilling(e.target.files); }} />
-        <input ref={authInput} type="file" accept={SUPPORTED_EXTENSIONS} multiple className="hidden"
-          onChange={(e) => { setSourceModeByKind(p => ({ ...p, "cancellation-authorization": "manual-override" })); handleAuths(e.target.files); }} />
-
         <CentralReachRequirementsCard
           exportName="Three CentralReach exports — Scheduling (required), Billing, Authorizations"
           requiredColumns={[
@@ -1007,8 +990,8 @@ export default function CancellationCommandCenter() {
             "Billing: DateOfService, ClientName, ProcedureCode, TimeWorkedInHours, ClientChargesTotal",
             "Authorizations: ClientName, BCBA, StartDate, EndDate",
           ]}
-          filterNote="Scheduling export is required to run the dashboard. Billing enables lost-revenue math. Authorization export drives coverage/leakage. Uses the shared admin cancellation datasets by default — upload files here only for a one-off view."
-          adminUploadsHref="/system/cancellation-uploads"
+          filterNote="Scheduling export is required to run the dashboard. Billing enables lost-revenue math. Authorization export drives coverage/leakage. All data comes from the admin CentralReach Data Hub — daily exports are uploaded there, not on this report."
+          adminUploadsHref="/system/centralreach-data-hub"
           adminSourceLabel={
             sharedAvailable.scheduling || sharedAvailable.billing || sharedAvailable.authorization
               ? "Auto-loads from Admin Uploads"
@@ -1052,29 +1035,6 @@ export default function CancellationCommandCenter() {
         </div>
 
         {/* upload chips */}
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <UploadChip
-            label="Scheduling Report"
-            sub="Required · cancellation source"
-            fileName={scheduleFileName}
-            tone="rose"
-            onClick={() => scheduleInput.current?.click()}
-          />
-          <UploadChip
-            label="Billing Report"
-            sub="Revenue per code"
-            fileName={billingFileName}
-            tone="emerald"
-            onClick={() => billingInput.current?.click()}
-          />
-          <UploadChip
-            label="Authorization Report(s)"
-            sub="BCBA attribution"
-            fileName={authFileNames.join(", ")}
-            tone="violet"
-            onClick={() => authInput.current?.click()}
-          />
-        </div>
         {restoredFromSession && (
           <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-[11px] text-muted-foreground">
             <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Restored your last session — re-upload to refresh.

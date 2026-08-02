@@ -7948,6 +7948,382 @@ export type Database = {
         }
         Relationships: []
       }
+      cr_authorization_utilization: {
+        Row: {
+          authorization_number: string | null
+          authorized_hours: number | null
+          batch_id: string
+          client_name: string | null
+          created_at: string
+          id: string
+          payor: string | null
+          procedure_code: string | null
+          row_hash: string
+          state: string | null
+          used_hours: number | null
+          utilization_percent: number | null
+          week_end: string | null
+          week_start: string | null
+        }
+        Insert: {
+          authorization_number?: string | null
+          authorized_hours?: number | null
+          batch_id: string
+          client_name?: string | null
+          created_at?: string
+          id?: string
+          payor?: string | null
+          procedure_code?: string | null
+          row_hash: string
+          state?: string | null
+          used_hours?: number | null
+          utilization_percent?: number | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Update: {
+          authorization_number?: string | null
+          authorized_hours?: number | null
+          batch_id?: string
+          client_name?: string | null
+          created_at?: string
+          id?: string
+          payor?: string | null
+          procedure_code?: string | null
+          row_hash?: string
+          state?: string | null
+          used_hours?: number | null
+          utilization_percent?: number | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_authorization_utilization_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cr_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_authorizations: {
+        Row: {
+          authorization_number: string | null
+          authorized_hours: number | null
+          batch_id: string
+          client_cr_id: string | null
+          client_name: string | null
+          created_at: string
+          end_date: string | null
+          id: string
+          payor: string | null
+          procedure_code: string | null
+          remaining_hours: number | null
+          row_hash: string
+          start_date: string | null
+          state: string | null
+          status: string | null
+          worked_hours: number | null
+        }
+        Insert: {
+          authorization_number?: string | null
+          authorized_hours?: number | null
+          batch_id: string
+          client_cr_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          payor?: string | null
+          procedure_code?: string | null
+          remaining_hours?: number | null
+          row_hash: string
+          start_date?: string | null
+          state?: string | null
+          status?: string | null
+          worked_hours?: number | null
+        }
+        Update: {
+          authorization_number?: string | null
+          authorized_hours?: number | null
+          batch_id?: string
+          client_cr_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          payor?: string | null
+          procedure_code?: string | null
+          remaining_hours?: number | null
+          row_hash?: string
+          start_date?: string | null
+          state?: string | null
+          status?: string | null
+          worked_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_authorizations_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cr_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_bcba_ownership_inferred: {
+        Row: {
+          anchor_count: number
+          bcba_name: string
+          carried_forward: boolean
+          client_name: string
+          created_at: string
+          effective_end: string | null
+          effective_start: string
+          id: string
+          month_start: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          anchor_count?: number
+          bcba_name: string
+          carried_forward?: boolean
+          client_name: string
+          created_at?: string
+          effective_end?: string | null
+          effective_start: string
+          id?: string
+          month_start: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anchor_count?: number
+          bcba_name?: string
+          carried_forward?: boolean
+          client_name?: string
+          created_at?: string
+          effective_end?: string | null
+          effective_start?: string
+          id?: string
+          month_start?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_billing_sessions: {
+        Row: {
+          batch_id: string
+          client_cr_id: string | null
+          client_name: string | null
+          created_at: string
+          date_of_service: string | null
+          hours: number | null
+          id: string
+          location: string | null
+          payor: string | null
+          procedure_code: string | null
+          provider_contact_labels: string | null
+          rendering_provider_cr_id: string | null
+          rendering_provider_name: string | null
+          row_hash: string
+          state: string | null
+          status: string | null
+        }
+        Insert: {
+          batch_id: string
+          client_cr_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          date_of_service?: string | null
+          hours?: number | null
+          id?: string
+          location?: string | null
+          payor?: string | null
+          procedure_code?: string | null
+          provider_contact_labels?: string | null
+          rendering_provider_cr_id?: string | null
+          rendering_provider_name?: string | null
+          row_hash: string
+          state?: string | null
+          status?: string | null
+        }
+        Update: {
+          batch_id?: string
+          client_cr_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          date_of_service?: string | null
+          hours?: number | null
+          id?: string
+          location?: string | null
+          payor?: string | null
+          procedure_code?: string | null
+          provider_contact_labels?: string | null
+          rendering_provider_cr_id?: string | null
+          rendering_provider_name?: string | null
+          row_hash?: string
+          state?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_billing_sessions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cr_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_claims: {
+        Row: {
+          batch_id: string
+          billed_amount: number | null
+          claim_number: string | null
+          client_name: string | null
+          created_at: string
+          date_of_service: string | null
+          id: string
+          paid_amount: number | null
+          payor: string | null
+          procedure_code: string | null
+          row_hash: string
+          state: string | null
+          status: string | null
+        }
+        Insert: {
+          batch_id: string
+          billed_amount?: number | null
+          claim_number?: string | null
+          client_name?: string | null
+          created_at?: string
+          date_of_service?: string | null
+          id?: string
+          paid_amount?: number | null
+          payor?: string | null
+          procedure_code?: string | null
+          row_hash: string
+          state?: string | null
+          status?: string | null
+        }
+        Update: {
+          batch_id?: string
+          billed_amount?: number | null
+          claim_number?: string | null
+          client_name?: string | null
+          created_at?: string
+          date_of_service?: string | null
+          id?: string
+          paid_amount?: number | null
+          payor?: string | null
+          procedure_code?: string | null
+          row_hash?: string
+          state?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_claims_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cr_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_client_provider_crosswalk: {
+        Row: {
+          client_name: string
+          created_at: string
+          first_seen: string | null
+          id: string
+          last_seen: string | null
+          provider_name: string
+          provider_role: string | null
+          session_count: number
+          state: string | null
+          total_hours: number
+          updated_at: string
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          first_seen?: string | null
+          id?: string
+          last_seen?: string | null
+          provider_name: string
+          provider_role?: string | null
+          session_count?: number
+          state?: string | null
+          total_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          first_seen?: string | null
+          id?: string
+          last_seen?: string | null
+          provider_name?: string
+          provider_role?: string | null
+          session_count?: number
+          state?: string | null
+          total_hours?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_contacts: {
+        Row: {
+          batch_id: string
+          contact_name: string | null
+          contact_type: string | null
+          cr_contact_id: string | null
+          created_at: string
+          email: string | null
+          id: string
+          labels: string | null
+          row_hash: string
+          state: string | null
+        }
+        Insert: {
+          batch_id: string
+          contact_name?: string | null
+          contact_type?: string | null
+          cr_contact_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          labels?: string | null
+          row_hash: string
+          state?: string | null
+        }
+        Update: {
+          batch_id?: string
+          contact_name?: string | null
+          contact_type?: string | null
+          cr_contact_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          labels?: string | null
+          row_hash?: string
+          state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_contacts_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cr_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cr_data_quality_exceptions: {
         Row: {
           category: string
@@ -8251,6 +8627,321 @@ export type Database = {
             columns: ["suggested_employee_id"]
             isOneToOne: false
             referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_import_backups: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          row_count: number
+          snapshot: Json | null
+          tables: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          row_count?: number
+          snapshot?: Json | null
+          tables?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          row_count?: number
+          snapshot?: Json | null
+          tables?: Json
+        }
+        Relationships: []
+      }
+      cr_import_batches: {
+        Row: {
+          coverage_end: string | null
+          coverage_start: string | null
+          created_at: string
+          deduped_row_count: number | null
+          export_type: string
+          file_hash: string
+          file_name: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          row_count: number
+          status: string
+          updated_at: string
+          uploaded_by: string | null
+          warnings: Json
+        }
+        Insert: {
+          coverage_end?: string | null
+          coverage_start?: string | null
+          created_at?: string
+          deduped_row_count?: number | null
+          export_type: string
+          file_hash: string
+          file_name: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          row_count?: number
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          warnings?: Json
+        }
+        Update: {
+          coverage_end?: string | null
+          coverage_start?: string | null
+          created_at?: string
+          deduped_row_count?: number | null
+          export_type?: string
+          file_hash?: string
+          file_name?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          row_count?: number
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          warnings?: Json
+        }
+        Relationships: []
+      }
+      cr_patient_match_links: {
+        Row: {
+          client_id: string | null
+          confidence: number | null
+          cr_client_id: string | null
+          cr_client_name: string
+          created_at: string
+          id: string
+          match_method: string | null
+          match_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          confidence?: number | null
+          cr_client_id?: string | null
+          cr_client_name: string
+          created_at?: string
+          id?: string
+          match_method?: string | null
+          match_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          confidence?: number | null
+          cr_client_id?: string | null
+          cr_client_name?: string
+          created_at?: string
+          id?: string
+          match_method?: string | null
+          match_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_provider_match_links: {
+        Row: {
+          confidence: number | null
+          cr_provider_id: string | null
+          cr_provider_name: string
+          created_at: string
+          credential: string | null
+          employee_id: string | null
+          id: string
+          match_method: string | null
+          match_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          cr_provider_id?: string | null
+          cr_provider_name: string
+          created_at?: string
+          credential?: string | null
+          employee_id?: string | null
+          id?: string
+          match_method?: string | null
+          match_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          cr_provider_id?: string | null
+          cr_provider_name?: string
+          created_at?: string
+          credential?: string | null
+          employee_id?: string | null
+          id?: string
+          match_method?: string | null
+          match_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_raw_rows: {
+        Row: {
+          batch_id: string
+          cr_row_id: string | null
+          created_at: string
+          export_type: string
+          id: string
+          payload: Json
+          row_hash: string
+        }
+        Insert: {
+          batch_id: string
+          cr_row_id?: string | null
+          created_at?: string
+          export_type: string
+          id?: string
+          payload: Json
+          row_hash: string
+        }
+        Update: {
+          batch_id?: string
+          cr_row_id?: string | null
+          created_at?: string
+          export_type?: string
+          id?: string
+          payload?: Json
+          row_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_raw_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cr_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_report_data_freshness: {
+        Row: {
+          coverage_end: string | null
+          coverage_start: string | null
+          export_type: string | null
+          id: string
+          last_batch_id: string | null
+          last_uploaded_at: string | null
+          report_key: string
+          row_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          coverage_end?: string | null
+          coverage_start?: string | null
+          export_type?: string | null
+          id?: string
+          last_batch_id?: string | null
+          last_uploaded_at?: string | null
+          report_key: string
+          row_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          coverage_end?: string | null
+          coverage_start?: string | null
+          export_type?: string | null
+          id?: string
+          last_batch_id?: string | null
+          last_uploaded_at?: string | null
+          report_key?: string
+          row_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_report_data_freshness_last_batch_id_fkey"
+            columns: ["last_batch_id"]
+            isOneToOne: false
+            referencedRelation: "cr_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cr_schedule_events: {
+        Row: {
+          batch_id: string
+          cancellation_reason: string | null
+          cancelled_by: string | null
+          client_name: string | null
+          created_at: string
+          event_date: string | null
+          id: string
+          location: string | null
+          payor: string | null
+          procedure_code: string | null
+          provider_name: string | null
+          row_hash: string
+          scheduled_hours: number | null
+          state: string | null
+          status: string | null
+        }
+        Insert: {
+          batch_id: string
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
+          client_name?: string | null
+          created_at?: string
+          event_date?: string | null
+          id?: string
+          location?: string | null
+          payor?: string | null
+          procedure_code?: string | null
+          provider_name?: string | null
+          row_hash: string
+          scheduled_hours?: number | null
+          state?: string | null
+          status?: string | null
+        }
+        Update: {
+          batch_id?: string
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
+          client_name?: string | null
+          created_at?: string
+          event_date?: string | null
+          id?: string
+          location?: string | null
+          payor?: string | null
+          procedure_code?: string | null
+          provider_name?: string | null
+          row_hash?: string
+          scheduled_hours?: number | null
+          state?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_schedule_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cr_import_batches"
             referencedColumns: ["id"]
           },
         ]
@@ -32128,6 +32819,11 @@ export type Database = {
       confirm_employee_user_link: {
         Args: { _employee_id: string; _reason?: string; _user_id: string }
         Returns: boolean
+      }
+      cr_hub_can_manage: { Args: never; Returns: boolean }
+      cr_reset_report_data: {
+        Args: { _backup_label?: string; _confirmation: string }
+        Returns: string
       }
       cr_rollback_run: { Args: { _run_id: string }; Returns: Json }
       cr_sync_freshness: {
