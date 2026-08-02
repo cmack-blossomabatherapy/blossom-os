@@ -34,11 +34,14 @@ const RAW_ID_KEYS = [
   "appointmentid",
   "authorizationid",
   "claimid",
+  "claimnumber",
+  "authorizationnumber",
   "contactid",
   "eventid",
   "serviceid",
   "sessionid",
   "scheduleid",
+  "resourceid",
 ];
 
 function normKey(key: string): string {
