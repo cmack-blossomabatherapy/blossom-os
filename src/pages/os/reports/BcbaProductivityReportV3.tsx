@@ -1680,13 +1680,14 @@ function FilterSelect({ label, value, onChange, options }: {
   return (
     <div>
       <label className="mb-1 block text-[10px] font-semibold uppercase text-muted-foreground">{label}</label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-8"><SelectValue placeholder={`All ${label}s`} /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All {label}s</SelectItem>
-          {options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-        </SelectContent>
-      </Select>
+      <FilterCombobox
+        label={label}
+        allLabel={`All ${label}s`}
+        value={value === "all" ? "" : value}
+        options={options}
+        onChange={(v) => onChange(v || "all")}
+        className="w-full"
+      />
     </div>
   );
 }
