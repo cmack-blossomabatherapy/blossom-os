@@ -14,25 +14,38 @@ import type {
   CrUtilizationRow,
 } from "./types";
 
-const MAX_ROWS = 20000;
+/** Rows requested per Supabase range page. */
+export const CR_PAGE_SIZE = 5000;
+/** Hard safety cap; high enough for current + future production volume. */
+export const CR_SAFETY_CAP = 250000;
 
 export interface CrLoadResult<T> {
   rows: T[];
   error: string | null;
 }
 
-async function readTable<T>(table: string, columns: string): Promise<CrLoadResult<T>> {
+export async function readTable<T>(
+  table: string,
+  columns: string,
+): Promise<CrLoadResult<T>> {
+  const rows: T[] = [];
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from(table)
-      .select(columns)
-      .limit(MAX_ROWS);
-    if (error) return { rows: [], error: error.message };
-    return { rows: (data ?? []) as T[], error: null };
+    for (let from = 0; from < CR_SAFETY_CAP; from += CR_PAGE_SIZE) {
+      const to = Math.min(from + CR_PAGE_SIZE, CR_SAFETY_CAP) - 1;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from(table)
+        .select(columns)
+        .range(from, to);
+      if (error) return { rows: rows as T[], error: error.message };
+      const page = (data ?? []) as T[];
+      rows.push(...page);
+      if (page.length < to - from + 1) return { rows, error: null };
+    }
+    return { rows, error: "Result exceeded safety cap" };
   } catch (err) {
     return {
-      rows: [],
+      rows,
       error: err instanceof Error ? err.message : `Failed to read ${table}`,
     };
   }
