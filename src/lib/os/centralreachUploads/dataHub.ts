@@ -1,9 +1,11 @@
 /**
- * CentralReach Data Hub — batch validation, snapshot dedupe, and guarded reset.
+ * CentralReach Data Hub — batch validation, append-mode dedupe, and guarded reset.
  *
- * Daily CentralReach exports are FULL SNAPSHOTS by default: a new batch of the
- * same export type replaces the prior active batch, and stable rows are deduped
- * by CentralReach row id when present, otherwise by a deterministic row hash.
+ * Uploads APPEND by default. A Data Hub import session may contain many files,
+ * and many sessions accumulate over time. Rows are deduplicated GLOBALLY per
+ * normalized table / export type on a stable identity (CentralReach row id when
+ * present, else a deterministic row hash) — never merely per batch. Existing
+ * report rows are only cleared by an explicit reset action.
  */
 
 import type { CRUploadKind } from "./detect";
@@ -21,6 +23,12 @@ export interface CRBatchDescriptor {
   status?: CRBatchStatus;
   warnings?: string[];
   isActive?: boolean;
+  /** Rows parsed out of the file. */
+  parsedRowCount?: number;
+  /** New unique rows actually inserted by this batch. */
+  appendedRowCount?: number;
+  /** Rows skipped because their identity already exists (any batch). */
+  duplicateRowCount?: number;
 }
 
 export interface CRBatchValidation {
