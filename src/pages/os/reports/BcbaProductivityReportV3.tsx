@@ -258,7 +258,7 @@ export default function BcbaProductivityReportV3() {
     { name: "97153 (RBT direct)", value: kpis.hours97153 },
     { name: "97155 (Supervision)", value: kpis.hours97155 },
     { name: "Other direct BCBA", value: Math.max(0, Math.round((kpis.directBcbaHours - kpis.hours97155) * 10) / 10) },
-  ]), [agg]);
+  ]), [kpis]);
 
   const supervisionByBcba = useMemo(
     () => model.supervisionSummaries
