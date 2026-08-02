@@ -416,23 +416,59 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
     }
   }
 
-  async function handleReprocessLegacy() {
-    if (!confirm("Reprocess recent legacy uploads into the normalized report tables? Duplicates are skipped automatically.")) return;
+  async function runLegacyReprocess(options: { silent?: boolean } = {}) {
     setReprocessing(true);
     try {
       const result = await reprocessLegacySharedDatasets();
-      const summary = summarizeCrImport(result.outcomes);
-      if (result.errors.length) toast.error(`Some files failed: ${result.errors.join(" | ")}`);
-      toast.success(
-        `Reprocessed ${result.datasets} legacy file(s) — ${summary.appendedRowCount.toLocaleString()} rows appended, ${summary.duplicateRowCount.toLocaleString()} duplicates skipped.`,
-      );
+      const report = summarizeLegacyReprocess(result);
+      setReprocessReport(report);
+      if (report.issues.length && !options.silent) {
+        toast.error(`Some files reported issues: ${report.issues.slice(0, 3).join(" | ")}`);
+      }
+      if (!options.silent) {
+        toast.success(
+          `Normalized ${report.filesProcessed} legacy file(s) — ${report.appendedRowCount.toLocaleString()} rows appended, ${report.duplicateRowCount.toLocaleString()} duplicates skipped.`,
+        );
+      }
       await refresh();
     } catch (e) {
-      toast.error(`Reprocess failed: ${readableError(e)}`);
+      const message = readableError(e);
+      setReprocessReport({
+        filesProcessed: 0, parsedRowCount: 0, appendedRowCount: 0,
+        duplicateRowCount: 0, issues: [message], ok: false,
+      });
+      if (!options.silent) toast.error(`Normalization failed: ${message}`);
     } finally {
       setReprocessing(false);
     }
   }
+
+  async function handleReprocessLegacy() {
+    if (!confirm("Reprocess recent legacy uploads into the normalized report tables? Duplicates are skipped automatically.")) return;
+    await runLegacyReprocess();
+  }
+
+  const legacyDatasetCount = useMemo(
+    () => SHARED_KEYS.reduce((sum, k) => sum + (sharedByKey[k]?.length ?? 0), 0),
+    [sharedByKey],
+  );
+
+  const legacyNormalizationNeeded = needsLegacyNormalization({
+    counts: crCounts,
+    legacyDatasetCount,
+  });
+
+  // Auto-repair once per browser session: admin-only page, only when every
+  // normalized table is empty and legacy datasets exist. Never loops.
+  useEffect(() => {
+    if (!legacyNormalizationNeeded) return;
+    if (autoStartedRef.current || reprocessing) return;
+    if (hasAutoNormalizeAttempted()) return;
+    autoStartedRef.current = true;
+    markAutoNormalizeAttempted();
+    void runLegacyReprocess({ silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legacyNormalizationNeeded]);
 
   const hasQueued = queue.some((q) => q.status === "queued" || q.status === "detected");
 
