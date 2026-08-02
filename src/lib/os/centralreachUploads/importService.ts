@@ -201,10 +201,11 @@ export async function importCentralReachFiles(
         }
 
         const archived = ok && appended === 0 && duplicates > 0;
+        const duplicateNote = `Already loaded: no report totals changed — all ${duplicates.toLocaleString()} rows were already imported.`;
         const statusReason = !ok
           ? "No normalized rows were written."
           : archived
-            ? `Archived — every one of the ${duplicates.toLocaleString()} rows was already imported, so report totals are unchanged.`
+            ? duplicateNote
             : `Active — ${appended.toLocaleString()} new rows appended${duplicates ? `, ${duplicates.toLocaleString()} duplicates skipped` : ""}.`;
 
         if (ok) {
@@ -214,18 +215,20 @@ export async function importCentralReachFiles(
               rowsAdded: appended,
               rowsUnchanged: duplicates,
               rowsRejected: Math.max(parsed - appended - duplicates, 0),
+              notes: archived ? duplicateNote : options.notes ?? null,
             });
-            await tracker.audit(runId, archived ? "upload_duplicate" : "upload_committed", {
+            await tracker.audit(runId, archived ? "duplicate_no_change" : "upload_committed", {
               batchId: result?.batchId ?? null,
               table: crTableForKind(kind),
               appended,
               duplicates,
+              ...(archived ? { note: duplicateNote } : {}),
             });
           } catch {
             warnings.push("Upload committed, but the run record could not be updated.");
           }
         } else {
-          await safeFail(tracker, runId, statusReason);
+          await safeFail(tracker, runId, statusReason, file.name, kind);
         }
 
         outcomes.push({
@@ -271,9 +274,21 @@ function describe(error: unknown): string {
   return [maybe?.message, maybe?.details, maybe?.hint].filter(Boolean).join(" — ") || String(error);
 }
 
-async function safeFail(tracker: CrRunTracker, runId: string | null, message: string) {
+async function safeFail(
+  tracker: CrRunTracker,
+  runId: string | null,
+  message: string,
+  fileName?: string,
+  exportType?: CRUploadKind,
+) {
   try {
     await tracker.fail(runId, message);
+    // Failures must be auditable, not only visible in the run row.
+    await tracker.audit(runId, "upload_failed", {
+      ...(fileName ? { fileName } : {}),
+      ...(exportType ? { exportType } : {}),
+      error: message.slice(0, 2000),
+    });
   } catch {
     /* run bookkeeping must never mask the original error */
   }
@@ -303,7 +318,7 @@ async function trackedFailure(
       runId = null;
     }
   }
-  await safeFail(tracker, runId, message);
+  await safeFail(tracker, runId, message, file.name, exportType);
   return { ...failure(file.name, exportType, error), runId };
 }
 
