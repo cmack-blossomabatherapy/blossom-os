@@ -33,6 +33,10 @@ import {
   fetchCrNormalizedCounts, listCrImportBatches,
   type CrBatchRecord, type CrNormalizedCounts,
 } from "@/lib/os/centralreachUploads/supabaseStore";
+import {
+  crUploadPreflight, listCrSyncRuns,
+  type CrSyncRunRecord, type CrUploadPreflight,
+} from "@/lib/os/centralreachUploads/syncRun";
 import { reprocessLegacySharedDatasets } from "@/lib/os/centralreachUploads/legacyReprocess";
 import {
   needsLegacyNormalization, summarizeLegacyReprocess,
@@ -176,6 +180,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   // Normalized Data Hub state — the source of truth for readiness.
   const [crCounts, setCrCounts] = useState<CrNormalizedCounts | null>(null);
   const [crBatches, setCrBatches] = useState<CrBatchRecord[]>([]);
+  const [crRuns, setCrRuns] = useState<CrSyncRunRecord[]>([]);
+  const [preflight, setPreflight] = useState<CrUploadPreflight | null>(null);
   const [lastOutcomes, setLastOutcomes] = useState<CrFileImportOutcome[]>([]);
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessReport, setReprocessReport] = useState<LegacyReprocessReport | null>(null);
