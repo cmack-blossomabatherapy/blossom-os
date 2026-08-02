@@ -199,6 +199,9 @@ export default function BcbaProductivityReportV3() {
   const [payorF, setPayorF] = useState("all");
   const [codeF, setCodeF] = useState("all");
   const [search, setSearch] = useState("");
+  // 57k+ rows flow through the ownership/KPI/table memo chain, so keep the
+  // text input responsive by filtering against a deferred copy of the query.
+  const deferredSearch = useDeferredValue(search);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [editing, setEditing] = useState<BcbaAssignmentV3 | null>(null);
@@ -586,7 +589,7 @@ export default function BcbaProductivityReportV3() {
   const filtered: OwnedRow[] = useMemo(() => {
     const fromMs = dateFrom ? Date.parse(dateFrom) : -Infinity;
     const toMs = dateTo ? Date.parse(dateTo) + 24 * 3600 * 1000 : Infinity;
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     return ownedRows.filter(r => {
       const ms = Date.parse(r.date);
       if (!(ms >= fromMs && ms <= toMs)) return false;
@@ -602,7 +605,7 @@ export default function BcbaProductivityReportV3() {
                  r.code.toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [ownedRows, dateFrom, dateTo, bcbaF, clientF, rbtF, stateF, payorF, codeF, search]);
+  }, [ownedRows, dateFrom, dateTo, bcbaF, clientF, rbtF, stateF, payorF, codeF, deferredSearch]);
 
   /* ----- KPIs ----- */
   const kpis = useMemo(() => {
