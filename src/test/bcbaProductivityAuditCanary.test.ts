@@ -103,6 +103,8 @@ describe("BCBA Productivity audit — state fallback, formatting, supervision", 
     const agg = aggregate(withOrphan.rows);
     expect(agg.unassignedHours).toBe(12);
     expect(withOrphan.clientsWithoutAnchors.map((c) => c.clientName)).toEqual(["No Anchor Child"]);
-    expect(agg.assignedHours + agg.unassignedHours).toBe(agg.totalHours);
+    const assigned = agg.bcbaSummary.filter((b) => !b.isUnassigned)
+      .reduce((sum, b) => sum + b.totalHours, 0);
+    expect(Math.round((assigned + agg.unassignedHours) * 100) / 100).toBe(agg.totalHours);
   });
 });
