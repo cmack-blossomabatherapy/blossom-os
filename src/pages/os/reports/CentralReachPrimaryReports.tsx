@@ -3,8 +3,7 @@
  *
  * `ReportDetail` routes these report IDs here *before* any State-Director,
  * Authorization, or generic placeholder handling, so the primary reports never
- * fall through to the "Live report shell · connect source data to populate"
- * shell or the skeleton fallback cards.
+ * fall through to the legacy generic report shell or its skeleton fallback cards.
  *
  * Every target page owns its own OSShell chrome (via `PrimaryReportShell` or,
  * for the two legacy-native pages, its own layout), so this renderer returns

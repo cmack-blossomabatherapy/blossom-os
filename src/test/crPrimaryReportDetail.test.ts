@@ -194,8 +194,8 @@ describe("supervision percentage and banding", () => {
       billing({ procedure_code: "97155", hours: 10, rendering_provider_name: "BCBA One" }),
     ];
     const metrics = computeSupervisionMetrics(rows);
-    expect(metrics.directHours).toBe(90);
-    expect(metrics.supervisionHours).toBe(10);
+    expect(metrics.hours97153).toBe(90);
+    expect(metrics.hours97155).toBe(10);
     expect(metrics.supervisionPct).toBeCloseTo(11.1, 1);
   });
 
@@ -312,7 +312,7 @@ describe("drilldown source-row filtering", () => {
       provider: r.rendering_provider_name, payor: r.payor, code: r.procedure_code,
       location: r.location, status: r.status,
     });
-    expect(applyFilters(rows, { ...EMPTY_FILTERS, state: "ga" }).map((r) => r.id)).toEqual(["1"]);
+    expect(applyFilters(rows, { ...EMPTY_FILTERS, state: "ga" }, project).map((r) => r.id)).toEqual(["1"]);
     expect(
       applyFilters(rows, { ...EMPTY_FILTERS, from: "2026-06-01", to: "2026-06-30" }, project).map((r) => r.id),
     ).toEqual(["2"]);
