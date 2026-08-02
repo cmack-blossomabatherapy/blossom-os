@@ -81,3 +81,15 @@ export function resolveRowState(raw: Record<string, unknown> | null | undefined)
   }
   return "";
 }
+
+/**
+ * Resolve the display/filter state for a stored billing row: the already
+ * normalized `normalized.state` value wins, then the raw CentralReach
+ * column fallback order. Always returns a clean USPS code or "".
+ */
+export function resolveStoredRowState(
+  normalizedState: unknown,
+  raw?: Record<string, unknown> | null,
+): string {
+  return normalizeUsState(normalizedState) || resolveRowState(raw);
+}
