@@ -87,13 +87,54 @@ const num = (row: Record<string, unknown>, keys: string[]): number | null => {
 const date = (row: Record<string, unknown>, keys: string[]): string | null =>
   toIsoDate(pickText(row, keys));
 
-const CLIENT = ["ClientName", "Client", "Patient", "PatientName", "Client Name"];
+const CLIENT = [
+  "ClientName", "ClientFullName", "Client", "Patient", "PatientName", "Client Name",
+];
 const CLIENT_ID = ["ClientId", "Client Id", "PatientId", "ClientCRId", "Client CR Id"];
-const PAYOR = ["Payor", "Payer", "Insurance", "PrimaryPayor", "Primary Payor", "Funder"];
-const STATE = ["State", "ClientState", "ServiceState", "Client State"];
+const PAYOR = [
+  "Payor", "PayorName", "Payer", "PayerName", "Insurance", "InsuranceCompany",
+  "InsurancePlan", "PrimaryPayor", "Primary Payor", "Funder",
+];
+const STATE = [
+  "State",
+  "ClientLocationStateProvince",
+  "ServiceLocationStateProvince",
+  "ProviderLocationStateProvince",
+  "LocationStateProvince",
+  "StateProvince",
+  "HomeStateProvince",
+  "ClientState", "ServiceState", "Client State",
+];
 const CODE = ["ProcedureCode", "Procedure Code", "Code", "CPT", "ServiceCode", "Service Code"];
 const STATUS = ["Status", "BillingStatus", "ClaimStatus", "AuthorizationStatus"];
-const LOCATION = ["Location", "ServiceLocation", "PlaceOfService", "Place of Service", "Office", "Clinic"];
+const LOCATION = [
+  "Location", "ServiceLocation", "ServiceLocationName", "ClientLocationName",
+  "ProviderLocationName", "LocationName", "PlaceOfService", "Place of Service",
+  "Office", "Clinic",
+];
+
+const PROVIDER = [
+  "RenderingProviderName", "Rendering Provider", "RenderingProvider", "Provider",
+  "ProviderName", "Employee", "EmployeeName", "StaffName",
+];
+
+/**
+ * Build a display name from split first/last columns, falling back to any
+ * existing single-column name field. CentralReach exports use
+ * `ClientFirstName`/`ClientLastName` and `ProviderFirstName`/`ProviderLastName`.
+ */
+export function fullName(
+  row: Record<string, unknown>,
+  first: string[],
+  last: string[],
+  fallbacks: string[],
+): string | null {
+  const f = pickText(row, first);
+  const l = pickText(row, last);
+  const combined = [f, l].filter(Boolean).join(" ").trim();
+  if (combined) return combined;
+  return text(row, fallbacks);
+}
 
 function billingRow(row: Record<string, unknown>): NormalizedCrRow {
   const hours = num(row, ["TimeWorkedInHours", "Time Worked In Hours", "Hours", "HoursWorked", "Units"]);
@@ -102,12 +143,14 @@ function billingRow(row: Record<string, unknown>): NormalizedCrRow {
     date_of_service: date(row, ["DateOfService", "Date of Service", "ServiceDate", "Date"]),
     procedure_code: text(row, CODE),
     hours: hours ?? (mins !== null ? Math.round((mins / 60) * 100) / 100 : null),
-    client_name: text(row, CLIENT),
+    client_name: fullName(row, ["ClientFirstName", "Client First Name"], ["ClientLastName", "Client Last Name"], CLIENT),
     client_cr_id: text(row, CLIENT_ID),
-    rendering_provider_name: text(row, [
-      "RenderingProviderName", "Rendering Provider", "RenderingProvider", "Provider",
-      "ProviderName", "Employee", "EmployeeName", "StaffName",
-    ]),
+    rendering_provider_name: fullName(
+      row,
+      ["ProviderFirstName", "RenderingProviderFirstName", "Provider First Name"],
+      ["ProviderLastName", "RenderingProviderLastName", "Provider Last Name"],
+      PROVIDER,
+    ),
     rendering_provider_cr_id: text(row, [
       "RenderingProviderId", "ProviderId", "Provider Id", "EmployeeId", "StaffId",
     ]),
@@ -123,11 +166,27 @@ function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
   return {
     event_date: date(row, ["EventDate", "Date", "StartDate", "AppointmentDate", "DateOfService", "Start"]),
     procedure_code: text(row, CODE),
-    scheduled_hours: num(row, ["ScheduledHours", "Scheduled Hours", "Hours", "Duration", "TimeScheduledInHours"]),
-    client_name: text(row, CLIENT),
-    provider_name: text(row, ["Provider", "ProviderName", "Employee", "EmployeeName", "StaffName", "Resource"]),
+    scheduled_hours: num(row, [
+      "ScheduledHours", "Scheduled Hours", "SegmentHours", "EventHours",
+      "Hours", "Duration", "TimeScheduledInHours",
+    ]),
+    client_name: fullName(
+      row,
+      ["ClientFirstName", "Client First Name"],
+      ["ClientLastName", "Client Last Name"],
+      [...CLIENT, "Principal1Name", "Principal 1 Name"],
+    ),
+    provider_name: fullName(
+      row,
+      ["ProviderFirstName", "Provider First Name"],
+      ["ProviderLastName", "Provider Last Name"],
+      ["Provider", "ProviderName", "Principal2Name", "Principal 2 Name", "Employee", "EmployeeName", "StaffName", "Resource"],
+    ),
     status: text(row, ["Status", "Attendance", "EventStatus", "Cancelled"]),
-    cancellation_reason: text(row, ["CancellationReason", "Cancellation Reason", "CancelReason", "Reason"]),
+    cancellation_reason: text(row, [
+      "CancellationReason", "Cancellation Reason", "CancelledReason", "Cancelled Reason",
+      "CancelReason", "Reason",
+    ]),
     cancelled_by: text(row, ["CancelledBy", "Cancelled By", "CanceledBy"]),
     state: text(row, STATE),
     location: text(row, LOCATION),
@@ -138,18 +197,23 @@ function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
 function authorizationRow(row: Record<string, unknown>): NormalizedCrRow {
   const authorized = num(row, [
     "AuthorizedHours", "Authorized Hours", "AuthorizedHoursAll", "AuthorizedHoursMonth",
+    "authHours",
   ]);
-  const worked = num(row, ["WorkedHours", "Worked Hours", "UsedHours", "HoursWorked"]);
-  const remaining = num(row, ["RemainingHours", "Remaining Hours", "HoursRemaining"]);
+  const worked = num(row, [
+    "WorkedHours", "Worked Hours", "WorkedHoursAuthRange", "UsedHours", "HoursWorked", "authHoursWkd",
+  ]);
+  const remaining = num(row, [
+    "RemainingHours", "Remaining Hours", "RemainingHoursAuthRange", "HoursRemaining", "authHoursRem",
+  ]);
   return {
     authorization_number: text(row, ["AuthorizationNumber", "Authorization Number", "AuthNumber", "AuthId"]),
-    client_name: text(row, CLIENT),
+    client_name: fullName(row, ["ClientFirstName"], ["ClientLastName"], CLIENT),
     client_cr_id: text(row, CLIENT_ID),
     payor: text(row, PAYOR),
     state: text(row, STATE),
     procedure_code: text(row, CODE),
-    start_date: date(row, ["StartDate", "Start Date", "AuthStartDate", "AuthorizationStart"]),
-    end_date: date(row, ["EndDate", "End Date", "AuthEndDate", "AuthorizationEnd", "ExpirationDate"]),
+    start_date: date(row, ["StartDate", "Start Date", "AuthStartDate", "AuthorizationStart", "FirstService"]),
+    end_date: date(row, ["EndDate", "End Date", "AuthEndDate", "AuthorizationEnd", "ExpirationDate", "LastService"]),
     authorized_hours: authorized,
     worked_hours: worked,
     remaining_hours:
@@ -159,12 +223,17 @@ function authorizationRow(row: Record<string, unknown>): NormalizedCrRow {
 }
 
 function utilizationRow(row: Record<string, unknown>): NormalizedCrRow {
-  const authorized = num(row, ["AuthorizedHours", "Authorized Hours", "AuthorizedHoursWeek"]);
-  const used = num(row, ["UsedHours", "Used Hours", "WorkedHours", "Hours"]);
+  const authorized = num(row, [
+    "AuthorizedHours", "Authorized Hours", "AuthorizedHoursWeek", "authHours",
+    "AuthorizedHoursMonth", "AuthorizedHoursAll", "authUnits",
+  ]);
+  const used = num(row, [
+    "UsedHours", "Used Hours", "WorkedHours", "authHoursWkd", "WorkedHoursAuthRange", "Hours",
+  ]);
   const pct = num(row, ["UtilizationPercent", "Utilization %", "UtilizationPct", "Utilization"]);
   return {
     authorization_number: text(row, ["AuthorizationNumber", "Authorization Number", "AuthNumber"]),
-    client_name: text(row, CLIENT),
+    client_name: fullName(row, ["ClientFirstName"], ["ClientLastName"], CLIENT),
     payor: text(row, PAYOR),
     state: text(row, STATE),
     procedure_code: text(row, CODE),
@@ -179,22 +248,29 @@ function utilizationRow(row: Record<string, unknown>): NormalizedCrRow {
 
 function claimRow(row: Record<string, unknown>): NormalizedCrRow {
   return {
-    claim_number: text(row, ["ClaimNumber", "Claim Number", "ClaimId", "Claim Id"]),
-    client_name: text(row, CLIENT),
+    claim_number: text(row, ["ClaimNumber", "Claim Number", "ClaimId", "Claim Id", "Id"]),
+    client_name: fullName(row, ["ClientFirstName"], ["ClientLastName"], CLIENT),
     payor: text(row, PAYOR),
     state: text(row, STATE),
-    date_of_service: date(row, ["DateOfService", "Date of Service", "ServiceDate", "Date"]),
+    date_of_service: date(row, [
+      "DateOfService", "Date of Service", "ServiceDate", "Date", "FirstService", "LastService",
+    ]),
     procedure_code: text(row, CODE),
-    billed_amount: num(row, ["BilledAmount", "Billed Amount", "Charge", "Billed"]),
-    paid_amount: num(row, ["PaidAmount", "Paid Amount", "Paid"]),
-    status: text(row, STATUS),
+    billed_amount: num(row, ["BilledAmount", "Billed Amount", "Charge", "Billed", "Amount"]),
+    paid_amount: num(row, ["PaidAmount", "Paid Amount", "Paid", "TotalPaid"]),
+    status: text(row, [...STATUS, "ResponsesStatus", "Responses Status"]),
   };
 }
 
 function contactRow(row: Record<string, unknown>): NormalizedCrRow {
   return {
-    cr_contact_id: text(row, ["ContactId", "Contact Id", "ContactID", "CrContactId"]),
-    contact_name: text(row, ["ContactName", "Contact Name", "Name", "FullName"]),
+    cr_contact_id: text(row, ["ContactId", "Contact Id", "ContactID", "CrContactId", "Id"]),
+    contact_name: fullName(
+      row,
+      ["FirstName", "First Name"],
+      ["LastName", "Last Name"],
+      ["ContactName", "Contact Name", "Name", "FullName"],
+    ),
     contact_type: text(row, ["ContactType", "Contact Type", "Type"]),
     labels: text(row, ["ContactLabels", "Contact Labels", "Labels", "Tags"]),
     state: text(row, STATE),

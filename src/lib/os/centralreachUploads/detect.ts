@@ -63,6 +63,20 @@ export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
     };
   }
 
+  // Claims export (live CentralReach headers) — client + amounts + service window.
+  if (
+    hasAny(set, ["ClientName", "ClientFullName"]) &&
+    hasAny(set, ["TotalPaid", "Amount"]) &&
+    hasAny(set, ["FirstService", "LastService", "ResponsesStatus"])
+  ) {
+    return {
+      kind: "claims",
+      confidence: 0.9,
+      label: "Claims export",
+      targets: ["Authorization Analysis (claim coverage)"],
+    };
+  }
+
   // Scheduling export — has Course/Segment/Event columns.
   if (
     hasAll(set, ["Course", "Segment", "Event"]) &&
@@ -112,6 +126,19 @@ export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
     };
   }
 
+  // Payor-level authorization utilization summary (no WeekStart column).
+  if (
+    hasAny(set, ["PayorName", "Payor"]) &&
+    hasAny(set, ["authHours", "authHoursWkd", "authHoursRem", "authUnits", "authAmount"])
+  ) {
+    return {
+      kind: "utilization",
+      confidence: 0.88,
+      label: "Authorization utilization summary export",
+      targets: ["Authorization Utilization - Hour Based"],
+    };
+  }
+
   // Contacts export — CentralReach contact directory.
   if (
     hasAny(set, ["ContactId", "Contact Id", "ContactID"]) &&
@@ -120,6 +147,19 @@ export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
     return {
       kind: "contacts",
       confidence: 0.9,
+      label: "Contacts export",
+      targets: ["Client & staff match queues"],
+    };
+  }
+
+  // Contacts export (live CentralReach headers) — split names + type/labels/email.
+  if (
+    hasAll(set, ["FirstName", "LastName"]) &&
+    hasAny(set, ["Type", "Labels", "Email", "TypeId", "PermissionId", "IsActive"])
+  ) {
+    return {
+      kind: "contacts",
+      confidence: hasAny(set, ["PermissionId", "TypeId", "IsActive"]) ? 0.9 : 0.82,
       label: "Contacts export",
       targets: ["Client & staff match queues"],
     };
