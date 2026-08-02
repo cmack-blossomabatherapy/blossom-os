@@ -79,16 +79,9 @@ import {
 } from "@/lib/os/orgChart/tree";
 import { cleanJobTitle, roleProfileForTitle } from "@/lib/os/orgChart/responsibilities";
 
-const EDITOR_ROLES = new Set([
-  "super_admin",
-  "admin",
-  "systems_admin",
-  "hr",
-  "hr_team",
-  "hr_lead",
-  "hr_manager",
-  "hr_admin",
-]);
+// Only the Super Admin may change the org chart or how it looks. Everyone else
+// gets a fully interactive read-only chart (zoom, drill-down, drawer, search).
+const EDITOR_ROLES = new Set(["super_admin"]);
 
 const NODE_TYPES = { orgPerson: OrgTreeNodeCard };
 
@@ -98,7 +91,9 @@ function InnerLiveOrgChart() {
   const { members, loading } = useEmployeeDirectory();
   const { overrides, save, saveMany, resetAll } = useOrgChartLayout();
   const { role } = useOSRole();
-  const canEdit = EDITOR_ROLES.has(role as string);
+  const isOrgChartAdmin = EDITOR_ROLES.has(role as string);
+  const [editMode, setEditMode] = useState(false);
+  const canEdit = isOrgChartAdmin && editMode;
   const { fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
   const { zoom } = useViewport();
 
