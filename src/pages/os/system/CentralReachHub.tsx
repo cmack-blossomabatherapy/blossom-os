@@ -4,6 +4,11 @@ import {
   UploadCloud, Users, Stethoscope, LayoutDashboard, ShieldCheck,
   History, Gauge, FileSpreadsheet, AlertTriangle, ExternalLink, Link2,
 } from "lucide-react";
+import { DatabaseBackup } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  CR_RESET_CONFIRMATION_PHRASE, CR_RESETTABLE_TABLES, planCrReset,
+} from "@/lib/os/centralreachUploads/dataHub";
 import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +39,7 @@ type HubTab =
   | "freshness"
   | "data-quality"
   | "identity"
+  | "backup-reset"
   | "audit";
 
 const TABS: { key: HubTab; label: string; icon: any; help: string }[] = [
@@ -44,6 +50,7 @@ const TABS: { key: HubTab; label: string; icon: any; help: string }[] = [
   { key: "freshness",           label: "Freshness",            icon: Gauge,           help: "Configurable staleness thresholds per import type." },
   { key: "data-quality",        label: "Data Quality",         icon: AlertTriangle,   help: "Unknown clients, orphan appointments, mismatches — triage queue." },
   { key: "identity",            label: "Clinician Identity",   icon: Link2,           help: "Reconcile employees to CentralReach provider IDs — the source of truth for RBT/BCBA scoping." },
+  { key: "backup-reset",        label: "Backup & Reset",       icon: DatabaseBackup,  help: "Guarded backup and reset of CentralReach-derived report data only. Requires an explicit confirmation phrase." },
   { key: "audit",               label: "Audit Log",            icon: ShieldCheck,     help: "Append-only audit of every commit / rollback / config change." },
 ];
 
@@ -102,6 +109,7 @@ export default function CentralReachHub() {
         {tab === "freshness"          && <FreshnessTab />}
         {tab === "data-quality"       && <DataQualityTab />}
         {tab === "identity"           && <IdentityTab />}
+        {tab === "backup-reset"       && <BackupResetTab />}
         {tab === "audit"              && <AuditTab />}
       </div>
     </OSShell>
