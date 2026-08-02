@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronRight, Crosshair, ExternalLink, Mail, RotateCcw, Users } from "lucide-react";
+import { ChevronRight, Crosshair, ExternalLink, Layers, Mail, RotateCcw, Users } from "lucide-react";
 import {
   ancestorsOf,
   canReparent,
@@ -34,6 +34,7 @@ export function OrgPersonDrawer({
   onOpenChange,
   onSelect,
   onFocus,
+  onDrillIn,
   canEdit,
   onReparent,
   onResetParent,
@@ -43,6 +44,7 @@ export function OrgPersonDrawer({
   onOpenChange: (open: boolean) => void;
   onSelect: (id: string) => void;
   onFocus: (id: string) => void;
+  onDrillIn?: (id: string) => void;
   canEdit: boolean;
   onReparent: (childId: string, parentId: string | null) => void;
   onResetParent: (childId: string) => void;
@@ -129,6 +131,16 @@ export function OrgPersonDrawer({
                   <span className="font-normal normal-case">· {node.totalReports} total</span>
                 )}
               </h3>
+              {reports.length > 0 && onDrillIn && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 h-8 rounded-xl"
+                  onClick={() => onDrillIn(node.id)}
+                >
+                  <Layers className="size-3.5" /> Drill into this section
+                </Button>
+              )}
               {reports.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">
                   No direct reports.
