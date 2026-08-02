@@ -28,21 +28,12 @@ describe("Business Development — Completion Pass 5 (Reports hardening)", () =>
     expect(app).toMatch(/path="\/reports\/landing"[\s\S]{0,80}Navigate to="\/reports"/);
   });
 
-  it("BD visible reports include BD cards and BCBA Productivity", () => {
+  it("BD visible reports are the canonical shared catalog", () => {
     const ids = visibleReportsForRole("business_development").map((r) => r.id);
-    for (const id of [
-      "bd-referral-sources",
-      "bd-outreach-followup",
-      "bd-partner-activity",
-      "bd-follow-up-risk",
-      "bd-source-handoff",
-      "bd-provider-relationships",
-      "bd-community-relationships",
-      "bcba-productivity-report-v3",
-      "cancellation-command-center",
-    ]) {
+    for (const id of ["bcba-productivity-report-v3", "cancellation-command-center"]) {
       expect(ids).toContain(id);
     }
+    expect(ids).toHaveLength(8);
   });
 
   it("BD visible reports exclude HR-only, QA-only, Finance-only, Credentialing-only reports", () => {

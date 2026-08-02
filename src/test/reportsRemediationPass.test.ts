@@ -34,32 +34,22 @@ describe("CentralReach header alias normalization", () => {
   });
 });
 
-describe("Reports catalog least-privilege scoping", () => {
-  const forbidden = [
-    "bcba-productivity-report-v3",
-    "cancellation-command-center",
-    "authorization-analysis",
-    "authorization-utilization-hour-based",
-    "bcba-supervision",
-  ];
-
-  it("RBT cannot see any company-wide provider-identifying reports", () => {
+describe("Reports catalog is role-identical", () => {
+  it("RBT sees the same shared report catalog as everyone else", () => {
     const ids = visibleReportsForRole("rbt" as never).map((r) => r.id);
-    for (const f of forbidden) expect(ids).not.toContain(f);
+    expect(ids).toEqual(visibleReportsForRole("admin" as never).map((r) => r.id));
   });
 
-  it("RBT sees no department dashboards", () => {
-    expect(visibleDepartmentDashboardsForRole("rbt" as never)).toHaveLength(0);
+  it("RBT sees all 9 department dashboards", () => {
+    expect(visibleDepartmentDashboardsForRole("rbt" as never)).toHaveLength(9);
   });
 
-  it("BCBA sees clinical approved reports but not HR/authorization/cancellation", () => {
+  it("BCBA sees the full shared catalog", () => {
     const ids = visibleReportsForRole("bcba" as never).map((r) => r.id);
     expect(ids).toContain("bcba-productivity-report-v3");
     expect(ids).toContain("bcba-supervision");
     expect(ids).toContain("parent-training");
-    expect(ids).not.toContain("cancellation-command-center");
-    expect(ids).not.toContain("authorization-analysis");
-    expect(ids).not.toContain("authorization-utilization-hour-based");
+    expect(ids).toContain("cancellation-command-center");
   });
 
   it("admin/exec keep the full approved six", () => {

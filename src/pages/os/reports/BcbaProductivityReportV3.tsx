@@ -30,13 +30,10 @@ import { inferAssignmentHistory, type OwnershipConflict } from "@/lib/os/bcbaPro
 import {
   getBcbaProductivitySharedRows,
   getBcbaProductivityOwnershipContextRows,
+  getBcbaProductivityDatasetStatus,
   type BcbaDatasetStatus,
   type BcbaSharedBillingRow,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
-import {
-  fetchBcbaBillingRowsAsSharedShape,
-  fetchCanonicalReportTotals,
-} from "@/lib/os/reporting/canonicalReports";
 import { normalizeUsState, resolveRowState } from "@/lib/os/bcbaProductivityV3/stateNormalization";
 import { Link } from "react-router-dom";
 import { buildClientDetailHref } from "@/lib/os/reporting/clientRouteBuilder";
@@ -255,19 +252,13 @@ export default function BcbaProductivityReportV3() {
     setSharedError("");
     setSharedProgress(null);
     try {
-      // Primary source: RLS-safe canonical RPC over v_cr_canonical_sessions
-      // with server-side paging so the browser never loads all 47k rows at
-      // once. Manual uploads remain an explicit temporary override.
-      const totals = await fetchCanonicalReportTotals();
-      setSharedStatus({
-        activeRowCount: totals.totalRows,
-        batchCount: totals.totalRows > 0 ? 1 : 0,
-        earliestServiceDate: totals.minServiceDate,
-        latestServiceDate: totals.maxServiceDate,
-        lastUploadAt: totals.maxBatchUploadedAt,
-        lastUploadedByEmail: null,
-      });
-      if (!totals.totalRows) {
+      // Single source of truth: the admin-uploaded shared dataset
+      // (public.bcba_productivity_billing_rows where active = true).
+      // Display rows, KPIs, and filters all come from these active rows so
+      // ownership inference and productivity totals share one identity space.
+      const status = await getBcbaProductivityDatasetStatus();
+      setSharedStatus(status);
+      if (!status.activeRowCount) {
         setRows([]);
         setOwnershipRows([]);
         setFileName("");
@@ -276,14 +267,13 @@ export default function BcbaProductivityReportV3() {
         }
         return;
       }
-      // Fetch the canonical (active) dataset and the ownership-context
+      // Fetch the active dataset and the ownership-context
       // dataset (active + historical non-97153 anchors) in parallel. The
       // ownership-context call is best-effort; if it fails we fall back
       // to inferring from `shared` alone so the report never regresses.
       const [shared, ownershipContext] = await Promise.all([
-        fetchBcbaBillingRowsAsSharedShape({
-          pageSize: 2000,
-          hardCap: 60000,
+        getBcbaProductivitySharedRows({
+          force: opts?.force,
           onProgress: (loaded, total) => setSharedProgress({ loaded, total }),
         }),
         getBcbaProductivityOwnershipContextRows().catch((err) => {
@@ -297,10 +287,10 @@ export default function BcbaProductivityReportV3() {
         (ownershipContext.length ? ownershipContext : shared) as unknown as BillingRow[],
       );
       setFileName(
-        `Canonical CentralReach dataset · ${totals.totalRows.toLocaleString()} rows · ${totals.minServiceDate ?? "—"} → ${totals.maxServiceDate ?? "—"}`,
+        `Shared admin dataset · ${status.activeRowCount.toLocaleString()} active rows · ${status.earliestServiceDate ?? "—"} → ${status.latestServiceDate ?? "—"}`,
       );
       if (!opts?.silent) {
-        toast.success(`Loaded ${shared.length.toLocaleString()} canonical rows`);
+        toast.success(`Loaded ${shared.length.toLocaleString()} active rows`);
       }
     } catch (e: any) {
       const message = e?.message ?? "Failed to load shared admin dataset";

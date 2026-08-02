@@ -259,7 +259,7 @@ export const REPORTS: ReportDef[] = [
 
   // Leadership
   { id: "exec-overview", title: "Executive Overview", description: "Company-wide KPIs, lead flow, and operating posture.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership"], type: "dashboard", owner: "Leadership", lastUpdated: "2h ago", popularity: 97, featured: true, aiInsight: "Net growth up +11 - fastest weekly gain since Feb.", kpiPreviews: [{ label: "Active Clients", value: "142", delta: "+8", trend: "up" }, { label: "Pipeline", value: "$182k", delta: "+$24k", trend: "up" }, { label: "Conversion", value: "34%", delta: "+4pt", trend: "up" }], sparkline: [22, 28, 26, 35, 41, 48, 52, 60, 58, 67, 72, 78], tags: ["KPI", "Growth"], detailView: "executive" },
-  { id: "bcba-performance", title: "BCBA Performance", description: "Live billing, supervision, and revenue health from CMS session data.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership", "state_director", "assistant_state_director", "billing_finance", "qa_team", "clinical_director", "behavioral_support"], type: "dashboard", owner: "Leadership", lastUpdated: "Live", popularity: 99, featured: true, aiInsight: "Drives Hours/Active Client efficiency and revenue leak detection.", kpiPreviews: [{ label: "Live data", value: "CMS", trend: "up" }, { label: "Drill-downs", value: "BCBA/Code", trend: "up" }], sparkline: [40, 48, 52, 58, 60, 65, 68, 72, 78, 82], tags: ["BCBA", "Billing", "Revenue"] },
+  { id: "bcba-performance", title: "BCBA Performance", description: "Live billing, supervision, and revenue health from CMS session data.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership", "state_director", "assistant_state_director", "billing_finance", "qa_team", "clinical_director", "behavioral_support"], type: "dashboard", owner: "Leadership", lastUpdated: "Live", popularity: 99, featured: true, aiInsight: "Drives Hours/Active Client efficiency and revenue leak detection.", kpiPreviews: [{ label: "Live data", value: "CMS", trend: "up" }, { label: "Drill-downs", value: "BCBA/Code", trend: "up" }], sparkline: [40, 48, 52, 58, 60, 65, 68, 72, 78, 82], tags: ["BCBA", "Billing", "Revenue"], drilldownPath: "/reports/bcba-performance" },
   { id: "growth-trends", title: "Growth Trends", description: "Lead, client, and active growth across the last 6 months.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership"], type: "trend", owner: "Leadership", lastUpdated: "Yesterday", popularity: 71, aiInsight: "Q2 active-client growth pacing 18% above plan.", sparkline: [40, 44, 48, 55, 62, 68, 72, 78, 82, 86], tags: ["Trends"], detailView: "growth" },
 
   // Operations
@@ -283,7 +283,7 @@ export const REPORTS: ReportDef[] = [
   // routes /reports/bcba-productivity-report and /reports/progress-reports can
   // be wrapped with ReportRoleGuard instead of being silently unguarded.
   { id: "bcba-productivity-report", title: "BCBA Productivity Report", description: "Legacy BCBA productivity report - available to all authenticated users for now (business rule).", category: "clinical", visibleTo: "all", type: "dashboard", owner: "Operations", lastUpdated: "On upload", popularity: 90, aiInsight: "Kept broadly available while V3 becomes the source of truth.", sparkline: [40, 48, 54, 60, 66, 72, 78, 82], tags: ["BCBA", "Productivity", "Legacy"] },
-  { id: "progress-reports", title: "Progress Reports", description: "QA / clinical leadership progress report tracking.", category: "qa", visibleTo: ["super_admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "bcba", "behavioral_support", "operations_leadership", "executive_leadership", "state_director", "assistant_state_director"], type: "table", owner: "QA / Compliance", lastUpdated: "Live", popularity: 78, aiInsight: "Tracks in-progress QA reports across BCBA authors.", sparkline: [30, 34, 40, 44, 50, 56, 62, 68], tags: ["QA", "Progress"] },
+  { id: "progress-reports", title: "Progress Reports", description: "QA / clinical leadership progress report tracking.", category: "qa", visibleTo: ["super_admin", "qa_team", "qa_director", "qa_specialist", "clinical_director", "bcba", "behavioral_support", "operations_leadership", "executive_leadership", "state_director", "assistant_state_director"], type: "table", owner: "QA / Compliance", lastUpdated: "Live", popularity: 78, aiInsight: "Tracks in-progress QA reports across BCBA authors.", sparkline: [30, 34, 40, 44, 50, 56, 62, 68], tags: ["QA", "Progress"], drilldownPath: "/reports/progress-reports" },
   { id: "qa-supervision", title: "Supervision Compliance", description: "BCBA supervision hours by client and credentialing status.", category: "qa", visibleTo: ["super_admin", "qa_team", "bcba", "operations_leadership", "clinical_director", "behavioral_support"], type: "summary", owner: "QA / Compliance", lastUpdated: "Today", popularity: 81, aiInsight: "4 clients under supervision threshold this week.", sparkline: [50, 55, 60, 64, 68, 72, 70, 74], tags: ["Compliance"] },
   { id: "qa-parent-training", title: "Parent Training 97156", description: "Authorized vs delivered parent training hours.", category: "qa", visibleTo: ["super_admin", "qa_team", "bcba", "clinical_director", "behavioral_support"], type: "table", owner: "QA / Compliance", lastUpdated: "Today", popularity: 64, aiInsight: "Utilization improved to 78% (+9pt vs March).", sparkline: [40, 48, 52, 58, 60, 65, 68, 72, 78], tags: ["97156"] },
 
@@ -361,72 +361,49 @@ export const REPORTS: ReportDef[] = [
   { id: "rbt-centralreach-sync", title: "My CentralReach Sync Status", description: "Whether your sessions, supervision, and notes have synced to CentralReach.", category: "operations", visibleTo: ["rbt", "super_admin", "operations_leadership", "executive_leadership"], type: "summary", owner: "RBT", lastUpdated: "Live", popularity: 68, aiInsight: "Pending items flag before they hold up payroll.", sparkline: [60, 66, 72, 76, 80, 84, 88, 92], tags: ["RBT", "CentralReach", "Sync"], drilldownPath: "/rbt/my-day" },
 ];
 
-export function visibleReportsForRole(role: OSRole): ReportDef[] {
-  // Reports consolidation with least-privilege scoping:
-  //  - RBTs get ONLY their personal, self-scoped catalog entries. They must
-  //    never see BCBA productivity, supervision, cancellation, authorization
-  //    or company-wide provider-identifying dashboards.
-  //  - BCBAs get the clinical subset of the six approved reports plus their
-  //    own scoped entries. They do not see HR / payroll / authorization
-  //    analysis / hour-based utilization / cancellation.
-  //  - Every other Blossom OS role (admin/exec/ops/QA/HR/finance/state
-  //    director/etc.) sees the full six approved reports plus catalog entries
-  //    that explicitly list them in visibleTo.
-  //
-  // Department dashboards (visibleTo === "all") remain on a separate shelf.
-  if (role === "rbt") {
-    return REPORTS.filter(
-      (r) =>
-        Array.isArray(r.visibleTo) &&
-        (r.visibleTo as readonly string[]).includes("rbt"),
-    );
+/**
+ * Canonical Reports page catalog — identical for EVERY OS role.
+ *
+ * /reports surfaces exactly 17 cards: these 8 primary/shared reports plus the
+ * 9 department dashboards. Legacy REPORTS entries stay in the array for
+ * cross-linking/compatibility but are never surfaced on /reports.
+ */
+export const PRIMARY_REPORT_IDS = [
+  "bcba-productivity-report-v3",
+  "cancellation-command-center",
+  "authorization-analysis",
+  "authorization-utilization-hour-based",
+  "parent-training",
+  "bcba-supervision",
+  "bcba-performance",
+  "progress-reports",
+] as const;
+
+export function visibleReportsForRole(_role?: OSRole): ReportDef[] {
+  const seen = new Set<string>();
+  const out: ReportDef[] = [];
+  for (const id of PRIMARY_REPORT_IDS) {
+    if (seen.has(id)) continue;
+    const def = REPORTS.find((r) => r.id === id);
+    if (!def) continue;
+    seen.add(id);
+    out.push(def);
   }
-  const BCBA_APPROVED_IDS = new Set([
-    "bcba-productivity-report-v3",
-    "parent-training",
-    "bcba-supervision",
-  ]);
-  const FULL_APPROVED_IDS = [
-    "bcba-productivity-report-v3",
-    "cancellation-command-center",
-    "authorization-analysis",
-    "authorization-utilization-hour-based",
-    "parent-training",
-    "bcba-supervision",
-  ];
-  const approvedIdList =
-    role === "bcba"
-      ? FULL_APPROVED_IDS.filter((id) => BCBA_APPROVED_IDS.has(id))
-      : FULL_APPROVED_IDS;
-  const approved = approvedIdList
-    .map((id) => REPORTS.find((r) => r.id === id))
-    .filter((r): r is ReportDef => Boolean(r));
-  const approvedIds = new Set(approved.map((r) => r.id));
-  const roleScoped = REPORTS.filter((r) => {
-    if (approvedIds.has(r.id)) return false;
-    if (r.visibleTo === "all") return false; // handled by department shelf
-    return Array.isArray(r.visibleTo) && (r.visibleTo as readonly string[]).includes(role);
-  });
-  return [...approved, ...roleScoped];
+  return out;
 }
 
 /**
  * Department dashboards visible to a given role. Kept OUT of
  * visibleReportsForRole so /reports only ever renders the approved six.
  */
-export function visibleDepartmentDashboardsForRole(role: OSRole): ReportDef[] {
-  // Least privilege: RBTs never see company-wide department dashboards
-  // (staffing, HR, executive, etc.). BCBAs see the clinical-adjacent ones
-  // only. Everyone else keeps the full shelf.
-  if (role === "rbt") return [];
-  if (role === "bcba") {
-    return REPORTS.filter(
-      (r) =>
-        DEPARTMENT_DASHBOARD_IDS.has(r.id) &&
-        ["clinical", "qa", "training"].includes(r.category),
-    );
-  }
-  return REPORTS.filter((r) => DEPARTMENT_DASHBOARD_IDS.has(r.id));
+export function visibleDepartmentDashboardsForRole(_role?: OSRole): ReportDef[] {
+  const seen = new Set<string>();
+  return REPORTS.filter((r) => {
+    if (!DEPARTMENT_DASHBOARD_IDS.has(r.id)) return false;
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
 }
 
 export function visibleCategoriesForRole(role: OSRole): (ReportCategoryDef & { count: number; mostViewed?: ReportDef })[] {

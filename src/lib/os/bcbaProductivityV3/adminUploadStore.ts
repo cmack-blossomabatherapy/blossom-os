@@ -749,7 +749,7 @@ export async function getBcbaProductivitySharedRows(
     for (const d of data ?? []) {
       const n = (d.normalized as unknown as BcbaSharedBillingRow) || null;
       if (n && n.date && n.code) {
-        const state = normalizeUsState(n.state) || n.state || "";
+        const state = normalizeUsState(n.state);
         slice.push(state === n.state ? n : { ...n, state });
       }
     }
@@ -875,7 +875,7 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
       for (const d of arr) {
         const n = (d as unknown as { normalized?: BcbaSharedBillingRow | null }).normalized ?? null;
         if (n && n.date && n.code) {
-          const state = normalizeUsState(n.state) || n.state || "";
+          const state = normalizeUsState(n.state);
           acc.push(state === n.state ? n : { ...n, state });
         }
       }
