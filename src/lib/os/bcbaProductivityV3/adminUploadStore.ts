@@ -789,6 +789,23 @@ export async function getBcbaProductivitySharedRows(
 ): Promise<BcbaSharedBillingRow[]> {
   const max = opts.limit ?? 250000;
 
+  // Preferred source of truth: normalized CentralReach Data Hub billing.
+  const crCount = await countCrDataHubBillingRows();
+  if (crCount > 0) {
+    const cacheKey = `cr|${crCount}`;
+    if (!opts.force && SHARED_CACHE && SHARED_CACHE.key === cacheKey) {
+      opts.onProgress?.(SHARED_CACHE.rows.length, SHARED_CACHE.rows.length);
+      return SHARED_CACHE.rows;
+    }
+    const rows = await readAllCrDataHubBillingRows({
+      limit: max,
+      total: Math.min(crCount, max),
+      onProgress: opts.onProgress,
+    });
+    SHARED_CACHE = { key: cacheKey, rows };
+    return rows;
+  }
+
   // Get authoritative count first so we can size the fetch, drive an honest
   // progress bar, and cache-key against dataset state.
   const { count, error: countErr } = await supabase
@@ -863,6 +880,41 @@ export async function getBcbaProductivitySharedRows(
 }
 
 export async function getBcbaProductivityDatasetStatus(): Promise<BcbaDatasetStatus> {
+  // Preferred source: CentralReach Data Hub billing rows.
+  const crCount = await countCrDataHubBillingRows();
+  if (crCount > 0) {
+    const [minRes, maxRes, batchRes] = await Promise.all([
+      supabase
+        .from("cr_billing_sessions")
+        .select("date_of_service")
+        .not("date_of_service", "is", null)
+        .order("date_of_service", { ascending: true })
+        .limit(1),
+      supabase
+        .from("cr_billing_sessions")
+        .select("date_of_service")
+        .not("date_of_service", "is", null)
+        .order("date_of_service", { ascending: false })
+        .limit(1),
+      supabase
+        .from("cr_import_batches")
+        .select("id,created_at")
+        .order("created_at", { ascending: false })
+        .limit(200),
+    ]);
+    const batches = batchRes.data ?? [];
+    return {
+      activeRowCount: crCount,
+      batchCount: batches.length,
+      earliestServiceDate: minRes.data?.[0]?.date_of_service ?? null,
+      latestServiceDate: maxRes.data?.[0]?.date_of_service ?? null,
+      lastUploadAt: batches[0]?.created_at ?? null,
+      lastUploadedByEmail: null,
+      source: "centralreach_data_hub",
+      sourceLabel: BCBA_SOURCE_LABELS.centralreach_data_hub,
+    };
+  }
+
   const { count: rowCount, error: rowErr } = await supabase
     .from("bcba_productivity_billing_rows")
     .select("id", { count: "exact", head: true })
@@ -891,6 +943,8 @@ export async function getBcbaProductivityDatasetStatus(): Promise<BcbaDatasetSta
     latestServiceDate: latest,
     lastUploadAt: last?.created_at ?? null,
     lastUploadedByEmail: last?.uploaded_by_email ?? null,
+    source: "legacy_upload",
+    sourceLabel: BCBA_SOURCE_LABELS.legacy_upload,
   };
 }
 
@@ -944,6 +998,13 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
   const PAGE = 5000;
   const acc: BcbaSharedBillingRow[] = [];
 
+  // Data Hub billing is the current authoritative dataset; every row in it is
+  // live, so the active pass and the historical-anchor pass are the same set.
+  const crCount = await countCrDataHubBillingRows();
+  if (crCount > 0) {
+    acc.push(...(await readAllCrDataHubBillingRows()));
+  } else {
+
   type Pass = "active" | "historical_direct";
   async function drain(pass: Pass) {
     let offset = 0;
@@ -983,6 +1044,7 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
   // do NOT start with 97153. Overlap with pass (1) is removed by the
   // dedupe below.
   await drain("historical_direct");
+  }
 
   // Stable dedupe key. Active + historical passes will overlap for
   // non-97153 rows in active batches; this collapses them into one entry.
