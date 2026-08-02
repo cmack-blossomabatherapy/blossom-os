@@ -361,72 +361,49 @@ export const REPORTS: ReportDef[] = [
   { id: "rbt-centralreach-sync", title: "My CentralReach Sync Status", description: "Whether your sessions, supervision, and notes have synced to CentralReach.", category: "operations", visibleTo: ["rbt", "super_admin", "operations_leadership", "executive_leadership"], type: "summary", owner: "RBT", lastUpdated: "Live", popularity: 68, aiInsight: "Pending items flag before they hold up payroll.", sparkline: [60, 66, 72, 76, 80, 84, 88, 92], tags: ["RBT", "CentralReach", "Sync"], drilldownPath: "/rbt/my-day" },
 ];
 
-export function visibleReportsForRole(role: OSRole): ReportDef[] {
-  // Reports consolidation with least-privilege scoping:
-  //  - RBTs get ONLY their personal, self-scoped catalog entries. They must
-  //    never see BCBA productivity, supervision, cancellation, authorization
-  //    or company-wide provider-identifying dashboards.
-  //  - BCBAs get the clinical subset of the six approved reports plus their
-  //    own scoped entries. They do not see HR / payroll / authorization
-  //    analysis / hour-based utilization / cancellation.
-  //  - Every other Blossom OS role (admin/exec/ops/QA/HR/finance/state
-  //    director/etc.) sees the full six approved reports plus catalog entries
-  //    that explicitly list them in visibleTo.
-  //
-  // Department dashboards (visibleTo === "all") remain on a separate shelf.
-  if (role === "rbt") {
-    return REPORTS.filter(
-      (r) =>
-        Array.isArray(r.visibleTo) &&
-        (r.visibleTo as readonly string[]).includes("rbt"),
-    );
+/**
+ * Canonical Reports page catalog — identical for EVERY OS role.
+ *
+ * /reports surfaces exactly 17 cards: these 8 primary/shared reports plus the
+ * 9 department dashboards. Legacy REPORTS entries stay in the array for
+ * cross-linking/compatibility but are never surfaced on /reports.
+ */
+export const PRIMARY_REPORT_IDS = [
+  "bcba-productivity-report-v3",
+  "cancellation-command-center",
+  "authorization-analysis",
+  "authorization-utilization-hour-based",
+  "parent-training",
+  "bcba-supervision",
+  "bcba-performance",
+  "progress-reports",
+] as const;
+
+export function visibleReportsForRole(_role?: OSRole): ReportDef[] {
+  const seen = new Set<string>();
+  const out: ReportDef[] = [];
+  for (const id of PRIMARY_REPORT_IDS) {
+    if (seen.has(id)) continue;
+    const def = REPORTS.find((r) => r.id === id);
+    if (!def) continue;
+    seen.add(id);
+    out.push(def);
   }
-  const BCBA_APPROVED_IDS = new Set([
-    "bcba-productivity-report-v3",
-    "parent-training",
-    "bcba-supervision",
-  ]);
-  const FULL_APPROVED_IDS = [
-    "bcba-productivity-report-v3",
-    "cancellation-command-center",
-    "authorization-analysis",
-    "authorization-utilization-hour-based",
-    "parent-training",
-    "bcba-supervision",
-  ];
-  const approvedIdList =
-    role === "bcba"
-      ? FULL_APPROVED_IDS.filter((id) => BCBA_APPROVED_IDS.has(id))
-      : FULL_APPROVED_IDS;
-  const approved = approvedIdList
-    .map((id) => REPORTS.find((r) => r.id === id))
-    .filter((r): r is ReportDef => Boolean(r));
-  const approvedIds = new Set(approved.map((r) => r.id));
-  const roleScoped = REPORTS.filter((r) => {
-    if (approvedIds.has(r.id)) return false;
-    if (r.visibleTo === "all") return false; // handled by department shelf
-    return Array.isArray(r.visibleTo) && (r.visibleTo as readonly string[]).includes(role);
-  });
-  return [...approved, ...roleScoped];
+  return out;
 }
 
 /**
  * Department dashboards visible to a given role. Kept OUT of
  * visibleReportsForRole so /reports only ever renders the approved six.
  */
-export function visibleDepartmentDashboardsForRole(role: OSRole): ReportDef[] {
-  // Least privilege: RBTs never see company-wide department dashboards
-  // (staffing, HR, executive, etc.). BCBAs see the clinical-adjacent ones
-  // only. Everyone else keeps the full shelf.
-  if (role === "rbt") return [];
-  if (role === "bcba") {
-    return REPORTS.filter(
-      (r) =>
-        DEPARTMENT_DASHBOARD_IDS.has(r.id) &&
-        ["clinical", "qa", "training"].includes(r.category),
-    );
-  }
-  return REPORTS.filter((r) => DEPARTMENT_DASHBOARD_IDS.has(r.id));
+export function visibleDepartmentDashboardsForRole(_role?: OSRole): ReportDef[] {
+  const seen = new Set<string>();
+  return REPORTS.filter((r) => {
+    if (!DEPARTMENT_DASHBOARD_IDS.has(r.id)) return false;
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
 }
 
 export function visibleCategoriesForRole(role: OSRole): (ReportCategoryDef & { count: number; mostViewed?: ReportDef })[] {
