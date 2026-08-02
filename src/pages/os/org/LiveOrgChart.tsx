@@ -621,21 +621,35 @@ function InnerLiveOrgChart() {
             className="h-9 rounded-xl"
             onClick={collapsedIds.length > 0 ? expandAll : collapseLeaders}
             disabled={!canEdit}
-            title={canEdit ? undefined : "HR / admins can change the saved layout"}
+            title={canEdit ? undefined : "Only the Super Admin can change the saved layout"}
           >
             <ChevronsDownUp className="size-4" />
             {collapsedIds.length > 0 ? "Expand all" : "Collapse teams"}
           </Button>
-          {canEdit ? (
+          {isOrgChartAdmin ? (
             <>
-              <Button size="sm" variant="outline" className="h-9 rounded-xl" onClick={resetLayout}>
-                <RefreshCw className="size-4" /> Reset layout
+              <Button
+                size="sm"
+                variant={editMode ? "default" : "outline"}
+                className="h-9 rounded-xl"
+                onClick={() => setEditMode((v) => !v)}
+                aria-pressed={editMode}
+              >
+                {editMode ? <Lock className="size-4" /> : <Pencil className="size-4" />}
+                {editMode ? "Done editing" : "Edit chart"}
               </Button>
-              <Button asChild size="sm" variant="outline" className="h-9 rounded-xl">
-                <Link to="/org-chart/editor">
-                  <Pencil className="size-4" /> Manual editor
-                </Link>
-              </Button>
+              {editMode && (
+                <>
+                  <Button size="sm" variant="outline" className="h-9 rounded-xl" onClick={resetLayout}>
+                    <RefreshCw className="size-4" /> Reset layout
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="h-9 rounded-xl">
+                    <Link to="/org-chart/editor">
+                      <Pencil className="size-4" /> Manual editor
+                    </Link>
+                  </Button>
+                </>
+              )}
             </>
           ) : (
             <span className="flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground">
