@@ -532,6 +532,65 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
           </div>
         </header>
 
+        {legacyNormalizationNeeded && (
+          <Card className="border-amber-300 bg-amber-50/70 p-5" data-testid="legacy-normalization-banner">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="flex gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
+                <div>
+                  <div className="text-[15px] font-semibold text-amber-900">Legacy uploads need normalization</div>
+                  <p className="mt-1 max-w-2xl text-[12.5px] text-amber-900/80">
+                    {legacyDatasetCount.toLocaleString()} file(s) uploaded before the normalized importer went live are
+                    stored, but none of them are powering reports yet. Normalize them now to populate the CentralReach
+                    report tables. Duplicate rows are skipped automatically.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => void runLegacyReprocess()}
+                disabled={reprocessing}
+                data-testid="normalize-existing-uploads"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
+                {reprocessing ? "Normalizing…" : "Normalize existing uploads"}
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {reprocessReport && (
+          <Card className="p-5" data-testid="legacy-normalization-result">
+            <div className="mb-2 flex items-center gap-2">
+              {reprocessReport.ok
+                ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                : <AlertTriangle className="h-4 w-4 text-amber-600" />}
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Last normalization run
+              </h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["Files processed", reprocessReport.filesProcessed],
+                ["Rows parsed", reprocessReport.parsedRowCount],
+                ["Rows appended", reprocessReport.appendedRowCount],
+                ["Duplicates skipped", reprocessReport.duplicateRowCount],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="rounded-xl border border-border/60 p-3">
+                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</div>
+                  <div className="mt-1 text-[15px] font-semibold tracking-tight">{Number(value).toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+            {reprocessReport.issues.length > 0 && (
+              <ul className="mt-3 space-y-1 text-[11.5px] text-destructive">
+                {reprocessReport.issues.map((issue, i) => (
+                  <li key={`${i}-${issue}`}>{issue}</li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        )}
+
         {/* Drop / choose */}
         <Card className="p-6">
           <div
