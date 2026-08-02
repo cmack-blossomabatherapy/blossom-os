@@ -1,0 +1,117 @@
+/**
+ * Loader for the 8 primary CentralReach-backed reports.
+ *
+ * Each report declares which normalized `cr_*` datasets it needs; the hook
+ * loads them in parallel, resolves the freshness indicator from
+ * `cr_import_batches`, and exposes an exact `empty` flag so pages can render
+ * the Data Hub empty state instead of fabricated numbers.
+ */
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  fetchCrAuthorizations,
+  fetchCrBatches,
+  fetchCrBillingSessions,
+  fetchCrScheduleEvents,
+  fetchCrUtilization,
+  summarizeFreshness,
+} from "@/lib/os/reports/crPrimary/source";
+import type {
+  CrAuthorizationRow,
+  CrBatchSummary,
+  CrBillingSessionRow,
+  CrScheduleEventRow,
+  CrUtilizationRow,
+} from "@/lib/os/reports/crPrimary/types";
+import type { FreshnessInfo } from "@/components/reports/crPrimary/PrimaryReportShell";
+
+export type CrDataset = "billing" | "schedule" | "authorizations" | "utilization";
+
+const BATCH_TYPES: Record<CrDataset, string[]> = {
+  billing: ["billing", "billing_sessions", "sessions"],
+  schedule: ["schedule", "scheduling", "schedule_events"],
+  authorizations: ["authorizations", "authorization"],
+  utilization: ["utilization", "authorization_utilization"],
+};
+
+export interface CrPrimaryReportData {
+  billing: CrBillingSessionRow[];
+  schedule: CrScheduleEventRow[];
+  authorizations: CrAuthorizationRow[];
+  utilization: CrUtilizationRow[];
+  batches: CrBatchSummary[];
+  freshness: FreshnessInfo;
+  loading: boolean;
+  /** No source rows at all for the requested datasets. */
+  empty: boolean;
+  errorMessage: string | null;
+  refresh: () => void;
+}
+
+export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
+  const key = datasets.slice().sort().join(",");
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [billing, setBilling] = useState<CrBillingSessionRow[]>([]);
+  const [schedule, setSchedule] = useState<CrScheduleEventRow[]>([]);
+  const [authorizations, setAuthorizations] = useState<CrAuthorizationRow[]>([]);
+  const [utilization, setUtilization] = useState<CrUtilizationRow[]>([]);
+  const [batches, setBatches] = useState<CrBatchSummary[]>([]);
+  const [nonce, setNonce] = useState(0);
+
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const wanted = new Set(key.split(",").filter(Boolean) as CrDataset[]);
+
+    (async () => {
+      setLoading(true);
+      const errors: string[] = [];
+      const batchTypes = [...wanted].flatMap((d) => BATCH_TYPES[d]);
+
+      const [b, s, a, u, batchRes] = await Promise.all([
+        wanted.has("billing") ? fetchCrBillingSessions() : Promise.resolve({ rows: [], error: null }),
+        wanted.has("schedule") ? fetchCrScheduleEvents() : Promise.resolve({ rows: [], error: null }),
+        wanted.has("authorizations") ? fetchCrAuthorizations() : Promise.resolve({ rows: [], error: null }),
+        wanted.has("utilization") ? fetchCrUtilization() : Promise.resolve({ rows: [], error: null }),
+        fetchCrBatches(batchTypes),
+      ]);
+      if (cancelled) return;
+
+      for (const r of [b, s, a, u, batchRes]) if (r.error) errors.push(r.error);
+      setBilling(b.rows as CrBillingSessionRow[]);
+      setSchedule(s.rows as CrScheduleEventRow[]);
+      setAuthorizations(a.rows as CrAuthorizationRow[]);
+      setUtilization(u.rows as CrUtilizationRow[]);
+      setBatches(batchRes.rows);
+      setErrorMessage(errors.length ? errors[0] : null);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [key, nonce]);
+
+  const sourceRowCount =
+    billing.length + schedule.length + authorizations.length + utilization.length;
+
+  const freshness = useMemo<FreshnessInfo>(() => {
+    const summary = summarizeFreshness(batches);
+    // Prefer the true loaded row count when batch metadata is incomplete.
+    return { ...summary, rowCount: summary.rowCount || sourceRowCount };
+  }, [batches, sourceRowCount]);
+
+  return {
+    billing,
+    schedule,
+    authorizations,
+    utilization,
+    batches,
+    freshness,
+    loading,
+    empty: !loading && sourceRowCount === 0,
+    errorMessage,
+    refresh,
+  };
+}
