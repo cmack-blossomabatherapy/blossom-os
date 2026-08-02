@@ -58,17 +58,10 @@ describe("Assistant State Director completion pass", () => {
     }
   });
 
-  it("surfaces state-support reports for Assistant State Director from /reports catalog", () => {
+  it("surfaces the canonical /reports catalog for Assistant State Director, mirroring State Director", () => {
     const ids = visibleReportsForRole("assistant_state_director").map((r) => r.id);
-    // Sample of reports that state_director sees — assistant must mirror.
-    for (const id of [
-      "bcba-performance",
-      "lifecycle",
-      "intake-perf",
-      "qa-auth-utilization",
-      "auth-performance",
-      "bcba-productivity-report-v3",
-    ]) {
+    expect(ids).toEqual(visibleReportsForRole("state_director").map((r) => r.id));
+    for (const id of ["bcba-performance", "bcba-productivity-report-v3"]) {
       expect(ids).toContain(id);
     }
   });

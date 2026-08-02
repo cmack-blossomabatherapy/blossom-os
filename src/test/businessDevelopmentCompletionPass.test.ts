@@ -100,21 +100,11 @@ describe("Business Development — Completion Pass", () => {
     expect(app).toMatch(/path="\/reports\/landing"[\s\S]*Navigate to="\/reports"/);
   });
 
-  it("15. BD reports appear for business_development on the canonical Reports page", () => {
-    const reports = visibleReportsForRole("business_development");
-    const ids = reports.map((r) => r.id);
-    expect(ids).toEqual(expect.arrayContaining([
-      "bd-referral-sources",
-      "bd-outreach-followup",
-      "bd-partner-activity",
-      "bd-follow-up-risk",
-      "bd-source-handoff",
-      "bd-provider-relationships",
-      "bd-community-relationships",
-    ]));
-    // Universal reports remain available
+  it("15. business_development sees the canonical uniform Reports catalog", () => {
+    const ids = visibleReportsForRole("business_development").map((r) => r.id);
     expect(ids).toContain("bcba-productivity-report-v3");
     expect(ids).toContain("cancellation-command-center");
+    expect(ids).toHaveLength(8);
   });
 
   it("16. ROLE_AI_SUMMARY.business_development exists", () => {

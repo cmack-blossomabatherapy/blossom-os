@@ -53,24 +53,12 @@ describe("Business Development — Completion Pass 2", () => {
     }
   });
 
-  it("BD visible reports include BD cards, BCBA Productivity, and exclude HR-only reports", () => {
+  it("BD visible reports are the canonical shared catalog with no HR/credentialing/finance leakage", () => {
     const reports = visibleReportsForRole("business_development");
     const ids = reports.map((r) => r.id);
-    for (const id of [
-      "bd-referral-sources",
-      "bd-outreach-followup",
-      "bd-partner-activity",
-      "bd-follow-up-risk",
-      "bd-source-handoff",
-      "bd-provider-relationships",
-      "bd-community-relationships",
-    ]) {
-      expect(ids).toContain(id);
-    }
-    // Global BCBA Productivity is still available.
     expect(ids).toContain("bcba-productivity-report-v3");
-    // HR / credentialing / finance-only reports should not leak to BD.
-    for (const id of reports.map((r) => r.id)) {
+    expect(ids).toHaveLength(8);
+    for (const id of ids) {
       expect(id.startsWith("hr-")).toBe(false);
       expect(id.startsWith("credentialing-")).toBe(false);
       expect(id.startsWith("finance-")).toBe(false);

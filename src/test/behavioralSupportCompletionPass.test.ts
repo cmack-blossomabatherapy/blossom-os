@@ -74,11 +74,12 @@ describe("Behavioral Support completion pass", () => {
     expect(app).not.toContain('path="/clinical/reports"');
   });
 
-  it("visibleReportsForRole('behavioral_support') includes shared and clinical support reports", () => {
+  it("visibleReportsForRole('behavioral_support') returns the canonical shared catalog", () => {
     const ids = visibleReportsForRole("behavioral_support").map((r) => r.id);
     expect(ids).toContain("bcba-productivity-report-v3");
     expect(ids).toContain("cancellation-command-center");
-    expect(ids).toContain("qa-supervision-pt");
+    expect(ids).toContain("bcba-supervision");
+    expect(ids).toHaveLength(8);
   });
 
   it("Behavioral Support Supabase migration includes all six workflow tables", () => {
