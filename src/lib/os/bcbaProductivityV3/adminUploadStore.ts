@@ -886,6 +886,11 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
 
   // (1) All active rows.
   await drain("active");
+  // Reports must be EMPTY until new active rows are appended through the
+  // CentralReach Data Hub. Old inactive/voided rows stay in the table (never
+  // deleted) but must never resurrect a report on their own, so we only pull
+  // historical anchors once an active dataset exists.
+  if (acc.length === 0) return [];
   // (2) Historical direct-service anchors (any active status) — codes that
   // do NOT start with 97153. Overlap with pass (1) is removed by the
   // dedupe below.
