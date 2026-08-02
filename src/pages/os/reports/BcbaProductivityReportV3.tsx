@@ -263,7 +263,7 @@ export default function BcbaProductivityReportV3() {
         setOwnershipRows([]);
         setFileName("");
         if (!opts?.silent) {
-          toast.info("No CentralReach billing rows are available. Add one from CentralReach Uploads.");
+          toast.info("No CentralReach billing rows are available. Add one from CentralReach Data Hub.");
         }
         return;
       }
