@@ -11,6 +11,13 @@ const state: {
   ranges: Record<string, number[][]>;
 } = { cr: [], legacy: [], legacyBatches: [], crBatches: [], ranges: {} };
 
+/**
+ * The real Data API caps every response at 1,000 rows regardless of the
+ * requested range. The mock enforces the same cap so pagination regressions
+ * (which truncated the report to early-January rows) fail here.
+ */
+const SERVER_MAX_ROWS = 1000;
+
 function tableRows(table: string): Row[] {
   if (table === "cr_billing_sessions") return state.cr;
   if (table === "bcba_productivity_billing_rows") return state.legacy;
@@ -51,7 +58,7 @@ function makeBuilder(table: string) {
     },
     range(from: number, to: number) {
       (state.ranges[table] ||= []).push([from, to]);
-      rows = rows.slice(from, to + 1);
+      rows = rows.slice(from, to + 1).slice(0, SERVER_MAX_ROWS);
       return builder;
     },
     then(resolve: (v: any) => unknown) {
@@ -148,15 +155,24 @@ describe("BCBA Productivity V3 → CentralReach Data Hub wiring", () => {
     expect(status.source).toBe("legacy_upload");
   });
 
-  it("paginates beyond 20,000 rows (56,936+)", async () => {
+  it("loads every row even though the API caps responses at 1,000", async () => {
     const total = 56936;
+    // Half January, half July: a truncated load would drop July entirely.
     state.cr = Array.from({ length: total }, (_, i) =>
-      crRow({ client_cr_id: String(i), date_of_service: "2026-05-01" }));
+      crRow({
+        client_cr_id: String(i),
+        date_of_service: i < total / 2 ? "2026-01-05" : "2026-07-15",
+      }));
     const rows = await store.getBcbaProductivitySharedRows();
     expect(rows).toHaveLength(total);
+    expect(rows.filter((r) => r.date.startsWith("2026-07"))).toHaveLength(total / 2);
     const ranges = state.ranges["cr_billing_sessions"];
-    expect(ranges.length).toBe(Math.ceil(total / 5000));
-    expect(ranges[0]).toEqual([0, 4999]);
+    expect(ranges[0]).toEqual([0, 999]);
+    expect(store.getBcbaSharedLoadHealth()).toEqual({
+      expected: total,
+      loaded: total,
+      truncated: false,
+    });
   }, 30000);
 });
 
