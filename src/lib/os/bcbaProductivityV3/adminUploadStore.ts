@@ -1008,7 +1008,7 @@ export async function getBcbaProductivityBatchRows(batchId: string): Promise<Bcb
  * code + hours` and sorted by date ascending.
  */
 export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSharedBillingRow[]> {
-  const PAGE = 5000;
+  const PAGE = CR_PAGE;
   const acc: BcbaSharedBillingRow[] = [];
 
   // Data Hub billing is the current authoritative dataset; every row in it is
@@ -1041,8 +1041,8 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
           acc.push(state === n.state ? n : { ...n, state });
         }
       }
-      if (arr.length < PAGE) break;
-      offset += PAGE;
+      if (arr.length === 0) break;
+      offset += arr.length;
     }
   }
 
