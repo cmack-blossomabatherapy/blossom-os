@@ -3,7 +3,7 @@
  * ISO dates, timestamps, and US-formatted raw CSV text.
  */
 import { describe, expect, it } from "vitest";
-import { toDayKey, inDayRange } from "@/lib/os/reports/dateKey";
+import { toDayKey, inDayRange, periodOverlapsDayRange } from "@/lib/os/reports/dateKey";
 import { matchesFilters } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
 
@@ -38,11 +38,28 @@ describe("inDayRange", () => {
   });
 });
 
+describe("periodOverlapsDayRange", () => {
+  it("keeps an authorization that started before the selected window but is still active", () => {
+    expect(periodOverlapsDayRange("2026-01-01", "2026-12-31", "2026-07-01", "2026-07-31")).toBe(true);
+  });
+
+  it("keeps open-ended active authorizations and rejects expired periods", () => {
+    expect(periodOverlapsDayRange("2026-01-01", null, "2026-07-01", "2026-07-31")).toBe(true);
+    expect(periodOverlapsDayRange("2026-01-01", "2026-02-28", "2026-07-01", "2026-07-31")).toBe(false);
+  });
+});
+
 describe("primary report matchesFilters date range", () => {
   it("uses day keys, not raw string compare", () => {
     const f = { ...EMPTY_FILTERS, from: "2026-03-01", to: "2026-03-31" };
     expect(matchesFilters({ date: "2026-03-15T09:00:00Z" }, f)).toBe(true);
     expect(matchesFilters({ date: "3/15/2026" }, f)).toBe(true);
     expect(matchesFilters({ date: "2026-02-28" }, f)).toBe(false);
+  });
+
+  it("matches effective periods by overlap instead of start date only", () => {
+    const f = { ...EMPTY_FILTERS, from: "2026-07-01", to: "2026-07-31" };
+    expect(matchesFilters({ date: "2026-01-01", endDate: "2026-12-31" }, f)).toBe(true);
+    expect(matchesFilters({ date: "2026-01-01", endDate: "2026-02-28" }, f)).toBe(false);
   });
 });

@@ -74,6 +74,7 @@ export type FactDim =
 export interface ReportFact {
   id: string;
   date: string;
+  endDate?: string;
   state: string;
   client: string;
   provider: string;
@@ -123,6 +124,7 @@ export function billingFacts(rows: CrBillingSessionRow[]): ReportFact[] {
       id: r.id ?? `billing-${i}`,
       source: source[i] ?? {},
       date,
+      endDate: pickText(asRow(r), ["end_date", "endDate", "expiration_date"]),
       week: weekStart(date) ?? "",
       state: pickText(asRow(r), ["state", "service_state"]),
       client: pickText(asRow(r), ["client_name", "clientName", "client", "patient_name"]) || "Unknown client",

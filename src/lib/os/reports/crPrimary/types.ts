@@ -105,6 +105,8 @@ export const EMPTY_FILTERS: PrimaryReportFilters = {
 /** Field projection used by the generic filter matcher. */
 export interface FilterableFact {
   date?: string | null;
+  /** End of an effective period; omitted for single-day facts. */
+  endDate?: string | null;
   state?: string | null;
   client?: string | null;
   provider?: string | null;

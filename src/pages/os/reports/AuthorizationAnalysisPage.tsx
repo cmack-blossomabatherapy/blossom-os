@@ -46,7 +46,8 @@ export default function AuthorizationAnalysisPage() {
   const rows = useMemo(
     () =>
       applyFilters(data.authorizations, filters, (r) => ({
-        date: r.start_date ?? r.end_date,
+        date: r.start_date,
+        endDate: r.end_date,
         state: r.state,
         client: r.client_name,
         payor: r.payor,
