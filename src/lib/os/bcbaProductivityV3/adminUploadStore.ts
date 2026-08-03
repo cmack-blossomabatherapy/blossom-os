@@ -847,7 +847,7 @@ export async function getBcbaProductivitySharedRows(
   // omitted from the select — state is already normalized into `normalized`
   // at insert time, and pulling `raw` for 47k rows was the primary reason
   // Refresh Data spun forever (payload was ~10x the size the report needs).
-  const PAGE = 5000;
+  const PAGE = 1000;
   const CONCURRENCY = 4;
   const pageCount = Math.ceil(total / PAGE);
   const results: BcbaSharedBillingRow[][] = new Array(pageCount);
