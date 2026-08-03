@@ -40,6 +40,8 @@ import {
   classifyAuthStatus,
   classifyPauseReason,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationAnalysis";
+import { computeProgressReportMetrics } from "@/lib/os/reports/crPrimary/metrics/progressReports";
+import { fmtDate, weekStart } from "@/lib/os/reports/crPrimary/format";
 import type {
   CrAuthorizationRow,
   CrBillingSessionRow,
@@ -287,6 +289,33 @@ describe("authorization weekly status mapping", () => {
     const latePr = classifyPauseReason(auth({ status: "Paused - progress report late" }));
     expect(latePr).toBe("late_or_missing_pr");
     expect(classifyPauseReason(auth({ status: "Approved" }))).toBeNull();
+  });
+
+  it("maps every day in a week to the same weekly drilldown label", () => {
+    const mondayLabel = fmtDate(weekStart("2026-03-02"));
+    expect(fmtDate(weekStart("2026-03-03"))).toBe(mondayLabel);
+    expect(fmtDate(weekStart("2026-03-08"))).toBe(mondayLabel);
+    expect(fmtDate(weekStart("2026-03-09"))).not.toBe(mondayLabel);
+  });
+
+  it("does not infer missing progress reports from billing activity alone", () => {
+    const billingRow: CrBillingSessionRow = {
+      id: "billing-1", batch_id: "b1", date_of_service: "2026-05-04", procedure_code: "97153",
+      hours: 2, client_name: "Client Without Explicit PR", client_cr_id: "C1",
+      rendering_provider_name: "RBT One", rendering_provider_cr_id: "P1",
+      provider_contact_labels: null, payor: "Aetna", state: "GA", location: "Home", status: "billed",
+    };
+    expect(computeProgressReportMetrics([], [billingRow]).missing).toBe(0);
+  });
+
+  it("counts a progress report as missing only when CentralReach explicitly flags it", () => {
+    const missingPr = auth({
+      procedure_code: "Progress Report",
+      status: "Missing progress report",
+    });
+    const metrics = computeProgressReportMetrics([missingPr], []);
+    expect(metrics.missing).toBe(1);
+    expect(metrics.records[0]?.sourceStatus).toBe("Missing progress report");
   });
 });
 

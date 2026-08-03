@@ -48,8 +48,9 @@ function daysBetween(target: string | null, now: Date): number | null {
 
 /**
  * Progress-report / clinical-documentation state derived from CentralReach
- * authorization rows (PR-classified) plus session activity used to detect
- * clients with active services but no progress report on file.
+ * authorization rows explicitly classified as progress-report work. Missing
+ * status is only reported when the CentralReach row itself says the progress
+ * report is missing; billing activity alone is not evidence of a missing PR.
  */
 export function computeProgressReportMetrics(
   auths: CrAuthorizationRow[],
@@ -58,7 +59,6 @@ export function computeProgressReportMetrics(
 ): ProgressReportMetrics {
   const clientToBcba = buildClientBcbaMap(sessions.filter((s) => isCountableStatus(s.status)));
   const records: ProgressReportRecord[] = [];
-  const prClients = new Set<string>();
   let pausedDueToPr = 0;
   const lateDays: number[] = [];
   const denialReasons = new Map<string, number>();
@@ -66,7 +66,6 @@ export function computeProgressReportMetrics(
   for (const a of auths) {
     if (classifyAuthKind(a) !== "progress_report") continue;
     const client = (a.client_name ?? "Unknown client").trim() || "Unknown client";
-    prClients.add(client);
     const st = classifyAuthStatus(a);
     const due = a.end_date ?? a.start_date ?? null;
     const late = daysBetween(due, now);
@@ -74,7 +73,9 @@ export function computeProgressReportMetrics(
     if (pause === "late_or_missing_pr") pausedDueToPr += 1;
 
     let status: ProgressReportRecord["status"] = "due";
-    if (st === "approved") status = "approved";
+    const sourceText = `${a.status ?? ""} ${a.procedure_code ?? ""}`.toLowerCase();
+    if (/\bmissing\b|no\s+(?:progress\s*report|pr)\s+(?:on\s+file|received)/.test(sourceText)) status = "missing";
+    else if (st === "approved") status = "approved";
     else if (st === "denied") status = "denied";
     else if (st === "submitted") status = "submitted";
     else if (st === "paused") status = "paused";
@@ -98,29 +99,6 @@ export function computeProgressReportMetrics(
       pauseReason: pause,
       weekStart: weekStart(due),
       sourceStatus: a.status ?? "—",
-    });
-  }
-
-  // Clients with active billed services but no PR record at all.
-  const activeClients = new Set(
-    sessions
-      .filter((s) => isCountableStatus(s.status) && (s.client_name ?? "").trim())
-      .map((s) => (s.client_name ?? "").trim()),
-  );
-  for (const client of activeClients) {
-    if (prClients.has(client)) continue;
-    records.push({
-      client,
-      bcba: clientToBcba.get(client) ?? "Unassigned",
-      payor: "Unknown",
-      state: "—",
-      authorizationNumber: "—",
-      dueDate: null,
-      status: "missing",
-      daysLate: null,
-      pauseReason: null,
-      weekStart: null,
-      sourceStatus: "No progress report on file",
     });
   }
 

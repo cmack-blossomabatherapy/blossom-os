@@ -2,8 +2,8 @@
  * Primary report: Progress Reports (`progress-reports`).
  *
  * Clinical documentation status derived from CentralReach authorization rows
- * classified as progress-report work, plus session activity used to detect
- * clients with active services and no progress report on file.
+ * classified as progress-report work. Missing status is shown only when the
+ * CentralReach source explicitly identifies a missing progress report.
  */
 import { useMemo, useState } from "react";
 import { PrimaryReportShell } from "@/components/reports/crPrimary/PrimaryReportShell";
@@ -83,6 +83,10 @@ export default function ProgressReportsPage() {
   );
 
   const metrics = useMemo(() => computeProgressReportMetrics(auths, sessions), [auths, sessions]);
+  const weeklyChart = useMemo(
+    () => metrics.weekly.map((week) => ({ ...week, label: fmtDate(week.label) })),
+    [metrics.weekly],
+  );
 
   const recordRows = useMemo(
     () =>
@@ -125,9 +129,9 @@ export default function ProgressReportsPage() {
     },
     {
       id: "missing",
-      label: "Missing / No PR On File",
+      label: "Explicitly Missing",
       value: fmtCount(metrics.missing),
-      hint: "Active services, no progress report",
+      hint: "Flagged missing in CentralReach",
       tone: metrics.missing > 0 ? "bad" : "good",
     },
     {
@@ -166,7 +170,7 @@ export default function ProgressReportsPage() {
   return (
     <PrimaryReportShell
       title="Progress Reports"
-      subtitle="Progress-report documentation status from CentralReach: due, submitted, approved, denied, overdue, and clients with active services but no progress report on file."
+      subtitle="Progress-report documentation status explicitly identified in CentralReach: due, submitted, approved, denied, overdue, and missing."
       requiredExports={["Authorizations export", "Billing / session export"]}
       freshness={data.freshness}
       loading={data.loading}
@@ -191,11 +195,11 @@ export default function ProgressReportsPage() {
           title="Weekly progress report activity"
           subtitle="Submitted progress reports vs overdue by week"
           type="bar"
-          data={metrics.weekly}
+          data={weeklyChart}
           valueLabel="Submitted"
           secondaryLabel="Overdue"
           height={300}
-          onSelect={(label) => openRecords(`Week ${label}`, (r) => fmtDate(String(r.weekStart)) === label || r.weekStart === label)}
+          onSelect={(label) => openRecords(`Week ${label}`, (r) => fmtDate(r.weekStart) === label)}
         />
 
         <div className="grid gap-4 lg:grid-cols-2">
