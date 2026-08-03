@@ -37,7 +37,10 @@ import { deriveNoRaPauses } from "@/lib/os/reports/crPrimary/metrics/authorizati
 import {
   AUTH_EVENT_LABELS,
   AUTH_EVENT_TYPES,
+  CR_DERIVABLE_EVENT_TYPES,
   computeAuthTrackerWeeks,
+  deriveTrackerWeeksFromAuthorizations,
+  authorizationTrackerWeek,
   totalTrackerCounts,
   type AuthEventType,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationTracker";
@@ -67,6 +70,21 @@ const TRACKER_EXPORT_COLUMNS = [
   { key: "weekStart", label: "Week Start" },
   ...AUTH_EVENT_TYPES.map((t) => ({ key: t, label: AUTH_EVENT_LABELS[t] })),
 ];
+
+/** CentralReach-derived cells map back to a work type + status pair. */
+const DERIVED_CELL_FILTER: Partial<
+  Record<AuthEventType, { kind: string; status?: "approved" | "denied" }>
+> = {
+  initial_assessment_submitted: { kind: "initial_assessment" },
+  initial_assessment_approved: { kind: "initial_assessment", status: "approved" },
+  initial_assessment_denied: { kind: "initial_assessment", status: "denied" },
+  initial_treatment_submitted: { kind: "initial_treatment" },
+  initial_treatment_approved: { kind: "initial_treatment", status: "approved" },
+  initial_treatment_denied: { kind: "initial_treatment", status: "denied" },
+  ra_submitted: { kind: "reauthorization" },
+  ra_approved: { kind: "reauthorization", status: "approved" },
+  ra_denied: { kind: "reauthorization", status: "denied" },
+};
 
 export default function AuthorizationAnalysisPage() {
   const data = useCrPrimaryReport(["authorizations", "billing"]);
@@ -111,13 +129,16 @@ export default function AuthorizationAnalysisPage() {
     [tracker.events, filters],
   );
 
+  const crTrackerWeeks = useMemo(() => deriveTrackerWeeksFromAuthorizations(rows), [rows]);
+
   const trackerWeeks = useMemo(
     () =>
       computeAuthTrackerWeeks(
         trackerEvents,
         derivedPauses.map((p) => ({ weekStart: p.weekStart, clientKey: p.clientKey })),
+        crTrackerWeeks,
       ),
-    [trackerEvents, derivedPauses],
+    [trackerEvents, derivedPauses, crTrackerWeeks],
   );
   const trackerTotals = useMemo(() => totalTrackerCounts(trackerWeeks), [trackerWeeks]);
 
@@ -260,6 +281,26 @@ export default function AuthorizationAnalysisPage() {
     });
   };
 
+  /**
+   * CentralReach-derived tracker cell: the authorization rows of that work type
+   * (and status) whose week matches.
+   */
+  const openDerivedCellDrilldown = (type: AuthEventType, week: string) => {
+    const spec = DERIVED_CELL_FILTER[type];
+    if (!spec) return;
+    openDrilldown(
+      `${AUTH_EVENT_LABELS[type]} · week of ${fmtDate(week)}`,
+      (i) => {
+        const row = rows[i];
+        if (authorizationTrackerWeek(row) !== week) return false;
+        if (classifyAuthKind(row) !== spec.kind) return false;
+        if (spec.status && classifyAuthStatus(row) !== spec.status) return false;
+        return true;
+      },
+      "CentralReach authorization rows classified from client labels and service codes.",
+    );
+  };
+
   const onKpi = (id: string) => {
     const byStatus = (want: string) => (i: number) => classifyAuthStatus(rows[i]) === want;
     if (id === "approved") return openDrilldown("Approved authorizations", byStatus("approved"));
@@ -345,21 +386,40 @@ export default function AuthorizationAnalysisPage() {
                     type="button"
                     className="font-medium underline-offset-2 hover:underline"
                     onClick={() =>
-                      t === "services_paused_no_ra"
-                        ? openPauseDrilldown(w.weekStart)
-                        : openEventDrilldown(t, w.weekStart)
+                      w.sources[t] === "centralreach"
+                        ? openDerivedCellDrilldown(t, w.weekStart)
+                        : w.sources[t] === "derived"
+                          ? openPauseDrilldown(w.weekStart)
+                          : openEventDrilldown(t, w.weekStart)
                     }
                   >
                     {fmtCount(w[t])}
+                  </button>
+                ) : canLog && !CR_DERIVABLE_EVENT_TYPES.has(t) ? (
+                  <button
+                    type="button"
+                    className="text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+                    onClick={() => setLogOpen(true)}
+                  >
+                    Log
                   </button>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 ),
             })),
           ]}
-          emptyLabel="No authorization events tracked for this range yet. Log the first event to start the weekly tracker."
+          emptyLabel="No authorization activity in this range. Clear the filters or upload a CentralReach authorization export."
           maxRows={60}
         />
+
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          Initial Assessment, Initial Treatment, and RA rows are derived from the CentralReach
+          authorization export (client labels + service codes, one work type per authorization).
+          Progress Report events and service pauses are not in any CentralReach export, so they are
+          logged by the Authorization team — cells marked “Log” are awaiting entry. Logged numbers
+          always replace the derived number for that week. “Services Paused — No RA” also includes
+          weeks detected automatically from authorization coverage gaps.
+        </p>
 
         <PrimaryChart
           title="Weekly authorization workflow"
