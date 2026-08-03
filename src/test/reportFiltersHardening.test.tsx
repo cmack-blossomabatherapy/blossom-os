@@ -98,8 +98,10 @@ describe("filter option lists are not truncated", () => {
     expect(src).toContain("FilterCombobox");
     expect(src).toContain("useDeferredValue");
     expect(src).toContain("deferredSearch");
-    expect(src).toContain("options={options.bcbas}");
-    expect(src).toContain("options={options.clients}");
+    // Filter controls are rendered from a labelled config grid (no overlap layout).
+    expect(src).toContain("options.bcbas");
+    expect(src).toContain("options.clients");
+    expect(src).toContain("DateRangeFilter");
   });
 });
 
