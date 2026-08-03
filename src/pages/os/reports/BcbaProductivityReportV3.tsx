@@ -787,10 +787,10 @@ function DataTable({ headers, rows }: {
   return (
     <div className="overflow-auto rounded-lg border max-h-[600px]">
       <table className="w-full text-sm">
-        <thead className="bg-muted/50 sticky top-0 z-10">
+        <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
           <tr>
             {headers.map((h) => (
-              <th key={h} className="px-3 py-2 text-left font-medium text-xs uppercase tracking-wide text-muted-foreground whitespace-nowrap">{h}</th>
+              <th key={h} className="bg-card px-3 py-2.5 text-left font-semibold text-[10px] uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</th>
             ))}
           </tr>
         </thead>
@@ -819,10 +819,10 @@ function SourceRowTable({ rows }: { rows: OwnedBillingRow[] }) {
   return (
     <div className="overflow-auto max-h-[600px]">
       <table className="w-full text-xs">
-        <thead className="bg-muted/50 sticky top-0 z-10">
+        <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
           <tr>
             {DRILLDOWN_COLUMNS.map((h) => (
-              <th key={h} className="px-2.5 py-2 text-left font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap">{h}</th>
+              <th key={h} className="bg-card px-2.5 py-2 text-left font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</th>
             ))}
           </tr>
         </thead>
