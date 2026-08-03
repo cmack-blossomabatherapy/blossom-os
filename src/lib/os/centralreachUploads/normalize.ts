@@ -205,21 +205,66 @@ function authorizationRow(row: Record<string, unknown>): NormalizedCrRow {
   const remaining = num(row, [
     "RemainingHours", "Remaining Hours", "RemainingHoursAuthRange", "HoursRemaining", "authHoursRem",
   ]);
+  const serviceCodes = text(row, ["ServiceCodes", "Service Codes", "ServiceCode", "Service Code"]);
+  const clientLabels = text(row, ["ClientLabels", "Client Labels", "Labels"]);
+  const activeRaw = text(row, ["IsActive", "Is Active", "Active"]);
+  const isActive = activeRaw === null ? null : /^(1|y|yes|true|active)$/i.test(activeRaw.trim());
+  const actualStart = date(row, ["ActualStartDate", "Actual Start Date"]);
+  const actualEnd = date(row, ["ActualEndDate", "Actual End Date"]);
+  const followupStart = date(row, ["FollowUpStartDate", "Follow Up Start Date", "FollowupStartDate"]);
+  const followupEnd = date(row, ["FollowUpEndDate", "Follow Up End Date", "FollowupEndDate"]);
+  const startDate = date(row, ["StartDate", "Start Date", "AuthStartDate", "AuthorizationStart", "FirstService"]);
+  const endDate = date(row, ["EndDate", "End Date", "AuthEndDate", "AuthorizationEnd", "ExpirationDate", "LastService"]);
+  const codeFromServiceCodes = (serviceCodes ?? "").match(/\d{5}/)?.[0] ?? null;
   return {
     authorization_number: text(row, ["AuthorizationNumber", "Authorization Number", "AuthNumber", "AuthId"]),
     client_name: fullName(row, ["ClientFirstName"], ["ClientLastName"], CLIENT),
     client_cr_id: text(row, CLIENT_ID),
     payor: text(row, PAYOR),
     state: text(row, STATE),
-    procedure_code: text(row, CODE),
-    start_date: date(row, ["StartDate", "Start Date", "AuthStartDate", "AuthorizationStart", "FirstService"]),
-    end_date: date(row, ["EndDate", "End Date", "AuthEndDate", "AuthorizationEnd", "ExpirationDate", "LastService"]),
+    procedure_code: text(row, CODE) ?? codeFromServiceCodes,
+    service_codes: serviceCodes,
+    client_labels: clientLabels,
+    is_active: isActive,
+    actual_start_date: actualStart,
+    actual_end_date: actualEnd,
+    followup_start_date: followupStart,
+    followup_end_date: followupEnd,
+    start_date: startDate ?? actualStart,
+    end_date: endDate ?? actualEnd,
     authorized_hours: authorized,
     worked_hours: worked,
     remaining_hours:
       remaining ?? (authorized !== null && worked !== null ? authorized - worked : null),
-    status: text(row, STATUS),
+    status:
+      text(row, STATUS) ??
+      deriveAuthorizationStatus({
+        clientLabels,
+        isActive,
+        endDate: actualEnd ?? endDate,
+      }),
   };
+}
+
+/**
+ * CentralReach authorization exports carry no status column; the workflow
+ * signal lives in the pipe-delimited `ClientLabels` value plus the active flag
+ * and coverage end date.
+ */
+export function deriveAuthorizationStatus(input: {
+  clientLabels: string | null;
+  isActive: boolean | null;
+  endDate: string | null;
+}): string {
+  const labels = input.clientLabels ?? "";
+  if (/denied/i.test(labels)) return "Denied";
+  if (/(initial assessment|initial treatment|reassessment|concurrent treatment|telehealth)\s*approved/i.test(labels)) {
+    return "Approved";
+  }
+  const end = input.endDate;
+  if (end && end < new Date().toISOString().slice(0, 10)) return "Expired";
+  if (input.isActive) return "Active";
+  return "Other";
 }
 
 function utilizationRow(row: Record<string, unknown>): NormalizedCrRow {

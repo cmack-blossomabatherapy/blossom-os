@@ -23,6 +23,7 @@ export function PrimaryTable<T>({
   emptyLabel = "No rows match the current filters.",
   maxRows = 100,
   className,
+  actions,
 }: {
   title: string;
   subtitle?: string;
@@ -33,6 +34,8 @@ export function PrimaryTable<T>({
   emptyLabel?: string;
   maxRows?: number;
   className?: string;
+  /** Optional header controls, e.g. a "Log event" action. */
+  actions?: React.ReactNode;
 }) {
   const visible = rows.slice(0, maxRows);
   return (
@@ -45,9 +48,12 @@ export function PrimaryTable<T>({
           <h3 className="text-[13px] font-semibold tracking-tight">{title}</h3>
           {subtitle && <p className="mt-0.5 text-[11px] text-muted-foreground">{subtitle}</p>}
         </div>
-        <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-          {rows.length.toLocaleString("en-US")} rows
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            {rows.length.toLocaleString("en-US")} rows
+          </span>
+          {actions}
+        </div>
       </div>
       <div className="max-h-[620px] overflow-auto">
         <table className="w-full text-xs">

@@ -7,6 +7,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type {
+  AuthorizationWeeklyEventRow,
   CrAuthorizationRow,
   CrBatchSummary,
   CrBillingSessionRow,
@@ -68,7 +69,17 @@ export function fetchCrScheduleEvents(): Promise<CrLoadResult<CrScheduleEventRow
 export function fetchCrAuthorizations(): Promise<CrLoadResult<CrAuthorizationRow>> {
   return readTable<CrAuthorizationRow>(
     "cr_authorizations",
-    "id,batch_id,authorization_number,client_name,client_cr_id,payor,state,procedure_code,start_date,end_date,authorized_hours,worked_hours,remaining_hours,status",
+    "id,batch_id,authorization_number,client_name,client_cr_id,payor,state,procedure_code,start_date,end_date,authorized_hours,worked_hours,remaining_hours,status,service_codes,client_labels,is_active,actual_start_date,actual_end_date,followup_start_date,followup_end_date",
+  );
+}
+
+/** Authorization-team logged workflow events (submissions, denials, PRs, pauses). */
+export function fetchAuthorizationWeeklyEvents(): Promise<
+  CrLoadResult<AuthorizationWeeklyEventRow>
+> {
+  return readTable<AuthorizationWeeklyEventRow>(
+    "authorization_weekly_events",
+    "id,event_type,event_date,client_name,client_cr_id,authorization_number,payor,state,pause_reason,pause_reason_detail,notes,logged_by,created_at",
   );
 }
 

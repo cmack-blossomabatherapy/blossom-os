@@ -48,6 +48,34 @@ export interface CrAuthorizationRow {
   worked_hours: number | null;
   remaining_hours: number | null;
   status: string | null;
+  service_codes?: string | null;
+  client_labels?: string | null;
+  is_active?: boolean | null;
+  actual_start_date?: string | null;
+  actual_end_date?: string | null;
+  followup_start_date?: string | null;
+  followup_end_date?: string | null;
+}
+
+/**
+ * Manually logged authorization workflow event. CentralReach exports carry no
+ * submission/denial timestamps or progress-report events, so the Authorization
+ * team logs them weekly and the report merges them with derived signals.
+ */
+export interface AuthorizationWeeklyEventRow {
+  id: string;
+  event_type: string;
+  event_date: string;
+  client_name: string | null;
+  client_cr_id: string | null;
+  authorization_number: string | null;
+  payor: string | null;
+  state: string | null;
+  pause_reason: string | null;
+  pause_reason_detail: string | null;
+  notes: string | null;
+  logged_by: string | null;
+  created_at: string;
 }
 
 export interface CrUtilizationRow {
