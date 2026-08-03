@@ -18,7 +18,7 @@ import {
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
 import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS, type DrilldownRequest, type KpiDefinition } from "@/lib/os/reports/crPrimary/types";
-import { fmtCount, fmtDate, fmtPct } from "@/lib/os/reports/crPrimary/format";
+import { fmtCount, fmtDate, fmtPct, weekStart } from "@/lib/os/reports/crPrimary/format";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
 import { AUTH_DRILLDOWN_COLUMNS, projectAuthRows } from "@/lib/os/reports/crPrimary/drilldown";
 import {
@@ -191,7 +191,10 @@ export default function AuthorizationAnalysisPage() {
           secondaryLabel="Paused"
           height={300}
           onSelect={(label) =>
-            openDrilldown(`Week of ${label}`, (i) => fmtDate(rows[i].start_date ?? rows[i].end_date) === label)
+            openDrilldown(
+              `Week of ${label}`,
+              (i) => fmtDate(weekStart(rows[i].start_date) ?? weekStart(rows[i].end_date)) === label,
+            )
           }
         />
 
