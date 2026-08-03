@@ -1,8 +1,8 @@
-import { X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { FilterCombobox } from "./FilterCombobox";
+import { DateRangeFilter } from "./DateRangeFilter";
 import type { PrimaryReportFilters } from "@/lib/os/reports/crPrimary/types";
 import { activeFilterCount } from "@/lib/os/reports/crPrimary/filters";
 
@@ -35,56 +35,45 @@ export function PrimaryFilterBar({
   return (
     <section
       data-testid="report-filters"
-      className="flex flex-wrap items-end gap-2 rounded-2xl border border-border/60 bg-card/60 p-3"
+      className="space-y-3 rounded-2xl border border-border/60 bg-card p-4"
     >
-      <div className="space-y-1">
-        <label htmlFor="filter-from" className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          From
-        </label>
-        <Input
-          id="filter-from"
-          type="date"
-          value={filters.from}
-          onChange={(e) => set("from", e.target.value)}
-          className="h-8 w-[145px] text-xs"
-        />
-      </div>
-      <div className="space-y-1">
-        <label htmlFor="filter-to" className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          To
-        </label>
-        <Input
-          id="filter-to"
-          type="date"
-          value={filters.to}
-          onChange={(e) => set("to", e.target.value)}
-          className="h-8 w-[145px] text-xs"
-        />
-      </div>
-
-      {fields.map((f) => (
-        <div key={f.key} className="space-y-1">
-          <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            {f.label}
-          </span>
-          <FilterCombobox
-            label={f.label}
-            value={filters[f.key] || ""}
-            options={f.options}
-            onChange={(v) => set(f.key, v)}
-          />
-        </div>
-      ))}
-
-      <div className="ml-auto flex items-center gap-2 pb-0.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <Filter className="h-4 w-4 text-primary" /> Filters
+          {count > 0 && (
+            <Badge variant="secondary" className="rounded-full text-[10px]">
+              {count} active
+            </Badge>
+          )}
+        </span>
         {count > 0 && (
-          <Badge variant="secondary" className="text-[10px]">
-            {count} active filter{count === 1 ? "" : "s"}
-          </Badge>
+          <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={onReset}>
+            <X className="h-3.5 w-3.5" /> Clear all
+          </Button>
         )}
-        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={onReset}>
-          <X className="h-3.5 w-3.5" /> Clear filters
-        </Button>
+      </div>
+
+      <DateRangeFilter
+        from={filters.from}
+        to={filters.to}
+        onChange={({ from, to }) => onChange({ ...filters, from, to })}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {fields.map((f) => (
+          <div key={f.key} className="min-w-0 space-y-1.5">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {f.label}
+            </span>
+            <FilterCombobox
+              label={f.label}
+              value={filters[f.key] || ""}
+              options={f.options}
+              onChange={(v) => set(f.key, v)}
+              className="h-9 w-full"
+            />
+          </div>
+        ))}
       </div>
     </section>
   );

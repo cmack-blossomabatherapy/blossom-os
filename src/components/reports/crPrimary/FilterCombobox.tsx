@@ -65,13 +65,13 @@ export function FilterCombobox({
           role="combobox"
           aria-expanded={open}
           aria-label={label}
-          className={cn("h-8 w-[165px] justify-between px-2 text-xs font-normal", className)}
+          className={cn("h-9 w-full min-w-0 justify-between bg-background px-2.5 text-xs font-normal", className)}
         >
           <span className="truncate">{selected || all}</span>
           <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[260px] p-0" align="start">
+      <PopoverContent className="z-50 w-[var(--radix-popover-trigger-width)] min-w-[240px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={`Search ${label.toLowerCase()}…`}

@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FilterCombobox, FILTER_ALL_VALUE } from "@/components/reports/crPrimary/FilterCombobox";
+import { DateRangeFilter } from "@/components/reports/crPrimary/DateRangeFilter";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -360,31 +361,47 @@ export default function BcbaProductivityReportV3() {
               </Button>
             ) : null}
           </div>
-          <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
-            <div className="flex items-center gap-2">
-              <Input
-                type="date" aria-label="From date" value={filters.from}
-                onChange={(e) => setFilters((p) => ({ ...p, from: e.target.value }))}
-              />
-              <span className="text-muted-foreground text-xs">to</span>
-              <Input
-                type="date" aria-label="To date" value={filters.to}
-                onChange={(e) => setFilters((p) => ({ ...p, to: e.target.value }))}
-              />
-            </div>
-            <FilterCombobox label="States" value={filters.state} options={options.states} onChange={setFilter("state")} />
-            <FilterCombobox label="BCBAs" value={filters.bcba} options={options.bcbas} onChange={setFilter("bcba")} />
-            <FilterCombobox label="Clients" value={filters.client} options={options.clients} onChange={setFilter("client")} />
-            <FilterCombobox label="Providers" value={filters.provider} options={options.providers} onChange={setFilter("provider")} />
-            <FilterCombobox label="Payors" value={filters.payor} options={options.payors} onChange={setFilter("payor")} />
-            <FilterCombobox label="Codes" value={filters.code} options={options.codes} onChange={setFilter("code")} />
-            <FilterCombobox label="Locations" value={filters.location} options={options.locations} onChange={setFilter("location")} />
-            <div className="relative md:col-span-2">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                className="pl-8" placeholder="Search client, BCBA, provider, code, payor…"
-                value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-              />
+          <DateRangeFilter
+            from={filters.from}
+            to={filters.to}
+            onChange={({ from, to }) => setFilters((p) => ({ ...p, from, to }))}
+          />
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {([
+              ["State", "state", options.states],
+              ["BCBA", "bcba", options.bcbas],
+              ["Client", "client", options.clients],
+              ["Provider / RBT", "provider", options.providers],
+              ["Payor", "payor", options.payors],
+              ["Code", "code", options.codes],
+              ["Location", "location", options.locations],
+            ] as [string, keyof BcbaProductivityFilters, string[]][]).map(([label, key, opts]) => (
+              <div key={key} className="min-w-0 space-y-1.5">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  {label}
+                </span>
+                <FilterCombobox
+                  label={label}
+                  value={String(filters[key] ?? "")}
+                  options={opts}
+                  onChange={setFilter(key)}
+                  className="h-9 w-full"
+                />
+              </div>
+            ))}
+            <div className="min-w-0 space-y-1.5">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Search
+              </span>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="h-9 pl-8 text-xs"
+                  placeholder="Client, BCBA, provider, code, payor…"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </Card>
@@ -770,10 +787,10 @@ function DataTable({ headers, rows }: {
   return (
     <div className="overflow-auto rounded-lg border max-h-[600px]">
       <table className="w-full text-sm">
-        <thead className="bg-muted/50 sticky top-0 z-10">
+        <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
           <tr>
             {headers.map((h) => (
-              <th key={h} className="px-3 py-2 text-left font-medium text-xs uppercase tracking-wide text-muted-foreground whitespace-nowrap">{h}</th>
+              <th key={h} className="bg-card px-3 py-2.5 text-left font-semibold text-[10px] uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</th>
             ))}
           </tr>
         </thead>
@@ -802,10 +819,10 @@ function SourceRowTable({ rows }: { rows: OwnedBillingRow[] }) {
   return (
     <div className="overflow-auto max-h-[600px]">
       <table className="w-full text-xs">
-        <thead className="bg-muted/50 sticky top-0 z-10">
+        <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
           <tr>
             {DRILLDOWN_COLUMNS.map((h) => (
-              <th key={h} className="px-2.5 py-2 text-left font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap">{h}</th>
+              <th key={h} className="bg-card px-2.5 py-2 text-left font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</th>
             ))}
           </tr>
         </thead>

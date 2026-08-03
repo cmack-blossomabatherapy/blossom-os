@@ -56,12 +56,12 @@ export function DrilldownDrawer({
               </Button>
             </div>
 
-            <div className="mt-3 overflow-x-auto rounded-xl border border-border/60">
+            <div className="mt-3 max-h-[65vh] overflow-auto rounded-xl border border-border/60">
               <table className="w-full text-xs">
-                <thead className="bg-muted/50">
+                <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
                   <tr>
                     {request.columns.map((c) => (
-                      <th key={c.key} className="whitespace-nowrap px-2.5 py-2 text-left font-semibold">
+                      <th key={c.key} className="whitespace-nowrap bg-card px-2.5 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         {c.label}
                       </th>
                     ))}

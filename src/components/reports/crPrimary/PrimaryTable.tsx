@@ -49,22 +49,22 @@ export function PrimaryTable<T>({
           {rows.length.toLocaleString("en-US")} rows
         </span>
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-h-[620px] overflow-auto">
         <table className="w-full text-xs">
-          <thead className="bg-muted/40">
+          <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
             <tr>
               {columns.map((c) => (
                 <th
                   key={c.key}
                   className={cn(
-                    "whitespace-nowrap px-3 py-2 font-semibold",
+                    "whitespace-nowrap bg-card px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground",
                     c.align === "right" ? "text-right" : "text-left",
                   )}
                 >
                   {c.label}
                 </th>
               ))}
-              {onRowClick && <th className="w-8" />}
+              {onRowClick && <th className="w-8 bg-card" />}
             </tr>
           </thead>
           <tbody>
