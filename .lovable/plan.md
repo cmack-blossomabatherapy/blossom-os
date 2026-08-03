@@ -1,46 +1,78 @@
-## 1. Unassigned hours — what the data actually says
+# Authorization Analysis — make the weekly authorization tracker real
 
-I queried the live CentralReach Data Hub billing table (`cr_billing_sessions`) directly:
+## What is actually broken
 
-- 56,936 rows, 179,835.9 total hours, 976 unique clients
-- Client identity is clean: every row has a CentralReach client id, no name/id mismatches, no rows missing a rendering provider
-- Rows carrying a BCBA provider label: 17,758 (only 1 row has empty labels)
-- Clients with **no** BCBA ownership anchor at all (no non-97153 row with a BCBA-labelled provider): **5 clients, 54.7 hours**
+The report is not "empty because of filters". It is empty because the two fields it classifies on are blank for every row:
 
-Conclusion: only ~55 hours (0.03%) genuinely have no BCBA derivable from the data. Because inferred ownership runs from each client's earliest service date through an open-ended last assignment, coverage should be continuous — so if the report currently shows materially more than ~55 unassigned hours, that is a defect, not a data gap. That comparison has not been made yet against the rendered report (the preview is behind two-factor verification, so I could not read the live numbers), so step 1 below measures it instead of guessing.
+- `cr_authorizations` holds 3,283 rows, but **`status` is NULL in 3,283 of 3,283** and **`procedure_code` is NULL in 3,283 of 3,283**.
+- The real CentralReach authorization export has no `Status` and no `ProcedureCode` column. It carries `ServiceCodes` (" 97151: Behavior Identification assessment..."), `ClientLabels`, `IsActive`, `ActualStartDate` / `ActualEndDate`, `FollowUpStartDate` / `FollowUpEndDate`, and the hours columns.
+- Because the classifier reads only `status` + `procedure_code`, every row lands in kind "other" / status "other", so every KPI, every weekly bar, and every breakdown computes zero.
 
-## 2. Filters — confirmed defects and what needs verifying
+The workflow signal you want is already in the export, just in `ClientLabels`:
 
-Confirmed by reading the code:
+```text
+Initial Treatment Approved      1,584
+Initial Assessment Approved     1,029
+Reassessment Approved             956
+Initial Treatment                 892
+Reassessment                      872
+Initial Assessment                782
+Concurrent Treatment Approved     558
+Telehealth Approved               659
+DENIED                             15
+```
 
-- `src/components/reports/crPrimary/PrimaryFilterBar.tsx` truncates every dropdown to the first 400 options (`f.options.slice(0, 400)`). With 976 clients, more than half of them can never be selected in the 7 shared CentralReach reports. This alone reads as "filters don't work".
-- `BcbaProductivityReportV3.tsx` filters on the sentinel `"— Unassigned —"` for the BCBA filter, but `bcbaOptions` only ever contains real owner names, so there is no way to filter to unassigned rows.
-- All filter dropdowns render every option as a plain `SelectItem` with no search field — a 976-item list is effectively unusable even where it is complete.
+Service codes present: 97151 (1,016), 97153 (758), 97156 (755), 97155 (754).
 
-Not yet confirmed (step 1 will settle it): whether BCBA V3 filter changes also feel non-functional because recomputing 57k rows through the ownership + KPI + table memo chain on every keystroke/selection blocks the UI.
+What CentralReach does **not** contain: submission dates, any progress-report submitted/approved/denied event, and any pause reason. The operational tables that were supposed to hold them (`client_reauth_cycles`, `authorization_operational_records`, `bcba_progress_reports`) are all empty. So those numbers cannot be derived — the Authorization team has to log them.
 
-## 3. Plan
+## The plan
 
-**Step 1 — Measure before changing anything**
-Add a focused harness test that loads a realistic fixture (including the real shapes seen in `cr_billing_sessions`) through the actual ownership inference and filter code, and asserts: total unassigned hours stay in the expected sub-1% band, and each filter (BCBA, client, RBT, state, payor, code, date range, search) actually changes the resulting row set and KPIs. Whatever this test reveals about unassigned hours gets reported back with real numbers.
+### 1. Capture the missing CentralReach fields
 
-**Step 2 — Fix the shared primary filter bar**
-Replace the truncating `Select` in `PrimaryFilterBar.tsx` with a searchable combobox that can address the full option list (no 400-item cap), keeps the existing `FilterFieldConfig` API, and shows selected/clear state. This fixes all 7 shared CentralReach reports at once (Authorization Analysis, Authorization Utilization, BCBA Performance, BCBA Supervision, Parent Training, Progress Reports, Cancellations).
+Extend the authorization normalizer and table so the labels and service codes survive the import:
 
-**Step 3 — Fix BCBA Productivity V3 filters**
-- Add the `— Unassigned —` entry to `bcbaOptions` so the sentinel comparison is reachable.
-- Swap `FilterSelect` for the same searchable combobox.
-- Debounce the free-text search and keep the heavy memo chain off the input path so selections apply without a visible freeze.
-- Leave ownership inference math, layout, KPI definitions, drilldowns, and the Data Hub source path untouched.
+- New columns on `cr_authorizations`: `service_codes`, `client_labels`, `is_active`, `actual_start_date`, `actual_end_date`, `followup_start_date`, `followup_end_date`.
+- `procedure_code` now derives from the 5-digit code inside `ServiceCodes`.
+- `status` derives from labels + activity: Approved / Denied / Active / Expired, instead of NULL.
+- Reprocess the existing authorization batch so all 3,283 rows backfill — no re-upload needed from you.
 
-**Step 4 — Audit the remaining report filters**
-Walk the dashboard-style reports that own their own filter UI (HR, QA, and Cancellation command centers) and confirm each declared filter state is actually applied to the rendered dataset; fix any that are declared but unused. No visual redesign.
+### 2. Fix the classifier
 
-**Step 5 — Verification**
-Run the focused report/filter tests, then the full suite, typecheck, and production build; report the measured unassigned-hours number from step 1 alongside the fixes.
+- Stage (kind) comes from label first, code second: 97151 or "Initial Assessment" label → Initial Assessment; "Initial Treatment" → Initial Treatment; "Reassessment" / "Reauth" → RA; 97155/97156 treatment codes fall in behind the labels rather than overriding them.
+- Approved / Denied read the label ("... Approved", "DENIED"), not free text.
+- Removes the current bug where the loose `\bpr\b` / `\bra\b` patterns swallow unrelated text.
 
-### Technical notes
+### 3. Weekly authorization tracker (the 15 metrics)
 
-- Filtering stays client-side over the already-paginated Data Hub dataset; no change to the 5,000-row page size or 250,000-row safety cap.
-- No database migrations, no route/role changes, no ownership-inference changes.
-- Files expected to change: `src/components/reports/crPrimary/PrimaryFilterBar.tsx`, `src/pages/os/reports/BcbaProductivityReportV3.tsx`, possibly the HR/QA dashboard report pages, plus new tests under `src/test/`.
+A new `authorization_weekly_events` table plus a simple entry screen on the Authorization Analysis page, so the Auth team logs each event once:
+
+Event types tracked: IA Submitted / Approved / Denied, IT Submitted / Approved / Denied, RA Submitted / Approved / Denied, PR Submitted / Approved / Denied, Service Pause (with required reason: No RA on file, PR late or missing — plus a free-text why, Other).
+
+Each entry records client, payor, state, event date (rolls into its week), and who logged it. Logging is restricted to Authorization, QA, Operations Leadership, Executive, and Super Admin roles.
+
+### 4. Rebuild the report around all 15 rows
+
+- **Weekly matrix table**: one row per metric, one column per week, so the 15 tracked items read exactly as you listed them.
+- **KPI cards**: submissions this week, approval rate, denials, services paused.
+- **Charts**: submitted vs approved vs denied by week; pause reasons breakdown.
+- **Breakdowns**: by payor, by state, by client.
+- **Derived pause detection** (from CentralReach, no logging needed): clients with billed or scheduled activity in a week but no authorization whose active period covers that date → "No covering authorization". Shown alongside team-logged pauses so gaps in logging are visible.
+- Every cell and bar drills down to the underlying rows and exports to CSV.
+- Date filters use the existing period-overlap matcher, so an authorization that started before the window still counts while it is active.
+
+### 5. Verification
+
+- Confirm the weekly matrix is non-zero against the real 3,283 rows and that IA / IT / RA counts reconcile to the label counts above.
+- Canary test pinning label-driven classification and derived-pause detection so this cannot silently go blank again.
+- Confirm any row that cannot be classified surfaces in an "Unclassified" bucket rather than being dropped.
+
+## Technical notes
+
+- Migration: add columns to `cr_authorizations`; create `authorization_weekly_events` with GRANTs, RLS, role-scoped write policy, and state scoping for State Directors.
+- `src/lib/os/centralreachUploads/normalize.ts` — `authorizationRow()` gains `ServiceCodes`, `ClientLabels`, `IsActive`, `Actual*`, `FollowUp*` mapping and code/status derivation.
+- `src/lib/os/reports/crPrimary/metrics/authorizationAnalysis.ts` — label-first `classifyAuthKind`, label-based `classifyAuthStatus`, and a new weekly-matrix builder merging tracker events with CR-derived rows.
+- New `src/lib/os/reports/crPrimary/metrics/authPauseDetection.ts` — coverage-gap pause detection over billing + schedule facts.
+- `src/lib/os/reports/crPrimary/source.ts` / `types.ts` — select the new columns; add the tracker reader.
+- `src/pages/os/reports/AuthorizationAnalysisPage.tsx` — weekly matrix, pause panel, and the log-event dialog.
+- One-time reprocess of the existing authorization batch to backfill the new columns.
