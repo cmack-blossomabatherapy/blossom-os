@@ -274,10 +274,14 @@ export default function AuthorizationAnalysisPage() {
     return openDrilldown("All authorizations in scope", () => true);
   };
 
-  const weeklyChart = metrics.weekly.map((w) => ({
+  const weeklyChart = trackerWeeks.map((w) => ({
     label: fmtDate(w.weekStart),
-    value: w.initialAssessmentSubmitted + w.initialTreatmentSubmitted + w.raSubmitted + w.prSubmitted,
-    secondary: w.pausedNoRa + w.pausedLatePr,
+    value:
+      w.initial_assessment_submitted +
+      w.initial_treatment_submitted +
+      w.ra_submitted +
+      w.progress_report_submitted,
+    secondary: w.services_paused_no_ra + w.services_paused_late_pr,
   }));
 
   return (
@@ -303,6 +307,49 @@ export default function AuthorizationAnalysisPage() {
     >
       <div className="space-y-4">
         <KpiScorecards kpis={kpis} onSelect={onKpi} />
+
+        <PrimaryTable
+          title="Weekly authorization tracking"
+          subtitle="Every tracked authorization event by week. Click a cell value to open its source rows."
+          rows={[...trackerWeeks].reverse()}
+          rowKey={(w) => w.weekStart}
+          actions={
+            canLog ? (
+              <Button size="sm" onClick={() => setLogOpen(true)}>
+                Log event
+              </Button>
+            ) : undefined
+          }
+          columns={[
+            {
+              key: "weekStart",
+              label: "Week of",
+              render: (w) => <span className="font-medium">{fmtDate(w.weekStart)}</span>,
+            },
+            ...AUTH_EVENT_TYPES.map((t) => ({
+              key: t,
+              label: AUTH_EVENT_LABELS[t],
+              align: "right" as const,
+              render: (w: (typeof trackerWeeks)[number]) =>
+                w[t] ? (
+                  <button
+                    type="button"
+                    className="font-medium underline-offset-2 hover:underline"
+                    onClick={() =>
+                      t === "services_paused_no_ra"
+                        ? openPauseDrilldown(w.weekStart)
+                        : openEventDrilldown(t, w.weekStart)
+                    }
+                  >
+                    {fmtCount(w[t])}
+                  </button>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                ),
+            })),
+          ]}
+          emptyMessage="No authorization events tracked for this range yet. Log the first event to start the weekly tracker."
+        />
 
         <PrimaryChart
           title="Weekly authorization workflow"
