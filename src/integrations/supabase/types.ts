@@ -2014,6 +2014,57 @@ export type Database = {
           },
         ]
       }
+      authorization_weekly_events: {
+        Row: {
+          authorization_number: string | null
+          client_cr_id: string | null
+          client_name: string | null
+          created_at: string
+          event_date: string
+          event_type: string
+          id: string
+          logged_by: string | null
+          notes: string | null
+          pause_reason: string | null
+          pause_reason_detail: string | null
+          payor: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          authorization_number?: string | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          event_date: string
+          event_type: string
+          id?: string
+          logged_by?: string | null
+          notes?: string | null
+          pause_reason?: string | null
+          pause_reason_detail?: string | null
+          payor?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authorization_number?: string | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          event_date?: string
+          event_type?: string
+          id?: string
+          logged_by?: string | null
+          notes?: string | null
+          pause_reason?: string | null
+          pause_reason_detail?: string | null
+          payor?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bcba_academy_progress: {
         Row: {
           completed_at: string | null
@@ -8009,54 +8060,75 @@ export type Database = {
       }
       cr_authorizations: {
         Row: {
+          actual_end_date: string | null
+          actual_start_date: string | null
           authorization_number: string | null
           authorized_hours: number | null
           batch_id: string
           client_cr_id: string | null
+          client_labels: string | null
           client_name: string | null
           created_at: string
           end_date: string | null
+          followup_end_date: string | null
+          followup_start_date: string | null
           id: string
+          is_active: boolean | null
           payor: string | null
           procedure_code: string | null
           remaining_hours: number | null
           row_hash: string
+          service_codes: string | null
           start_date: string | null
           state: string | null
           status: string | null
           worked_hours: number | null
         }
         Insert: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
           authorization_number?: string | null
           authorized_hours?: number | null
           batch_id: string
           client_cr_id?: string | null
+          client_labels?: string | null
           client_name?: string | null
           created_at?: string
           end_date?: string | null
+          followup_end_date?: string | null
+          followup_start_date?: string | null
           id?: string
+          is_active?: boolean | null
           payor?: string | null
           procedure_code?: string | null
           remaining_hours?: number | null
           row_hash: string
+          service_codes?: string | null
           start_date?: string | null
           state?: string | null
           status?: string | null
           worked_hours?: number | null
         }
         Update: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
           authorization_number?: string | null
           authorized_hours?: number | null
           batch_id?: string
           client_cr_id?: string | null
+          client_labels?: string | null
           client_name?: string | null
           created_at?: string
           end_date?: string | null
+          followup_end_date?: string | null
+          followup_start_date?: string | null
           id?: string
+          is_active?: boolean | null
           payor?: string | null
           procedure_code?: string | null
           remaining_hours?: number | null
           row_hash?: string
+          service_codes?: string | null
           start_date?: string | null
           state?: string | null
           status?: string | null
@@ -32699,6 +32771,7 @@ export type Database = {
       can_act_on_bd_source_events: { Args: { _uid: string }; Returns: boolean }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
       can_edit_org_chart: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_authorization_events: { Args: never; Returns: boolean }
       can_manage_bcba_productivity_uploads: {
         Args: { _user_id: string }
         Returns: boolean

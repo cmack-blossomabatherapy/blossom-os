@@ -29,6 +29,18 @@ import {
 } from "@/lib/os/reports/crPrimary/metrics/authorizationAnalysis";
 import { normalizeCode } from "@/lib/os/reports/crPrimary/metrics/codes";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { useAuthorizationWeeklyEvents } from "@/hooks/useAuthorizationWeeklyEvents";
+import { LogAuthEventDialog } from "@/components/reports/crPrimary/LogAuthEventDialog";
+import { deriveNoRaPauses } from "@/lib/os/reports/crPrimary/metrics/authorizationPauses";
+import {
+  AUTH_EVENT_LABELS,
+  AUTH_EVENT_TYPES,
+  computeAuthTrackerWeeks,
+  totalTrackerCounts,
+  type AuthEventType,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationTracker";
 
 const KIND_LABEL: Record<string, string> = {
   initial_assessment: "Initial Assessment",
@@ -38,8 +50,30 @@ const KIND_LABEL: Record<string, string> = {
   other: "Other",
 };
 
+/** Roles allowed to log authorization workflow events. */
+const AUTH_EVENT_EDITOR_ROLES = new Set([
+  "super_admin",
+  "systems_admin",
+  "coo",
+  "executive_leadership",
+  "operations_leadership",
+  "authorization_manager",
+  "authorization_coordinator",
+  "qa_lead",
+  "qa_team",
+]);
+
+const TRACKER_EXPORT_COLUMNS = [
+  { key: "weekStart", label: "Week Start" },
+  ...AUTH_EVENT_TYPES.map((t) => ({ key: t, label: AUTH_EVENT_LABELS[t] })),
+];
+
 export default function AuthorizationAnalysisPage() {
-  const data = useCrPrimaryReport(["authorizations"]);
+  const data = useCrPrimaryReport(["authorizations", "billing"]);
+  const tracker = useAuthorizationWeeklyEvents();
+  const { role } = useOSRole();
+  const canLog = AUTH_EVENT_EDITOR_ROLES.has(role);
+  const [logOpen, setLogOpen] = useState(false);
   const [filters, setFilters] = useState({ ...EMPTY_FILTERS });
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
 
@@ -58,6 +92,35 @@ export default function AuthorizationAnalysisPage() {
   );
 
   const metrics = useMemo(() => computeAuthorizationAnalysis(rows), [rows]);
+
+  // Derived "Services Paused — No RA": active client weeks with no service and
+  // no covering authorization window.
+  const derivedPauses = useMemo(
+    () => deriveNoRaPauses(data.billing, rows),
+    [data.billing, rows],
+  );
+
+  const trackerEvents = useMemo(
+    () =>
+      applyFilters(tracker.events, filters, (e) => ({
+        date: e.event_date,
+        state: e.state,
+        client: e.client_name,
+        payor: e.payor,
+      })),
+    [tracker.events, filters],
+  );
+
+  const trackerWeeks = useMemo(
+    () =>
+      computeAuthTrackerWeeks(
+        trackerEvents,
+        derivedPauses.map((p) => ({ weekStart: p.weekStart, clientKey: p.clientKey })),
+      ),
+    [trackerEvents, derivedPauses],
+  );
+  const trackerTotals = useMemo(() => totalTrackerCounts(trackerWeeks), [trackerWeeks]);
+
   const projected = useMemo(
     () =>
       projectAuthRows(rows, {
@@ -109,16 +172,18 @@ export default function AuthorizationAnalysisPage() {
     {
       id: "paused-no-ra",
       label: "Paused — No RA",
-      value: fmtCount(metrics.pausedNoRa),
-      tone: metrics.pausedNoRa > 0 ? "bad" : "good",
+      value: fmtCount(trackerTotals.services_paused_no_ra),
+      hint: "Logged + derived from authorization coverage",
+      tone: trackerTotals.services_paused_no_ra > 0 ? "bad" : "good",
     },
     {
       id: "paused-late-pr",
       label: "Paused — Late/Missing PR",
-      value: fmtCount(metrics.pausedLatePr),
-      tone: metrics.pausedLatePr > 0 ? "bad" : "good",
+      value: fmtCount(trackerTotals.services_paused_late_pr),
+      hint: "Logged by the authorization team, with reason",
+      tone: trackerTotals.services_paused_late_pr > 0 ? "bad" : "good",
     },
-    { id: "weeks", label: "Weeks Covered", value: fmtCount(metrics.weekly.length) },
+    { id: "weeks", label: "Weeks Tracked", value: fmtCount(trackerWeeks.length) },
   ];
 
   const openDrilldown = (
@@ -141,10 +206,8 @@ export default function AuthorizationAnalysisPage() {
     if (id === "approved") return openDrilldown("Approved authorizations", byStatus("approved"));
     if (id === "denied") return openDrilldown("Denied authorizations", byStatus("denied"));
     if (id === "paused") return openDrilldown("Paused authorizations", byStatus("paused"));
-    if (id === "paused-no-ra")
-      return openDrilldown("Paused — no reauthorization", (i) => classifyPauseReason(rows[i]) === "no_reauthorization");
-    if (id === "paused-late-pr")
-      return openDrilldown("Paused — late or missing progress report", (i) => classifyPauseReason(rows[i]) === "late_or_missing_pr");
+    if (id === "paused-no-ra") return openPauseDrilldown();
+    if (id === "paused-late-pr") return openEventDrilldown("services_paused_late_pr");
     if (id === "submitted")
       return openDrilldown("Submitted authorization work", (i) =>
         ["submitted", "pending", "approved", "denied"].includes(classifyAuthStatus(rows[i])),

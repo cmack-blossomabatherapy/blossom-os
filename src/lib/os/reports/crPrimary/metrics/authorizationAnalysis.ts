@@ -18,26 +18,55 @@ export type AuthWorkStatus =
   | "expired"
   | "other";
 
-/** Classify an authorization row into the weekly workflow bucket. */
+/** Individual pipe-delimited CentralReach client labels, trimmed. */
+export function authLabels(row: CrAuthorizationRow): string[] {
+  return String(row.client_labels ?? "")
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Classify an authorization row into the weekly workflow bucket.
+ *
+ * CentralReach authorization exports have no status or work-type column, so the
+ * `ClientLabels` value is the authoritative signal; service codes are the
+ * fallback.
+ */
 export function classifyAuthKind(row: CrAuthorizationRow): AuthWorkKind {
-  const code = normalizeCode(row.procedure_code);
-  const text = `${row.status ?? ""} ${row.procedure_code ?? ""}`.toLowerCase();
-  if (/progress\s*report|\bpr\b/.test(text)) return "progress_report";
+  const labels = authLabels(row).join(" | ").toLowerCase();
+  if (/progress\s*report/.test(labels)) return "progress_report";
+  if (/initial assessment|reassessment/.test(labels)) return "initial_assessment";
+  if (/concurrent treatment|re-?auth|renewal/.test(labels)) return "reauthorization";
+  if (/initial treatment/.test(labels)) return "initial_treatment";
+
+  const codes = `${row.service_codes ?? ""} ${row.procedure_code ?? ""}`;
+  const code = normalizeCode(row.procedure_code) || (codes.match(/\d{5}/)?.[0] ?? "");
+  const text = `${row.status ?? ""} ${codes}`.toLowerCase();
+  if (/progress\s*report/.test(text)) return "progress_report";
   if (code === "97151" || /assessment|eval/.test(text)) return "initial_assessment";
-  if (/re-?auth|\bra\b|renewal|concurrent/.test(text)) return "reauthorization";
+  if (/re-?auth|renewal|concurrent/.test(text)) return "reauthorization";
   if (/initial/.test(text)) return "initial_treatment";
   if (code === "97153" || code === "97155" || code === "97156") return "initial_treatment";
   return "other";
 }
 
 export function classifyAuthStatus(row: CrAuthorizationRow): AuthWorkStatus {
+  const labels = authLabels(row).join(" | ");
+  if (/denied|reject/i.test(labels)) return "denied";
+  if (/approved/i.test(labels)) return "approved";
+
   const s = (row.status ?? "").toLowerCase();
   if (/denied|reject/.test(s)) return "denied";
-  if (/approved|authorized|active/.test(s)) return "approved";
+  if (/approved|authorized/.test(s)) return "approved";
   if (/paused|hold|stopped/.test(s)) return "paused";
   if (/submitted|sent/.test(s)) return "submitted";
   if (/pending|review|in progress/.test(s)) return "pending";
   if (/expired|closed|terminated/.test(s)) return "expired";
+
+  const end = row.followup_end_date ?? row.actual_end_date ?? row.end_date;
+  if (end && String(end).slice(0, 10) < new Date().toISOString().slice(0, 10)) return "expired";
+  if (row.is_active) return "approved";
   return "other";
 }
 
