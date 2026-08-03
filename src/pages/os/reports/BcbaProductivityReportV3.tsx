@@ -23,7 +23,9 @@ import {
   getBcbaProductivitySharedRows,
   getBcbaProductivityDatasetStatus,
   invalidateBcbaProductivitySharedCache,
+  getBcbaSharedLoadHealth,
   type BcbaDatasetStatus,
+  type BcbaSharedLoadHealth,
   type BcbaSharedBillingRow,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
 import {
@@ -138,6 +140,8 @@ export default function BcbaProductivityReportV3() {
   const [source, setSource] = useState<BcbaDatasetStatus | null>(null);
   const [rawRows, setRawRows] = useState<BcbaSharedBillingRow[]>([]);
   const [authContext, setAuthContext] = useState<AuthContextRow[]>([]);
+  const [authLatestUpload, setAuthLatestUpload] = useState<string | null>(null);
+  const [loadHealth, setLoadHealth] = useState<BcbaSharedLoadHealth | null>(null);
   const [filters, setFilters] = useState<BcbaProductivityFilters>(EMPTY_FILTERS);
   const [searchInput, setSearchInput] = useState("");
   const [drilldown, setDrilldown] = useState<Drilldown | null>(null);
@@ -157,6 +161,7 @@ export default function BcbaProductivityReportV3() {
       ]);
       setSource(status);
       setRawRows(rows);
+      setLoadHealth(getBcbaSharedLoadHealth());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load CentralReach billing rows.");
     } finally {
@@ -170,11 +175,32 @@ export default function BcbaProductivityReportV3() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("cr_authorizations")
-        .select("client_name,payor,state,procedure_code,start_date,end_date,authorized_hours,status")
-        .limit(5000);
-      if (!cancelled) setAuthContext((data ?? []) as AuthContextRow[]);
+      // The Data API caps responses at 1,000 rows, so the audit/fallback
+      // context has to be paged — a single `.limit(5000)` silently truncated it.
+      const PAGE = 1000;
+      const CAP = 50000;
+      const acc: AuthContextRow[] = [];
+      for (let offset = 0; offset < CAP; ) {
+        const { data, error } = await supabase
+          .from("cr_authorizations")
+          .select("client_name,payor,state,procedure_code,start_date,end_date,authorized_hours,status")
+          .order("start_date", { ascending: true })
+          .range(offset, offset + PAGE - 1);
+        if (error) break;
+        const arr = (data ?? []) as AuthContextRow[];
+        acc.push(...arr);
+        if (arr.length === 0) break;
+        offset += arr.length;
+      }
+      const { data: lastAuthUpload } = await supabase
+        .from("cr_import_batches")
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!cancelled) {
+        setAuthContext(acc);
+        setAuthLatestUpload(lastAuthUpload?.[0]?.created_at ?? null);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
