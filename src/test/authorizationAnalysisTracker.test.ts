@@ -3,7 +3,11 @@ import {
   classifyAuthKind,
   classifyAuthStatus,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationAnalysis";
-import { computeAuthTrackerWeeks, totalTrackerCounts } from "@/lib/os/reports/crPrimary/metrics/authorizationTracker";
+import {
+  computeAuthTrackerWeeks,
+  deriveTrackerWeeksFromAuthorizations,
+  totalTrackerCounts,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationTracker";
 import { deriveNoRaPauses } from "@/lib/os/reports/crPrimary/metrics/authorizationPauses";
 import { deriveAuthorizationStatus } from "@/lib/os/centralreachUploads/normalize";
 import type {
@@ -100,6 +104,56 @@ describe("weekly authorization tracker", () => {
       ],
     );
     expect(weeks[0].services_paused_no_ra).toBe(2);
+  });
+});
+
+describe("CentralReach-derived tracker weeks", () => {
+  const crRows = [
+    auth({ client_labels: "Client |Initial Assessment Approved", actual_start_date: "2026-06-30" }),
+    auth({ client_labels: "Client |Initial Assessment |Initial Treatment", actual_start_date: "2026-07-01" }),
+    auth({ client_labels: "Client |Initial Treatment Approved", actual_start_date: "2026-07-02" }),
+    auth({ client_labels: "Client |Concurrent Treatment Approved", actual_start_date: "2026-07-02" }),
+    auth({ client_labels: "Client |DENIED", service_codes: "97155", actual_start_date: "2026-07-02" }),
+  ];
+
+  it("counts each authorization once, in the week of its actual start date", () => {
+    const weeks = deriveTrackerWeeksFromAuthorizations(crRows);
+    expect(weeks.map((w) => w.weekStart)).toEqual(["2026-06-29"]);
+    const w = weeks[0];
+    expect(w.initial_assessment_submitted).toBe(2);
+    expect(w.initial_assessment_approved).toBe(1);
+    expect(w.initial_treatment_submitted).toBe(2);
+    expect(w.initial_treatment_approved).toBe(1);
+    expect(w.initial_treatment_denied).toBe(1);
+    expect(w.ra_submitted).toBe(1);
+    expect(w.ra_approved).toBe(1);
+    // Progress-report and pause metrics are never derived from CentralReach.
+    expect(w.progress_report_submitted).toBe(0);
+    expect(w.services_paused_no_ra).toBe(0);
+    expect(w.services_paused_late_pr).toBe(0);
+  });
+
+  it("fills the matrix from CentralReach when nothing has been logged", () => {
+    const weeks = computeAuthTrackerWeeks([], [], deriveTrackerWeeksFromAuthorizations(crRows));
+    expect(weeks).toHaveLength(1);
+    expect(weeks[0].ra_submitted).toBe(1);
+    expect(weeks[0].sources.ra_submitted).toBe("centralreach");
+    expect(weeks[0].sources.progress_report_submitted).toBe("empty");
+  });
+
+  it("lets a logged count replace the derived count for the same cell", () => {
+    const weeks = computeAuthTrackerWeeks(
+      [
+        event({ event_type: "ra_submitted", event_date: "2026-06-30" }),
+        event({ event_type: "ra_submitted", event_date: "2026-07-01" }),
+        event({ event_type: "ra_submitted", event_date: "2026-07-02" }),
+      ],
+      [],
+      deriveTrackerWeeksFromAuthorizations(crRows),
+    );
+    expect(weeks[0].ra_submitted).toBe(3);
+    expect(weeks[0].sources.ra_submitted).toBe("logged");
+    expect(weeks[0].sources.initial_assessment_submitted).toBe("centralreach");
   });
 });
 
