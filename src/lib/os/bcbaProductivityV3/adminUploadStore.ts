@@ -795,6 +795,26 @@ let SHARED_CACHE: { key: string; rows: BcbaSharedBillingRow[] } | null = null;
 
 export function invalidateBcbaProductivitySharedCache() {
   SHARED_CACHE = null;
+  LAST_SHARED_LOAD = null;
+}
+
+export interface BcbaSharedLoadHealth {
+  /** Rows the store reports it holds. */
+  expected: number;
+  /** Rows that actually landed in the report after paging. */
+  loaded: number;
+  /** True when paging returned materially fewer rows than the store holds. */
+  truncated: boolean;
+}
+
+let LAST_SHARED_LOAD: BcbaSharedLoadHealth | null = null;
+
+/**
+ * Health of the most recent shared-row load. Used by the report to warn
+ * instead of silently under-reporting hours when a page read is truncated.
+ */
+export function getBcbaSharedLoadHealth(): BcbaSharedLoadHealth | null {
+  return LAST_SHARED_LOAD;
 }
 
 export async function getBcbaProductivitySharedRows(
@@ -816,6 +836,14 @@ export async function getBcbaProductivitySharedRows(
       onProgress: opts.onProgress,
     });
     SHARED_CACHE = { key: cacheKey, rows };
+    const expected = Math.min(crCount, max);
+    LAST_SHARED_LOAD = {
+      expected,
+      loaded: rows.length,
+      // Rows without a usable date or code are dropped on purpose, so allow a
+      // small tolerance before calling the load truncated.
+      truncated: rows.length < expected * 0.95,
+    };
     return rows;
   }
 
