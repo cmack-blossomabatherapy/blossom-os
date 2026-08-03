@@ -661,7 +661,14 @@ async function callUploadFn(
 
 /* ----- CentralReach Data Hub billing (source of truth) ----- */
 
-const CR_PAGE = 5000;
+/**
+ * The Data API caps every response at 1,000 rows regardless of the requested
+ * range. Paging in larger blocks and stopping on a "short" page silently
+ * truncated the dataset to its first 1,000 rows (early January only), which
+ * made every later date filter return nothing. Page at the server cap and
+ * only stop when a page comes back empty.
+ */
+const CR_PAGE = 1000;
 const CR_SAFETY_CAP = 250000;
 
 /** Map a normalized `cr_billing_sessions` row into the shared report shape. */
@@ -720,6 +727,7 @@ async function readAllCrDataHubBillingRows(
         "client_cr_id,client_name,rendering_provider_name,provider_contact_labels,procedure_code,hours,date_of_service,state,payor,location",
       )
       .order("date_of_service", { ascending: true })
+      .order("id", { ascending: true })
       .range(offset, to);
     if (error) throw error;
     const arr = data ?? [];
@@ -728,8 +736,10 @@ async function readAllCrDataHubBillingRows(
       if (mapped.date && mapped.code) out.push(mapped);
     }
     opts.onProgress?.(out.length, opts.total ?? out.length);
-    if (arr.length < CR_PAGE) break;
-    offset += CR_PAGE;
+    // Never break on a short page: the server may return fewer rows than the
+    // requested range. Only an empty page means the table is exhausted.
+    if (arr.length === 0) break;
+    offset += arr.length;
   }
   return out;
 }
@@ -785,6 +795,26 @@ let SHARED_CACHE: { key: string; rows: BcbaSharedBillingRow[] } | null = null;
 
 export function invalidateBcbaProductivitySharedCache() {
   SHARED_CACHE = null;
+  LAST_SHARED_LOAD = null;
+}
+
+export interface BcbaSharedLoadHealth {
+  /** Rows the store reports it holds. */
+  expected: number;
+  /** Rows that actually landed in the report after paging. */
+  loaded: number;
+  /** True when paging returned materially fewer rows than the store holds. */
+  truncated: boolean;
+}
+
+let LAST_SHARED_LOAD: BcbaSharedLoadHealth | null = null;
+
+/**
+ * Health of the most recent shared-row load. Used by the report to warn
+ * instead of silently under-reporting hours when a page read is truncated.
+ */
+export function getBcbaSharedLoadHealth(): BcbaSharedLoadHealth | null {
+  return LAST_SHARED_LOAD;
 }
 
 export async function getBcbaProductivitySharedRows(
@@ -806,6 +836,14 @@ export async function getBcbaProductivitySharedRows(
       onProgress: opts.onProgress,
     });
     SHARED_CACHE = { key: cacheKey, rows };
+    const expected = Math.min(crCount, max);
+    LAST_SHARED_LOAD = {
+      expected,
+      loaded: rows.length,
+      // Rows without a usable date or code are dropped on purpose, so allow a
+      // small tolerance before calling the load truncated.
+      truncated: rows.length < expected * 0.95,
+    };
     return rows;
   }
 
@@ -837,7 +875,7 @@ export async function getBcbaProductivitySharedRows(
   // omitted from the select — state is already normalized into `normalized`
   // at insert time, and pulling `raw` for 47k rows was the primary reason
   // Refresh Data spun forever (payload was ~10x the size the report needs).
-  const PAGE = 5000;
+  const PAGE = 1000;
   const CONCURRENCY = 4;
   const pageCount = Math.ceil(total / PAGE);
   const results: BcbaSharedBillingRow[][] = new Array(pageCount);
@@ -998,7 +1036,7 @@ export async function getBcbaProductivityBatchRows(batchId: string): Promise<Bcb
  * code + hours` and sorted by date ascending.
  */
 export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSharedBillingRow[]> {
-  const PAGE = 5000;
+  const PAGE = CR_PAGE;
   const acc: BcbaSharedBillingRow[] = [];
 
   // Data Hub billing is the current authoritative dataset; every row in it is
@@ -1031,8 +1069,8 @@ export async function getBcbaProductivityOwnershipContextRows(): Promise<BcbaSha
           acc.push(state === n.state ? n : { ...n, state });
         }
       }
-      if (arr.length < PAGE) break;
-      offset += PAGE;
+      if (arr.length === 0) break;
+      offset += arr.length;
     }
   }
 

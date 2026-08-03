@@ -23,7 +23,9 @@ import {
   getBcbaProductivitySharedRows,
   getBcbaProductivityDatasetStatus,
   invalidateBcbaProductivitySharedCache,
+  getBcbaSharedLoadHealth,
   type BcbaDatasetStatus,
+  type BcbaSharedLoadHealth,
   type BcbaSharedBillingRow,
 } from "@/lib/os/bcbaProductivityV3/adminUploadStore";
 import {
@@ -138,6 +140,8 @@ export default function BcbaProductivityReportV3() {
   const [source, setSource] = useState<BcbaDatasetStatus | null>(null);
   const [rawRows, setRawRows] = useState<BcbaSharedBillingRow[]>([]);
   const [authContext, setAuthContext] = useState<AuthContextRow[]>([]);
+  const [authLatestUpload, setAuthLatestUpload] = useState<string | null>(null);
+  const [loadHealth, setLoadHealth] = useState<BcbaSharedLoadHealth | null>(null);
   const [filters, setFilters] = useState<BcbaProductivityFilters>(EMPTY_FILTERS);
   const [searchInput, setSearchInput] = useState("");
   const [drilldown, setDrilldown] = useState<Drilldown | null>(null);
@@ -157,6 +161,7 @@ export default function BcbaProductivityReportV3() {
       ]);
       setSource(status);
       setRawRows(rows);
+      setLoadHealth(getBcbaSharedLoadHealth());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load CentralReach billing rows.");
     } finally {
@@ -170,11 +175,32 @@ export default function BcbaProductivityReportV3() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("cr_authorizations")
-        .select("client_name,payor,state,procedure_code,start_date,end_date,authorized_hours,status")
-        .limit(5000);
-      if (!cancelled) setAuthContext((data ?? []) as AuthContextRow[]);
+      // The Data API caps responses at 1,000 rows, so the audit/fallback
+      // context has to be paged — a single `.limit(5000)` silently truncated it.
+      const PAGE = 1000;
+      const CAP = 50000;
+      const acc: AuthContextRow[] = [];
+      for (let offset = 0; offset < CAP; ) {
+        const { data, error } = await supabase
+          .from("cr_authorizations")
+          .select("client_name,payor,state,procedure_code,start_date,end_date,authorized_hours,status")
+          .order("start_date", { ascending: true })
+          .range(offset, offset + PAGE - 1);
+        if (error) break;
+        const arr = (data ?? []) as AuthContextRow[];
+        acc.push(...arr);
+        if (arr.length === 0) break;
+        offset += arr.length;
+      }
+      const { data: lastAuthUpload } = await supabase
+        .from("cr_import_batches")
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!cancelled) {
+        setAuthContext(acc);
+        setAuthLatestUpload(lastAuthUpload?.[0]?.created_at ?? null);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -323,10 +349,34 @@ export default function BcbaProductivityReportV3() {
           <span className="text-muted-foreground">
             In view: <strong className="text-foreground">{fmtCount(filteredRows.length)}</strong> rows
           </span>
+          <span className="text-muted-foreground">
+            Unassigned hours: <strong className="text-foreground">{fmtHours(kpis.unassignedHours)}</strong>
+          </span>
+          <span className="text-muted-foreground">
+            Latest billing upload: <strong className="text-foreground">
+              {source?.lastUploadAt ? new Date(source.lastUploadAt).toLocaleString("en-US") : "—"}
+            </strong>
+          </span>
+          <span className="text-muted-foreground">
+            Latest authorization upload: <strong className="text-foreground">
+              {authLatestUpload ? new Date(authLatestUpload).toLocaleString("en-US") : "—"}
+            </strong>
+          </span>
           {progress ? (
             <span className="text-muted-foreground">Loading {fmtCount(progress.loaded)}…</span>
           ) : null}
         </div>
+
+        {loadHealth?.truncated ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-700 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5" />
+            <div>
+              Only {fmtCount(loadHealth.loaded)} of {fmtCount(loadHealth.expected)} billing rows loaded —
+              hours and date filters below are incomplete. Use Refresh; if this persists, re-check the
+              CentralReach Data Hub billing load.
+            </div>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
