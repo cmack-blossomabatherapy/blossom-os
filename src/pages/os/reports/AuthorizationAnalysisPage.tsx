@@ -201,6 +201,65 @@ export default function AuthorizationAnalysisPage() {
     });
   };
 
+  /** Derived no-RA pause weeks (client weeks with no service and no coverage). */
+  const openPauseDrilldown = (week?: string) => {
+    const list = week ? derivedPauses.filter((p) => p.weekStart === week) : derivedPauses;
+    setDrilldown({
+      title: week ? `Paused — no RA · week of ${fmtDate(week)}` : "Paused — no reauthorization",
+      subtitle:
+        "Derived from authorization coverage: client weeks with no billed service and no authorization covering the week.",
+      rows: list.map((p) => ({
+        weekStart: p.weekStart,
+        client: p.clientName,
+        state: p.state ?? "",
+        payor: p.payor ?? "",
+        lastAuthEnd: p.lastAuthEnd ?? "No authorization on file",
+        source: "Derived from authorization coverage",
+      })),
+      columns: [
+        { key: "weekStart", label: "Week Start" },
+        { key: "client", label: "Client" },
+        { key: "state", label: "State" },
+        { key: "payor", label: "Payor" },
+        { key: "lastAuthEnd", label: "Last Auth End" },
+        { key: "source", label: "Source" },
+      ],
+      exportName: "authorization-analysis-paused-no-ra",
+    });
+  };
+
+  /** Logged tracker events of one type, optionally limited to a single week. */
+  const openEventDrilldown = (type: AuthEventType, week?: string) => {
+    const list = trackerEvents.filter(
+      (e) => e.event_type === type && (!week || weekStart(e.event_date) === week),
+    );
+    setDrilldown({
+      title: `${AUTH_EVENT_LABELS[type]}${week ? ` · week of ${fmtDate(week)}` : ""}`,
+      subtitle: "Authorization-team logged workflow events.",
+      rows: list.map((e) => ({
+        eventDate: e.event_date,
+        client: e.client_name ?? "",
+        authNumber: e.authorization_number ?? "",
+        payor: e.payor ?? "",
+        state: e.state ?? "",
+        pauseReason: e.pause_reason ?? "",
+        pauseDetail: e.pause_reason_detail ?? "",
+        notes: e.notes ?? "",
+      })),
+      columns: [
+        { key: "eventDate", label: "Event Date" },
+        { key: "client", label: "Client" },
+        { key: "authNumber", label: "Authorization #" },
+        { key: "payor", label: "Payor" },
+        { key: "state", label: "State" },
+        { key: "pauseReason", label: "Pause Reason" },
+        { key: "pauseDetail", label: "Reason Detail" },
+        { key: "notes", label: "Notes" },
+      ],
+      exportName: `authorization-analysis-${type.replace(/_/g, "-")}`,
+    });
+  };
+
   const onKpi = (id: string) => {
     const byStatus = (want: string) => (i: number) => classifyAuthStatus(rows[i]) === want;
     if (id === "approved") return openDrilldown("Approved authorizations", byStatus("approved"));
