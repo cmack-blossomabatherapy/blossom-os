@@ -429,6 +429,16 @@ export default function AuthorizationAnalysisPage() {
       </div>
 
       <DrilldownDrawer request={drilldown} onClose={() => setDrilldown(null)} />
+
+      {canLog && (
+        <LogAuthEventDialog
+          open={logOpen}
+          onOpenChange={setLogOpen}
+          onSubmit={tracker.logEvent}
+          clients={optionsFor(data.authorizations, (r) => r.client_name)}
+          payors={optionsFor(data.authorizations, (r) => r.payor)}
+        />
+      )}
     </PrimaryReportShell>
   );
 }
