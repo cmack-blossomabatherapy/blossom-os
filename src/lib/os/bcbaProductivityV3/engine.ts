@@ -417,8 +417,7 @@ export function matchesFilters(
   row: OwnedBillingRow,
   f: BcbaProductivityFilters,
 ): boolean {
-  if (f.from && row.date < f.from) return false;
-  if (f.to && row.date > f.to) return false;
+  if (!inDayRange(row.date, f.from, f.to)) return false;
   if (f.state && !eq(row.state, f.state)) return false;
   if (f.bcba) {
     if (f.bcba === UNASSIGNED_LABEL) {
