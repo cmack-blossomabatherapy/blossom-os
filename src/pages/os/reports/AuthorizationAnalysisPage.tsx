@@ -295,7 +295,16 @@ export default function AuthorizationAnalysisPage() {
       errorMessage={data.errorMessage}
       onRefresh={data.refresh}
       exportDisabled={projected.length === 0}
-      onExport={() => downloadCsv("authorization-analysis", projected, AUTH_DRILLDOWN_COLUMNS)}
+      onExport={() => {
+        downloadCsv("authorization-analysis", projected, AUTH_DRILLDOWN_COLUMNS);
+        if (trackerWeeks.length) {
+          downloadCsv(
+            "authorization-weekly-tracking",
+            trackerWeeks as unknown as Record<string, unknown>[],
+            TRACKER_EXPORT_COLUMNS,
+          );
+        }
+      }}
       filters={
         <PrimaryFilterBar
           filters={filters}
