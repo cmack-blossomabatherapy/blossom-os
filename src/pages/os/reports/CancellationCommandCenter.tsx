@@ -1775,7 +1775,7 @@ function CancellationLogTable({
       </div>
       <div className="max-h-[68vh] overflow-auto">
         <table className="w-full text-[12.5px]">
-          <thead className="sticky top-0 z-10 bg-secondary/60 text-[11px] uppercase tracking-wider text-muted-foreground backdrop-blur">
+          <thead className="sticky top-0 z-20 bg-card text-[11px] uppercase tracking-wider text-muted-foreground shadow-[0_1px_0_0_hsl(var(--border))]">
             <tr>
               <Header k="date" label="Date" />
               <Header k="client" label="Client" />
