@@ -661,7 +661,14 @@ async function callUploadFn(
 
 /* ----- CentralReach Data Hub billing (source of truth) ----- */
 
-const CR_PAGE = 5000;
+/**
+ * The Data API caps every response at 1,000 rows regardless of the requested
+ * range. Paging in larger blocks and stopping on a "short" page silently
+ * truncated the dataset to its first 1,000 rows (early January only), which
+ * made every later date filter return nothing. Page at the server cap and
+ * only stop when a page comes back empty.
+ */
+const CR_PAGE = 1000;
 const CR_SAFETY_CAP = 250000;
 
 /** Map a normalized `cr_billing_sessions` row into the shared report shape. */
@@ -720,6 +727,7 @@ async function readAllCrDataHubBillingRows(
         "client_cr_id,client_name,rendering_provider_name,provider_contact_labels,procedure_code,hours,date_of_service,state,payor,location",
       )
       .order("date_of_service", { ascending: true })
+      .order("id", { ascending: true })
       .range(offset, to);
     if (error) throw error;
     const arr = data ?? [];
@@ -728,8 +736,10 @@ async function readAllCrDataHubBillingRows(
       if (mapped.date && mapped.code) out.push(mapped);
     }
     opts.onProgress?.(out.length, opts.total ?? out.length);
-    if (arr.length < CR_PAGE) break;
-    offset += CR_PAGE;
+    // Never break on a short page: the server may return fewer rows than the
+    // requested range. Only an empty page means the table is exhausted.
+    if (arr.length === 0) break;
+    offset += arr.length;
   }
   return out;
 }
