@@ -349,10 +349,34 @@ export default function BcbaProductivityReportV3() {
           <span className="text-muted-foreground">
             In view: <strong className="text-foreground">{fmtCount(filteredRows.length)}</strong> rows
           </span>
+          <span className="text-muted-foreground">
+            Unassigned hours: <strong className="text-foreground">{fmtHours(kpis.unassignedHours)}</strong>
+          </span>
+          <span className="text-muted-foreground">
+            Latest billing upload: <strong className="text-foreground">
+              {source?.lastUploadAt ? new Date(source.lastUploadAt).toLocaleString("en-US") : "—"}
+            </strong>
+          </span>
+          <span className="text-muted-foreground">
+            Latest authorization upload: <strong className="text-foreground">
+              {authLatestUpload ? new Date(authLatestUpload).toLocaleString("en-US") : "—"}
+            </strong>
+          </span>
           {progress ? (
             <span className="text-muted-foreground">Loading {fmtCount(progress.loaded)}…</span>
           ) : null}
         </div>
+
+        {loadHealth?.truncated ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-700 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5" />
+            <div>
+              Only {fmtCount(loadHealth.loaded)} of {fmtCount(loadHealth.expected)} billing rows loaded —
+              hours and date filters below are incomplete. Use Refresh; if this persists, re-check the
+              CentralReach Data Hub billing load.
+            </div>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
