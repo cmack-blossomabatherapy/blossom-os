@@ -50,3 +50,29 @@ export function inDayRange(value: unknown, from: string, to: string): boolean {
   if (t && key > t) return false;
   return true;
 }
+
+/**
+ * Inclusive overlap test for records that represent a period rather than one
+ * service day (for example, an authorization effective date through its end
+ * date). Open-ended records are treated as continuing indefinitely.
+ */
+export function periodOverlapsDayRange(
+  startValue: unknown,
+  endValue: unknown,
+  from: string,
+  to: string,
+): boolean {
+  const filterStart = toDayKey(from);
+  const filterEnd = toDayKey(to);
+  if (!filterStart && !filterEnd) return true;
+
+  const periodStart = toDayKey(startValue);
+  const periodEnd = toDayKey(endValue);
+  if (!periodStart && !periodEnd) return false;
+
+  const effectiveStart = periodStart || periodEnd;
+  const effectiveEnd = periodEnd || "9999-12-31";
+  if (filterEnd && effectiveStart > filterEnd) return false;
+  if (filterStart && effectiveEnd < filterStart) return false;
+  return true;
+}

@@ -2,7 +2,7 @@ import type {
   FilterableFact,
   PrimaryReportFilters,
 } from "./types";
-import { inDayRange } from "@/lib/os/reports/dateKey";
+import { inDayRange, periodOverlapsDayRange } from "@/lib/os/reports/dateKey";
 
 function eq(a: string | null | undefined, b: string): boolean {
   return (a ?? "").trim().toLowerCase() === b.trim().toLowerCase();
@@ -13,7 +13,10 @@ export function matchesFilters(
   fact: FilterableFact,
   filters: PrimaryReportFilters,
 ): boolean {
-  if (!inDayRange(fact.date, filters.from, filters.to)) return false;
+  const dateMatches = fact.endDate !== undefined
+    ? periodOverlapsDayRange(fact.date, fact.endDate, filters.from, filters.to)
+    : inDayRange(fact.date, filters.from, filters.to);
+  if (!dateMatches) return false;
   if (filters.state && !eq(fact.state, filters.state)) return false;
   if (filters.client && !eq(fact.client, filters.client)) return false;
   if (filters.provider && !eq(fact.provider, filters.provider)) return false;
