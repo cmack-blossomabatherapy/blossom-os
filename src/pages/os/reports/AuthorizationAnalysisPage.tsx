@@ -348,7 +348,8 @@ export default function AuthorizationAnalysisPage() {
                 ),
             })),
           ]}
-          emptyMessage="No authorization events tracked for this range yet. Log the first event to start the weekly tracker."
+          emptyLabel="No authorization events tracked for this range yet. Log the first event to start the weekly tracker."
+          maxRows={60}
         />
 
         <PrimaryChart
