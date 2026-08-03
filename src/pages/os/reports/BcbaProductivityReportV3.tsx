@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FilterCombobox, FILTER_ALL_VALUE } from "@/components/reports/crPrimary/FilterCombobox";
+import { DateRangeFilter } from "@/components/reports/crPrimary/DateRangeFilter";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
