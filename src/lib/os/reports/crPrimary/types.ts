@@ -162,6 +162,8 @@ export interface ChartDatum {
 export interface DrilldownRequest {
   title: string;
   subtitle?: string;
+  /** Exact filters that produced this row set (shown as chips in the drawer). */
+  filters?: { label: string; value: string }[];
   /** Source rows shown in the drilldown, already filtered. */
   rows: Record<string, unknown>[];
   columns: { key: string; label: string }[];

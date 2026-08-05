@@ -58,6 +58,21 @@ export function weekStart(dateStr: string | null | undefined): string | null {
 }
 
 /** `YYYY-MM` month key. */
+export function weekEnd(weekStartStr: string | null | undefined): string | null {
+  if (!weekStartStr) return null;
+  const d = new Date(`${String(weekStartStr).slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setUTCDate(d.getUTCDate() + 6);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Human bucket label, e.g. `Aug 3, 2026 → Aug 9, 2026 (Mon–Sun)`. */
+export function weekRangeLabel(weekStartStr: string | null | undefined): string {
+  const end = weekEnd(weekStartStr);
+  if (!weekStartStr || !end) return "—";
+  return `${fmtDate(weekStartStr)} → ${fmtDate(end)} (Mon–Sun)`;
+}
+
 export function monthKey(dateStr: string | null | undefined): string | null {
   if (!dateStr) return null;
   const s = String(dateStr).slice(0, 7);
