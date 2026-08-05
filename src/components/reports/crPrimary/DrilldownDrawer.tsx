@@ -56,6 +56,20 @@ export function DrilldownDrawer({
               </Button>
             </div>
 
+            {!!request.filters?.length && (
+              <div
+                className="mt-3 flex flex-wrap gap-1.5 rounded-xl border border-border/60 bg-muted/30 p-2"
+                data-testid="drilldown-filters"
+              >
+                {request.filters.map((f) => (
+                  <Badge key={`${f.label}:${f.value}`} variant="outline" className="text-[10px] font-normal">
+                    <span className="text-muted-foreground">{f.label}:</span>
+                    <span className="ml-1 font-medium">{f.value}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
             <div className="mt-3 max-h-[65vh] overflow-auto rounded-xl border border-border/60">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
