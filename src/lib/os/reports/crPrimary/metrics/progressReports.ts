@@ -73,7 +73,9 @@ export function computeProgressReportMetrics(
     if (pause === "late_or_missing_pr") pausedDueToPr += 1;
 
     let status: ProgressReportRecord["status"] = "due";
-    const sourceText = `${a.status ?? ""} ${a.procedure_code ?? ""}`.toLowerCase();
+    const sourceText = `${a.status ?? ""} ${a.procedure_code ?? ""} ${
+      a.client_labels ?? ""
+    } ${a.service_codes ?? ""}`.toLowerCase();
     if (/\bmissing\b|no\s+(?:progress\s*report|pr)\s+(?:on\s+file|received)/.test(sourceText)) status = "missing";
     else if (st === "approved") status = "approved";
     else if (st === "denied") status = "denied";

@@ -15,8 +15,12 @@ import type {
   CrUtilizationRow,
 } from "./types";
 
-/** Rows requested per Supabase range page. */
-export const CR_PAGE_SIZE = 5000;
+/**
+ * Rows requested per page. The Data API caps every response at 1,000 rows
+ * regardless of the requested range, so pages must be 1,000 and the loop may
+ * only stop on a truly empty page.
+ */
+export const CR_PAGE_SIZE = 1000;
 /** Hard safety cap; high enough for current + future production volume. */
 export const CR_SAFETY_CAP = 250000;
 
@@ -40,8 +44,8 @@ export async function readTable<T>(
         .range(from, to);
       if (error) return { rows: rows as T[], error: error.message };
       const page = (data ?? []) as T[];
+      if (page.length === 0) return { rows, error: null };
       rows.push(...page);
-      if (page.length < to - from + 1) return { rows, error: null };
     }
     return { rows, error: "Result exceeded safety cap" };
   } catch (err) {
