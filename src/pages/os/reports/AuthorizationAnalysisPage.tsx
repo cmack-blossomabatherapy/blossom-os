@@ -18,7 +18,14 @@ import {
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
 import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS, type DrilldownRequest, type KpiDefinition } from "@/lib/os/reports/crPrimary/types";
-import { fmtCount, fmtDate, fmtPct, weekStart } from "@/lib/os/reports/crPrimary/format";
+import {
+  fmtCount,
+  fmtDate,
+  fmtPct,
+  weekEnd,
+  weekRangeLabel,
+  weekStart,
+} from "@/lib/os/reports/crPrimary/format";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
 import { AUTH_DRILLDOWN_COLUMNS, projectAuthRows } from "@/lib/os/reports/crPrimary/drilldown";
 import {
@@ -85,6 +92,13 @@ const DERIVED_CELL_FILTER: Partial<
   ra_approved: { kind: "reauthorization", status: "approved" },
   ra_denied: { kind: "reauthorization", status: "denied" },
 };
+
+/** Bucket columns prepended to every cell-level drilldown. */
+const BUCKET_COLUMNS = [
+  { key: "bucketStart", label: "Bucket Start" },
+  { key: "bucketEnd", label: "Bucket End" },
+  { key: "bucketDate", label: "Date In Bucket" },
+];
 
 export default function AuthorizationAnalysisPage() {
   const data = useCrPrimaryReport(["authorizations", "billing"]);
@@ -211,11 +225,13 @@ export default function AuthorizationAnalysisPage() {
     title: string,
     predicate: (index: number) => boolean,
     subtitle?: string,
+    cellFilters?: { label: string; value: string }[],
   ) => {
     const filtered = projected.filter((_, i) => predicate(i));
     setDrilldown({
       title,
       subtitle: subtitle ?? "CentralReach authorization source rows with matched Blossom context.",
+      filters: cellFilters,
       rows: filtered,
       columns: AUTH_DRILLDOWN_COLUMNS,
       exportName: `authorization-analysis-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
@@ -229,8 +245,20 @@ export default function AuthorizationAnalysisPage() {
       title: week ? `Paused — no RA · week of ${fmtDate(week)}` : "Paused — no reauthorization",
       subtitle:
         "Derived from authorization coverage: client weeks with no billed service and no authorization covering the week.",
+      filters: [
+        { label: "Metric", value: AUTH_EVENT_LABELS.services_paused_no_ra },
+        { label: "Source", value: "Derived from authorization coverage" },
+        ...(week
+          ? [
+              { label: "Bucket", value: weekRangeLabel(week) },
+              { label: "Bucket start", value: week },
+              { label: "Bucket end", value: weekEnd(week) ?? "—" },
+            ]
+          : [{ label: "Bucket", value: "All tracked weeks" }]),
+      ],
       rows: list.map((p) => ({
         weekStart: p.weekStart,
+        weekEnd: weekEnd(p.weekStart) ?? "",
         client: p.clientName,
         state: p.state ?? "",
         payor: p.payor ?? "",
@@ -239,6 +267,7 @@ export default function AuthorizationAnalysisPage() {
       })),
       columns: [
         { key: "weekStart", label: "Week Start" },
+        { key: "weekEnd", label: "Week End" },
         { key: "client", label: "Client" },
         { key: "state", label: "State" },
         { key: "payor", label: "Payor" },
@@ -257,7 +286,20 @@ export default function AuthorizationAnalysisPage() {
     setDrilldown({
       title: `${AUTH_EVENT_LABELS[type]}${week ? ` · week of ${fmtDate(week)}` : ""}`,
       subtitle: "Authorization-team logged workflow events.",
+      filters: [
+        { label: "Metric", value: AUTH_EVENT_LABELS[type] },
+        { label: "Source", value: "Authorization-team logged events" },
+        ...(week
+          ? [
+              { label: "Bucket", value: weekRangeLabel(week) },
+              { label: "Bucket start", value: week },
+              { label: "Bucket end", value: weekEnd(week) ?? "—" },
+            ]
+          : [{ label: "Bucket", value: "All tracked weeks" }]),
+      ],
       rows: list.map((e) => ({
+        bucketStart: week ?? weekStart(e.event_date) ?? "",
+        bucketEnd: weekEnd(week ?? weekStart(e.event_date)) ?? "",
         eventDate: e.event_date,
         client: e.client_name ?? "",
         authNumber: e.authorization_number ?? "",
@@ -268,6 +310,7 @@ export default function AuthorizationAnalysisPage() {
         notes: e.notes ?? "",
       })),
       columns: [
+        ...BUCKET_COLUMNS.filter((c) => c.key !== "bucketDate"),
         { key: "eventDate", label: "Event Date" },
         { key: "client", label: "Client" },
         { key: "authNumber", label: "Authorization #" },
@@ -288,17 +331,43 @@ export default function AuthorizationAnalysisPage() {
   const openDerivedCellDrilldown = (type: AuthEventType, week: string) => {
     const spec = DERIVED_CELL_FILTER[type];
     if (!spec) return;
-    openDrilldown(
-      `${AUTH_EVENT_LABELS[type]} · week of ${fmtDate(week)}`,
-      (i) => {
-        const row = rows[i];
-        if (authorizationTrackerWeek(row) !== week) return false;
-        if (classifyAuthKind(row) !== spec.kind) return false;
-        if (spec.status && classifyAuthStatus(row) !== spec.status) return false;
-        return true;
-      },
-      "CentralReach authorization rows classified from client labels and service codes.",
-    );
+    const matched = rows.filter((row) => {
+      if (authorizationTrackerWeek(row) !== week) return false;
+      if (classifyAuthKind(row) !== spec.kind) return false;
+      if (spec.status && classifyAuthStatus(row) !== spec.status) return false;
+      return true;
+    });
+    const projectedMatched = projectAuthRows(matched, {
+      kind: (r) => KIND_LABEL[classifyAuthKind(r)] ?? "Other",
+      status: (r) => classifyAuthStatus(r),
+    }).map((r, i) => ({
+      bucketStart: week,
+      bucketEnd: weekEnd(week) ?? "",
+      bucketDate:
+        matched[i].actual_start_date ??
+        matched[i].start_date ??
+        matched[i].followup_start_date ??
+        "",
+      ...r,
+    }));
+    setDrilldown({
+      title: `${AUTH_EVENT_LABELS[type]} · week of ${fmtDate(week)}`,
+      subtitle:
+        "Only the CentralReach authorization rows that produced this count, classified from client labels and service codes.",
+      filters: [
+        { label: "Metric", value: AUTH_EVENT_LABELS[type] },
+        { label: "Bucket", value: weekRangeLabel(week) },
+        { label: "Bucket start", value: week },
+        { label: "Bucket end", value: weekEnd(week) ?? "—" },
+        { label: "Work type", value: KIND_LABEL[spec.kind] ?? spec.kind },
+        { label: "Mapped status", value: spec.status ?? "Any (submitted)" },
+        { label: "Bucketed by", value: "Actual start date, else start date, else follow-up start" },
+        { label: "Source", value: "CentralReach authorizations export" },
+      ],
+      rows: projectedMatched,
+      columns: [...BUCKET_COLUMNS, ...AUTH_DRILLDOWN_COLUMNS],
+      exportName: `authorization-analysis-${type.replace(/_/g, "-")}-${week}`,
+    });
   };
 
   const onKpi = (id: string) => {
