@@ -12,7 +12,8 @@ vi.mock("@/integrations/supabase/client", () => ({
       select: () => ({
         range: (from: number, to: number) => {
           state.calls.push([from, to]);
-          const size = to - from + 1;
+          // The Data API caps every response at 1,000 rows.
+          const size = Math.min(to - from + 1, 1000);
           const all = state.pages.flat();
           return Promise.resolve({
             data: state.error ? null : all.slice(from, from + size),
@@ -38,14 +39,14 @@ describe("crPrimary source pagination", () => {
     state.calls = [];
   });
 
-  it("fetches three full pages plus a partial page (beyond 20,000 rows)", async () => {
+  it("fetches every page under the 1,000-row server cap", async () => {
     const total = CR_PAGE_SIZE * 3 + 17;
     state.pages = [makeRows(total)];
     const res = await readTable<{ id: number }>("cr_billing_sessions", "id");
     expect(res.error).toBeNull();
     expect(res.rows).toHaveLength(total);
     expect(res.rows[total - 1].id).toBe(total - 1);
-    expect(state.calls.length).toBe(4);
+    expect(state.calls.length).toBe(5);
     expect(state.calls[0]).toEqual([0, CR_PAGE_SIZE - 1]);
   });
 
@@ -55,10 +56,11 @@ describe("crPrimary source pagination", () => {
     expect(res.rows).toHaveLength(56936);
   });
 
-  it("stops when a page is short and returns no error", async () => {
+  it("stops only on an empty page and returns no error", async () => {
     state.pages = [makeRows(10)];
     const res = await readTable("cr_schedule_events", "id");
-    expect(state.calls.length).toBe(1);
+    expect(state.calls.length).toBe(2);
+    expect(res.rows).toHaveLength(10);
     expect(res.error).toBeNull();
   });
 
