@@ -1582,7 +1582,7 @@ const App = () => (
                   path="/rbt/app"
                   element={
                     <ProtectedRoute>
-                      <PermissionRoute allowedRoles={["admin","hr","training_admin","rbt","registered_behavior_technician"]}>
+                      <PermissionRoute allowedRoles={["admin","super_admin","systems_admin","hr","hr_admin","training_admin","bcba","clinical_director","operations_leadership","rbt","registered_behavior_technician","lead_rbt","trainer","trainer_rbt","floater_lead_rbt"]}>
                         <RbtAppShell />
                       </PermissionRoute>
                     </ProtectedRoute>
