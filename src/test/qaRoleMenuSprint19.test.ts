@@ -25,8 +25,8 @@ const REQUIRED_QA_PATHS = [
   "/resource-library",
 ];
 
-describe("Sprint 19 — QA Team role menu", () => {
-  const qaMenu = ROLE_MENUS.qa_team!;
+describe("Sprint 19 — QA role menu (qa_director keeps the full QA section)", () => {
+  const qaMenu = ROLE_MENUS.qa_director!;
   const allPaths = qaMenu.sections.flatMap((s) => s.items.map((i) => i.path));
 
   it.each(REQUIRED_QA_PATHS)("includes %s", (p) => {
@@ -39,6 +39,23 @@ describe("Sprint 19 — QA Team role menu", () => {
 
   it("does not use legacy base /qa as a menu path", () => {
     expect(allPaths).not.toContain("/qa");
+  });
+});
+
+describe("QA Team menu shows only Company Home links", () => {
+  const qaTeam = ROLE_MENUS.qa_team!;
+  const paths = qaTeam.sections.flatMap((s) => s.items.map((i) => i.path));
+
+  it("has a single Company Home section", () => {
+    expect(qaTeam.sections.map((s) => s.label)).toEqual(["Company Home"]);
+  });
+
+  it("exposes Training Academy, Resource Library, and Reports", () => {
+    expect(paths).toEqual(["/academy", "/resource-library", "/reports"]);
+  });
+
+  it("hides the QA section entirely", () => {
+    expect(paths.some((p) => p.startsWith("/qa"))).toBe(false);
   });
 });
 

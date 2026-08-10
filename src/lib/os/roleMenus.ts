@@ -640,25 +640,12 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   qa_team: {
     sections: [
       {
-        id: "qa", label: "QA", items: [
-          { label: "QA Dashboard",                    path: "/qa-team",               icon: LayoutDashboard },
-          { label: "Packet QA",                       path: "/qa-workspace",          icon: FileSignature },
-          { label: "QA Clients",                      path: "/qa-clients",            icon: Users },
-          { label: "Treatment / Auth Readiness Review", path: "/authorization-reviews", icon: ClipboardCheck },
-          { label: "Treatment Plan Reviews",          path: "/treatment-plan-reviews", icon: FileCheck2 },
-          { label: "Document Completeness",           path: "/missing-information",   icon: FileCheck2 },
-          { label: "Expiring Items",                  path: "/expiring-items",        icon: Clock },
-          { label: "Assigned BCBAs",                  path: "/assigned-bcbas",        icon: UserCheck },
-          { label: "Supervision Visibility",          path: "/supervision-visibility", icon: Eye },
-          { label: "QA Messages",                     path: "/qa-messages",           icon: MessageSquare },
-          { label: "Corrections",                     path: "/qa-queue",              icon: AlertTriangle },
-          { label: "Clinical Readiness Snapshot",     path: "/ops/qa",                icon: Stethoscope },
-          { label: "CR Creation Verification",        path: "/qa/board",              icon: ClipboardCheck },
-          { label: "QA Tasks",                        path: "/escalations-followups", icon: Flame },
-          { label: "QA Resources",                    path: "/qa/resources",          icon: BookOpen },
+        id: "company_home", label: "Company Home", items: [
+          { label: "Training Academy", path: "/academy",          icon: GraduationCap },
+          { label: "Resource Library", path: "/resource-library", icon: BookOpen },
+          { label: "Reports",          path: "/reports",          icon: FileText },
         ],
       },
-      TRAINING_AND_RESOURCES,
     ],
   },
 
