@@ -32,9 +32,18 @@ describe("Executive Leadership completion — pass 2", () => {
     expect(line!).toMatch(/GROWTH_SNAPSHOT_ROLES/);
   });
 
-  it("Executive Leadership menu still lists /marketing/state-growth", () => {
+  it("Executive Leadership menu is intentionally trimmed to the 5 approved items", () => {
     const items = ROLE_MENUS.executive_leadership!.sections.flatMap((s) => s.items);
-    expect(items.map((i) => i.path)).toContain("/marketing/state-growth");
+    expect(items.map((i) => i.path)).toEqual([
+      "/home",
+      "/ai/assistant",
+      "/reports",
+      "/resource-library",
+      "/academy",
+    ]);
+    // Operational dashboards are no longer surfaced in the menu.
+    expect(items.map((i) => i.path)).not.toContain("/marketing/state-growth");
+    expect(items.map((i) => i.path)).not.toContain("/executive");
   });
 
   it("OpsExecutiveDashboard drops localStorage for leadership priorities", () => {
