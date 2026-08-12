@@ -21,8 +21,14 @@ describe("Executive Leadership completion pass", () => {
   const execItems = execMenu.sections.flatMap((s) => s.items);
   const execPaths = execItems.map((i) => i.path);
 
-  it("Executive Leadership menu includes /org-chart", () => {
-    expect(execPaths).toContain("/org-chart");
+  it("Executive Leadership menu is exactly the 5 approved items in order", () => {
+    expect(execPaths).toEqual([
+      "/home",
+      "/ai/assistant",
+      "/reports",
+      "/resource-library",
+      "/academy",
+    ]);
   });
 
   it("every Executive Leadership menu path is live for the role", () => {

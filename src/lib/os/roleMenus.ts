@@ -108,24 +108,14 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   executive_leadership: {
     sections: [
       {
-        id: "leadership", label: "Leadership", items: [
-          { label: "Executive Dashboard",         path: "/executive",                     icon: BarChart3 },
-          { label: "Company Snapshot",            path: "/command-center",                icon: LayoutDashboard },
-          { label: "State Health Overview",       path: "/state-operations",              icon: MapPin },
-          { label: "Growth Pipeline",             path: "/marketing",                     icon: TrendingUp },
-          { label: "State Growth Snapshot",       path: "/marketing/state-growth",        icon: TrendingUp },
-          { label: "CR Handoff Aging",            path: "/authorizations/handoff",        icon: ShieldCheck },
-          { label: "Revenue / RCM Snapshot",      path: "/revenue",                       icon: Gauge },
-          { label: "Staffing Risk",               path: "/ops/staffing",                  icon: Users },
-          { label: "Recruiting Supply",           path: "/recruiting/staffing-needs",     icon: Users },
-          { label: "Clinical Readiness Snapshot", path: "/ops/qa",                        icon: Stethoscope },
-          { label: "QA Risk",                     path: "/qa",                            icon: AlertTriangle },
-          { label: "Escalations",                 path: "/operations/escalations",        icon: AlertTriangle },
-          { label: "Org Chart",                   path: "/org-chart",                     icon: Users },
-          { label: "Phone System",                path: "/phone",                         icon: Phone },
+        id: "company_home", label: "Main", items: [
+          { label: "Company Home",     path: "/home",             icon: Home },
+          { label: "Blossom AI",      path: "/ai/assistant",      icon: Sparkles },
+          { label: "Reports",         path: "/reports",           icon: FileText },
+          { label: "Resource Library", path: "/resource-library", icon: BookOpen },
+          { label: "Training Academy", path: "/academy",           icon: GraduationCap },
         ],
       },
-      TRAINING_AND_RESOURCES,
     ],
   },
 

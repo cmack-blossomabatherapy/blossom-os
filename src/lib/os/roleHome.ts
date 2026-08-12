@@ -11,8 +11,8 @@ const ROLE_HOME_MAP: Partial<Record<OSRole, string>> = {
   super_admin:                "/dashboard/legacy",
   systems_admin:              "/admin",
 
-  executive:                  "/executive",
-  executive_leadership:       "/executive",
+  executive:                  "/home",
+  executive_leadership:       "/home",
   coo:                        "/operations/command-center",
 
   director_of_operations:     "/operations/command-center",
