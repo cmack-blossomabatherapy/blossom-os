@@ -35,7 +35,7 @@ import {
   CommandItem, CommandList, CommandSeparator,
 } from "@/components/ui/command";
 import { ROLE_HOME } from "@/lib/os/roleHome";
-import { ROLE_MENUS, DEFAULT_ROLE_MENU, resolveRoleMenu } from "@/lib/os/roleMenus";
+import { resolveRoleMenu } from "@/lib/os/roleMenus";
 import { SUPER_ADMIN_MENU } from "@/lib/os/superAdminMenu";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
