@@ -1039,14 +1039,17 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               </div>
             ) : (
               <div className="space-y-2">
-                <div className="mb-2 space-y-0.5">
-                  {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
-                  {role === "bcba"
-                    ? renderNavItem(bcbaCopilotEntry)
-                    : hideGlobalAi
-                    ? null
-                    : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
-                </div>
+                {showPinnedShortcuts && (
+                  <div className="mb-2 space-y-0.5">
+                    {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
+                    {role === "bcba"
+                      ? renderNavItem(bcbaCopilotEntry)
+                      : hideGlobalAi
+                      ? null
+                      : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
+                  </div>
+                )}
+
                 {sections.map((section) => (
                   <div key={section.id}>
                     <button
