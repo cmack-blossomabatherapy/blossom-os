@@ -81,7 +81,10 @@ describe("Approved six reports — routing & catalog", () => {
     expect(auth).not.toMatch(/dataset is coming/i);
     expect(cancel).not.toMatch(/dataset is coming/i);
     expect(auth).toMatch(/system\/authorization-uploads/);
-    expect(cancel).toMatch(/system\/cancellation-uploads/);
+    // Cancellation Command Center is staff-facing now: it reads the Data Hub
+    // through useCrPrimaryReport and shows no upload routes at all.
+    expect(cancel).toMatch(/useCrPrimaryReport/);
+    expect(cancel).not.toMatch(/cancellation-uploads/);
   });
 
   it("Admin upload routes are mounted for authorization + cancellation datasets", () => {
