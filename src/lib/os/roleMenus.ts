@@ -866,6 +866,46 @@ export const ROLE_MENUS: Partial<Record<OSRole, RoleMenu>> = {
   },
 };
 
+/**
+ * STANDARD MENU (company directive, Aug 2026).
+ *
+ * Every role except Super Admin sees exactly this menu — no department
+ * sections, no role-specific modules. `ROLE_MENUS` below is retained as the
+ * target/future menu map (and is still used by structural tests), but the
+ * sidebar resolves through `resolveRoleMenu()`, which returns this menu for
+ * every non–super-admin role.
+ */
+export const STANDARD_ROLE_MENU: RoleMenu = {
+  sections: [
+    {
+      id: "main",
+      label: "Main",
+      items: [
+        { label: "Company Home", path: "/home",          icon: Home },
+        { label: "Reports",      path: "/reports",       icon: FileText },
+        { label: "Blossom AI",   path: "/ai/assistant",  icon: Sparkles },
+      ],
+    },
+    {
+      id: "resources",
+      label: "Resources",
+      items: [
+        { label: "Resource Library", path: "/resource-library", icon: BookOpen },
+        { label: "Training Academy", path: "/academy",          icon: GraduationCap },
+      ],
+    },
+  ],
+};
+
+/**
+ * Menu the OS shell must render for a role. Super Admin keeps its own full
+ * navigation (built separately in OSShell); everyone else gets the standard
+ * menu above.
+ */
+export function resolveRoleMenu(role: string | null | undefined): RoleMenu {
+  return STANDARD_ROLE_MENU;
+}
+
 /** Fallback for any role without an explicit menu definition. */
 export const DEFAULT_ROLE_MENU: RoleMenu = {
   sections: [
