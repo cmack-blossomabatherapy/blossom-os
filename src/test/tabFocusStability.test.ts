@@ -40,6 +40,23 @@ describe("Tab focus stability", () => {
     expect(src).not.toMatch(/window\.location\.reload\(\)/);
   });
 
+  it("ProtectedRoute revalidates MFA quietly for the same user (no remount)", () => {
+    const src = read("src/components/auth/ProtectedRoute.tsx");
+    // Depends on the user id, not the user object identity (which changes on
+    // every token refresh when the tab regains focus).
+    expect(src).toMatch(/\[\s*loading,\s*userId,\s*location\.pathname\s*\]/);
+    expect(src).toMatch(/resolvedForRef\.current\s*!==\s*userId\)\s*setMfa/);
+  });
+
+  it("report filters are URL-backed so they survive a remount", () => {
+    for (const p of [
+      "src/pages/os/reports/BcbaProductivityReportV3.tsx",
+      "src/pages/os/reports/CentralReachPrimaryReport.tsx",
+    ]) {
+      expect(read(p)).toMatch(/useUrlFilterState/);
+    }
+  });
+
   it("OSHROrientationQueue no longer reloads the page after detail change", () => {
     const src = read("src/pages/os/OSHROrientationQueue.tsx");
     expect(src).not.toMatch(/window\.location\.reload\(\)/);

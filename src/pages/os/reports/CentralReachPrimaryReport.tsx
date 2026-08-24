@@ -18,6 +18,7 @@ import { PrimaryFilterBar, type FilterFieldConfig } from "@/components/reports/c
 import { PrimaryTable, type PrimaryTableColumn } from "@/components/reports/crPrimary/PrimaryTable";
 import { DrilldownDrawer } from "@/components/reports/crPrimary/DrilldownDrawer";
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
+import { useUrlFilterState } from "@/hooks/useUrlFilterState";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
 import { optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
@@ -57,7 +58,9 @@ export interface CentralReachPrimaryReportProps {
 export function CentralReachPrimaryReport({ reportId }: CentralReachPrimaryReportProps) {
   const config = sharedReportConfig(reportId);
   const data = useCrPrimaryReport(config.datasets);
-  const [filters, setFilters] = useState<PrimaryReportFilters>(EMPTY_FILTERS);
+  // URL-backed so filters survive remounts, reloads, and shared links.
+  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(EMPTY_FILTERS);
+
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
 
   // Normalized cr_* rows -> tolerant facts for the report's driving dataset.
