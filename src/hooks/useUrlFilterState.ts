@@ -22,7 +22,7 @@ export function useUrlFilterState<T extends Record<string, unknown>>(
     const out = { ...empty } as T;
     for (const key of Object.keys(empty)) {
       const raw = params.get(key);
-      if (raw !== null) (out as StringFilters)[key] = raw;
+      if (raw !== null) (out as unknown as StringFilters)[key] = raw;
     }
     return out;
   }, [params, empty]);
@@ -34,13 +34,13 @@ export function useUrlFilterState<T extends Record<string, unknown>>(
           const current = { ...empty } as T;
           for (const key of Object.keys(empty)) {
             const raw = prev.get(key);
-            if (raw !== null) (current as StringFilters)[key] = raw;
+            if (raw !== null) (current as unknown as StringFilters)[key] = raw;
           }
           const resolved = typeof next === "function" ? (next as (p: T) => T)(current) : next;
           const out = new URLSearchParams(prev);
           for (const key of Object.keys(empty)) {
-            const v = String((resolved as StringFilters)[key] ?? "");
-            if (!v || v === String((empty as StringFilters)[key] ?? "")) out.delete(key);
+            const v = String((resolved as unknown as StringFilters)[key] ?? "");
+            if (!v || v === String((empty as unknown as StringFilters)[key] ?? "")) out.delete(key);
             else out.set(key, v);
           }
           return out;
