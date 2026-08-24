@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { fmtCount, fmtDate } from "@/lib/os/reports/crPrimary/format";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 
 export interface FreshnessInfo {
   latestUpload: string | null;
@@ -55,6 +56,10 @@ export function PrimaryReportShell({
   filters,
   children,
 }: PrimaryReportShellProps) {
+  // Import/export plumbing (upload freshness, coverage, batch counts, Data Hub
+  // link) is operator diagnostics — staff see only the report itself.
+  const roleCtx = useOSRoleSafe();
+  const showDataSourceStrip = roleCtx?.role === "super_admin";
   return (
     <OSShell>
       <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
@@ -79,6 +84,7 @@ export function PrimaryReportShell({
           </div>
         </header>
 
+        {showDataSourceStrip && (
         <section
           data-testid="data-freshness"
           className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-border/60 bg-card/70 px-4 py-3 text-xs"
@@ -112,6 +118,8 @@ export function PrimaryReportShell({
             Open CentralReach Data Hub →
           </Link>
         </section>
+        )}
+
 
         {filters}
 
