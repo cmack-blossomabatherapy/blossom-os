@@ -35,7 +35,7 @@ import {
   CommandItem, CommandList, CommandSeparator,
 } from "@/components/ui/command";
 import { ROLE_HOME } from "@/lib/os/roleHome";
-import { ROLE_MENUS, DEFAULT_ROLE_MENU } from "@/lib/os/roleMenus";
+import { resolveRoleMenu } from "@/lib/os/roleMenus";
 import { SUPER_ADMIN_MENU } from "@/lib/os/superAdminMenu";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
@@ -694,9 +694,9 @@ export function isPathLiveForRole(_role: string, _basePath: string): boolean {
 function buildSectionsForRole(role: string): NavSection[] {
   if (role === "super_admin") return SUPER_ADMIN_SECTIONS;
 
-  const menu =
-    (ROLE_MENUS as Record<string, typeof DEFAULT_ROLE_MENU>)[role] ??
-    DEFAULT_ROLE_MENU;
+  // Company directive: every non–super-admin role renders the same standard
+  // menu (Company Home / Reports / Blossom AI + Resources).
+  const menu = resolveRoleMenu(role);
 
   return menu.sections.map((s) => ({
     id: s.id,
