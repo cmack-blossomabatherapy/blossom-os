@@ -142,10 +142,18 @@ export default function BcbaProductivityReportV3() {
   const [authContext, setAuthContext] = useState<AuthContextRow[]>([]);
   const [authLatestUpload, setAuthLatestUpload] = useState<string | null>(null);
   const [loadHealth, setLoadHealth] = useState<BcbaSharedLoadHealth | null>(null);
-  const [filters, setFilters] = useState<BcbaProductivityFilters>(EMPTY_FILTERS);
-  const [searchInput, setSearchInput] = useState("");
+  // Filters live in the URL so they survive a remount, a reload, or a shared link.
+  const [filters, setFilters] = useUrlFilterState<BcbaProductivityFilters>(EMPTY_FILTERS);
+  const [searchInput, setSearchInput] = useState(filters.search);
   const [drilldown, setDrilldown] = useState<Drilldown | null>(null);
   const deferredSearch = useDeferredValue(searchInput);
+  // Push the settled search text into the URL (deferred so typing stays snappy).
+  useEffect(() => {
+    if (deferredSearch !== filters.search) {
+      setFilters((prev) => ({ ...prev, search: deferredSearch }));
+    }
+  }, [deferredSearch, filters.search, setFilters]);
+
 
   const load = useCallback(async (force = false) => {
     setLoading(true);
