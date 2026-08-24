@@ -798,6 +798,12 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
 
   const sections = useMemo(() => buildSectionsForRole(role), [role]);
 
+  // Company directive: non–super-admin roles render ONLY the standard menu.
+  // The pinned Company Home / Blossom AI shortcuts above the sections would
+  // duplicate those entries, so they stay super-admin only.
+  const showPinnedShortcuts: boolean = String(role) === "super_admin";
+
+
   const mobileSections = (() => {
     const q = mobileSearch.trim().toLowerCase();
     if (!q) return sections;
@@ -969,14 +975,17 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               </div>
               <nav className="flex-1 overflow-y-auto px-3 py-3">
                 <div className="space-y-3">
-                  <div className="space-y-0.5">
-                    {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true }, () => { setMobileOpen(false); setMobileSearch(""); })}
-                    {role === "bcba"
-                      ? renderNavItem(bcbaCopilotEntry, () => { setMobileOpen(false); setMobileSearch(""); })
-                      : hideGlobalAi
-                      ? null
-                      : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles }, () => { setMobileOpen(false); setMobileSearch(""); })}
-                  </div>
+                  {showPinnedShortcuts && (
+                    <div className="space-y-0.5">
+                      {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true }, () => { setMobileOpen(false); setMobileSearch(""); })}
+                      {role === "bcba"
+                        ? renderNavItem(bcbaCopilotEntry, () => { setMobileOpen(false); setMobileSearch(""); })
+                        : hideGlobalAi
+                        ? null
+                        : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles }, () => { setMobileOpen(false); setMobileSearch(""); })}
+                    </div>
+                  )}
+
                   {mobileSections.map((section) => (
                     <div key={section.id}>
                       <button
@@ -1028,25 +1037,33 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           <nav className={cn("os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3", collapsed ? "pt-4 min-w-[72px]" : "pt-2")}>
             {collapsed ? (
               <div className="flex flex-col items-center gap-1.5">
-                {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
-                {role === "bcba"
-                  ? renderNavItem(bcbaCopilotEntry)
-                  : hideGlobalAi
-                  ? null
-                  : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
-                <div className="my-2 h-px w-8 bg-primary/20" />
+                {showPinnedShortcuts && (
+                  <>
+                    {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
+                    {role === "bcba"
+                      ? renderNavItem(bcbaCopilotEntry)
+                      : hideGlobalAi
+                      ? null
+                      : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
+                    <div className="my-2 h-px w-8 bg-primary/20" />
+                  </>
+                )}
+
                 {allItems.map((item) => renderNavItem(item))}
               </div>
             ) : (
               <div className="space-y-2">
-                <div className="mb-2 space-y-0.5">
-                  {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
-                  {role === "bcba"
-                    ? renderNavItem(bcbaCopilotEntry)
-                    : hideGlobalAi
-                    ? null
-                    : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
-                </div>
+                {showPinnedShortcuts && (
+                  <div className="mb-2 space-y-0.5">
+                    {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
+                    {role === "bcba"
+                      ? renderNavItem(bcbaCopilotEntry)
+                      : hideGlobalAi
+                      ? null
+                      : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
+                  </div>
+                )}
+
                 {sections.map((section) => (
                   <div key={section.id}>
                     <button
