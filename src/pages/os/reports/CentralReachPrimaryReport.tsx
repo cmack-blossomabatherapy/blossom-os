@@ -57,7 +57,9 @@ export interface CentralReachPrimaryReportProps {
 export function CentralReachPrimaryReport({ reportId }: CentralReachPrimaryReportProps) {
   const config = sharedReportConfig(reportId);
   const data = useCrPrimaryReport(config.datasets);
-  const [filters, setFilters] = useState<PrimaryReportFilters>(EMPTY_FILTERS);
+  // URL-backed so filters survive remounts, reloads, and shared links.
+  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(EMPTY_FILTERS);
+
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
 
   // Normalized cr_* rows -> tolerant facts for the report's driving dataset.
