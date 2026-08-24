@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { fmtCount, fmtDate } from "@/lib/os/reports/crPrimary/format";
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 
 export interface FreshnessInfo {
   latestUpload: string | null;
