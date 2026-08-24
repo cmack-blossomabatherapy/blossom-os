@@ -84,6 +84,7 @@ export function PrimaryReportShell({
           </div>
         </header>
 
+        {showDataSourceStrip && (
         <section
           data-testid="data-freshness"
           className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-border/60 bg-card/70 px-4 py-3 text-xs"
