@@ -801,7 +801,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   // Company directive: non–super-admin roles render ONLY the standard menu.
   // The pinned Company Home / Blossom AI shortcuts above the sections would
   // duplicate those entries, so they stay super-admin only.
-  const showPinnedShortcuts = role === "super_admin";
+  const showPinnedShortcuts: boolean = String(role) === "super_admin";
 
 
   const mobileSections = (() => {
