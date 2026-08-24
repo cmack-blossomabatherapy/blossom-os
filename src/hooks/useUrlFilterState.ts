@@ -13,7 +13,7 @@ export type StringFilters = Record<string, string>;
  * makes the selection durable and shareable. Values equal to the default are
  * stripped so the querystring stays clean.
  */
-export function useUrlFilterState<T extends StringFilters>(
+export function useUrlFilterState<T extends Record<string, unknown>>(
   empty: T,
 ): [T, (next: T | ((prev: T) => T)) => void] {
   const [params, setParams] = useSearchParams();

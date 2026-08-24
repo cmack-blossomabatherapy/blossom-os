@@ -18,6 +18,7 @@ import { PrimaryFilterBar, type FilterFieldConfig } from "@/components/reports/c
 import { PrimaryTable, type PrimaryTableColumn } from "@/components/reports/crPrimary/PrimaryTable";
 import { DrilldownDrawer } from "@/components/reports/crPrimary/DrilldownDrawer";
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
+import { useUrlFilterState } from "@/hooks/useUrlFilterState";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
 import { optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
