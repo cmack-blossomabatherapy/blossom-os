@@ -902,7 +902,7 @@ export const STANDARD_ROLE_MENU: RoleMenu = {
  * navigation (built separately in OSShell); everyone else gets the standard
  * menu above.
  */
-export function resolveRoleMenu(role: string | null | undefined): RoleMenu {
+export function resolveRoleMenu(_role?: string | null): RoleMenu {
   return STANDARD_ROLE_MENU;
 }
 
