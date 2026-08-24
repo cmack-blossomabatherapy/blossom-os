@@ -118,6 +118,8 @@ export function PrimaryReportShell({
             Open CentralReach Data Hub →
           </Link>
         </section>
+        )}
+
 
         {filters}
 
