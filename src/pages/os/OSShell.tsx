@@ -1028,13 +1028,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           <nav className={cn("os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3", collapsed ? "pt-4 min-w-[72px]" : "pt-2")}>
             {collapsed ? (
               <div className="flex flex-col items-center gap-1.5">
-                {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
-                {role === "bcba"
-                  ? renderNavItem(bcbaCopilotEntry)
-                  : hideGlobalAi
-                  ? null
-                  : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
-                <div className="my-2 h-px w-8 bg-primary/20" />
+                {showPinnedShortcuts && (
+                  <>
+                    {renderNavItem({ to: "/home", label: "Company Home", icon: Home, end: true })}
+                    {role === "bcba"
+                      ? renderNavItem(bcbaCopilotEntry)
+                      : hideGlobalAi
+                      ? null
+                      : renderNavItem({ to: "/ai/assistant", label: "Blossom AI", icon: Sparkles })}
+                    <div className="my-2 h-px w-8 bg-primary/20" />
+                  </>
+                )}
+
                 {allItems.map((item) => renderNavItem(item))}
               </div>
             ) : (
