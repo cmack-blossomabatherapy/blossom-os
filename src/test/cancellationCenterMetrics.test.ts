@@ -136,15 +136,15 @@ describe("computeCancellationCenter", () => {
   it("excludes deleted rows from the denominator and the numerator", () => {
     expect(m.loadedEvents).toBe(6);
     expect(m.deletedEvents).toBe(1);
-    expect(m.countableEvents).toBe(5);
+    expect(m.activeScheduleEvents).toBe(5);
     expect(m.cancelledEvents).toBe(3);
-    expect(m.activeEvents).toBe(2);
+    expect(m.keptEvents).toBe(2);
   });
 
   it("computes rate, hours, and no-shows from countable rows only", () => {
     expect(m.cancellationRate).toBe(60);
     expect(m.cancelledHours).toBe(6);
-    expect(m.activeHours).toBe(4);
+    expect(m.keptHours).toBe(4);
     expect(m.noShowEvents).toBe(1);
   });
 
