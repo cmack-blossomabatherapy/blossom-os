@@ -379,18 +379,68 @@ export function computeCancellationCenter(
 
   const byReason = toGroups(dims.reason);
   const previous = opts.previous ? summarize(opts.previous) : null;
-  const rate = countable.length ? pct(totalCancellations, countable.length) : null;
+  const rate = activeSchedule.length
+    ? pct(totalCancellations, activeSchedule.length)
+    : null;
+
+  const repeatClients = new Set(
+    [...clientDetail.values()]
+      .filter((d) => d.cancellations >= followUpThreshold)
+      .map((d) => d.client.toLowerCase()),
+  );
+
+  const followUpEvents: CancellationFollowUpEventRow[] = cancelled
+    .map((row, index) => {
+      const reason = cancellationReasonBucket(row);
+      const documentedReason = reason !== NOT_DOCUMENTED;
+      const client = text(row.client_name, "Unknown client");
+      const repeat = repeatClients.has(client.toLowerCase());
+      const followUpStatus: CancellationFollowUpEventRow["followUpStatus"] =
+        !documentedReason ? "Needs documentation" : repeat ? "Repeat cancellation" : "Logged";
+      return {
+        key: `${row.id ?? "event"}-${index}`,
+        eventDate: String(row.event_date ?? "").slice(0, 10) || null,
+        client,
+        provider: text(row.provider_name, "Unassigned provider"),
+        cancelledHours: Math.round(eventDurationHours(row) * 10) / 10,
+        reason,
+        reasonDocumented: documentedReason,
+        conversionState:
+          row.converted_to_timesheet == null
+            ? "Not reported"
+            : row.converted_to_timesheet
+              ? "Converted to timesheet"
+              : "Not converted",
+        state: text(row.state, "Unknown"),
+        payor: text(row.payor, "Unknown"),
+        code: eventCode(row),
+        followUpStatus,
+        action:
+          followUpStatus === "Needs documentation"
+            ? "Add the cancellation reason in CentralReach so this event can be categorized."
+            : followUpStatus === "Repeat cancellation"
+              ? "Repeat pattern for this client — confirm the plan with the family and BCBA."
+              : "Reason documented — no action unless the pattern grows.",
+      };
+    })
+    .sort(
+      (a, b) =>
+        String(b.eventDate ?? "").localeCompare(String(a.eventDate ?? "")) ||
+        b.cancelledHours - a.cancelledHours ||
+        a.client.localeCompare(b.client),
+    );
 
   return {
     loadedEvents: rows.length,
     deletedEvents: deleted.length,
-    countableEvents: countable.length,
-    activeEvents: active.length,
+    activeScheduleEvents: activeSchedule.length,
+    keptEvents: kept.length,
     cancelledEvents: totalCancellations,
     noShowEvents: cancelled.filter(isNoShow).length,
     cancellationRate: rate,
     cancelledHours: Math.round(cancelledHours * 10) / 10,
-    activeHours: Math.round(activeHours * 10) / 10,
+    keptHours: Math.round(keptHours * 10) / 10,
+
     affectedClients: clientSet.size,
     affectedProviders: providerSet.size,
     documentedReasons: documented,
