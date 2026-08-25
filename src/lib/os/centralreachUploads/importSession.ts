@@ -54,12 +54,42 @@ const RAW_ID_KEYS = [
   "resourceid",
 ];
 
+/**
+ * Report-type-specific identity headers, checked BEFORE the generic list.
+ *
+ * Scheduling exports carry no Id/AppointmentId/EventId — the stable identifier
+ * is the raw `Event` column (e.g. 1375558467). It is scoped to scheduling so an
+ * unrelated generic `Event` field in another export can never become its key.
+ */
+const RAW_ID_KEYS_BY_KIND: Partial<Record<CRUploadKind, string[]>> = {
+  scheduling: ["eventid", "appointmentid", "scheduleid", "event"],
+};
+
 function normKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function findRawId(source: Record<string, unknown> | undefined): string | null {
+function findRawIdIn(source: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    for (const candidate of Object.keys(source)) {
+      if (normKey(candidate) !== key) continue;
+      const value = String(source[candidate] ?? "").trim();
+      if (value) return value;
+    }
+  }
+  return null;
+}
+
+function findRawId(
+  source: Record<string, unknown> | undefined,
+  kind?: CRUploadKind,
+): string | null {
   if (!source) return null;
+  const scoped = kind ? RAW_ID_KEYS_BY_KIND[kind] : undefined;
+  if (scoped) {
+    const hit = findRawIdIn(source, scoped);
+    if (hit) return hit;
+  }
   for (const key of Object.keys(source)) {
     if (RAW_ID_KEYS.includes(normKey(key))) {
       const value = String(source[key] ?? "").trim();
@@ -74,25 +104,36 @@ export function rawPayloadOf(row: Record<string, unknown>): Record<string, unkno
 }
 
 /**
- * Import-time identity: direct id-like column, else the CentralReach raw
- * payload's id, else a deterministic hash of the normalized fields.
+ * Import-time identity: report-type-specific id column, else a direct id-like
+ * column, else the CentralReach raw payload's id, else a deterministic hash of
+ * the normalized fields.
  */
-export function crImportRowIdentity(row: Record<string, unknown>): string {
+export function crImportRowIdentity(
+  row: Record<string, unknown>,
+  kind?: CRUploadKind,
+): string {
+  const scoped = kind ? RAW_ID_KEYS_BY_KIND[kind] : undefined;
+  if (scoped) {
+    const raw = rawPayloadOf(row);
+    const scopedId = (raw && findRawIdIn(raw, scoped)) || findRawIdIn(row, scoped);
+    if (scopedId) return `id:${scopedId}`;
+  }
   const direct = crRowIdentity(row);
   if (direct.startsWith("id:")) return direct;
-  const rawId = findRawId(rawPayloadOf(row));
+  const rawId = findRawId(rawPayloadOf(row), kind);
   if (rawId) return `id:${rawId}`;
   return direct;
 }
 
 /** Persisted row_hash for a row (matches the identity used for dedupe). */
-export function crImportRowHash(row: Record<string, unknown>): string {
-  const identity = crImportRowIdentity(row);
+export function crImportRowHash(row: Record<string, unknown>, kind?: CRUploadKind): string {
+  const identity = crImportRowIdentity(row, kind);
   return identity.startsWith("id:") ? identity : crRowHash(row);
 }
 
 /** The CentralReach source row id, persisted explicitly as `source_row_id`. */
-export function crSourceRowId(row: Record<string, unknown>): string | null {
+export function crSourceRowId(row: Record<string, unknown>, kind?: CRUploadKind): string | null {
+
   const identity = crImportRowIdentity(row);
   return identity.startsWith("id:") ? identity.slice(3) : null;
 }
