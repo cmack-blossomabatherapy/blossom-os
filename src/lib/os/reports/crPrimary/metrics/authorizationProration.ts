@@ -18,6 +18,7 @@
  * fabricated percentage.
  */
 import { pickNumber, pickText } from "../tolerant";
+import { localIsoDate } from "../reportWindow";
 import { cleanReasonText } from "../scheduleTruth";
 import { endDateOf, startDateOf, daysBetween, type ContinuityAuthRow } from "./authorizationContinuity";
 import {
@@ -394,6 +395,8 @@ export interface ProratedUtilizationTotals {
   sourceRemainingHours: number | null;
   scheduledHours: number | null;
   pendingHours: number | null;
+  /** Sum of each row's own chosen numerator (clean recomputed, else aligned source). */
+  chosenUsedHours: number | null;
   projectedDemandHours: number | null;
   exhausted: number;
   exhaustionRisk: number;
@@ -435,7 +438,9 @@ export function computeProratedUtilization(
     snapshotWindow?: SnapshotWindowMode;
   } = {},
 ): ProratedUtilizationResult {
-  const today = options.today ?? new Date().toISOString().slice(0, 10);
+  // Local calendar date — `toISOString()` would shift a US evening into
+  // tomorrow and, on a month boundary, into the wrong month.
+  const today = options.today ?? localIsoDate();
   const snapshotWindow: SnapshotWindowMode = options.snapshotWindow ?? "unavailable";
   const allocation = allocateBillingToAuthorizations(auths, billing, {
     from: options.from,
@@ -464,6 +469,13 @@ export function computeProratedUtilization(
   let remainingTotal: number | null = null;
   let scheduledTotal: number | null = null;
   let pendingTotal: number | null = null;
+  /**
+   * Sum of each row's OWN chosen numerator: the cleanly allocated recomputed
+   * hours for that authorization, otherwise its aligned source-window worked
+   * hours. Choosing globally would drop aligned source values for every row
+   * that happened to have no clean allocation.
+   */
+  let chosenUsedTotal: number | null = null;
   let prorationApplied = false;
 
   auths.forEach((auth, index) => {
@@ -521,8 +533,9 @@ export function computeProratedUtilization(
 
     const denominator = prorated ?? authorized;
     // `??` (never `||`) so a recomputed 0 is reported as 0, not swapped for the
-    // CentralReach-reported figure.
-    const numerator = recomputed ?? sourceUsed;
+    // CentralReach-reported figure. Ambiguous/unjoined billing never counts.
+    const cleanAllocation = basis === "authorization_id" || basis === "unique_fallback";
+    const numerator = (cleanAllocation ? recomputed : null) ?? sourceUsed;
     const utilizationPct =
       denominator && denominator > 0 && numerator != null
         ? Math.round((numerator / denominator) * 1000) / 10
@@ -549,6 +562,7 @@ export function computeProratedUtilization(
       if (prorated != null) proratedTotal = (proratedTotal ?? 0) + prorated;
       if (sourceUsed != null) sourceUsedTotal = (sourceUsedTotal ?? 0) + sourceUsed;
       if (recomputed != null) recomputedTotal = (recomputedTotal ?? 0) + recomputed;
+      if (numerator != null) chosenUsedTotal = (chosenUsedTotal ?? 0) + numerator;
     }
 
     rows.push({
@@ -604,8 +618,7 @@ export function computeProratedUtilization(
   // (no authorization had usable coverage dates) falls back to raw authorized.
   const proratedDenominator =
     dataStateCounts.no_coverage_dates === auths.length ? authorizedTotal : proratedTotal;
-  const cleanlyAllocated = allocation.counts.exact + allocation.counts.uniqueFallback > 0;
-  const usedNumerator = cleanlyAllocated ? recomputedTotal : sourceUsedTotal;
+  const usedNumerator = chosenUsedTotal;
   const demandParts = [usedNumerator, scheduledTotal, pendingTotal].filter(
     (v): v is number => v != null,
   );
@@ -629,6 +642,7 @@ export function computeProratedUtilization(
       sourceRemainingHours: remainingTotal != null ? round1(remainingTotal) : null,
       scheduledHours: scheduledTotal != null ? round1(scheduledTotal) : null,
       pendingHours: pendingTotal != null ? round1(pendingTotal) : null,
+      chosenUsedHours: chosenUsedTotal != null ? round1(chosenUsedTotal) : null,
       projectedDemandHours:
         demandParts.length > 0 ? round1(demandParts.reduce((sum, v) => sum + v, 0)) : null,
       exhausted: rows.filter((r) => r.riskLevel === "exhausted").length,

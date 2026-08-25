@@ -1,24 +1,39 @@
 /**
- * Phase 2B1 — BCBA Supervision analysis (staff-facing).
+ * Phase 2B1 repair B — BCBA Supervision analysis (staff-facing).
  *
- * The supervision ratio is exactly one thing: **97155 supervision hours ÷
- * 97153 direct hours**, expressed as a percentage against a 5% expectation.
+ * The ratio is exactly one thing: **97155 supervision hours ÷ 97153 direct
+ * hours**, read against Blossom's 5% operational benchmark.
  *
  * Two views, never blended:
- *   - **Past**      — billed facts that already happened.
- *   - **Projected** — kept future schedule events, i.e. what the ratio becomes
- *                     if every currently scheduled session is delivered.
+ *   - **Past Performance**      — completed, nonvoid, nondeleted 97153/97155.
+ *   - **Projected Performance** — completed plus future active, nondeleted,
+ *                                 noncancelled scheduled 97153/97155.
+ *
+ * Provenance, stated plainly wherever these numbers appear: billing and schedule
+ * rows are an **operational view**, not a credentialing supervision log. A
+ * dedicated supervision-log export is still required for credentialing review.
  *
  * A group with zero direct hours has no denominator, so it reports
- * "Insufficient data" — never 0% and never "compliant".
- *
- * Ownership attribution is not decided here: callers pass `resolveOwner`, which
- * is backed by the canonical V3 ownership adapter so this report always agrees
- * with BCBA Productivity V3.
+ * "Insufficient data" — never 0%. In the provider/RBT view, supervision hours
+ * are only ever shown when the source explicitly links them to that provider;
+ * one BCBA's 97155 hours are never distributed across their RBTs.
  */
 import { CODE_DIRECT, CODE_SUPERVISION, hoursOf, normalizeCode } from "./codes";
 
-export const SUPERVISION_TARGET_PCT = 5;
+export const SUPERVISION_BENCHMARK_PCT = 5;
+export const SUPERVISION_BENCHMARK_LABEL = "Blossom operational benchmark";
+/** Kept for existing callers; the value is the operational benchmark. */
+export const SUPERVISION_TARGET_PCT = SUPERVISION_BENCHMARK_PCT;
+
+export const SUPERVISION_PROVENANCE_NOTE =
+  "Billing and schedule rows are an operational view of supervision, not a credentialing supervision log. A dedicated supervision-log export is still required for credentialing review.";
+
+export const SUPERVISION_VIEW_LABELS = {
+  past: "Past Performance",
+  projected: "Projected Performance",
+} as const;
+
+export type SupervisionView = keyof typeof SUPERVISION_VIEW_LABELS;
 
 export type SupervisionRatioStatus =
   | "meets_target"
@@ -27,9 +42,9 @@ export type SupervisionRatioStatus =
   | "insufficient_data";
 
 export const SUPERVISION_STATUS_LABELS: Record<SupervisionRatioStatus, string> = {
-  meets_target: "Meets 5% target",
-  approaching: "Approaching target",
-  below_target: "Below target",
+  meets_target: `Meets ${SUPERVISION_BENCHMARK_PCT}% benchmark`,
+  approaching: "Approaching benchmark",
+  below_target: "Below benchmark",
   insufficient_data: "Insufficient data",
 };
 
@@ -44,6 +59,11 @@ export interface SupervisionSessionInput {
   providerName: string | null | undefined;
   state?: string | null;
   payor?: string | null;
+  /**
+   * Provider the supervision is explicitly linked to, when the source records
+   * one. Without it, a 97155 row can never be attributed to an RBT.
+   */
+  supervisedProviderName?: string | null;
 }
 
 export interface SupervisionGroupRow {
@@ -51,20 +71,32 @@ export interface SupervisionGroupRow {
   label: string;
   /** Owning BCBA (always populated for the `bcba` grouping). */
   bcba: string;
+  completedDirectHours: number;
+  completedSupervisionHours: number;
+  scheduledDirectHours: number;
+  scheduledSupervisionHours: number;
+  projectedDirectHours: number;
+  projectedSupervisionHours: number;
+  /** Direct hours for the active view (past or projected). */
   directHours: number;
+  /** Supervision hours for the active view. */
   supervisionHours: number;
-  /** null when there are no direct hours — the ratio is undefined, not 0. */
+  /** Active-view ratio. Null when there are no direct hours. */
   ratioPct: number | null;
   status: SupervisionRatioStatus;
   clients: number;
   rbts: number;
   states: string[];
-  /** Supervision hours needed to reach the 5% target for the direct hours. */
+  /** Supervision hours needed to reach 5% of the active-view direct hours. */
   hoursToTarget: number | null;
+  /** False when the source cannot link supervision to this group. */
+  supervisionLinkable: boolean;
   note: string;
 }
 
 export interface SupervisionViewMetrics {
+  view: SupervisionView;
+  label: string;
   directHours: number;
   supervisionHours: number;
   ratioPct: number | null;
@@ -78,6 +110,7 @@ export interface SupervisionAnalysis {
   projected: SupervisionViewMetrics;
   /** Projected minus past ratio, in percentage points; null when undefined. */
   ratioDeltaPct: number | null;
+  provenanceNote: string;
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -87,91 +120,133 @@ export function supervisionRatioStatus(
   directHours: number,
 ): SupervisionRatioStatus {
   if (directHours <= 0 || ratioPct == null) return "insufficient_data";
-  if (ratioPct >= SUPERVISION_TARGET_PCT) return "meets_target";
-  if (ratioPct >= SUPERVISION_TARGET_PCT * 0.8) return "approaching";
+  if (ratioPct >= SUPERVISION_BENCHMARK_PCT) return "meets_target";
+  if (ratioPct >= SUPERVISION_BENCHMARK_PCT * 0.8) return "approaching";
   return "below_target";
 }
 
 interface Acc {
   label: string;
   bcba: string;
-  direct: number;
-  supervision: number;
+  completedDirect: number;
+  completedSupervision: number;
+  scheduledDirect: number;
+  scheduledSupervision: number;
   clients: Set<string>;
   rbts: Set<string>;
   states: Set<string>;
+  /** A supervision row was explicitly attributable to this group. */
+  supervisionLinkable: boolean;
 }
 
 function buildView(
-  sessions: SupervisionSessionInput[],
+  completed: SupervisionSessionInput[],
+  scheduled: SupervisionSessionInput[],
   grouping: SupervisionGrouping,
   resolveOwner: (s: SupervisionSessionInput) => string | null,
+  view: SupervisionView,
 ): SupervisionViewMetrics {
   const acc = new Map<string, Acc>();
-  let direct = 0;
-  let supervision = 0;
 
-  for (const s of sessions) {
+  const ingest = (s: SupervisionSessionInput, bucket: "completed" | "scheduled") => {
     const code = normalizeCode(s.procedureCode);
-    if (code !== CODE_DIRECT && code !== CODE_SUPERVISION) continue;
+    if (code !== CODE_DIRECT && code !== CODE_SUPERVISION) return;
     const hours = hoursOf(s.hours);
     const client = String(s.clientName ?? "").trim() || "Unknown client";
     const provider = String(s.providerName ?? "").trim();
     const owner = resolveOwner(s);
     const bcba = owner ?? "Unassigned";
+    const supervisedProvider = String(s.supervisedProviderName ?? "").trim();
 
-    const key =
-      grouping === "bcba" ? bcba : grouping === "client" ? client : provider || "Unknown provider";
+    // In the provider/RBT view, a 97155 row only belongs to an RBT when the
+    // source explicitly links it. Otherwise the supervision hour is left out
+    // rather than spread across a caseload it may not describe.
+    let key: string;
+    let linkable = true;
+    if (grouping === "bcba") key = bcba;
+    else if (grouping === "client") key = client;
+    else if (code === CODE_DIRECT) key = provider || "Unknown provider";
+    else if (supervisedProvider) key = supervisedProvider;
+    else {
+      key = provider || "Unknown provider";
+      linkable = false;
+    }
+
     if (!acc.has(key)) {
       acc.set(key, {
         label: key,
         bcba,
-        direct: 0,
-        supervision: 0,
+        completedDirect: 0,
+        completedSupervision: 0,
+        scheduledDirect: 0,
+        scheduledSupervision: 0,
         clients: new Set(),
         rbts: new Set(),
         states: new Set(),
+        supervisionLinkable: grouping !== "rbt",
       });
     }
     const a = acc.get(key)!;
-    a.clients.add(client);
-    if (code === CODE_DIRECT && provider) a.rbts.add(provider);
     if (s.state) a.states.add(String(s.state));
 
     if (code === CODE_DIRECT) {
-      a.direct += hours;
-      direct += hours;
-    } else {
-      a.supervision += hours;
-      supervision += hours;
+      a.clients.add(client);
+      if (provider) a.rbts.add(provider);
+      if (bucket === "completed") a.completedDirect += hours;
+      else a.scheduledDirect += hours;
+      return;
     }
-  }
+
+    // Supervision row.
+    if (grouping === "rbt" && !linkable) return; // never fabricate the link
+    if (grouping === "rbt") a.supervisionLinkable = true;
+    a.clients.add(client);
+    if (bucket === "completed") a.completedSupervision += hours;
+    else a.scheduledSupervision += hours;
+  };
+
+  for (const s of completed) ingest(s, "completed");
+  for (const s of scheduled) ingest(s, "scheduled");
 
   const rows: SupervisionGroupRow[] = [...acc.entries()].map(([key, a]) => {
-    const ratio = a.direct > 0 ? Math.round((a.supervision / a.direct) * 1000) / 10 : null;
-    const status = supervisionRatioStatus(ratio, a.direct);
+    const projectedDirect = a.completedDirect + a.scheduledDirect;
+    const projectedSupervision = a.completedSupervision + a.scheduledSupervision;
+    const direct = view === "past" ? a.completedDirect : projectedDirect;
+    const supervision = view === "past" ? a.completedSupervision : projectedSupervision;
+    const linkable = grouping === "rbt" ? a.supervisionLinkable : true;
+    const ratio = !linkable || direct <= 0 ? null : Math.round((supervision / direct) * 1000) / 10;
+    const status = linkable ? supervisionRatioStatus(ratio, direct) : "insufficient_data";
     const needed =
-      a.direct > 0
-        ? Math.max(0, round1((SUPERVISION_TARGET_PCT / 100) * a.direct - a.supervision))
+      linkable && direct > 0
+        ? Math.max(0, round1((SUPERVISION_BENCHMARK_PCT / 100) * direct - supervision))
         : null;
+
     return {
       key,
       label: a.label,
       bcba: a.bcba,
-      directHours: round1(a.direct),
-      supervisionHours: round1(a.supervision),
+      completedDirectHours: round1(a.completedDirect),
+      completedSupervisionHours: round1(a.completedSupervision),
+      scheduledDirectHours: round1(a.scheduledDirect),
+      scheduledSupervisionHours: round1(a.scheduledSupervision),
+      projectedDirectHours: round1(projectedDirect),
+      projectedSupervisionHours: round1(projectedSupervision),
+      directHours: round1(direct),
+      supervisionHours: round1(supervision),
       ratioPct: ratio,
       status,
       clients: a.clients.size,
       rbts: a.rbts.size,
       states: [...a.states].sort(),
       hoursToTarget: needed,
-      note:
-        status === "insufficient_data"
-          ? "No 97153 direct hours in this window, so a supervision ratio cannot be calculated."
+      supervisionLinkable: linkable,
+      note: !linkable
+        ? "The source does not link any 97155 supervision hours to this provider, so a ratio cannot be calculated for them. Supervision is reported under the supervising BCBA instead."
+        : status === "insufficient_data"
+          ? "No 97153 direct hours in this view, so a supervision ratio cannot be calculated."
           : status === "meets_target"
-            ? `${ratio}% of direct hours were supervised.`
-            : `${ratio}% supervised — ${needed} more 97155 hour(s) would reach 5%.`,
+            ? `${ratio}% of direct hours supervised, at or above the ${SUPERVISION_BENCHMARK_PCT}% ${SUPERVISION_BENCHMARK_LABEL}.`
+            : `${ratio}% supervised — ${needed} more 97155 hour(s) would reach the ${SUPERVISION_BENCHMARK_PCT}% ${SUPERVISION_BENCHMARK_LABEL}.`,
     };
   });
 
@@ -181,7 +256,12 @@ function buildView(
     return rank(a.status) - rank(b.status) || b.directHours - a.directHours;
   });
 
+  const direct = rows.reduce((s, r) => s + r.directHours, 0);
+  const supervision = rows.reduce((s, r) => s + r.supervisionHours, 0);
+
   return {
+    view,
+    label: SUPERVISION_VIEW_LABELS[view],
     directHours: round1(direct),
     supervisionHours: round1(supervision),
     ratioPct: direct > 0 ? Math.round((supervision / direct) * 1000) / 10 : null,
@@ -193,9 +273,9 @@ function buildView(
 }
 
 export interface SupervisionAnalysisInput {
-  /** Billed facts that already happened. */
+  /** Completed, nonvoid, nondeleted billed 97153/97155 facts. */
   past: SupervisionSessionInput[];
-  /** Kept future schedule events (cancelled/deleted already excluded). */
+  /** Future active, nondeleted, noncancelled scheduled 97153/97155 events. */
   projected: SupervisionSessionInput[];
   grouping?: SupervisionGrouping;
   /** Canonical owner lookup, backed by the V3 ownership adapter. */
@@ -208,12 +288,16 @@ export function computeSupervisionAnalysis({
   grouping = "bcba",
   resolveOwner,
 }: SupervisionAnalysisInput): SupervisionAnalysis {
-  const pastView = buildView(past, grouping, resolveOwner);
-  // Projected = delivered so far plus everything still on the calendar.
-  const projectedView = buildView([...past, ...projected], grouping, resolveOwner);
+  const pastView = buildView(past, projected, grouping, resolveOwner, "past");
+  const projectedView = buildView(past, projected, grouping, resolveOwner, "projected");
   const delta =
     pastView.ratioPct != null && projectedView.ratioPct != null
       ? round1(projectedView.ratioPct - pastView.ratioPct)
       : null;
-  return { past: pastView, projected: projectedView, ratioDeltaPct: delta };
+  return {
+    past: pastView,
+    projected: projectedView,
+    ratioDeltaPct: delta,
+    provenanceNote: SUPERVISION_PROVENANCE_NOTE,
+  };
 }

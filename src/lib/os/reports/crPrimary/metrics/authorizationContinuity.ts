@@ -9,6 +9,8 @@
  */
 import { cleanReasonText } from "../scheduleTruth";
 
+import { localIsoDate } from "../reportWindow";
+
 export interface ContinuityAuthRow {
   id?: string;
   authorization_id?: string | null;
@@ -119,7 +121,7 @@ function num(v: number | null | undefined): number | null {
 
 export function computeAuthorizationContinuity(
   rows: ContinuityAuthRow[],
-  today = new Date().toISOString().slice(0, 10),
+  today = localIsoDate(),
 ): ContinuityMetrics {
   const out: ContinuityRow[] = [];
   const windowCounts = new Map<ExpiringWindowKey, number>();

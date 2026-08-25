@@ -47,7 +47,8 @@ import {
 } from "@/lib/os/reports/crPrimary/scheduleTruth";
 import { CODE_PARENT_TRAINING, normalizeCode } from "@/lib/os/reports/crPrimary/metrics/codes";
 import {
-  PT_MONTHLY_TARGET_HOURS,
+  NO_TARGET_LABEL,
+  PT_STATUS_LABELS,
   computeParentTrainingAnalysis,
   type PtClientRow,
   type PtEventRow,
@@ -62,7 +63,15 @@ const FILTER_LABELS: Record<string, string> = {
   provider: "Provider",
 };
 
-type TabKey = "clients" | "completed" | "upcoming" | "cancelled" | "no-appointment" | "below-target";
+type TabKey =
+  | "clients"
+  | "completed"
+  | "upcoming"
+  | "cancelled"
+  | "no-upcoming"
+  | "below-target"
+  | "needs-reschedule"
+  | "data-gaps";
 
 const CLIENT_COLUMNS = [
   { key: "client", label: "Client" },
@@ -74,10 +83,16 @@ const CLIENT_COLUMNS = [
   { key: "completedSessions", label: "Completed Sessions" },
   { key: "upcomingSessions", label: "Upcoming Sessions" },
   { key: "cancelledSessions", label: "Cancelled Sessions" },
-  { key: "targetHours", label: "Target Hrs" },
+  { key: "authorizedMonthlyHours", label: "Authorized Hrs / Month" },
+  { key: "expectedCadence", label: "Expected Cadence" },
+  { key: "targetType", label: "Target Type" },
+  { key: "targetValue", label: "Target Value / Month" },
+  { key: "windowTarget", label: "Window Target" },
+  { key: "pacePct", label: "Pace %" },
   { key: "lastCompleted", label: "Last Completed" },
   { key: "nextScheduled", label: "Next Scheduled" },
-  { key: "note", label: "What This Means" },
+  { key: "status", label: "Status" },
+  { key: "reason", label: "Why" },
 ];
 
 const EVENT_COLUMNS = [
@@ -109,10 +124,16 @@ const projectClients = (rows: PtClientRow[]): Record<string, unknown>[] =>
     completedSessions: r.completedSessions,
     upcomingSessions: r.upcomingSessions,
     cancelledSessions: r.cancelledSessions,
-    targetHours: r.targetHours,
+    authorizedMonthlyHours: r.authorizedMonthlyHours ?? NO_TARGET_LABEL,
+    expectedCadence: r.expectedCadence,
+    targetType: r.targetType ?? NO_TARGET_LABEL,
+    targetValue: r.targetValue ?? NO_TARGET_LABEL,
+    windowTarget: r.windowTarget ?? NO_TARGET_LABEL,
+    pacePct: r.pacePct ?? NO_TARGET_LABEL,
     lastCompleted: r.lastCompleted ?? "None",
     nextScheduled: r.nextScheduled ?? "None",
-    note: r.note,
+    status: PT_STATUS_LABELS[r.status],
+    reason: r.reason,
   }));
 
 const projectEvents = (rows: PtEventRow[]): Record<string, unknown>[] =>
@@ -131,7 +152,7 @@ const projectEvents = (rows: PtEventRow[]): Record<string, unknown>[] =>
 const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function ParentTrainingPage() {
-  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent"]);
+  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent", "authCurrent"]);
   const ownership = useBcbaOwnershipV3();
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
   const [tabParam, setTabParam] = useUrlState("tab", "clients");
@@ -172,6 +193,17 @@ export default function ParentTrainingPage() {
         code: r.service_code ?? r.procedure_code,
       })),
     [data.scheduleCurrent, filters],
+  );
+
+  const authRows = useMemo(
+    () =>
+      data.authCurrent.filter((a) => {
+        if (filters.state.length && !filters.state.includes(String(a.state ?? ""))) return false;
+        if (filters.payor.length && !filters.payor.includes(String(a.payor ?? ""))) return false;
+        if (filters.client.length && !filters.client.includes(String(a.client_name ?? ""))) return false;
+        return true;
+      }),
+    [data.authCurrent, filters.state, filters.payor, filters.client],
   );
 
   const resolveOwner = useMemo(() => {
@@ -230,15 +262,30 @@ export default function ParentTrainingPage() {
       }
     }
 
+    const authorizations = authRows.map((a) => ({
+      clientName: a.client_name,
+      clientCrId: a.client_cr_id,
+      payor: a.payor,
+      state: a.state,
+      procedureCode: a.procedure_code,
+      serviceCodes: a.service_codes,
+      frequency: a.frequency,
+      authorizedHoursMonth: a.authorized_hours_month,
+      startDate: a.start_date,
+      endDate: a.end_date,
+      isActive: a.is_active,
+    }));
+
     return computeParentTrainingAnalysis({
       billed,
       scheduled,
+      authorizations,
       activeClients: [...activeClients.values()],
       resolveOwner,
       window: { from: filters.from, to: filters.to },
       today,
     });
-  }, [billing, schedule, resolveOwner, filters.from, filters.to, today]);
+  }, [billing, schedule, authRows, resolveOwner, filters.from, filters.to, today]);
 
   const bcbaOptions = useMemo(
     () => [...new Set(analysis.clientRows.map((r) => r.bcba))].sort((a, b) => a.localeCompare(b)),
@@ -270,8 +317,10 @@ export default function ParentTrainingPage() {
     [data.billingFacts],
   );
 
-  const noAppointment = clientRows.filter((r) => r.noAppointment);
+  const noUpcoming = clientRows.filter((r) => r.noUpcoming);
   const belowTarget = clientRows.filter((r) => r.belowTarget);
+  const needsReschedule = clientRows.filter((r) => r.needsReschedule);
+  const dataGaps = clientRows.filter((r) => r.ownershipGap);
 
   const kpis = useMemo<KpiDefinition[]>(
     () => [
@@ -312,21 +361,21 @@ export default function ParentTrainingPage() {
         tone: analysis.cancelledSessions > 0 ? "warn" : "good",
       },
       {
-        id: "no-appointment",
-        label: "No appointment",
-        value: fmtCount(noAppointment.length),
-        hint: "Nothing completed and nothing scheduled",
-        tone: noAppointment.length > 0 ? "bad" : "good",
+        id: "no-upcoming",
+        label: "No upcoming appointment",
+        value: fmtCount(noUpcoming.length),
+        hint: "No future kept 97156 session on the calendar",
+        tone: noUpcoming.length > 0 ? "bad" : "good",
       },
       {
         id: "below-target",
-        label: "Below target",
+        label: "Below target pace",
         value: fmtCount(belowTarget.length),
-        hint: `Target is ${PT_MONTHLY_TARGET_HOURS} hr per client per month (${analysis.monthsInWindow} month window)`,
+        hint: `${fmtCount(analysis.clientsWithTarget)} client(s) have a documented target · ${fmtCount(analysis.clientsWithoutTarget)} have ${NO_TARGET_LABEL.toLowerCase()}`,
         tone: belowTarget.length > 0 ? "warn" : "good",
       },
     ],
-    [analysis, noAppointment.length, belowTarget.length],
+    [analysis, noUpcoming.length, belowTarget.length],
   );
 
   const clientColumns: PrimaryTableColumn<PtClientRow>[] = [
@@ -339,7 +388,22 @@ export default function ParentTrainingPage() {
       align: "right",
       render: (r) => fmtHours(r.completedHours),
     },
-    { key: "target", label: "Target Hrs", align: "right", render: (r) => fmtHours(r.targetHours) },
+    {
+      key: "target",
+      label: "Target / Month",
+      align: "right",
+      render: (r) =>
+        r.targetValue == null
+          ? NO_TARGET_LABEL
+          : `${r.targetValue} ${r.targetType === "sessions" ? "session(s)" : "hr"}`,
+    },
+    { key: "cadence", label: "Expected Cadence", render: (r) => r.expectedCadence },
+    {
+      key: "pace",
+      label: "Pace",
+      align: "right",
+      render: (r) => (r.pacePct == null ? NO_TARGET_LABEL : fmtPct(r.pacePct)),
+    },
     { key: "upcoming", label: "Upcoming", align: "right", render: (r) => fmtCount(r.upcomingSessions) },
     {
       key: "cancelled",
@@ -355,20 +419,22 @@ export default function ParentTrainingPage() {
     {
       key: "status",
       label: "Status",
-      render: (r) =>
-        r.noAppointment ? (
-          <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
-            No appointment
-          </Badge>
-        ) : r.belowTarget ? (
-          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600">
-            Below target
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600">
-            On track
-          </Badge>
-        ),
+      render: (r) => (
+        <Badge
+          variant="outline"
+          className={
+            r.status === "no_appointment"
+              ? "border-destructive/30 bg-destructive/10 text-destructive"
+              : r.status === "below_target" || r.status === "needs_reschedule"
+                ? "border-amber-500/30 bg-amber-500/10 text-amber-600"
+                : r.status === "no_target"
+                  ? "border-border bg-muted text-muted-foreground"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+          }
+        >
+          {PT_STATUS_LABELS[r.status]}
+        </Badge>
+      ),
     },
   ];
 
@@ -390,7 +456,15 @@ export default function ParentTrainingPage() {
       return;
     }
     const rows =
-      tab === "no-appointment" ? noAppointment : tab === "below-target" ? belowTarget : clientRows;
+      tab === "no-upcoming"
+        ? noUpcoming
+        : tab === "below-target"
+          ? belowTarget
+          : tab === "needs-reschedule"
+            ? needsReschedule
+            : tab === "data-gaps"
+              ? dataGaps
+              : clientRows;
     downloadCsv(`parent-training-${tab}`, projectClients(rows), CLIENT_COLUMNS);
   };
 
@@ -424,9 +498,10 @@ export default function ParentTrainingPage() {
     >
       <ReportProvenance>
         Completed parent training is billed 97156 only. Upcoming counts sessions still ahead of today
-        that have not been cancelled; a scheduled session is never counted as delivered. The target is{" "}
-        {PT_MONTHLY_TARGET_HOURS} hour per client per month, giving {analysis.monthsInWindow * PT_MONTHLY_TARGET_HOURS} hour(s)
-        for the selected window.
+        that have not been cancelled; a scheduled session is never counted as delivered. Targets come
+        only from the source: active 97156 authorized monthly hours, or an unambiguous documented
+        cadence. Clients with neither show "{NO_TARGET_LABEL}" and are never counted below target.
+        The selected window spans {analysis.monthsInWindow} calendar month(s).
       </ReportProvenance>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -436,8 +511,10 @@ export default function ParentTrainingPage() {
             <TabsTrigger value="completed">Completed</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-            <TabsTrigger value="no-appointment">No appointment</TabsTrigger>
+            <TabsTrigger value="no-upcoming">No upcoming</TabsTrigger>
             <TabsTrigger value="below-target">Below target</TabsTrigger>
+            <TabsTrigger value="needs-reschedule">Needs reschedule</TabsTrigger>
+            <TabsTrigger value="data-gaps">Data gaps</TabsTrigger>
           </TabsList>
         </Tabs>
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -460,7 +537,7 @@ export default function ParentTrainingPage() {
       <KpiScorecards
         kpis={kpis}
         onSelect={(id) => {
-          if (id === "no-appointment") setTabParam("no-appointment");
+          if (id === "no-upcoming") setTabParam("no-upcoming");
           else if (id === "below-target") setTabParam("below-target");
           else if (id === "upcoming") setTabParam("upcoming");
           else if (id === "cancelled") setTabParam("cancelled");
@@ -485,7 +562,7 @@ export default function ParentTrainingPage() {
             onRowClick={(r) =>
               setDrilldown({
                 title: `${r.client} — parent training`,
-                subtitle: r.note,
+                subtitle: r.reason,
                 rows: projectEvents(eventRows.filter((e) => e.client === r.client)),
                 columns: EVENT_COLUMNS,
                 exportName: "parent-training-client",
@@ -513,21 +590,44 @@ export default function ParentTrainingPage() {
         />
       )}
 
-      {(tab === "no-appointment" || tab === "below-target") && (
+      {(tab === "no-upcoming" ||
+        tab === "below-target" ||
+        tab === "needs-reschedule" ||
+        tab === "data-gaps") && (
         <PrimaryTable
-          title={tab === "no-appointment" ? "Needs a parent-training appointment" : "Below parent-training target"}
+          title={
+            tab === "no-upcoming"
+              ? "No upcoming parent-training appointment"
+              : tab === "below-target"
+                ? "Below documented target pace"
+                : tab === "needs-reschedule"
+                  ? "Cancelled and not yet rescheduled"
+                  : "Ownership or identity gaps"
+          }
           subtitle={
-            tab === "no-appointment"
-              ? "No completed and no scheduled 97156 in this window."
-              : `Completed fewer than ${analysis.monthsInWindow * PT_MONTHLY_TARGET_HOURS} target hour(s).`
+            tab === "no-upcoming"
+              ? "Zero future kept 97156 sessions on the calendar, even if a session was completed earlier."
+              : tab === "below-target"
+                ? "Behind the pace their documented authorized hours or cadence requires."
+                : tab === "needs-reschedule"
+                  ? "A cancelled 97156 session with no later replacement on the calendar."
+                  : "No canonical BCBA owner could be resolved for the client at these dates."
           }
           columns={clientColumns}
-          rows={tab === "no-appointment" ? noAppointment : belowTarget}
+          rows={
+            tab === "no-upcoming"
+              ? noUpcoming
+              : tab === "below-target"
+                ? belowTarget
+                : tab === "needs-reschedule"
+                  ? needsReschedule
+                  : dataGaps
+          }
           rowKey={(r) => r.client}
           onRowClick={(r) =>
             setDrilldown({
               title: `${r.client} — parent training`,
-              subtitle: r.note,
+              subtitle: r.reason,
               rows: projectEvents(eventRows.filter((e) => e.client === r.client)),
               columns: EVENT_COLUMNS,
               exportName: "parent-training-client",

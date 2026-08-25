@@ -879,6 +879,31 @@ export default function AuthorizationUtilizationPage() {
                   )
                 }
               />
+              <PrimaryChart
+                title="Hours by client · authorized vs projected demand"
+                subtitle="Hours only — projected demand is used plus scheduled plus pending for the window."
+                type="bar"
+                data={computable
+                  .slice()
+                  .sort((a, b) => (b.projectedDemandHours ?? 0) - (a.projectedDemandHours ?? 0))
+                  .slice(0, 12)
+                  .map((r) => ({
+                    label: r.client,
+                    value: r.proratedAuthorizedHours ?? r.authorizedHours ?? 0,
+                    secondary: r.projectedDemandHours ?? 0,
+                  }))}
+                valueLabel="Authorized hours"
+                secondaryLabel="Projected demand hours"
+                height={300}
+                onSelect={(label) =>
+                  open(
+                    `Client · ${label}`,
+                    "Authorizations for this client in the current filters.",
+                    result.rows.filter((r) => r.client === label),
+                    `authorization-demand-${label.toLowerCase().replace(/\s+/g, "-")}`,
+                  )
+                }
+              />
             </div>
             <PrimaryTable
               title="Authorization utilization"

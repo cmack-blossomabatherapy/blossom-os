@@ -1,21 +1,140 @@
 /**
- * Phase 2B1 — Parent Training (97156), staff-facing.
+ * Phase 2B1 repair B — Parent Training (97156), staff-facing.
  *
- * Parent training is reported in three honest buckets, each from the source
- * that can actually prove it:
- *   - **Completed** — billed 97156 facts.
- *   - **Upcoming**  — kept future 97156 schedule events.
- *   - **Cancelled** — 97156 schedule events the source explicitly cancelled.
+ * There is **no universal one-hour parent-training target**. The target comes
+ * only from what the source documents for that client:
+ *   1. a positive `authorized_hours_month` on an active 97156 authorization, or
+ *   2. an *unambiguous* frequency requirement (`2/week`, `weekly`, `4 per month`,
+ *      `monthly`), preserving whether it is stated in hours or sessions.
+ * Anything else is exactly "No target" — and a client with no target is never
+ * called below target or noncompliant.
  *
- * A client with no completed and no upcoming parent training is an action item,
- * not a 0-hour row to scroll past. Clients below the monthly target are a second
- * queue. Nothing here infers delivery from a schedule event: a scheduled session
- * is never counted as completed.
+ * Buckets keep their sources separate:
+ *   - **Completed** — billed 97156 facts (nonvoid, nondeleted).
+ *   - **Upcoming**  — kept future 97156 schedule events (strict schedule truth).
+ *   - **Cancelled** — 97156 events the source explicitly cancelled.
+ * A scheduled session is never counted as delivered.
  */
 import { CODE_PARENT_TRAINING, hoursOf, normalizeCode } from "./codes";
+import { localIsoDate } from "../reportWindow";
 
-/** Default expectation: one parent-training hour per client per month. */
-export const PT_MONTHLY_TARGET_HOURS = 1;
+export const NO_TARGET_LABEL = "No target";
+
+export type PtTargetType = "hours" | "sessions";
+export type PtTargetSourceKind = "authorized_hours_month" | "frequency" | "none";
+
+export interface PtClientTarget {
+  /** Null when the source documents nothing usable. */
+  type: PtTargetType | null;
+  /** Target per month, in hours or sessions depending on `type`. */
+  perMonth: number | null;
+  /** Human cadence, e.g. "2 sessions per week" — `No target` when unknown. */
+  cadence: string;
+  source: PtTargetSourceKind;
+  /** Authorized monthly 97156 hours when the snapshot documents them. */
+  authorizedMonthlyHours: number | null;
+}
+
+export const NO_TARGET: PtClientTarget = {
+  type: null,
+  perMonth: null,
+  cadence: NO_TARGET_LABEL,
+  source: "none",
+  authorizedMonthlyHours: null,
+};
+
+/**
+ * Parse only an unambiguous cadence. Prose such as "as clinically indicated"
+ * or "per treatment plan" returns null so the report says "No target" instead
+ * of inventing one.
+ */
+export function parseFrequencyTarget(text: string | null | undefined): PtClientTarget | null {
+  const raw = String(text ?? "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!raw) return null;
+
+  const unitOf = (s: string): PtTargetType => (/(hour|hr)/.test(s) ? "hours" : "sessions");
+
+  // N/week, N per week, N x week, N hours per month, N sessions/month
+  const numbered = raw.match(
+    /(\d+(?:\.\d+)?)\s*(hours?|hrs?|sessions?|visits?|units?)?\s*(?:\/|per|x|every)\s*(week|wk|month|mo)\b/,
+  );
+  if (numbered) {
+    const value = Number(numbered[1]);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    const type = unitOf(numbered[2] ?? "session");
+    const weekly = /^(week|wk)$/.test(numbered[3]);
+    // 4.345 weeks per month keeps a weekly cadence honest across month lengths.
+    const perMonth = weekly ? Math.round(value * 4.345 * 100) / 100 : value;
+    return {
+      type,
+      perMonth,
+      cadence: `${value} ${type === "hours" ? "hour" : "session"}${value === 1 ? "" : "s"} per ${weekly ? "week" : "month"}`,
+      source: "frequency",
+      authorizedMonthlyHours: null,
+    };
+  }
+
+  // Bare "weekly" / "monthly" — one session per period, still unambiguous.
+  if (/\bweekly\b/.test(raw) && !/\bbi-?weekly\b/.test(raw)) {
+    return {
+      type: "sessions",
+      perMonth: 4.345,
+      cadence: "1 session per week",
+      source: "frequency",
+      authorizedMonthlyHours: null,
+    };
+  }
+  if (/\bmonthly\b/.test(raw)) {
+    return {
+      type: "sessions",
+      perMonth: 1,
+      cadence: "1 session per month",
+      source: "frequency",
+      authorizedMonthlyHours: null,
+    };
+  }
+  return null;
+}
+
+export interface PtAuthorizationInput {
+  clientName: string | null | undefined;
+  clientCrId?: string | null;
+  payor?: string | null;
+  state?: string | null;
+  procedureCode?: string | null;
+  serviceCodes?: string | null;
+  frequency?: string | null;
+  authorizedHoursMonth?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  isActive?: boolean | null;
+}
+
+/** Prefer documented authorized monthly hours; fall back to a clear cadence. */
+export function resolveClientTarget(auths: PtAuthorizationInput[]): PtClientTarget {
+  let best: PtClientTarget = NO_TARGET;
+  for (const a of auths) {
+    const hours = Number(a.authorizedHoursMonth);
+    if (Number.isFinite(hours) && hours > 0) {
+      return {
+        type: "hours",
+        perMonth: Math.round(hours * 10) / 10,
+        cadence: `${Math.round(hours * 10) / 10} authorized hour(s) per month`,
+        source: "authorized_hours_month",
+        authorizedMonthlyHours: Math.round(hours * 10) / 10,
+      };
+    }
+    if (best.source === "none") {
+      const parsed =
+        parseFrequencyTarget(a.frequency) ?? parseFrequencyTarget(a.serviceCodes ?? null);
+      if (parsed) best = parsed;
+    }
+  }
+  return best;
+}
 
 export interface PtSessionInput {
   date: string | null | undefined;
@@ -47,6 +166,21 @@ export interface PtEventRow {
   reason: string | null;
 }
 
+export type PtClientStatus =
+  | "no_target"
+  | "no_appointment"
+  | "below_target"
+  | "on_track"
+  | "needs_reschedule";
+
+export const PT_STATUS_LABELS: Record<PtClientStatus, string> = {
+  no_target: NO_TARGET_LABEL,
+  no_appointment: "No upcoming appointment",
+  below_target: "Below target pace",
+  on_track: "On track",
+  needs_reschedule: "Needs reschedule",
+};
+
 export interface PtClientRow {
   client: string;
   clientCrId: string;
@@ -60,13 +194,24 @@ export interface PtClientRow {
   cancelledSessions: number;
   lastCompleted: string | null;
   nextScheduled: string | null;
-  /** Target for the selected window, driven by the number of months covered. */
-  targetHours: number;
-  /** True when nothing is completed and nothing is on the calendar. */
-  noAppointment: boolean;
-  /** True when completed hours fall short of the window target. */
+  authorizedMonthlyHours: number | null;
+  expectedCadence: string;
+  targetType: PtTargetType | null;
+  targetValue: number | null;
+  targetSource: PtTargetSourceKind;
+  /** Target scaled to the selected window; null when there is no target. */
+  windowTarget: number | null;
+  /** Target expected by today (elapsed share for an open current month). */
+  expectedToDate: number | null;
+  /** Delivered ÷ expected-to-date, as a percentage. Null without a target. */
+  pacePct: number | null;
+  hasTarget: boolean;
+  noUpcoming: boolean;
   belowTarget: boolean;
-  note: string;
+  needsReschedule: boolean;
+  ownershipGap: boolean;
+  status: PtClientStatus;
+  reason: string;
 }
 
 export interface PtGroupRow {
@@ -89,15 +234,21 @@ export interface ParentTrainingAnalysis {
   clientsWithCompleted: number;
   coveragePct: number | null;
   monthsInWindow: number;
+  clientsWithTarget: number;
+  clientsWithoutTarget: number;
   byBcba: PtGroupRow[];
   byPayor: PtGroupRow[];
   byState: PtGroupRow[];
   clientRows: PtClientRow[];
   events: PtEventRow[];
-  /** Action queue: no completed and no upcoming parent training. */
-  noAppointmentQueue: PtClientRow[];
-  /** Action queue: some parent training, but below the window target. */
+  /** Zero future kept 97156 sessions, even if one was completed earlier. */
+  noUpcomingQueue: PtClientRow[];
+  /** Below a usable target's expected pace. Never contains no-target clients. */
   belowTargetQueue: PtClientRow[];
+  /** Cancelled with no later replacement session on the calendar. */
+  needsRescheduleQueue: PtClientRow[];
+  /** Ownership or client-identity gaps that block attribution. */
+  dataGapQueue: PtClientRow[];
   trend: { label: string; value: number }[];
 }
 
@@ -114,35 +265,76 @@ export function monthsInWindow(from?: string | null, to?: string | null): number
   return Math.max(1, (ty - fy) * 12 + (tm - fm) + 1);
 }
 
+/**
+ * Share of the window already elapsed, 0–1. A closed window is 1 so a finished
+ * period is judged against its full target, not a partial one.
+ */
+export function elapsedProportion(
+  from: string | null | undefined,
+  to: string | null | undefined,
+  today: string,
+): number {
+  if (!from || !to) return 1;
+  if (today >= to) return 1;
+  if (today < from) return 0;
+  const day = (d: string) => new Date(`${d}T00:00:00Z`).getTime() / 86400000;
+  const total = day(to) - day(from) + 1;
+  if (total <= 0) return 1;
+  return Math.min(1, Math.max(0, (day(today) - day(from) + 1) / total));
+}
+
 export interface ParentTrainingInput {
   /** Billed 97156 facts (completed). */
   billed: PtSessionInput[];
-  /** Schedule 97156 events inside the window, cancelled ones flagged. */
+  /** Schedule 97156 events, cancelled ones flagged, deleted already removed. */
   scheduled: PtSessionInput[];
+  /** Active 97156 authorizations — the only source of a target. */
+  authorizations: PtAuthorizationInput[];
   /** Every client active in the window, so gaps are visible. */
-  activeClients: { client: string; clientCrId?: string | null; payor?: string | null; state?: string | null }[];
-  resolveOwner: (s: { clientName?: string | null; clientCrId?: string | null; date?: string | null }) => string | null;
+  activeClients: {
+    client: string;
+    clientCrId?: string | null;
+    payor?: string | null;
+    state?: string | null;
+  }[];
+  resolveOwner: (s: {
+    clientName?: string | null;
+    clientCrId?: string | null;
+    date?: string | null;
+  }) => string | null;
   window?: { from?: string | null; to?: string | null };
   today?: string;
-  monthlyTargetHours?: number;
 }
 
 export function computeParentTrainingAnalysis({
   billed,
   scheduled,
+  authorizations,
   activeClients,
   resolveOwner,
   window,
-  today = new Date().toISOString().slice(0, 10),
-  monthlyTargetHours = PT_MONTHLY_TARGET_HOURS,
+  today = localIsoDate(),
 }: ParentTrainingInput): ParentTrainingAnalysis {
   const months = monthsInWindow(window?.from, window?.to);
-  const targetHours = round1(months * monthlyTargetHours);
+  const elapsed = elapsedProportion(window?.from, window?.to, today);
 
-  interface Acc extends PtClientRow {}
-  const clients = new Map<string, Acc>();
+  const clients = new Map<string, PtClientRow>();
   const events: PtEventRow[] = [];
   const trend = new Map<string, number>();
+
+  // Targets are grouped per client from the authorization snapshot.
+  const authsByClient = new Map<string, PtAuthorizationInput[]>();
+  for (const a of authorizations) {
+    const name = String(a.clientName ?? "").trim();
+    if (!name) continue;
+    const code = `${a.procedureCode ?? ""} ${a.serviceCodes ?? ""}`;
+    // 97156 authorizations only; an unrelated code can never set a PT target.
+    if (!/97156/.test(code)) continue;
+    if (a.isActive === false) continue;
+    const key = name.toLowerCase();
+    if (!authsByClient.has(key)) authsByClient.set(key, []);
+    authsByClient.get(key)!.push(a);
+  }
 
   const ensure = (input: {
     client?: string | null;
@@ -150,14 +342,20 @@ export function computeParentTrainingAnalysis({
     payor?: string | null;
     state?: string | null;
     date?: string | null;
-  }): Acc => {
+  }): PtClientRow => {
     const client = String(input.client ?? "").trim() || "Unknown client";
     const key = client.toLowerCase();
     if (!clients.has(key)) {
+      const target = resolveClientTarget(authsByClient.get(key) ?? []);
+      const owner = resolveOwner({
+        clientName: client,
+        clientCrId: input.clientCrId,
+        date: input.date,
+      });
       clients.set(key, {
         client,
         clientCrId: String(input.clientCrId ?? "").trim(),
-        bcba: resolveOwner({ clientName: client, clientCrId: input.clientCrId, date: input.date }) ?? "Unassigned",
+        bcba: owner ?? "Unassigned",
         payor: String(input.payor ?? "").trim() || "Unknown",
         state: String(input.state ?? "").trim() || "Unknown",
         completedHours: 0,
@@ -167,10 +365,21 @@ export function computeParentTrainingAnalysis({
         cancelledSessions: 0,
         lastCompleted: null,
         nextScheduled: null,
-        targetHours,
-        noAppointment: true,
-        belowTarget: true,
-        note: "",
+        authorizedMonthlyHours: target.authorizedMonthlyHours,
+        expectedCadence: target.cadence,
+        targetType: target.type,
+        targetValue: target.perMonth,
+        targetSource: target.source,
+        windowTarget: target.perMonth != null ? round1(target.perMonth * months) : null,
+        expectedToDate: null,
+        pacePct: null,
+        hasTarget: target.perMonth != null,
+        noUpcoming: true,
+        belowTarget: false,
+        needsReschedule: false,
+        ownershipGap: owner == null,
+        status: "on_track",
+        reason: "",
       });
     }
     const row = clients.get(key)!;
@@ -179,6 +388,17 @@ export function computeParentTrainingAnalysis({
   };
 
   for (const c of activeClients) ensure(c);
+  // Auth-only clients must appear even with no billing or schedule activity.
+  for (const [, list] of authsByClient) {
+    const a = list[0];
+    ensure({
+      client: a.clientName,
+      clientCrId: a.clientCrId,
+      payor: a.payor,
+      state: a.state,
+      date: a.startDate ?? window?.from ?? null,
+    });
+  }
 
   billed.forEach((s, i) => {
     if (!isPt(s.procedureCode)) return;
@@ -210,6 +430,8 @@ export function computeParentTrainingAnalysis({
     });
   });
 
+  const lastCancelled = new Map<string, string | null>();
+
   scheduled.forEach((s, i) => {
     if (!isPt(s.procedureCode)) return;
     const row = ensure({
@@ -223,6 +445,10 @@ export function computeParentTrainingAnalysis({
     const hours = hoursOf(s.hours);
     if (s.cancelled) {
       row.cancelledSessions += 1;
+      const key = row.client.toLowerCase();
+      const prev = lastCancelled.get(key) ?? null;
+      if (date && (!prev || date > prev)) lastCancelled.set(key, date);
+      else if (!lastCancelled.has(key)) lastCancelled.set(key, date);
       events.push({
         key: `sched-${i}`,
         bucket: "cancelled",
@@ -261,13 +487,43 @@ export function computeParentTrainingAnalysis({
   });
 
   const clientRows = [...clients.values()].map((r) => {
-    r.noAppointment = r.completedSessions === 0 && r.upcomingSessions === 0;
-    r.belowTarget = !r.noAppointment && r.completedHours < r.targetHours;
-    r.note = r.noAppointment
-      ? "No completed and no scheduled parent training in this window."
-      : r.belowTarget
-        ? `${r.completedHours} of ${r.targetHours} target hour(s) completed.`
-        : `${r.completedHours} hour(s) completed — at or above target.`;
+    const delivered = r.targetType === "sessions" ? r.completedSessions : r.completedHours;
+    r.expectedToDate =
+      r.windowTarget != null ? Math.round(r.windowTarget * elapsed * 10) / 10 : null;
+    r.pacePct =
+      r.expectedToDate != null && r.expectedToDate > 0
+        ? Math.round((delivered / r.expectedToDate) * 1000) / 10
+        : null;
+
+    // A client with nothing on the calendar ahead of today needs an
+    // appointment even if a session was already completed this month.
+    r.noUpcoming = r.upcomingSessions === 0;
+    r.belowTarget = r.hasTarget && r.pacePct != null && r.pacePct < 100;
+
+    const cancelledOn = lastCancelled.get(r.client.toLowerCase()) ?? null;
+    r.needsReschedule =
+      r.cancelledSessions > 0 &&
+      (r.nextScheduled == null || (cancelledOn != null && r.nextScheduled <= cancelledOn));
+
+    const unit = r.targetType === "sessions" ? "session(s)" : "hour(s)";
+    r.status = !r.hasTarget
+      ? "no_target"
+      : r.noUpcoming
+        ? "no_appointment"
+        : r.needsReschedule
+          ? "needs_reschedule"
+          : r.belowTarget
+            ? "below_target"
+            : "on_track";
+    r.reason = !r.hasTarget
+      ? "No authorized monthly hours and no unambiguous cadence documented, so no target applies."
+      : r.noUpcoming
+        ? `No future kept 97156 session on the calendar (${round1(delivered)} of ${r.expectedToDate} expected ${unit} so far).`
+        : r.needsReschedule
+          ? "A cancelled 97156 session has no later replacement on the calendar."
+          : r.belowTarget
+            ? `${round1(delivered)} of ${r.expectedToDate} expected ${unit} delivered so far (${r.pacePct}% of pace).`
+            : `${round1(delivered)} of ${r.expectedToDate} expected ${unit} delivered — at or above pace.`;
     return r;
   });
 
@@ -317,13 +573,17 @@ export function computeParentTrainingAnalysis({
     coveragePct:
       clientRows.length > 0 ? Math.round((withCompleted / clientRows.length) * 1000) / 10 : null,
     monthsInWindow: months,
+    clientsWithTarget: clientRows.filter((r) => r.hasTarget).length,
+    clientsWithoutTarget: clientRows.filter((r) => !r.hasTarget).length,
     byBcba: group((r) => r.bcba),
     byPayor: group((r) => r.payor),
     byState: group((r) => r.state),
     clientRows: clientRows.sort((a, b) => b.completedHours - a.completedHours),
     events: events.sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? ""))),
-    noAppointmentQueue: clientRows.filter((r) => r.noAppointment),
+    noUpcomingQueue: clientRows.filter((r) => r.noUpcoming),
     belowTargetQueue: clientRows.filter((r) => r.belowTarget),
+    needsRescheduleQueue: clientRows.filter((r) => r.needsReschedule),
+    dataGapQueue: clientRows.filter((r) => r.ownershipGap),
     trend: [...trend.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([label, value]) => ({ label, value })),

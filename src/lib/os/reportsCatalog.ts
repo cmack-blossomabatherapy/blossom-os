@@ -214,52 +214,53 @@ export const REPORTS: ReportDef[] = [
     id: "parent-training",
     title: "Parent Training",
     description:
-      "97156 parent training presence, hours, and gaps by client, provider and payor. CR export required: billing/service export filtered or parseable for 97156, including service date, client, provider, hours, payor, location/state.",
+      "Live 97156 parent training cadence: completed, upcoming and cancelled sessions per client, measured against each client's documented authorized parent training target.",
     category: "qa",
     visibleTo: "all",
     type: "dashboard",
     owner: "QA / Compliance",
-    lastUpdated: "Live from Data Hub",
+    lastUpdated: "Live",
     popularity: 94,
     featured: true,
     aiInsight:
-      "Upload one CR billing export — instantly see 97156 parent training gaps by client.",
+      "See which clients have no upcoming 97156 session and who is pacing below their documented target.",
     kpiPreviews: [
-      { label: "97156 hrs", value: "Auto", trend: "up" },
-      { label: "PT gaps", value: "Auto", trend: "down" },
-      { label: "Coverage %", value: "Auto", trend: "up" },
+      { label: "97156 hrs", value: "Live", trend: "up" },
+      { label: "No upcoming", value: "Live", trend: "down" },
+      { label: "Below target", value: "Live", trend: "down" },
     ],
     sparkline: [40, 48, 52, 60, 58, 64, 70, 74, 78],
-    tags: ["97156", "Parent Training", "Featured"],
+    tags: ["97156", "Parent Training", "Cadence"],
     drilldownPath: "/reports/parent-training",
   },
   {
     id: "bcba-supervision",
     title: "BCBA Supervision",
     description:
-      "97153 vs 97155 supervision ratios, below-threshold clients, and BCBA supervision load. CR export required: billing/service export with 97153 and 97155 rows, service date, client, provider/BCBA, hours, payor, location/state.",
+      "97155 supervision hours as a share of 97153 direct hours by BCBA, client and provider, with past and projected views against Blossom's 5% operational benchmark.",
     category: "qa",
     visibleTo: "all",
     type: "dashboard",
     owner: "QA / Compliance",
-    lastUpdated: "Live from Data Hub",
+    lastUpdated: "Live",
     popularity: 94,
     featured: true,
     aiInsight:
-      "Upload one CR billing export — instantly see supervision % and clients below threshold.",
+      "See supervision ratios today and where they land if every scheduled session is delivered.",
     kpiPreviews: [
-      { label: "97153 hrs", value: "Auto", trend: "up" },
-      { label: "97155 hrs", value: "Auto", trend: "up" },
-      { label: "Supervision %", value: "Auto", trend: "up" },
+      { label: "97153 hrs", value: "Live", trend: "up" },
+      { label: "97155 hrs", value: "Live", trend: "up" },
+      { label: "Supervision %", value: "Live", trend: "up" },
     ],
     sparkline: [50, 55, 60, 64, 68, 72, 70, 74],
-    tags: ["97153", "97155", "Supervision", "Featured"],
+    tags: ["97153", "97155", "Supervision", "Operational Benchmark"],
     drilldownPath: "/reports/bcba-supervision",
   },
 
+
   // Leadership
   { id: "exec-overview", title: "Executive Overview", description: "Company-wide KPIs, lead flow, and operating posture.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership"], type: "dashboard", owner: "Leadership", lastUpdated: "2h ago", popularity: 97, featured: true, aiInsight: "Net growth up +11 - fastest weekly gain since Feb.", kpiPreviews: [{ label: "Active Clients", value: "142", delta: "+8", trend: "up" }, { label: "Pipeline", value: "$182k", delta: "+$24k", trend: "up" }, { label: "Conversion", value: "34%", delta: "+4pt", trend: "up" }], sparkline: [22, 28, 26, 35, 41, 48, 52, 60, 58, 67, 72, 78], tags: ["KPI", "Growth"], detailView: "executive" },
-  { id: "bcba-performance", title: "BCBA Performance", description: "Live billing, supervision, and revenue health from CMS session data.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership", "state_director", "assistant_state_director", "billing_finance", "qa_team", "clinical_director", "behavioral_support"], type: "dashboard", owner: "Leadership", lastUpdated: "Live", popularity: 99, featured: true, aiInsight: "Drives Hours/Active Client efficiency and revenue leak detection.", kpiPreviews: [{ label: "Live data", value: "CMS", trend: "up" }, { label: "Drill-downs", value: "BCBA/Code", trend: "up" }], sparkline: [40, 48, 52, 58, 60, 65, 68, 72, 78, 82], tags: ["BCBA", "Billing", "Revenue"], drilldownPath: "/reports/bcba-performance" },
+  { id: "bcba-performance", title: "BCBA Performance", description: "Per-BCBA operational status across owned productivity hours, supervision, parent training cadence, authorization and progress-report readiness, and documentation timeliness — with prior-period comparison.", category: "leadership", visibleTo: "all", type: "dashboard", owner: "Leadership", lastUpdated: "Live", popularity: 99, featured: true, aiInsight: "See which dimension is setting each BCBA's status and what to work next.", kpiPreviews: [{ label: "Owned hours", value: "Live", trend: "up" }, { label: "Needs attention", value: "Live", trend: "down" }], sparkline: [40, 48, 52, 58, 60, 65, 68, 72, 78, 82], tags: ["BCBA", "Productivity", "Status"], drilldownPath: "/reports/bcba-performance" },
   { id: "growth-trends", title: "Growth Trends", description: "Lead, client, and active growth across the last 6 months.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership"], type: "trend", owner: "Leadership", lastUpdated: "Yesterday", popularity: 71, aiInsight: "Q2 active-client growth pacing 18% above plan.", sparkline: [40, 44, 48, 55, 62, 68, 72, 78, 82, 86], tags: ["Trends"], detailView: "growth" },
 
   // Operations

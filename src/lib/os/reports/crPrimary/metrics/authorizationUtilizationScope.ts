@@ -56,6 +56,15 @@ export function resolveActiveScope(
     return { active: false, datesMissing: false, reason: "Source marks this authorization inactive." };
   }
   if (row.is_active === true) {
+    // A known future start always loses: there are no hours to utilize yet,
+    // whatever the flag says.
+    if (start && today < start) {
+      return {
+        active: false,
+        datesMissing: false,
+        reason: `Marked active by the source, but coverage has not started yet (starts ${start}).`,
+      };
+    }
     if (!start || !end) {
       return {
         active: true,

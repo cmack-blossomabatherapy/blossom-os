@@ -229,6 +229,7 @@ describe("parent training", () => {
         { date: "2026-03-28", procedureCode: "97156", hours: 1, clientName: "A" },
         { date: "2026-03-10", procedureCode: "97156", hours: 1, clientName: "B", cancelled: true },
       ],
+      authorizations: [],
       activeClients: [{ client: "A" }, { client: "B" }, { client: "C" }],
       resolveOwner,
       window: { from: "2026-03-01", to: "2026-03-31" },
@@ -244,26 +245,37 @@ describe("parent training", () => {
     const r = computeParentTrainingAnalysis({
       billed: [],
       scheduled: [{ date: "2026-03-28", procedureCode: "97156", hours: 2, clientName: "A" }],
+      authorizations: [],
       activeClients: [{ client: "A" }],
       resolveOwner,
       today: "2026-03-15",
     });
     expect(r.completedHours).toBe(0);
     expect(r.upcomingSessions).toBe(1);
-    expect(r.noAppointmentQueue).toHaveLength(0);
+    expect(r.noUpcomingQueue).toHaveLength(0);
   });
 
-  it("queues clients with no appointment and clients below target", () => {
+  it("queues clients with no upcoming session and clients below a documented target", () => {
     const r = computeParentTrainingAnalysis({
       billed: [{ date: "2026-03-01", procedureCode: "97156", hours: 0.5, clientName: "A" }],
       scheduled: [],
+      authorizations: [
+        {
+          clientName: "A",
+          procedureCode: "97156",
+          authorizedHoursMonth: 4,
+          isActive: true,
+        },
+      ],
       activeClients: [{ client: "A" }, { client: "C" }],
       resolveOwner,
       window: { from: "2026-03-01", to: "2026-03-31" },
       today: "2026-03-15",
     });
     expect(r.belowTargetQueue.map((c) => c.client)).toEqual(["A"]);
-    expect(r.noAppointmentQueue.map((c) => c.client)).toEqual(["C"]);
+    expect(r.noUpcomingQueue.map((c) => c.client).sort()).toEqual(["A", "C"]);
+    // "C" has no documented target, so it is never called below target.
+    expect(r.clientRows.find((c) => c.client === "C")?.status).toBe("no_target");
   });
 });
 
@@ -273,29 +285,36 @@ describe("BCBA performance", () => {
     states: ["GA"],
     clients: 10,
     rbts: 5,
-    billableHours: 100,
+    currentHours: 100,
+    priorHours: 90,
+    targetHours: 100,
+    elapsedProportion: 1,
     directHours: 200,
     supervisionHours: 12,
-    targetHours: 100,
-    forecastHours: 100,
-    clientsWithParentTraining: 9,
-    authActionCount: 0,
-    progressReportsDue: 0,
-    progressReportsOverdue: 0,
+    ptClientsWithTarget: 8,
+    ptClientsAtPace: 8,
+    readinessMeasurable: true,
+    nearestDeadlineDays: null,
+    authLapses: 0,
+    overdueProgressReports: 0,
+    confirmedPauses: 0,
+    documentedBillingRows: 40,
+    lateBillingRows: 0,
+    missingCreationRows: 0,
     ...over,
   });
 
-  it("lets the worst dimension set the overall status", () => {
+  it("lets the worst measured dimension set the overall status", () => {
     expect(worstStatus(["strong", "at_risk", "on_track"])).toBe("at_risk");
-    const r = computeBcbaPerformanceAnalysis([input({ progressReportsOverdue: 2 })]);
+    const r = computeBcbaPerformanceAnalysis([input({ overdueProgressReports: 2 })]);
     expect(r.rows[0].status).toBe("at_risk");
-    expect(r.rows[0].drivers).toContain("Documentation Timeliness");
+    expect(r.rows[0].drivers).toContain("Authorization / PR Readiness");
   });
 
-  it("scores productivity as No target when no target row exists", () => {
+  it("reports productivity as insufficient data when no applicable target row exists", () => {
     const r = computeBcbaPerformanceAnalysis([input({ targetHours: null })]);
-    expect(r.rows[0].productivityPct).toBeNull();
     expect(r.rows[0].dimensions[0].status).toBe("insufficient_data");
+    expect(r.rows[0].dimensions[0].measurable).toBe(false);
     expect(r.withoutTargets).toBe(1);
   });
 
@@ -305,22 +324,25 @@ describe("BCBA performance", () => {
     expect(r.rows[0].supervisionRatioPct).toBeNull();
   });
 
-  it("keeps incentive eligibility separate and blocks it without a target", () => {
-    const r = computeBcbaPerformanceAnalysis([input({ targetHours: null })]);
-    expect(r.incentives[0].eligible).toBe(false);
-    expect(r.incentives[0].blockedBy).toContain("No recorded productivity target");
+  it("exposes no composite score anywhere", () => {
+    const r = computeBcbaPerformanceAnalysis([input()]);
+    expect(r.rows[0]).not.toHaveProperty("score");
+    expect(r).not.toHaveProperty("avgScore");
   });
 
-  it("blocks incentive eligibility when a dimension is At Risk", () => {
-    const r = computeBcbaPerformanceAnalysis([input({ progressReportsOverdue: 1 })]);
-    expect(r.incentives[0].eligible).toBe(false);
-    expect(r.rows[0].status).toBe("at_risk");
+  it("keeps incentive progress to recorded fields only", () => {
+    const r = computeBcbaPerformanceAnalysis([
+      input({ incentiveTargetHours: 100, incentiveActualHours: 80, incentiveForecastHours: 110 }),
+    ]);
+    expect(r.incentives[0]).not.toHaveProperty("eligible");
+    expect(r.incentives[0].actualAttainmentPct).toBe(80);
+    expect(r.incentives[0].forecastAttainmentPct).toBe(110);
   });
 
-  it("marks a fully compliant BCBA eligible", () => {
+  it("marks a BCBA hitting every documented target Strong", () => {
     const r = computeBcbaPerformanceAnalysis([input()]);
     expect(r.rows[0].status).toBe("strong");
-    expect(r.incentives[0].eligible).toBe(true);
   });
 });
+
 

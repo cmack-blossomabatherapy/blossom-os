@@ -1,17 +1,18 @@
 /**
- * Primary report: BCBA Performance (`bcba-performance`) — Phase 2B1 rebuild.
+ * Primary report: BCBA Performance (`bcba-performance`) — Phase 2B1 repair B.
  *
- * Five dimensions, each proven by its own source: productivity against the
- * recorded target, supervision ratio (97155 ÷ 97153 vs. 5%), parent-training
- * cadence, authorization readiness, and documentation timeliness.
+ * **No composite score, no average score, no ranking.** Each dimension stands
+ * on its own numerator/denominator or event basis, with the source (or the
+ * explicitly named proxy) that proves it, and the overall status is the worst
+ * applicable dimension. Fewer than three measurable dimensions reads
+ * Insufficient Data rather than pretending to be a judgement.
  *
- * The overall status is the **worst** dimension — a BCBA carrying an At Risk
- * dimension is never averaged up into Strong. A dimension with no source data
- * reads "Insufficient Data" instead of 0%.
+ * The window defaults to the current month and is compared against the
+ * immediately prior equal-length window, so hours are read as a trend rather
+ * than a single number.
  *
- * Incentive eligibility is a **separate** panel on purpose: support and
- * compensation are different conversations, and a missing target blocks
- * eligibility rather than silently defaulting to a number.
+ * "Incentive progress" is a separate tab that reports only the recorded target,
+ * actual, and forecast — it never invents an eligible/not-eligible gate.
  */
 import { useEffect, useMemo, useState } from "react";
 import { PrimaryReportShell } from "@/components/reports/crPrimary/PrimaryReportShell";
@@ -30,7 +31,7 @@ import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
 import { useBcbaOwnershipV3 } from "@/hooks/useBcbaOwnershipV3";
 import { useUrlFilterState } from "@/hooks/useUrlFilterState";
 import { useUrlState } from "@/hooks/useUrlState";
-import { withCurrentMonthDefault } from "@/lib/os/reports/crPrimary/reportWindow";
+import { localIsoDate, withCurrentMonthDefault } from "@/lib/os/reports/crPrimary/reportWindow";
 import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
 import type {
@@ -53,12 +54,22 @@ import {
   daysBetween,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
 import { isProgressReportAction } from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
+import { classifyLifecycleEvent } from "@/lib/os/reports/crPrimary/metrics/authorizationLifecycle";
+import { computeParentTrainingAnalysis } from "@/lib/os/reports/crPrimary/metrics/parentTrainingV2";
 import {
+  DOCUMENTATION_LATE_DAYS,
+  DOCUMENTATION_PROXY_LABEL,
   PERFORMANCE_STATUS_LABELS,
+  REAL_DEADLINE_WINDOW_DAYS,
+  SUPERVISION_BENCHMARK_LABEL,
+  SUPERVISION_BENCHMARK_PCT,
   computeBcbaPerformanceAnalysis,
+  priorEqualWindow,
+  resolveTargetHours,
+  windowElapsedProportion,
   type BcbaPerformanceInput,
   type BcbaPerformanceRow,
-  type IncentiveRow,
+  type IncentiveProgressRow,
   type PerformanceStatus,
 } from "@/lib/os/reports/crPrimary/metrics/bcbaPerformanceV2";
 import { pushRecent } from "@/lib/os/reportsCatalog";
@@ -79,17 +90,20 @@ const STATUS_TONE: Record<PerformanceStatus, string> = {
   insufficient_data: "bg-muted text-muted-foreground",
 };
 
-const SCORECARD_COLUMNS = [
+const STATUS_COLUMNS = [
   { key: "bcba", label: "BCBA" },
   { key: "status", label: "Overall Status" },
-  { key: "score", label: "Score" },
-  { key: "billableHours", label: "Billable Hrs" },
+  { key: "currentHours", label: "Owned Hrs (Current)" },
+  { key: "priorHours", label: "Owned Hrs (Prior)" },
+  { key: "deltaHours", label: "Delta Hrs" },
+  { key: "deltaPct", label: "Delta %" },
   { key: "targetHours", label: "Target Hrs" },
-  { key: "productivityPct", label: "Productivity %" },
-  { key: "supervisionRatioPct", label: "Supervision %" },
-  { key: "ptCadencePct", label: "PT Cadence %" },
-  { key: "authActionCount", label: "Auth Actions" },
-  { key: "progressReportsOverdue", label: "PRs Overdue" },
+  { key: "productivity", label: "Productivity" },
+  { key: "supervision", label: "Supervision" },
+  { key: "parentTraining", label: "Parent Training Cadence" },
+  { key: "readiness", label: "Authorization / PR Readiness" },
+  { key: "documentation", label: "Documentation Timeliness" },
+  { key: "measurableCount", label: "Measurable Dimensions" },
   { key: "clients", label: "Clients" },
   { key: "rbts", label: "RBTs" },
   { key: "states", label: "States" },
@@ -98,38 +112,57 @@ const SCORECARD_COLUMNS = [
 
 const INCENTIVE_COLUMNS = [
   { key: "bcba", label: "BCBA" },
-  { key: "billableHours", label: "Billable Hrs" },
-  { key: "targetHours", label: "Target Hrs" },
-  { key: "attainmentPct", label: "Attainment %" },
-  { key: "eligible", label: "Eligible" },
-  { key: "note", label: "Why" },
+  { key: "actualHours", label: "Recorded Actual Hrs" },
+  { key: "targetHours", label: "Recorded Target Hrs" },
+  { key: "forecastHours", label: "Recorded Forecast Hrs" },
+  { key: "actualAttainmentPct", label: "Actual Attainment %" },
+  { key: "forecastAttainmentPct", label: "Forecast Attainment %" },
+  { key: "note", label: "Notes" },
 ];
+
+const DIMENSION_COLUMNS = [
+  { key: "dimension", label: "Dimension" },
+  { key: "status", label: "Status" },
+  { key: "pace", label: "Pace %" },
+  { key: "basis", label: "Basis" },
+  { key: "source", label: "Source / Proxy" },
+  { key: "reason", label: "Reason" },
+];
+
+const statusOf = (r: BcbaPerformanceRow, key: string) => {
+  const d = r.dimensions.find((x) => x.key === key);
+  return d ? PERFORMANCE_STATUS_LABELS[d.status] : "Insufficient Data";
+};
 
 const projectRows = (rows: BcbaPerformanceRow[]): Record<string, unknown>[] =>
   rows.map((r) => ({
     bcba: r.bcba,
     status: PERFORMANCE_STATUS_LABELS[r.status],
-    score: r.score ?? "Not scored",
-    billableHours: r.billableHours,
-    targetHours: r.targetHours ?? "No target",
-    productivityPct: r.productivityPct ?? "No target",
-    supervisionRatioPct: r.supervisionRatioPct ?? "Insufficient data",
-    ptCadencePct: r.ptCadencePct ?? "Insufficient data",
-    authActionCount: r.authActionCount,
-    progressReportsOverdue: r.progressReportsOverdue,
+    currentHours: r.currentHours,
+    priorHours: r.priorHours,
+    deltaHours: r.deltaHours,
+    deltaPct: r.deltaPct ?? "No prior hours",
+    targetHours: r.targetHours ?? "No applicable target",
+    productivity: statusOf(r, "productivity"),
+    supervision: statusOf(r, "supervision"),
+    parentTraining: statusOf(r, "parent_training"),
+    readiness: statusOf(r, "authorization_readiness"),
+    documentation: statusOf(r, "documentation"),
+    measurableCount: r.measurableCount,
     clients: r.clients,
     rbts: r.rbts,
     states: r.states.join(", "),
     drivers: r.drivers.join(", "),
   }));
 
-const projectIncentives = (rows: IncentiveRow[]): Record<string, unknown>[] =>
+const projectIncentives = (rows: IncentiveProgressRow[]): Record<string, unknown>[] =>
   rows.map((r) => ({
     bcba: r.bcba,
-    billableHours: r.billableHours,
-    targetHours: r.targetHours ?? "No target",
-    attainmentPct: r.attainmentPct ?? "Not scored",
-    eligible: r.eligible ? "Yes" : "No",
+    actualHours: r.actualHours ?? "Not recorded",
+    targetHours: r.targetHours ?? "Not recorded",
+    forecastHours: r.forecastHours ?? "Not recorded",
+    actualAttainmentPct: r.actualAttainmentPct ?? "Not recorded",
+    forecastAttainmentPct: r.forecastAttainmentPct ?? "Not recorded",
     note: r.note,
   }));
 
@@ -140,34 +173,48 @@ export default function BcbaPerformancePage() {
     "billingFacts",
     "authCurrent",
     "authActions",
+    "authEvents",
     "bcbaTargets",
   ]);
   const ownership = useBcbaOwnershipV3();
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
-  const [tabParam, setTabParam] = useUrlState("tab", "scorecard");
+  const [tabParam, setTabParam] = useUrlState("tab", "status");
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
-  const tab = tabParam === "incentives" ? "incentives" : "scorecard";
+  const tab = tabParam === "incentives" ? "incentives" : "status";
 
   useEffect(() => {
     pushRecent("bcba-performance");
   }, []);
 
-  const today = useMemo(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }, []);
+  const today = useMemo(() => localIsoDate(), []);
 
+  const window = useMemo(
+    () => ({
+      from: filters.from || DEFAULT_FILTERS.from || today,
+      to: filters.to || DEFAULT_FILTERS.to || today,
+    }),
+    [filters.from, filters.to, today],
+  );
+  const prior = useMemo(() => priorEqualWindow(window), [window]);
+  const elapsed = useMemo(() => windowElapsedProportion(window, today), [window, today]);
+
+  const project = (r: ReportBillingFactRow) => ({
+    date: r.date_of_service,
+    state: r.state,
+    client: r.client_name,
+    payor: r.payor,
+    provider: r.provider_name,
+    code: r.procedure_code,
+  });
+
+  // Non-date filters are applied identically to both periods; only the window moves.
   const billing = useMemo(
-    () =>
-      applyFilters(data.billingFacts, filters, (r) => ({
-        date: r.date_of_service,
-        state: r.state,
-        client: r.client_name,
-        payor: r.payor,
-        provider: r.provider_name,
-        code: r.procedure_code,
-      })),
+    () => applyFilters(data.billingFacts, filters, project),
     [data.billingFacts, filters],
+  );
+  const priorBilling = useMemo(
+    () => applyFilters(data.billingFacts, { ...filters, from: prior.from, to: prior.to }, project),
+    [data.billingFacts, filters, prior],
   );
 
   const resolveOwner = useMemo(() => {
@@ -178,27 +225,33 @@ export default function BcbaPerformancePage() {
 
   const analysis = useMemo(() => {
     interface Acc {
-      billable: number;
+      owned: number;
       direct: number;
       supervision: number;
       clients: Set<string>;
-      ptClients: Set<string>;
       rbts: Set<string>;
       states: Set<string>;
+      documentedRows: number;
+      lateRows: number;
+      missingCreation: number;
     }
     const acc = new Map<string, Acc>();
-    const clientOwner = new Map<string, string>();
+    const priorHours = new Map<string, number>();
+    // Owner per client *at the date of service* — never a current-billing map.
+    const clientOwners = new Map<string, Set<string>>();
 
     const ensure = (bcba: string): Acc => {
       if (!acc.has(bcba)) {
         acc.set(bcba, {
-          billable: 0,
+          owned: 0,
           direct: 0,
           supervision: 0,
           clients: new Set(),
-          ptClients: new Set(),
           rbts: new Set(),
           states: new Set(),
+          documentedRows: 0,
+          lateRows: 0,
+          missingCreation: 0,
         });
       }
       return acc.get(bcba)!;
@@ -210,89 +263,208 @@ export default function BcbaPerformancePage() {
       const owner =
         resolveOwner({ clientName: client, clientCrId: r.client_cr_id, date: r.date_of_service }) ??
         "Unassigned";
-      clientOwner.set(client.toLowerCase(), owner);
+      if (!clientOwners.has(client.toLowerCase())) clientOwners.set(client.toLowerCase(), new Set());
+      clientOwners.get(client.toLowerCase())!.add(owner);
       const a = ensure(owner);
       const code = normalizeCode(r.procedure_code);
       const hours = hoursOf(r.hours);
       a.clients.add(client);
       if (r.state) a.states.add(String(r.state));
+
       if (code === CODE_DIRECT) {
         a.direct += hours;
         const provider = String(r.provider_name ?? "").trim();
         if (provider) a.rbts.add(provider);
       } else {
-        a.billable += hours;
+        a.owned += hours;
         if (code === CODE_SUPERVISION) a.supervision += hours;
-        if (code === CODE_PARENT_TRAINING) a.ptClients.add(client);
+      }
+
+      // Documentation timeliness proxy: DOS -> billing creation lag.
+      const dos = r.date_of_service ? String(r.date_of_service).slice(0, 10) : null;
+      const created = r.creation_date ? String(r.creation_date).slice(0, 10) : null;
+      if (!dos || !created || Number.isNaN(Date.parse(created))) a.missingCreation += 1;
+      else {
+        a.documentedRows += 1;
+        if (daysBetween(dos, created) > DOCUMENTATION_LATE_DAYS) a.lateRows += 1;
       }
     }
 
-    // Authorization readiness: expiring within 30 days or already expired.
-    const authActionByBcba = new Map<string, number>();
+    for (const r of priorBilling) {
+      if (r.is_void || r.deleted) continue;
+      const code = normalizeCode(r.procedure_code);
+      if (code === CODE_DIRECT) continue;
+      const client = String(r.client_name ?? "").trim() || "Unknown client";
+      const owner =
+        resolveOwner({ clientName: client, clientCrId: r.client_cr_id, date: r.date_of_service }) ??
+        "Unassigned";
+      priorHours.set(owner, (priorHours.get(owner) ?? 0) + hoursOf(r.hours));
+    }
+
+    const ownersOf = (client: string): string[] => [
+      ...(clientOwners.get(client.trim().toLowerCase()) ?? []),
+    ];
+
+    // Authorization readiness: real coverage end dates only.
+    const lapses = new Map<string, number>();
+    const nearestDeadline = new Map<string, { days: number; basis: string }>();
+    const measurable = new Set<string>();
     for (const auth of data.authCurrent) {
       const client = String(auth.client_name ?? "").trim();
       if (!client) continue;
-      const owner = clientOwner.get(client.toLowerCase());
-      if (!owner) continue;
       const end = endDateOf(auth);
-      const days = end ? daysBetween(today, end) : null;
-      const needsAction = days == null ? false : days <= 30;
-      if (needsAction) authActionByBcba.set(owner, (authActionByBcba.get(owner) ?? 0) + 1);
+      if (!end) continue;
+      const days = daysBetween(today, end);
+      for (const owner of ownersOf(client)) {
+        measurable.add(owner);
+        if (days < 0) lapses.set(owner, (lapses.get(owner) ?? 0) + 1);
+        else {
+          const prev = nearestDeadline.get(owner);
+          if (!prev || days < prev.days) {
+            nearestDeadline.set(owner, {
+              days,
+              basis: `${client} authorization ends ${end}`,
+            });
+          }
+        }
+      }
     }
 
-    // Documentation timeliness: true progress-report records only.
-    const prDue = new Map<string, number>();
+    // Progress reports: true PR records with a real due date.
     const prOverdue = new Map<string, number>();
     for (const action of data.authActions) {
       if (!isProgressReportAction(action)) continue;
       const client = String(action.client_name ?? "").trim();
-      const owner = clientOwner.get(client.toLowerCase());
-      if (!owner) continue;
+      if (!client) continue;
       const due = action.next_action_due_date
         ? String(action.next_action_due_date).slice(0, 10)
         : null;
-      prDue.set(owner, (prDue.get(owner) ?? 0) + 1);
-      if (due && due < today) prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
+      for (const owner of ownersOf(client)) {
+        measurable.add(owner);
+        if (due && due < today) prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
+        else if (due) {
+          const days = daysBetween(today, due);
+          const prev = nearestDeadline.get(owner);
+          if (!prev || days < prev.days) {
+            nearestDeadline.set(owner, { days, basis: `${client} progress report due ${due}` });
+          }
+        }
+      }
     }
 
-    const targetByBcba = new Map<string, { target: number | null; forecast: number | null }>();
+    // Confirmed pauses only — a logged pause event, never an inferred gap.
+    const pauses = new Map<string, number>();
+    for (const e of data.authEvents) {
+      const { action } = classifyLifecycleEvent(e.event_type, e.lifecycle_kind ?? e.auth_type);
+      if (action !== "paused") continue;
+      const client = String(e.client_name ?? "").trim();
+      if (!client) continue;
+      for (const owner of ownersOf(client)) {
+        measurable.add(owner);
+        pauses.set(owner, (pauses.get(owner) ?? 0) + 1);
+      }
+    }
+
+    // Parent-training cadence uses the source-driven client target model.
+    const ptAnalysis = computeParentTrainingAnalysis({
+      billed: billing
+        .filter((r) => !r.is_void && !r.deleted && normalizeCode(r.procedure_code) === CODE_PARENT_TRAINING)
+        .map((r) => ({
+          date: r.date_of_service,
+          procedureCode: r.procedure_code,
+          hours: r.hours,
+          clientName: r.client_name,
+          clientCrId: r.client_cr_id,
+          providerName: r.provider_name,
+          payor: r.payor,
+          state: r.state,
+        })),
+      scheduled: [],
+      authorizations: data.authCurrent.map((a) => ({
+        clientName: a.client_name,
+        clientCrId: a.client_cr_id,
+        payor: a.payor,
+        state: a.state,
+        procedureCode: a.procedure_code,
+        serviceCodes: a.service_codes,
+        frequency: a.frequency,
+        authorizedHoursMonth: a.authorized_hours_month,
+        startDate: a.start_date,
+        endDate: a.end_date,
+        isActive: a.is_active,
+      })),
+      activeClients: [],
+      resolveOwner,
+      window: { from: window.from, to: window.to },
+      today,
+    });
+    const ptWithTarget = new Map<string, number>();
+    const ptAtPace = new Map<string, number>();
+    for (const c of ptAnalysis.clientRows) {
+      if (!c.hasTarget) continue;
+      ptWithTarget.set(c.bcba, (ptWithTarget.get(c.bcba) ?? 0) + 1);
+      if (!c.belowTarget) ptAtPace.set(c.bcba, (ptAtPace.get(c.bcba) ?? 0) + 1);
+    }
+
+    const incentiveByBcba = new Map<
+      string,
+      { actual: number | null; target: number | null; forecast: number | null }
+    >();
     for (const t of data.bcbaTargets) {
       const name = String(t.bcba_name ?? "").trim();
       if (!name) continue;
-      const existing = targetByBcba.get(name);
-      // Sum only real target rows; when none exist the value stays null so the
-      // report says "No target" instead of scoring against a fabricated zero.
-      const summed =
-        t.mtd_target_hours == null
-          ? existing?.target ?? null
-          : (existing?.target ?? 0) + t.mtd_target_hours;
-      targetByBcba.set(name, {
-        target: summed,
-        forecast: t.forecast_hours ?? existing?.forecast ?? null,
+      // Recorded incentive fields only — no derivation from billing.
+      incentiveByBcba.set(name, {
+        actual: t.mtd_actual_hours ?? null,
+        target: t.mtd_target_hours ?? null,
+        forecast: t.forecast_hours ?? null,
       });
     }
 
     const inputs: BcbaPerformanceInput[] = [...acc.entries()].map(([bcba, a]) => {
-      const target = targetByBcba.get(bcba);
+      const incentive = incentiveByBcba.get(bcba);
+      const deadline = nearestDeadline.get(bcba);
       return {
         bcba,
         states: [...a.states].sort(),
         clients: a.clients.size,
         rbts: a.rbts.size,
-        billableHours: Math.round(a.billable * 10) / 10,
+        currentHours: Math.round(a.owned * 10) / 10,
+        priorHours: Math.round((priorHours.get(bcba) ?? 0) * 10) / 10,
+        targetHours: resolveTargetHours(data.bcbaTargets, bcba, window),
+        elapsedProportion: elapsed,
         directHours: Math.round(a.direct * 10) / 10,
         supervisionHours: Math.round(a.supervision * 10) / 10,
-        targetHours: target?.target ?? null,
-        forecastHours: target?.forecast ?? null,
-        clientsWithParentTraining: a.ptClients.size,
-        authActionCount: authActionByBcba.get(bcba) ?? 0,
-        progressReportsDue: prDue.get(bcba) ?? 0,
-        progressReportsOverdue: prOverdue.get(bcba) ?? 0,
+        ptClientsWithTarget: ptWithTarget.get(bcba) ?? 0,
+        ptClientsAtPace: ptAtPace.get(bcba) ?? 0,
+        readinessMeasurable: measurable.has(bcba),
+        nearestDeadlineDays: deadline?.days ?? null,
+        nearestDeadlineBasis: deadline?.basis ?? null,
+        authLapses: lapses.get(bcba) ?? 0,
+        overdueProgressReports: prOverdue.get(bcba) ?? 0,
+        confirmedPauses: pauses.get(bcba) ?? 0,
+        documentedBillingRows: a.documentedRows,
+        lateBillingRows: a.lateRows,
+        missingCreationRows: a.missingCreation,
+        incentiveActualHours: incentive?.actual ?? null,
+        incentiveTargetHours: incentive?.target ?? null,
+        incentiveForecastHours: incentive?.forecast ?? null,
       };
     });
 
     return computeBcbaPerformanceAnalysis(inputs);
-  }, [billing, data.authCurrent, data.authActions, data.bcbaTargets, resolveOwner, today]);
+  }, [
+    billing,
+    priorBilling,
+    data.authCurrent,
+    data.authActions,
+    data.authEvents,
+    data.bcbaTargets,
+    resolveOwner,
+    window,
+    elapsed,
+    today,
+  ]);
 
   const filterFields = useMemo<FilterFieldConfig[]>(
     () =>
@@ -316,139 +488,171 @@ export default function BcbaPerformancePage() {
         id: "bcbas",
         label: "BCBAs in view",
         value: fmtCount(analysis.rows.length),
-        hint: `${fmtHours(analysis.totalBillableHours)} billable hours attributed`,
+        hint: `${fmtHours(analysis.totalCurrentHours)} owned hours attributed`,
+      },
+      {
+        id: "delta",
+        label: "Owned hours vs. prior period",
+        value: `${analysis.totalDeltaHours >= 0 ? "+" : ""}${fmtHours(analysis.totalDeltaHours)}`,
+        hint: `${fmtHours(analysis.totalPriorHours)} in ${prior.from} → ${prior.to}${
+          analysis.totalDeltaPct == null ? "" : ` · ${fmtPct(analysis.totalDeltaPct)}`
+        }`,
+        tone: analysis.totalDeltaHours >= 0 ? "good" : "warn",
       },
       {
         id: "at_risk",
         label: "At risk",
         value: fmtCount(analysis.counts.at_risk),
-        hint: "At least one dimension is At Risk",
+        hint: "Pace under 75%, late documentation proxy, overdue reporting, auth lapse, or confirmed pause",
         tone: analysis.counts.at_risk > 0 ? "bad" : "good",
       },
       {
         id: "needs_attention",
         label: "Needs attention",
         value: fmtCount(analysis.counts.needs_attention),
-        hint: "Worst dimension needs attention",
+        hint: `Pace 75–89.9% or a real deadline within ${REAL_DEADLINE_WINDOW_DAYS} days`,
         tone: analysis.counts.needs_attention > 0 ? "warn" : "good",
       },
       {
         id: "strong",
         label: "Strong or on track",
         value: fmtCount(analysis.counts.strong + analysis.counts.on_track),
-        hint: "Every dimension at or near target",
+        hint: "Every measured dimension at or near its documented target",
         tone: "good",
       },
       {
-        id: "no_target",
-        label: "No recorded target",
-        value: fmtCount(analysis.withoutTargets),
-        hint: "Productivity is not scored without a target — never treated as 0%",
-        tone: analysis.withoutTargets > 0 ? "warn" : "good",
-      },
-      {
-        id: "score",
-        label: "Average score",
-        value: analysis.avgScore == null ? "Not scored" : String(analysis.avgScore),
-        hint: "Mean of the computable dimension scores",
+        id: "insufficient",
+        label: "Insufficient data",
+        value: fmtCount(analysis.counts.insufficient_data),
+        hint: "Fewer than three measurable dimensions, so no status is claimed",
       },
     ],
-    [analysis],
+    [analysis, prior.from, prior.to],
   );
+
+  const dimensionCell = (r: BcbaPerformanceRow, key: string) => {
+    const d = r.dimensions.find((x) => x.key === key);
+    if (!d) return <span className="text-muted-foreground">—</span>;
+    return (
+      <Badge variant="outline" className={STATUS_TONE[d.status]}>
+        {PERFORMANCE_STATUS_LABELS[d.status]}
+        {d.pacePct == null ? "" : ` · ${d.pacePct}%`}
+      </Badge>
+    );
+  };
 
   const columns: PrimaryTableColumn<BcbaPerformanceRow>[] = [
     { key: "bcba", label: "BCBA", render: (r) => <span className="font-medium">{r.bcba}</span> },
     {
       key: "status",
-      label: "Status",
+      label: "Overall",
       render: (r) => (
         <Badge variant="outline" className={STATUS_TONE[r.status]}>
           {PERFORMANCE_STATUS_LABELS[r.status]}
         </Badge>
       ),
     },
-    { key: "score", label: "Score", align: "right", render: (r) => r.score ?? "—" },
-    { key: "billable", label: "Billable Hrs", align: "right", render: (r) => fmtHours(r.billableHours) },
+    { key: "current", label: "Owned Hrs", align: "right", render: (r) => fmtHours(r.currentHours) },
+    { key: "prior", label: "Prior Hrs", align: "right", render: (r) => fmtHours(r.priorHours) },
     {
-      key: "productivity",
-      label: "Productivity",
+      key: "delta",
+      label: "Delta",
       align: "right",
-      render: (r) =>
-        r.productivityPct == null ? (
-          <span className="text-muted-foreground">No target</span>
-        ) : (
-          fmtPct(r.productivityPct)
-        ),
+      render: (r) => (
+        <span className={r.deltaHours < 0 ? "text-destructive" : "text-emerald-600"}>
+          {r.deltaHours >= 0 ? "+" : ""}
+          {fmtHours(r.deltaHours)}
+          {r.deltaPct == null ? "" : ` (${fmtPct(r.deltaPct)})`}
+        </span>
+      ),
     },
-    {
-      key: "supervision",
-      label: "Supervision",
-      align: "right",
-      render: (r) =>
-        r.supervisionRatioPct == null ? (
-          <span className="text-muted-foreground">—</span>
-        ) : (
-          fmtPct(r.supervisionRatioPct)
-        ),
-    },
-    {
-      key: "pt",
-      label: "PT Cadence",
-      align: "right",
-      render: (r) =>
-        r.ptCadencePct == null ? <span className="text-muted-foreground">—</span> : fmtPct(r.ptCadencePct),
-    },
-    { key: "auth", label: "Auth Actions", align: "right", render: (r) => fmtCount(r.authActionCount) },
-    {
-      key: "docs",
-      label: "PRs Overdue",
-      align: "right",
-      render: (r) => fmtCount(r.progressReportsOverdue),
-    },
-    { key: "clients", label: "Clients", align: "right", render: (r) => fmtCount(r.clients) },
-  ];
-
-  const incentiveColumns: PrimaryTableColumn<IncentiveRow>[] = [
-    { key: "bcba", label: "BCBA", render: (r) => <span className="font-medium">{r.bcba}</span> },
-    { key: "hours", label: "Billable Hrs", align: "right", render: (r) => fmtHours(r.billableHours) },
     {
       key: "target",
       label: "Target Hrs",
       align: "right",
-      render: (r) => (r.targetHours == null ? "No target" : fmtHours(r.targetHours)),
+      render: (r) =>
+        r.targetHours == null ? (
+          <span className="text-muted-foreground">No applicable target</span>
+        ) : (
+          fmtHours(r.targetHours)
+        ),
     },
-    {
-      key: "attainment",
-      label: "Attainment",
-      align: "right",
-      render: (r) => (r.attainmentPct == null ? "Not scored" : fmtPct(r.attainmentPct)),
-    },
-    {
-      key: "eligible",
-      label: "Eligible",
-      render: (r) => (
-        <Badge
-          variant="outline"
-          className={r.eligible ? STATUS_TONE.strong : STATUS_TONE.insufficient_data}
-        >
-          {r.eligible ? "Eligible" : "Not eligible"}
-        </Badge>
-      ),
-    },
-    { key: "note", label: "Why", render: (r) => <span className="text-muted-foreground">{r.note}</span> },
+    { key: "productivity", label: "Productivity", render: (r) => dimensionCell(r, "productivity") },
+    { key: "supervision", label: "Supervision", render: (r) => dimensionCell(r, "supervision") },
+    { key: "pt", label: "PT Cadence", render: (r) => dimensionCell(r, "parent_training") },
+    { key: "auth", label: "Auth / PR", render: (r) => dimensionCell(r, "authorization_readiness") },
+    { key: "docs", label: "Documentation", render: (r) => dimensionCell(r, "documentation") },
+    { key: "clients", label: "Clients", align: "right", render: (r) => fmtCount(r.clients) },
   ];
+
+  const incentiveColumns: PrimaryTableColumn<IncentiveProgressRow>[] = [
+    { key: "bcba", label: "BCBA", render: (r) => <span className="font-medium">{r.bcba}</span> },
+    {
+      key: "actual",
+      label: "Recorded Actual",
+      align: "right",
+      render: (r) => (r.actualHours == null ? "Not recorded" : fmtHours(r.actualHours)),
+    },
+    {
+      key: "target",
+      label: "Recorded Target",
+      align: "right",
+      render: (r) => (r.targetHours == null ? "Not recorded" : fmtHours(r.targetHours)),
+    },
+    {
+      key: "forecast",
+      label: "Recorded Forecast",
+      align: "right",
+      render: (r) => (r.forecastHours == null ? "Not recorded" : fmtHours(r.forecastHours)),
+    },
+    {
+      key: "actualAttainment",
+      label: "Actual Attainment",
+      align: "right",
+      render: (r) =>
+        r.actualAttainmentPct == null ? "Not recorded" : fmtPct(r.actualAttainmentPct),
+    },
+    {
+      key: "forecastAttainment",
+      label: "Forecast Attainment",
+      align: "right",
+      render: (r) =>
+        r.forecastAttainmentPct == null ? "Not recorded" : fmtPct(r.forecastAttainmentPct),
+    },
+    {
+      key: "note",
+      label: "Notes",
+      render: (r) => <span className="text-muted-foreground">{r.note}</span>,
+    },
+  ];
+
+  const openDimensions = (r: BcbaPerformanceRow) =>
+    setDrilldown({
+      title: `${r.bcba} — performance dimensions`,
+      subtitle: `Overall: ${PERFORMANCE_STATUS_LABELS[r.status]} · driven by ${r.drivers.join(", ")}`,
+      rows: r.dimensions.map((d) => ({
+        dimension: d.label,
+        status: PERFORMANCE_STATUS_LABELS[d.status],
+        pace: d.pacePct ?? "Not paced",
+        basis: d.basis,
+        source: d.sourceLabel,
+        reason: d.reason,
+      })),
+      columns: DIMENSION_COLUMNS,
+      exportName: "bcba-performance-dimensions",
+    });
 
   return (
     <PrimaryReportShell
       title="BCBA Performance"
-      subtitle="Productivity, supervision, parent training, authorization readiness, and documentation — worst dimension sets the status."
+      subtitle="Productivity, supervision, parent-training cadence, authorization/PR readiness, and documentation timeliness — the worst measured dimension sets the status."
       freshness={data.freshness}
       loading={data.loading || ownership.isLoading}
       empty={data.empty}
       errorMessage={data.errorMessage}
       dataQualityWarnings={[
         analysis.withoutTargets > 0
-          ? `${analysis.withoutTargets} BCBA(s) have no recorded productivity target, so their productivity is reported as "No target" rather than scored.`
+          ? `${analysis.withoutTargets} BCBA(s) have no target row whose period applies to this window, so their productivity reads Insufficient Data rather than 0%.`
           : "",
         ownership.data?.health?.truncated
           ? "Some billing history could not be loaded, so a few clients may be attributed to Unassigned."
@@ -460,8 +664,12 @@ export default function BcbaPerformancePage() {
       }}
       onExport={() =>
         tab === "incentives"
-          ? downloadCsv("bcba-incentive-eligibility", projectIncentives(analysis.incentives), INCENTIVE_COLUMNS)
-          : downloadCsv("bcba-performance", projectRows(analysis.rows), SCORECARD_COLUMNS)
+          ? downloadCsv(
+              "bcba-incentive-progress",
+              projectIncentives(analysis.incentives),
+              INCENTIVE_COLUMNS,
+            )
+          : downloadCsv("bcba-performance-status", projectRows(analysis.rows), STATUS_COLUMNS)
       }
       exportDisabled={analysis.rows.length === 0}
       filters={
@@ -474,16 +682,20 @@ export default function BcbaPerformancePage() {
       }
     >
       <ReportProvenance>
-        Each dimension is judged against its own source: billed hours against the recorded target,
-        97155 ÷ 97153 against 5%, 97156 coverage of the caseload, authorizations expiring within 30
-        days, and true progress-report work. A dimension with no source data reads Insufficient Data —
-        it is never shown as 0%.
+        No composite score is calculated: each dimension reports its own numerator and denominator or
+        event basis, and the worst measured dimension sets the overall status. Hours are compared with
+        the immediately prior equal-length window ({prior.from} → {prior.to}), attributed to the
+        canonical BCBA owner at each date of service. Supervision uses 97155 ÷ 97153 against the{" "}
+        {SUPERVISION_BENCHMARK_PCT}% {SUPERVISION_BENCHMARK_LABEL}. Documentation timeliness is a{" "}
+        {DOCUMENTATION_PROXY_LABEL} — date of service to billing creation, late beyond{" "}
+        {DOCUMENTATION_LATE_DAYS} calendar days — and is not a formal Commit to Submit finding.
+        Fewer than three measurable dimensions reads Insufficient Data.
       </ReportProvenance>
 
       <Tabs value={tab} onValueChange={setTabParam}>
         <TabsList>
-          <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
-          <TabsTrigger value="incentives">Incentive eligibility</TabsTrigger>
+          <TabsTrigger value="status">Status</TabsTrigger>
+          <TabsTrigger value="incentives">Incentive progress</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -492,65 +704,48 @@ export default function BcbaPerformancePage() {
         onSelect={(id) => {
           const rows =
             id === "at_risk"
-              ? analysis.rows.filter((r) => r.status === "at_risk")
+              ? analysis.atRiskQueue
               : id === "needs_attention"
-                ? analysis.rows.filter((r) => r.status === "needs_attention")
-                : id === "no_target"
-                  ? analysis.rows.filter((r) => r.targetHours == null)
+                ? analysis.attentionQueue
+                : id === "insufficient"
+                  ? analysis.rows.filter((r) => r.status === "insufficient_data")
                   : analysis.rows;
           setDrilldown({
             title: "BCBA performance",
-            subtitle: `${rows.length.toLocaleString("en-US")} BCBA(s)`,
+            subtitle: `${rows.length.toLocaleString("en-US")} BCBA(s) · reasons are shown per dimension in each row`,
             rows: projectRows(rows),
-            columns: SCORECARD_COLUMNS,
-            exportName: "bcba-performance",
+            columns: STATUS_COLUMNS,
+            exportName: "bcba-performance-status",
           });
         }}
       />
 
-      {tab === "scorecard" ? (
+      {tab === "status" ? (
         <>
           <PrimaryChart
-            title="Billable hours by BCBA"
-            subtitle="Hours attributed through the same ownership logic as BCBA Productivity."
+            title="Owned hours by BCBA · current vs. prior period"
+            subtitle="Hours only, attributed through the canonical ownership adapter at each date of service."
             type="bar"
-            data={analysis.rows.slice(0, 15).map((r) => ({ label: r.bcba, value: r.billableHours }))}
-            valueLabel="Hours"
+            data={analysis.rows
+              .slice(0, 15)
+              .map((r) => ({ label: r.bcba, value: r.currentHours, secondary: r.priorHours }))}
+            valueLabel="Current hours"
+            secondaryLabel="Prior period hours"
           />
           <PrimaryTable
-            title="BCBA scorecard"
-            subtitle="Click a BCBA to see every dimension and what drove the status."
+            title="BCBA status table"
+            subtitle="Sorted worst status first. Click a BCBA for every dimension, its basis, and its reason."
             columns={columns}
             rows={analysis.rows}
             rowKey={(r) => r.bcba}
-            onRowClick={(r) =>
-              setDrilldown({
-                title: `${r.bcba} — performance dimensions`,
-                subtitle: `Overall: ${PERFORMANCE_STATUS_LABELS[r.status]} · driven by ${r.drivers.join(", ")}`,
-                rows: r.dimensions.map((d) => ({
-                  dimension: d.label,
-                  status: PERFORMANCE_STATUS_LABELS[d.status],
-                  value: d.value ?? "Not computable",
-                  target: d.target ?? "—",
-                  detail: d.detail,
-                })),
-                columns: [
-                  { key: "dimension", label: "Dimension" },
-                  { key: "status", label: "Status" },
-                  { key: "value", label: "Value" },
-                  { key: "target", label: "Target" },
-                  { key: "detail", label: "What This Means" },
-                ],
-                exportName: "bcba-performance-dimensions",
-              })
-            }
+            onRowClick={openDimensions}
             maxRows={200}
           />
         </>
       ) : (
         <PrimaryTable
-          title="Incentive eligibility"
-          subtitle="Separate from performance status. A missing target blocks eligibility instead of assuming one."
+          title="Incentive progress"
+          subtitle="Recorded target, actual, and forecast only. Eligibility is not decided here."
           columns={incentiveColumns}
           rows={analysis.incentives}
           rowKey={(r) => r.bcba}
