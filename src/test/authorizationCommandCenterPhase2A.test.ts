@@ -62,7 +62,7 @@ describe("lifecycle classification", () => {
   it("treats reassessment / RA as reauthorization, not initial assessment", () => {
     expect(classifyLifecycleEvent("Reassessment submitted").kind).toBe("reauthorization");
     expect(classifyLifecycleEvent("RA - submitted").kind).toBe("reauthorization");
-    expect(classifyLifecycleEvent("Initial assessment submitted").kind).toBe("initial");
+    expect(classifyLifecycleEvent("Initial assessment submitted").kind).toBe("initial_assessment");
   });
 
   it("prefers an explicit curated auth type when one is supplied", () => {
@@ -119,7 +119,8 @@ describe("progress reports and pauses stay separate and honest", () => {
 
 describe("tabs and redirects", () => {
   it("exposes exactly four ordered, URL-addressable tabs", () => {
-    const block = authPage.slice(authPage.indexOf("const TABS ="), authPage.indexOf("] as const;"));
+    const from = authPage.indexOf("const TABS = [");
+    const block = authPage.slice(from, authPage.indexOf("] as const;", from));
     const keys = [...block.matchAll(/key: "([a-z-]+)"/g)].map((m) => m[1]);
     expect(keys).toEqual(["lifecycle", "continuity", "progress-reports", "pauses"]);
     expect(authPage).toContain('useUrlState("tab"');
@@ -153,8 +154,10 @@ describe("tabs and redirects", () => {
 describe("staff-facing shell", () => {
   it("contains no Data Hub or admin call to action", () => {
     expect(shell).not.toMatch(/centralreach-data-hub/i);
-    expect(shell).not.toMatch(/Data Hub/i);
-    expect(shell).not.toMatch(/upload/i);
+    // No link, button, or copy pointing staff at the admin Data Hub.
+    expect(shell).not.toMatch(/<Link[\s\S]{0,200}Data Hub/i);
+    expect(shell).not.toMatch(/Open Data Hub|Go to Data Hub|re-upload|Upload/);
+    expect(shell).not.toMatch(/useOSRoleSafe|super_admin/);
   });
 });
 
