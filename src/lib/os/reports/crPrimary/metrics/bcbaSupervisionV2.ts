@@ -19,6 +19,7 @@
  * one BCBA's 97155 hours are never distributed across their RBTs.
  */
 import { CODE_DIRECT, CODE_SUPERVISION, hoursOf, normalizeCode } from "./codes";
+import { buildClientIdentityResolver, type ClientIdentityResolver } from "./clientIdentity";
 
 export const SUPERVISION_BENCHMARK_PCT = 5;
 export const SUPERVISION_BENCHMARK_LABEL = "Blossom operational benchmark";
@@ -57,6 +58,8 @@ export interface SupervisionSessionInput {
   clientName: string | null | undefined;
   clientCrId?: string | null;
   providerName: string | null | undefined;
+  /** Rendering provider CR id, when the source records one. */
+  providerCrId?: string | null;
   state?: string | null;
   payor?: string | null;
   /**
@@ -64,6 +67,8 @@ export interface SupervisionSessionInput {
    * one. Without it, a 97155 row can never be attributed to an RBT.
    */
   supervisedProviderName?: string | null;
+  /** CR id of the explicitly linked supervised provider, when recorded. */
+  supervisedProviderCrId?: string | null;
 }
 
 export interface SupervisionGroupRow {
@@ -145,6 +150,7 @@ function buildView(
   grouping: SupervisionGrouping,
   resolveOwner: (s: SupervisionSessionInput) => string | null,
   view: SupervisionView,
+  identity: { client: ClientIdentityResolver; provider: ClientIdentityResolver },
 ): SupervisionViewMetrics {
   const acc = new Map<string, Acc>();
 
@@ -162,16 +168,30 @@ function buildView(
     // source explicitly links it. An unlinked supervision row is discarded
     // *before* any accumulator exists, so it can never create a pseudo row for
     // the supervising BCBA inside the RBT table.
+    /**
+     * Identity is resolved CR-id first over the COMPLETE past+projected input,
+     * so two distinct CR ids that share a name never merge and a unique id-less
+     * alias joins deterministically regardless of row order.
+     */
     let key: string;
-    if (grouping === "bcba") key = bcba;
-    else if (grouping === "client") key = client;
-    else if (code === CODE_DIRECT) key = provider || "Unknown provider";
-    else if (supervisedProvider) key = supervisedProvider;
-    else return; // unlinked 97155 in the RBT view — never fabricate the link
+    let label: string;
+    if (grouping === "bcba") {
+      key = bcba;
+      label = bcba;
+    } else if (grouping === "client") {
+      key = identity.client.keyFor(s.clientCrId, client);
+      label = client;
+    } else if (code === CODE_DIRECT) {
+      label = provider || "Unknown provider";
+      key = identity.provider.keyFor(s.providerCrId, label);
+    } else if (supervisedProvider) {
+      label = supervisedProvider;
+      key = identity.provider.keyFor(s.supervisedProviderCrId, label);
+    } else return; // unlinked 97155 in the RBT view — never fabricate the link
 
     if (!acc.has(key)) {
       acc.set(key, {
-        label: key,
+        label,
         bcba,
         completedDirect: 0,
         completedSupervision: 0,
@@ -187,8 +207,8 @@ function buildView(
     if (s.state) a.states.add(String(s.state));
 
     if (code === CODE_DIRECT) {
-      a.clients.add(client);
-      if (provider) a.rbts.add(provider);
+      a.clients.add(identity.client.keyFor(s.clientCrId, client));
+      if (provider) a.rbts.add(identity.provider.keyFor(s.providerCrId, provider));
       if (bucket === "completed") a.completedDirect += hours;
       else a.scheduledDirect += hours;
       return;
@@ -196,7 +216,7 @@ function buildView(
 
     // Supervision row — explicitly linked whenever it reaches this point.
     if (grouping === "rbt") a.supervisionLinkable = true;
-    a.clients.add(client);
+    a.clients.add(identity.client.keyFor(s.clientCrId, client));
     if (bucket === "completed") a.completedSupervision += hours;
     else a.scheduledSupervision += hours;
   };
@@ -301,8 +321,23 @@ export function computeSupervisionAnalysis({
   grouping = "bcba",
   resolveOwner,
 }: SupervisionAnalysisInput): SupervisionAnalysis {
-  const pastView = buildView(past, projected, grouping, resolveOwner, "past");
-  const projectedView = buildView(past, projected, grouping, resolveOwner, "projected");
+  const identity = {
+    client: buildClientIdentityResolver(
+      past.map((s) => ({ client: s.clientName, clientCrId: s.clientCrId })),
+      projected.map((s) => ({ client: s.clientName, clientCrId: s.clientCrId })),
+    ),
+    provider: buildClientIdentityResolver(
+      past.map((s) => ({ client: s.providerName, clientCrId: s.providerCrId })),
+      projected.map((s) => ({ client: s.providerName, clientCrId: s.providerCrId })),
+      past.map((s) => ({ client: s.supervisedProviderName, clientCrId: s.supervisedProviderCrId })),
+      projected.map((s) => ({
+        client: s.supervisedProviderName,
+        clientCrId: s.supervisedProviderCrId,
+      })),
+    ),
+  };
+  const pastView = buildView(past, projected, grouping, resolveOwner, "past", identity);
+  const projectedView = buildView(past, projected, grouping, resolveOwner, "projected", identity);
   const delta =
     pastView.ratioPct != null && projectedView.ratioPct != null
       ? round1(projectedView.ratioPct - pastView.ratioPct)
