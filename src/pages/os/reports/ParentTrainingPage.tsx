@@ -202,20 +202,16 @@ export default function ParentTrainingPage() {
    * no provider, so keeping all of them would leak unfiltered clients into a
    * provider-scoped view.
    */
-  const provenClientKeys = useMemo(() => {
-    const keys = new Set<string>();
-    const add = (crId: unknown, clientName: unknown) => {
-      const id = String(crId ?? "").trim();
-      if (id) keys.add(`cr:${id}`);
-      const name = String(clientName ?? "").trim().toLowerCase();
-      if (name) keys.add(`nm:${name}`);
-    };
-    // CR client id first, from BOTH sources: a schedule-only client keeps its
-    // id-based proof instead of falling back to name-only matching.
-    for (const r of billing) add(r.client_cr_id, r.client_name);
-    for (const r of schedule) add(r.client_cr_id, r.client_name);
-    return keys;
-  }, [billing, schedule]);
+  const provenClients = useMemo(
+    () =>
+      buildProvenClientProof([
+        // CR client id first, from BOTH sources: a schedule-only client keeps
+        // its id-based proof instead of falling back to name-only matching.
+        ...billing.map((r) => ({ clientCrId: r.client_cr_id, clientName: r.client_name })),
+        ...schedule.map((r) => ({ clientCrId: r.client_cr_id, clientName: r.client_name })),
+      ]),
+    [billing, schedule],
+  );
 
   const providerFiltered = filters.provider.length > 0;
 
@@ -225,12 +221,11 @@ export default function ParentTrainingPage() {
         if (filters.state.length && !filters.state.includes(String(a.state ?? ""))) return false;
         if (filters.payor.length && !filters.payor.includes(String(a.payor ?? ""))) return false;
         if (filters.client.length && !filters.client.includes(String(a.client_name ?? ""))) return false;
-        if (providerFiltered) {
-          const id = String(a.client_cr_id ?? "").trim();
-          const name = String(a.client_name ?? "").trim().toLowerCase();
-          if (!(id && provenClientKeys.has(`cr:${id}`)) && !(name && provenClientKeys.has(`nm:${name}`)))
-            return false;
-        }
+        if (
+          providerFiltered &&
+          !provenClients.passes({ clientCrId: a.client_cr_id, clientName: a.client_name })
+        )
+          return false;
         return true;
       }),
     [
@@ -239,7 +234,7 @@ export default function ParentTrainingPage() {
       filters.payor,
       filters.client,
       providerFiltered,
-      provenClientKeys,
+      provenClients,
     ],
   );
 
@@ -395,7 +390,7 @@ export default function ParentTrainingPage() {
   const noUpcoming = clientRows.filter((r) => r.noUpcoming);
   const belowTarget = clientRows.filter((r) => r.belowTarget);
   const needsReschedule = clientRows.filter((r) => r.needsReschedule);
-  const dataGaps = clientRows.filter((r) => r.ownershipGap);
+  const dataGaps = clientRows.filter((r) => r.ownershipGap || r.targetConflict);
 
   const kpis = useMemo<KpiDefinition[]>(
     () => [
