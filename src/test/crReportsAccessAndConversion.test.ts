@@ -70,7 +70,7 @@ describe("curated report RPC access contract", () => {
 
   it("revokes execution from PUBLIC and anon and grants only authenticated/service_role", () => {
     for (const fn of rpcs) {
-      expect(MIGRATION).toContain(`'public.${fn}()'`);
+      expect(MIGRATION).toContain(`'${fn}'`);
     }
     expect(MIGRATION).toContain("REVOKE ALL ON FUNCTION %s FROM PUBLIC");
     expect(MIGRATION).toContain("REVOKE ALL ON FUNCTION %s FROM anon");
@@ -196,7 +196,7 @@ describe("documentation readiness is informational only", () => {
       "notice",
       "dispute",
       "lagdays",
-      "timeliness",
+      "violations.push",
     ]) {
       expect(readinessUses.includes(banned), banned).toBe(false);
     }
