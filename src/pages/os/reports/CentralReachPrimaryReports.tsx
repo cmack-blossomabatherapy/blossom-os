@@ -85,12 +85,19 @@ export function renderPrimaryCrReport(
       // BCBA V3 ownership inference and its historical-assignment logic are
       // owned entirely by this page — rendered as-is, never re-implemented.
       return <BcbaProductivityReportV3 />;
+    case "bcba-performance":
+      // Phase 2B1 rebuild: five-dimension scorecard with a separate incentive
+      // panel, attributed through the canonical V3 ownership adapter.
+      return <BcbaPerformancePage />;
+    case "bcba-supervision":
+      // Phase 2B1 rebuild: 97155 ÷ 97153 with Past and Projected views.
+      return <BcbaSupervisionPage />;
+    case "parent-training":
+      // Phase 2B1 rebuild: completed / upcoming / cancelled 97156 plus queues.
+      return <ParentTrainingPage />;
     case "cancellation-command-center":
     case "authorization-analysis":
     case "authorization-utilization-hour-based":
-    case "bcba-performance":
-    case "bcba-supervision":
-    case "parent-training":
     case "progress-reports":
       // Shared operator dashboard: freshness, filters, KPIs, Recharts,
       // grouped table, source-row drilldown, and CSV export.
