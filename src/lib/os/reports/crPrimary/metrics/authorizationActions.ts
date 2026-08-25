@@ -17,6 +17,7 @@ import type { LifecycleEventRow } from "./authorizationLifecycle";
 import { classifyLifecycleEvent, classifyLifecycleKind } from "./authorizationLifecycle";
 import { cleanReasonText } from "../scheduleTruth";
 import { strictDay, strictDaysBetween } from "./calendarDate";
+import { inDayRange } from "@/lib/os/reports/dateKey";
 
 export interface AuthorizationActionRow {
   record_id: string;
@@ -108,6 +109,8 @@ export interface ProgressReportEventRow {
 export interface ProgressReportDueRow {
   key: string;
   client: string;
+  /** CentralReach client id when the source row carries one, else "". */
+  clientCrId: string;
   authorizationNumber: string;
   state: string;
   payor: string;
@@ -116,6 +119,12 @@ export interface ProgressReportDueRow {
   /** Authoritative due date, or null when no usable due source exists. */
   dueDate: string | null;
   dueSource: "next_action_due_date" | "appeal_due_date" | "none";
+  /**
+   * A real recorded workflow date on this row (submitted / approved / denied /
+   * received). Used ONLY as an ownership-resolution fallback — it is never a
+   * due date and never creates a deadline.
+   */
+  recordedDate: string | null;
   daysUntilDue: number | null;
   overdue: boolean;
   /** Finished work. Kept visible for history, excluded from the overdue queue. */
@@ -211,9 +220,15 @@ export function computeProgressReportOps(
     const days = dueDate ? daysBetween(todayIso, dueDate) : null;
     const resolved = isActionResolved(a);
     const overdue = !resolved && days != null && days < 0;
+    const recordedDate =
+      validDay(a.submitted_date) ??
+      validDay(a.approved_date) ??
+      validDay(a.denied_date) ??
+      validDay(a.received_date);
     return {
       key: `${a.record_id}-${i}`,
       client: text(a.client_name, "Unknown client"),
+      clientCrId: text(a.client_cr_id, ""),
       authorizationNumber: text(a.authorization_number, "Not documented"),
       state: text(a.state, "Unknown"),
       payor: text(a.payor, "Unknown"),
@@ -221,6 +236,7 @@ export function computeProgressReportOps(
       nextAction: text(a.next_action, "Not documented"),
       dueDate,
       dueSource,
+      recordedDate,
       daysUntilDue: days,
       overdue,
       resolved,
