@@ -37,10 +37,9 @@ export interface PrimaryReportShellProps {
  * and an honest empty state.
  *
  * These pages are staff surfaces for **every** role — including super admin.
- * There is deliberately no Data Hub link, no import/batch diagnostics, and no
- * "required export" copy anywhere in this shell: import plumbing lives only in
- * the admin Data Hub, and nothing here should ever tell a reader to go find or
- * import a file.
+ * There is deliberately no admin link, no import/batch diagnostics, and no
+ * source-file copy anywhere in this shell: import plumbing lives only in the
+ * admin area, and nothing here should ever tell a reader to go find a file.
  */
 export function PrimaryReportShell({
   title,
