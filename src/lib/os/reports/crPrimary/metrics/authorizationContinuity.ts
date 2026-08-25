@@ -347,12 +347,17 @@ export function computeAuthorizationContinuity(
       renewal,
       note:
         continuity === "unknown_dates"
-          ? "No end date on the CentralReach snapshot — confirm coverage in CentralReach."
+          ? row.is_active === false
+            ? "Marked inactive on the CentralReach snapshot — not counted as coverage. Confirm in CentralReach."
+            : "No usable start/end pair on the CentralReach snapshot — confirm coverage in CentralReach."
           : continuity === "expired"
             ? `Coverage ended ${end}. Confirm whether a renewal was submitted.`
-            : continuity === "expiring"
-              ? `Coverage ends ${end}${daysToExpiry != null ? ` (${daysToExpiry} days)` : ""}.`
-              : "Coverage active on the latest snapshot.",
+            : continuity === "not_started"
+              ? `Coverage has not started yet${start ? ` (starts ${start})` : ""}.`
+              : continuity === "expiring"
+                ? `Coverage ends ${end}${daysToExpiry != null ? ` (${daysToExpiry} days)` : ""}.`
+                : "Coverage active on the latest snapshot.",
+
     });
   });
 
