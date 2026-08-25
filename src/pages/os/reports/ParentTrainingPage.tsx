@@ -116,7 +116,6 @@ export default function ParentTrainingPage() {
     <PrimaryReportShell
       title="Parent Training"
       subtitle="97156 parent-training delivery and coverage from CentralReach, with the clients who have active services but no parent training on record."
-      requiredExports={["Billing / session export"]}
       freshness={data.freshness}
       loading={data.loading}
       empty={data.empty}

@@ -428,7 +428,6 @@ export default function AuthorizationCommandCenterPage() {
     <PrimaryReportShell
       title="Authorization Command Center"
       subtitle="Authorization lifecycle, coverage continuity, and the clients whose renewals need confirmation — read live from normalized CentralReach authorization data."
-      requiredExports={["Authorizations export", "Authorization events (optional)"]}
       freshness={data.freshness}
       loading={data.loading}
       empty={data.empty}

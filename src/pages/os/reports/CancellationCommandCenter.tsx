@@ -555,7 +555,6 @@ export default function CancellationCommandCenter() {
     <PrimaryReportShell
       title="Cancellation Command Center"
       subtitle="Cancelled sessions from CentralReach scheduling — rate, lost hours, leading reasons, and the clients who need a follow-up call."
-      requiredExports={["Schedule / Appointments export"]}
       freshness={data.freshness}
       loading={data.loading}
       empty={data.empty}

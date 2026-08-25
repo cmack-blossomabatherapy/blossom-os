@@ -474,7 +474,6 @@ export default function AuthorizationUtilizationPage() {
     <PrimaryReportShell
       title="Authorization Utilization — Hour Based"
       subtitle="Authorized versus used hours per authorization, prorated to the selected range, with CentralReach hours reconciled against hours recomputed from billing."
-      requiredExports={["Authorizations export", "Billing / sessions export"]}
       freshness={data.freshness}
       loading={data.loading}
       empty={data.empty}
