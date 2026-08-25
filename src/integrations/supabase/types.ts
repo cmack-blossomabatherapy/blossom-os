@@ -34916,7 +34916,15 @@ export type Database = {
         Args: { _subject_employee_id: string; _user_id?: string }
         Returns: boolean
       }
+      c2s_config_allows_service_date: {
+        Args: { _config_id: string; _service_date: string }
+        Returns: boolean
+      }
       c2s_config_is_active: { Args: { _config_id: string }; Returns: boolean }
+      c2s_config_window_contains: {
+        Args: { _config_id: string; _on: string }
+        Returns: boolean
+      }
       c2s_has_approved_exception: {
         Args: {
           _service_date: string
