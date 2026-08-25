@@ -349,6 +349,8 @@ export interface ChartDatum {
   label: string;
   value: number;
   secondary?: number;
+  /** Third same-unit count series, used by count-only comparison charts. */
+  tertiary?: number;
 }
 
 /** A drilldown request produced by clicking a KPI, chart segment, or row. */

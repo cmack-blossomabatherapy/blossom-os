@@ -57,7 +57,7 @@ describe("Business Development — Completion Pass 2", () => {
     const reports = visibleReportsForRole("business_development");
     const ids = reports.map((r) => r.id);
     expect(ids).toContain("bcba-productivity-report-v3");
-    expect(ids).toHaveLength(9);
+    expect(ids).toHaveLength(8);
     for (const id of ids) {
       expect(id.startsWith("hr-")).toBe(false);
       expect(id.startsWith("credentialing-")).toBe(false);

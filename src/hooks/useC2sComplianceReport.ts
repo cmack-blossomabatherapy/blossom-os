@@ -19,12 +19,15 @@ import {
   fetchC2sExceptions,
   fetchC2sNotices,
   fetchC2sProgramReviews,
+  fetchC2sGovernanceCounts,
   fetchC2sProgramStatus,
   fetchC2sProxyRows,
   fetchC2sTrackerRecords,
   fetchIsC2sHrAuthority,
   fetchViewerEmployeeId,
   isValidDateWindow,
+  C2S_EMPTY_GOVERNANCE_COUNTS,
+  type C2sGovernanceCounts,
   type C2sDisputeRow,
   type C2sExceptionRow,
   type C2sNoticeRecord,
@@ -58,6 +61,11 @@ export interface C2sReportData {
   employeeNames: Record<string, string>;
   viewerEmployeeId: string | null;
   isHrAuthority: boolean;
+  /**
+   * Aggregate governance counts from the staff-safe RPC. These are the ONLY
+   * source for active formal records — never inferred from proxy rows.
+   */
+  governanceCounts: C2sGovernanceCounts;
   freshness: FreshnessInfo;
   /** Proxy freshness is unknown or materially old. */
   stale: boolean;
@@ -118,6 +126,9 @@ export function useC2sComplianceReport(from: string, to: string): C2sReportData 
   const [employeeNames, setEmployeeNames] = useState<Record<string, string>>({});
   const [viewerEmployeeId, setViewerEmployeeId] = useState<string | null>(null);
   const [isHrAuthority, setIsHrAuthority] = useState(false);
+  const [governanceCounts, setGovernanceCounts] = useState<C2sGovernanceCounts>(
+    C2S_EMPTY_GOVERNANCE_COUNTS,
+  );
 
   const invalidWindow = !isValidDateWindow(from, to);
 
@@ -136,6 +147,7 @@ export function useC2sComplianceReport(from: string, to: string): C2sReportData 
         reviewResult,
         viewerId,
         hrAuthority,
+        counts,
       ] = await Promise.all([
         fetchC2sProgramStatus(),
         fetchC2sProxyRows(from, to),
@@ -147,6 +159,7 @@ export function useC2sComplianceReport(from: string, to: string): C2sReportData 
         fetchC2sProgramReviews(),
         fetchViewerEmployeeId(),
         fetchIsC2sHrAuthority(),
+        fetchC2sGovernanceCounts(),
       ]);
       if (cancelled) return;
 
@@ -160,6 +173,7 @@ export function useC2sComplianceReport(from: string, to: string): C2sReportData 
       setReviews(reviewResult.rows);
       setViewerEmployeeId(viewerId);
       setIsHrAuthority(hrAuthority);
+      setGovernanceCounts(counts);
       // Only global-scope failures are page-level errors. An RLS-limited table
       // returning nothing is a normal outcome and must not blank the report.
       setErrorMessage(
@@ -219,6 +233,7 @@ export function useC2sComplianceReport(from: string, to: string): C2sReportData 
     employeeNames,
     viewerEmployeeId,
     isHrAuthority,
+    governanceCounts,
     freshness,
     stale,
     loading,

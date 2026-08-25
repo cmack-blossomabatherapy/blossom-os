@@ -104,34 +104,32 @@ export const REPORTS: ReportDef[] = [
   }),
 
   /* ============================================================
-   * Reports Consolidation — Approved Six
+   * Reports Consolidation — Canonical Eight
    * ----------------------------------------------------------------
-   * The Reports page surfaces exactly six report cards for every
-   * Blossom OS user. These entries own the canonical id/title/route
-   * for each; visibleReportsForRole() below returns only these six.
+   * The Reports page surfaces exactly eight primary report cards for
+   * every Blossom OS user (see PRIMARY_REPORT_IDS below). These
+   * entries own the canonical id/title/route for each.
    *
-   * Each report opens a real, working page. Backing data comes from
-   * the Admin / Data Upload flows (BCBA Productivity V3 upload,
-   * Cancellation Command Center upload, CR authorization upload,
-   * CR billing upload for supervision & parent training). Where a
-   * shared page (QA Supervision & Parent Training, QA Auth
-   * Utilization) supports two of the six reports, we pass a ?view
-   * query string so the page can focus the correct lens.
+   * Card copy is staff-facing only: it describes what the report
+   * answers, never where the data came from, never any operational
+   * plumbing, and never a dollar/revenue claim the report does not
+   * compute. Each report shows its own data freshness inside the
+   * report itself.
    * ============================================================ */
   {
     id: "bcba-productivity-report-v3",
     title: "BCBA Productivity Report V3",
     description:
-      "Single billing upload → BCBA productivity by DOS with permanent Assignment History as source of truth. CR export required: billing/service export with service date, client, provider, procedure code, worked hours, location/state, and BCBA assignment/history source.",
+      "BCBA productivity by date of service, with owned hours attributed through permanent assignment history so ownership follows the person who actually held the case. Data freshness is shown inside the report.",
     category: "clinical",
     visibleTo: "all",
     type: "dashboard",
     owner: "Operations",
-    lastUpdated: "Live from Data Hub",
+    lastUpdated: "Live",
     popularity: 99,
     featured: true,
     aiInsight:
-      "Historical ownership. No auth uploads. No seeded data. Unassigned rows are visible, not silently dropped.",
+      "Historical ownership is honored, and rows with no owner stay visible rather than being silently dropped.",
     kpiPreviews: [
       { label: "Total Hours", value: "Auto", trend: "up" },
       { label: "97153 Hours", value: "Auto", trend: "up" },
@@ -145,35 +143,35 @@ export const REPORTS: ReportDef[] = [
     id: "cancellation-command-center",
     title: "Cancellation Command Center",
     description:
-      "Cancelled and no-show sessions, lost hours, leading cancellation reasons, and the clients and providers that need follow-up. Reads CentralReach scheduling data from the Data Hub automatically.",
+      "Cancelled and no-show sessions, lost hours, leading cancellation reasons, and the clients and providers that need follow-up. Data freshness is shown inside the report.",
     category: "scheduling",
     visibleTo: "all",
     type: "dashboard",
     owner: "Operations",
-    lastUpdated: "Live from Data Hub",
+    lastUpdated: "Live",
     popularity: 98,
     featured: true,
     aiInsight:
-      "Single source of truth for cancellation reporting: rate, lost hours, leading reasons, and repeat-cancellation follow-ups.",
+      "One place for cancellation rate, lost hours, leading reasons, and repeat-cancellation follow-ups.",
     kpiPreviews: [
       { label: "Cancel %", value: "Auto", trend: "down" },
       { label: "Lost hours", value: "Auto", trend: "down" },
       { label: "Undocumented", value: "Auto", trend: "down" },
     ],
     sparkline: [60, 56, 58, 50, 48, 44, 42, 38, 36],
-    tags: ["Cancellation", "Lost Revenue", "Scheduling", "Featured"],
+    tags: ["Cancellation", "Scheduling", "Featured"],
     drilldownPath: "/reports/cancellation-command-center",
   },
   {
     id: "authorization-analysis",
     title: "Authorization Command Center",
     description:
-      "Authorization lifecycle, coverage continuity, and renewal follow-ups: what was submitted, approved, or denied, who is expiring or expired, and which clients have no active coverage today. Reads normalized CentralReach authorization data automatically.",
+      "Authorization lifecycle, coverage continuity, and renewal follow-ups: what was submitted, approved, or denied, who is expiring or expired, and which clients have no active coverage today. Data freshness is shown inside the report.",
     category: "authorizations",
     visibleTo: "all",
     type: "dashboard",
     owner: "Auth Team",
-    lastUpdated: "Live from Data Hub",
+    lastUpdated: "Live",
     popularity: 96,
     featured: true,
     aiInsight:
@@ -191,16 +189,16 @@ export const REPORTS: ReportDef[] = [
     id: "authorization-utilization-hour-based",
     title: "Authorization Utilization — Hour Based",
     description:
-      "Hour-based utilization versus authorized hours per authorization, prorated to the selected date range, with CentralReach used hours reconciled against hours recomputed from billing so any mismatch is visible.",
+      "Hour-based utilization against authorized hours per authorization, prorated to the selected date range, with used hours reconciled against recomputed hours so any mismatch is visible. Data freshness is shown inside the report.",
     category: "authorizations",
     visibleTo: "all",
     type: "dashboard",
     owner: "Auth Team",
-    lastUpdated: "Live from Data Hub",
+    lastUpdated: "Live",
     popularity: 95,
     featured: true,
     aiInsight:
-      "Highlights over- and under-utilized authorizations, and where CentralReach hours disagree with billing.",
+      "Highlights over- and under-utilized authorizations, and where recorded hours disagree with billed hours.",
     kpiPreviews: [
       { label: "Avg Util %", value: "Auto", trend: "up" },
       { label: "Over-util", value: "Auto", trend: "down" },
@@ -214,7 +212,7 @@ export const REPORTS: ReportDef[] = [
     id: "parent-training",
     title: "Parent Training",
     description:
-      "Live 97156 parent training cadence: completed, upcoming and cancelled sessions per client, measured against each client's documented authorized parent training target.",
+      "Live 97156 parent training cadence: completed, upcoming and cancelled sessions per client, measured against each client's documented authorized parent training target. Data freshness is shown inside the report.",
     category: "qa",
     visibleTo: "all",
     type: "dashboard",
@@ -237,7 +235,7 @@ export const REPORTS: ReportDef[] = [
     id: "bcba-supervision",
     title: "BCBA Supervision",
     description:
-      "97155 supervision hours as a share of 97153 direct hours by BCBA, client and provider, with past and projected views against Blossom's 5% operational benchmark.",
+      "97155 supervision hours as a share of 97153 direct hours by BCBA, client and provider, with past and projected views against Blossom's 5% operational benchmark. Data freshness is shown inside the report.",
     category: "qa",
     visibleTo: "all",
     type: "dashboard",
@@ -260,11 +258,11 @@ export const REPORTS: ReportDef[] = [
     id: "commit-to-submit-compliance",
     title: "Commit to Submit Compliance",
     description:
-      "Documentation timeliness from date of service to documentation, with coaching, review, notice, dispute and exception history. Seven days or fewer counts as on time; lag alone is never a formal violation.",
+      "Documentation timeliness from date of service to documentation, with coaching, review, notice, dispute and exception history. Seven days or fewer counts as on time; lag alone is never a formal violation. Data freshness is shown inside the report.",
     category: "qa",
     visibleTo: "all",
     type: "dashboard",
-    owner: "QA / Compliance",
+    owner: "HR / Operations",
     lastUpdated: "Live",
     popularity: 93,
     featured: true,
@@ -283,9 +281,10 @@ export const REPORTS: ReportDef[] = [
 
 
 
+
   // Leadership
   { id: "exec-overview", title: "Executive Overview", description: "Company-wide KPIs, lead flow, and operating posture.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership"], type: "dashboard", owner: "Leadership", lastUpdated: "2h ago", popularity: 97, featured: true, aiInsight: "Net growth up +11 - fastest weekly gain since Feb.", kpiPreviews: [{ label: "Active Clients", value: "142", delta: "+8", trend: "up" }, { label: "Pipeline", value: "$182k", delta: "+$24k", trend: "up" }, { label: "Conversion", value: "34%", delta: "+4pt", trend: "up" }], sparkline: [22, 28, 26, 35, 41, 48, 52, 60, 58, 67, 72, 78], tags: ["KPI", "Growth"], detailView: "executive" },
-  { id: "bcba-performance", title: "BCBA Performance", description: "Per-BCBA operational status across owned productivity hours, supervision, parent training cadence, authorization and progress-report readiness, and documentation timeliness — with prior-period comparison.", category: "leadership", visibleTo: "all", type: "dashboard", owner: "Leadership", lastUpdated: "Live", popularity: 99, featured: true, aiInsight: "See which dimension is setting each BCBA's status and what to work next.", kpiPreviews: [{ label: "Owned hours", value: "Live", trend: "up" }, { label: "Needs attention", value: "Live", trend: "down" }], sparkline: [40, 48, 52, 58, 60, 65, 68, 72, 78, 82], tags: ["BCBA", "Productivity", "Status"], drilldownPath: "/reports/bcba-performance" },
+  { id: "bcba-performance", title: "BCBA Performance", description: "Per-BCBA operational status across owned productivity hours, supervision, parent training cadence, authorization and progress-report readiness, and documentation timeliness — with prior-period comparison. Data freshness is shown inside the report.", category: "leadership", visibleTo: "all", type: "dashboard", owner: "Leadership", lastUpdated: "Live", popularity: 99, featured: true, aiInsight: "See which dimension is setting each BCBA's status and what to work next.", kpiPreviews: [{ label: "Owned hours", value: "Live", trend: "up" }, { label: "Needs attention", value: "Live", trend: "down" }], sparkline: [40, 48, 52, 58, 60, 65, 68, 72, 78, 82], tags: ["BCBA", "Productivity", "Status"], drilldownPath: "/reports/bcba-performance" },
   { id: "growth-trends", title: "Growth Trends", description: "Lead, client, and active growth across the last 6 months.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership"], type: "trend", owner: "Leadership", lastUpdated: "Yesterday", popularity: 71, aiInsight: "Q2 active-client growth pacing 18% above plan.", sparkline: [40, 44, 48, 55, 62, 68, 72, 78, 82, 86], tags: ["Trends"], detailView: "growth" },
 
   // Operations
@@ -390,7 +389,7 @@ export const REPORTS: ReportDef[] = [
 /**
  * Canonical Reports page catalog — identical for EVERY OS role.
  *
- * /reports surfaces exactly 18 cards: these 9 primary/shared reports plus the
+ * /reports surfaces exactly 17 cards: these 8 primary/shared reports plus the
  * 9 department dashboards. Legacy REPORTS entries stay in the array for
  * cross-linking/compatibility but are never surfaced on /reports.
  */
@@ -402,7 +401,6 @@ export const PRIMARY_REPORT_IDS = [
   "parent-training",
   "bcba-supervision",
   "bcba-performance",
-  "progress-reports",
   "commit-to-submit-compliance",
 ] as const;
 
