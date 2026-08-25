@@ -20,7 +20,11 @@
 import { pickNumber, pickText } from "../tolerant";
 import { localIsoDate } from "../reportWindow";
 import { cleanReasonText } from "../scheduleTruth";
-import { endDateOf, startDateOf, daysBetween, type ContinuityAuthRow } from "./authorizationContinuity";
+import {
+  daysBetween,
+  selectCoveragePair,
+  type ContinuityAuthRow,
+} from "./authorizationContinuity";
 import {
   assessUtilizationRisk,
   numOrNull,
@@ -159,7 +163,7 @@ function billingHoursOf(row: ProrationBillingRow): number {
 export function allocateBillingToAuthorizations(
   auths: ContinuityAuthRow[],
   billing: ProrationBillingRow[],
-  window: { from?: string; to?: string } = {},
+  window: { from?: string; to?: string; today?: string } = {},
 ): BillingAllocation {
   const bySlot = new Map<string, WorkedIndexEntry>();
   const slotBasis = new Map<string, AllocationBasis>();
@@ -176,14 +180,22 @@ export function allocateBillingToAuthorizations(
     end: string | null;
   }
 
+  /**
+   * Coverage bounds come from the SAME matched-pair selector the proration and
+   * the display use, with the same inputs, so a date of service can only be
+   * allocated to a window that the denominator actually charges for.
+   */
+  const pairOf = (auth: ContinuityAuthRow) =>
+    selectCoveragePair(auth, { from: window.from, to: window.to, today: window.today });
+
   const slots: Slot[] = auths.map((auth, index) => ({
     key: authorizationSlotKey(auth, index),
     authId: (cleanReasonText(auth.authorization_id) ?? cleanReasonText(auth.authorization_number) ?? "").toLowerCase(),
     crId: (cleanReasonText(auth.client_cr_id) ?? "").toLowerCase(),
     name: normalizeName(auth.client_name),
     codes: authorizationCodeSet(auth),
-    start: startDateOf(auth),
-    end: endDateOf(auth),
+    start: pairOf(auth)?.start ?? null,
+    end: pairOf(auth)?.end ?? null,
   }));
 
   const byAuthId = new Map<string, Slot[]>();
@@ -249,8 +261,10 @@ export function allocateBillingToAuthorizations(
       if (!sameClient) return false;
       if (!codesCompatible(slot.codes, row.procedure_code)) return false;
       if (!date) return false;
-      if (slot.start && date < slot.start) return false;
-      if (slot.end && date > slot.end) return false;
+      // No matched coverage pair means the DOS cannot be proven to be covered.
+      if (!slot.start || !slot.end) return false;
+      if (date < slot.start) return false;
+      if (date > slot.end) return false;
       return true;
     });
 
@@ -453,6 +467,7 @@ export function computeProratedUtilization(
   const allocation = allocateBillingToAuthorizations(auths, billing, {
     from: options.from,
     to: options.to,
+    today,
   });
 
   const rows: ProratedUtilizationRow[] = [];
@@ -492,8 +507,11 @@ export function computeProratedUtilization(
   let prorationApplied = false;
 
   auths.forEach((auth, index) => {
-    const start = startDateOf(auth);
-    const end = endDateOf(auth);
+    // One matched pair per authorization, selected exactly as the allocator
+    // selected it: never an actual start crossed with a follow-up end.
+    const pair = selectCoveragePair(auth, { from: options.from, to: options.to, today });
+    const start = pair?.start ?? null;
+    const end = pair?.end ?? null;
     const window = prorationWindow(start, end, options.from, options.to);
     if (window.factor != null && window.factor < 1) prorationApplied = true;
 

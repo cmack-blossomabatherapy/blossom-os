@@ -237,6 +237,122 @@ export function classifyContinuityRow(
   };
 }
 
+/** Which pair of source columns produced a coverage window. */
+export type CoveragePairKind = "actual" | "base" | "followup";
+
+export interface CoveragePair {
+  kind: CoveragePairKind;
+  start: string;
+  end: string;
+  /** Inclusive day count of the pair itself. Always >= 1. */
+  days: number;
+  /** Inclusive overlap with the selected range, or null when no range is given. */
+  overlapDays: number | null;
+  /** How the pair was chosen. */
+  basis: "range_overlap" | "current" | "latest_end";
+}
+
+const COVERAGE_PAIR_ORDER: CoveragePairKind[] = ["actual", "base", "followup"];
+
+/**
+ * Every *matched* coverage pair on the row, in deterministic column order.
+ *
+ * A pair is only usable when both of its own columns are real calendar dates
+ * and the end is not before the start. Columns are never crossed: an actual
+ * start can only ever pair with an actual end, a base start with a base end,
+ * and a follow-up start with a follow-up end. A future follow-up end therefore
+ * can never lend coverage to a base or actual start.
+ */
+export function coveragePairsOf(
+  row: ContinuityAuthRow,
+): { kind: CoveragePairKind; start: string; end: string; days: number }[] {
+  const raw: { kind: CoveragePairKind; start: string | null; end: string | null }[] = [
+    { kind: "actual", start: validDay(row.actual_start_date), end: validDay(row.actual_end_date) },
+    { kind: "base", start: validDay(row.start_date), end: validDay(row.end_date) },
+    {
+      kind: "followup",
+      start: validDay(row.followup_start_date),
+      end: validDay(row.followup_end_date),
+    },
+  ];
+  const out: { kind: CoveragePairKind; start: string; end: string; days: number }[] = [];
+  for (const kind of COVERAGE_PAIR_ORDER) {
+    const p = raw.find((r) => r.kind === kind)!;
+    if (!p.start || !p.end) continue;
+    // Reversed and impossible pairs are not coverage.
+    const days = (strictDaysBetween(p.start, p.end) ?? -1) + 1;
+    if (days <= 0) continue;
+    out.push({ kind, start: p.start, end: p.end, days });
+  }
+  return out;
+}
+
+/** Inclusive overlap in days between two closed day ranges. */
+function inclusiveOverlapDays(
+  aStart: string,
+  aEnd: string,
+  bStart: string,
+  bEnd: string,
+): number {
+  const start = aStart > bStart ? aStart : bStart;
+  const end = aEnd < bEnd ? aEnd : bEnd;
+  const days = (strictDaysBetween(start, end) ?? -1) + 1;
+  return days > 0 ? days : 0;
+}
+
+/**
+ * The single matched coverage pair this report should use for a row.
+ *
+ * With a selected range, the pair with the greatest real day overlap wins, and
+ * ties break deterministically in column order (actual, then base, then
+ * follow-up). With no selected range — or when nothing overlaps it — the row's
+ * truthful current pair wins, falling back to the latest-ending valid pair.
+ *
+ * Every consumer (active scoping, range filtering, billing allocation,
+ * proration, display, and trends) calls this one selector with the same inputs,
+ * so allocation, denominator, display and trends always reconcile.
+ */
+export function selectCoveragePair(
+  row: ContinuityAuthRow,
+  options: { from?: string | null; to?: string | null; today?: string } = {},
+): CoveragePair | null {
+  const pairs = coveragePairsOf(row);
+  if (pairs.length === 0) return null;
+
+  const from = validDay(options.from);
+  const to = validDay(options.to);
+  if (from || to) {
+    const rangeStart = from ?? "0000-01-01";
+    const rangeEnd = to ?? "9999-12-31";
+    const scored = pairs
+      .map((p) => ({
+        ...p,
+        overlapDays: inclusiveOverlapDays(p.start, p.end, rangeStart, rangeEnd),
+      }))
+      .filter((p) => p.overlapDays > 0);
+    if (scored.length > 0) {
+      // Greatest overlap wins; column order is the deterministic tiebreak.
+      const best = scored.reduce((winner, candidate) =>
+        candidate.overlapDays > winner.overlapDays ? candidate : winner,
+      );
+      return { ...best, basis: "range_overlap" };
+    }
+  }
+
+  const today = options.today ?? localIsoDate();
+  const current = pairs.find((p) => p.end >= today && p.start <= today);
+  const chosen =
+    current ??
+    pairs.reduce((winner, candidate) => (candidate.end > winner.end ? candidate : winner));
+  return {
+    ...chosen,
+    overlapDays:
+      from || to
+        ? inclusiveOverlapDays(chosen.start, chosen.end, from ?? "0000-01-01", to ?? "9999-12-31")
+        : null,
+    basis: current ? "current" : "latest_end",
+  };
+}
 
 export function computeAuthorizationContinuity(
   rows: ContinuityAuthRow[],

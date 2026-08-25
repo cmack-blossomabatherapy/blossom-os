@@ -1,5 +1,5 @@
 /**
- * Phase 2A — Cancellation Command Center calculations.
+ * Phase 2A / 4B2 — Cancellation Command Center calculations.
  *
  * Pure, deterministic, and unit-testable: the page renders whatever this
  * module returns and never recomputes a number of its own.
@@ -9,6 +9,17 @@
  *   rate, so any dollar figure would be invented.
  * - No reason guessing. Undocumented cancellations land in an explicit
  *   "Not documented" bucket that operators can act on.
+ * - No "converted late". The schedule source records *whether* an event was
+ *   converted to a timesheet, never *when*, so conversion timing is reported as
+ *   unavailable instead of being inferred.
+ *
+ * Phase 4B2 truth rules:
+ * - Every nondeleted event in range is the denominator, cancellations included.
+ * - Clients and providers are grouped CR-ID first, deterministically and
+ *   independently of row order, so two different people who share a name are
+ *   never merged and one person is never split across rows.
+ * - Count, hour, and percentage series are returned separately. Nothing mixes
+ *   two units on one axis.
  */
 import { pct, weekStart } from "../format";
 import {
@@ -24,14 +35,24 @@ import {
   type ScheduleTruthRow,
   type TruthCoverage,
 } from "../scheduleTruth";
+import { buildClientIdentityResolver } from "./clientIdentity";
 import { normalizeCancellationReason } from "./cancellation";
 
 export const NOT_DOCUMENTED = "Not documented";
 
+/**
+ * The schedule source has no conversion timestamp, so this report can report
+ * conversion *state* and never conversion *timing*.
+ */
+export const CONVERSION_TIMING_NOTE =
+  "The schedule source records whether an event was converted to a timesheet, but not when, so late conversion cannot be measured here.";
+
 export interface CancellationCenterRow extends ScheduleTruthRow {
   id?: string;
   client_name?: string | null;
+  client_cr_id?: string | null;
   provider_name?: string | null;
+  provider_cr_id?: string | null;
   state?: string | null;
   payor?: string | null;
   location?: string | null;
@@ -53,6 +74,9 @@ export function cancellationReasonBucket(row: CancellationCenterRow): string {
 }
 
 export interface CancellationGroupRow {
+  /** Stable grouping key. For clients/providers this is the resolved identity. */
+  key: string;
+  /** Human-readable label — always a name, never an id. */
   name: string;
   cancellations: number;
   cancelledHours: number;
@@ -66,6 +90,8 @@ export interface CancellationGroupRow {
 export interface CancellationFollowUpRow {
   key: string;
   client: string;
+  /** CR client id when the source carries one, else empty. */
+  clientCrId: string;
   state: string;
   payor: string;
   provider: string;
@@ -95,7 +121,7 @@ export interface CancellationFollowUpEventRow {
   reason: string;
   /** Documented or not — drives the "needs documentation" action. */
   reasonDocumented: boolean;
-  /** Whether CentralReach converted this event to a timesheet. */
+  /** Whether the schedule source converted this event to a timesheet. */
   conversionState: string;
   state: string;
   payor: string;
@@ -103,6 +129,43 @@ export interface CancellationFollowUpEventRow {
   code: string;
   followUpStatus: "Needs documentation" | "Repeat cancellation" | "Logged";
   action: string;
+}
+
+/** Conversion state of the active (nondeleted) events in range. */
+export interface CancellationConversionMetrics {
+  converted: number;
+  unconverted: number;
+  /** Source reported no conversion flag — excluded from the rate. */
+  unknown: number;
+  /** converted ÷ (converted + unconverted). Null when neither is present. */
+  conversionRate: number | null;
+  /** Denominator actually used for the rate — known states only. */
+  knownStates: number;
+  /** Never inferred: this source has no conversion timestamp. */
+  timingNote: string;
+}
+
+/** A count series point. Units are counts only. */
+export interface CountPoint {
+  label: string;
+  value: number;
+}
+
+/** An hours series point. Units are hours only. */
+export interface HoursPoint {
+  label: string;
+  value: number;
+}
+
+/**
+ * A rate series point. `value` is null when the period has no active events to
+ * divide by — the point is reported, never plotted as a zero percent.
+ */
+export interface RatePoint {
+  label: string;
+  value: number | null;
+  cancellations: number;
+  activeScheduleEvents: number;
 }
 
 export interface CancellationCenterMetrics {
@@ -125,8 +188,17 @@ export interface CancellationCenterMetrics {
   documentedPct: number | null;
   topReason: string | null;
   truth: TruthCoverage;
-  weekly: { label: string; value: number; secondary?: number }[];
-  byDayOfWeek: { label: string; value: number; secondary?: number }[];
+  conversion: CancellationConversionMetrics;
+  /** Weekly cancelled-session counts. Counts only. */
+  weeklyCancellations: CountPoint[];
+  /** Weekly cancelled hours. Hours only. */
+  weeklyCancelledHours: HoursPoint[];
+  /** Weekly cancellation rate against that week's active events. Percent only. */
+  weeklyCancellationRate: RatePoint[];
+  /** Weekday cancelled-session counts, Monday first. Counts only. */
+  byDayOfWeek: CountPoint[];
+  /** Weekday cancellation rate, Monday first. Percent only. */
+  byDayOfWeekRate: RatePoint[];
   byReason: CancellationGroupRow[];
   byProvider: CancellationGroupRow[];
   byClient: CancellationGroupRow[];
@@ -145,15 +217,21 @@ export interface CancellationCenterMetrics {
   } | null;
 }
 
-
 interface Bucket {
+  label: string;
   cancellations: number;
   hours: number;
   countable: number;
   clients: Set<string>;
 }
 
-const blank = (): Bucket => ({ cancellations: 0, hours: 0, countable: 0, clients: new Set() });
+const blank = (label: string): Bucket => ({
+  label,
+  cancellations: 0,
+  hours: 0,
+  countable: 0,
+  clients: new Set(),
+});
 
 const text = (v: string | null | undefined, fallback: string) =>
   (String(v ?? "").trim() || fallback);
@@ -167,11 +245,56 @@ export function eventCode(row: CancellationCenterRow): string {
   );
 }
 
+export const UNKNOWN_CLIENT_LABEL = "Unknown client";
+export const UNASSIGNED_PROVIDER_LABEL = "Unassigned provider";
+
+/**
+ * Order-independent CR-ID-first identity for the people on a schedule event.
+ *
+ * Clients and providers are resolved separately over the *complete* row set, so
+ * two distinct CR ids that happen to share a name stay distinct, while a unique
+ * id-less name adopts the one CR id associated with it. Labels stay human
+ * names; the id only ever forms the grouping key.
+ */
+export interface CancellationIdentity {
+  clientKeyOf(row: CancellationCenterRow): string;
+  providerKeyOf(row: CancellationCenterRow): string;
+  clientLabelOf(row: CancellationCenterRow): string;
+  providerLabelOf(row: CancellationCenterRow): string;
+}
+
+export function buildCancellationIdentity(
+  ...rowGroups: (readonly CancellationCenterRow[] | undefined | null)[]
+): CancellationIdentity {
+  const rows = rowGroups.flatMap((g) => (g ? [...g] : []));
+  const clientResolver = buildClientIdentityResolver(
+    rows.map((r) => ({ client_name: r.client_name, client_cr_id: r.client_cr_id })),
+  );
+  // The provider resolver reuses the same pure algorithm on the provider
+  // columns: identical determinism guarantees, different pair of fields.
+  const providerResolver = buildClientIdentityResolver(
+    rows.map((r) => ({ client_name: r.provider_name, client_cr_id: r.provider_cr_id })),
+  );
+  return {
+    clientLabelOf: (row) => text(row.client_name, UNKNOWN_CLIENT_LABEL),
+    providerLabelOf: (row) => text(row.provider_name, UNASSIGNED_PROVIDER_LABEL),
+    clientKeyOf: (row) =>
+      clientResolver.keyFor(row.client_cr_id, text(row.client_name, UNKNOWN_CLIENT_LABEL)),
+    providerKeyOf: (row) =>
+      providerResolver.keyFor(row.provider_cr_id, text(row.provider_name, UNASSIGNED_PROVIDER_LABEL)),
+  };
+}
+
 export interface CancellationCenterOptions {
   /** Rows for the immediately preceding window, for trend comparison. */
   previous?: CancellationCenterRow[];
   /** Minimum cancellations before a client enters the follow-up queue. */
   followUpThreshold?: number;
+  /**
+   * Pre-built identity, when the caller already resolved it across a wider row
+   * set (e.g. the unfiltered snapshot). Omitted, it is built from `rows`.
+   */
+  identity?: CancellationIdentity;
 }
 
 function summarize(rows: CancellationCenterRow[]) {
@@ -189,12 +312,12 @@ export function computeCancellationCenter(
   opts: CancellationCenterOptions = {},
 ): CancellationCenterMetrics {
   const followUpThreshold = opts.followUpThreshold ?? 2;
+  const identity = opts.identity ?? buildCancellationIdentity(rows);
   const deleted = rows.filter(isDeletedEvent);
   // Active schedule events = every nondeleted event. This is the denominator.
   const activeSchedule = rows.filter(isActiveScheduleEvent);
   const cancelled = activeSchedule.filter(isCancelledEventStrict);
   const kept = activeSchedule.filter((r) => !isCancelledEventStrict(r));
-
 
   const dims = {
     reason: new Map<string, Bucket>(),
@@ -204,12 +327,14 @@ export function computeCancellationCenter(
     payor: new Map<string, Bucket>(),
     code: new Map<string, Bucket>(),
   };
-  const weekly = new Map<string, { c: number; h: number }>();
+  const weekly = new Map<string, { c: number; h: number; countable: number }>();
   const daily = new Map<string, { c: number; countable: number }>();
   const clientDetail = new Map<
     string,
     {
+      key: string;
       client: string;
+      clientCrId: string;
       state: string;
       payor: string;
       providers: Map<string, number>;
@@ -223,14 +348,21 @@ export function computeCancellationCenter(
     }
   >();
 
-  const bump = (map: Map<string, Bucket>, key: string, client: string, hours: number, cancelledRow: boolean) => {
-    if (!map.has(key)) map.set(key, blank());
+  const bump = (
+    map: Map<string, Bucket>,
+    key: string,
+    label: string,
+    clientKey: string,
+    hours: number,
+    cancelledRow: boolean,
+  ) => {
+    if (!map.has(key)) map.set(key, blank(label));
     const b = map.get(key)!;
     b.countable += 1;
     if (cancelledRow) {
       b.cancellations += 1;
       b.hours += hours;
-      b.clients.add(client);
+      b.clients.add(clientKey);
     }
   };
 
@@ -238,41 +370,53 @@ export function computeCancellationCenter(
   let keptHours = 0;
   let documented = 0;
   let undocumented = 0;
+  let converted = 0;
+  let unconverted = 0;
+  let conversionUnknown = 0;
   const clientSet = new Set<string>();
   const providerSet = new Set<string>();
 
   for (const row of activeSchedule) {
     const isCancelled = isCancelledEventStrict(row);
     const hours = eventDurationHours(row);
-    const client = text(row.client_name, "Unknown client");
-    const provider = text(row.provider_name, "Unassigned provider");
+    const clientKey = identity.clientKeyOf(row);
+    const client = identity.clientLabelOf(row);
+    const providerKey = identity.providerKeyOf(row);
+    const provider = identity.providerLabelOf(row);
     const state = text(row.state, "Unknown");
     const payor = text(row.payor, "Unknown");
     const code = eventCode(row);
     const reason = isCancelled ? cancellationReasonBucket(row) : "";
 
+    // Conversion is a property of every active event, cancelled or kept. A
+    // missing flag is unknown — it is never counted as "not converted".
+    if (row.converted_to_timesheet == null) conversionUnknown += 1;
+    else if (row.converted_to_timesheet) converted += 1;
+    else unconverted += 1;
+
     if (isCancelled) {
       cancelledHours += hours;
-      clientSet.add(client);
-      providerSet.add(provider);
+      clientSet.add(clientKey);
+      providerSet.add(providerKey);
       if (reason === NOT_DOCUMENTED) undocumented += 1;
       else documented += 1;
-      bump(dims.reason, reason, client, hours, true);
+      bump(dims.reason, reason, reason, clientKey, hours, true);
     } else {
       keptHours += hours;
     }
 
-    bump(dims.provider, provider, client, hours, isCancelled);
-    bump(dims.client, client, client, hours, isCancelled);
-    bump(dims.state, state, client, hours, isCancelled);
-    bump(dims.payor, payor, client, hours, isCancelled);
-    bump(dims.code, code, client, hours, isCancelled);
+    bump(dims.provider, providerKey, provider, clientKey, hours, isCancelled);
+    bump(dims.client, clientKey, client, clientKey, hours, isCancelled);
+    bump(dims.state, state, state, clientKey, hours, isCancelled);
+    bump(dims.payor, payor, payor, clientKey, hours, isCancelled);
+    bump(dims.code, code, code, clientKey, hours, isCancelled);
 
     const week = weekStart(row.event_date);
     if (week) {
-      if (!weekly.has(week)) weekly.set(week, { c: 0, h: 0 });
+      if (!weekly.has(week)) weekly.set(week, { c: 0, h: 0, countable: 0 });
+      const w = weekly.get(week)!;
+      w.countable += 1;
       if (isCancelled) {
-        const w = weekly.get(week)!;
         w.c += 1;
         w.h += hours;
       }
@@ -286,10 +430,11 @@ export function computeCancellationCenter(
       if (isCancelled) d.c += 1;
     }
 
-    const key = client.toLowerCase();
-    if (!clientDetail.has(key)) {
-      clientDetail.set(key, {
+    if (!clientDetail.has(clientKey)) {
+      clientDetail.set(clientKey, {
+        key: clientKey,
         client,
+        clientCrId: text(row.client_cr_id, ""),
         state,
         payor,
         providers: new Map(),
@@ -302,7 +447,8 @@ export function computeCancellationCenter(
         last: null,
       });
     }
-    const detail = clientDetail.get(key)!;
+    const detail = clientDetail.get(clientKey)!;
+    if (!detail.clientCrId) detail.clientCrId = text(row.client_cr_id, "");
     detail.countable += 1;
     if (isCancelled) {
       detail.cancellations += 1;
@@ -320,8 +466,9 @@ export function computeCancellationCenter(
   const toGroups = (map: Map<string, Bucket>): CancellationGroupRow[] =>
     [...map.entries()]
       .filter(([, b]) => b.cancellations > 0)
-      .map(([name, b]) => ({
-        name,
+      .map(([key, b]) => ({
+        key,
+        name: b.label,
         cancellations: b.cancellations,
         cancelledHours: Math.round(b.hours * 10) / 10,
         activeScheduleEvents: b.countable,
@@ -329,7 +476,12 @@ export function computeCancellationCenter(
         clients: b.clients.size,
         share: totalCancellations ? pct(b.cancellations, totalCancellations) : 0,
       }))
-      .sort((a, b) => b.cancellations - a.cancellations || b.cancelledHours - a.cancelledHours);
+      .sort(
+        (a, b) =>
+          b.cancellations - a.cancellations ||
+          b.cancelledHours - a.cancelledHours ||
+          a.name.localeCompare(b.name),
+      );
 
   const followUps: CancellationFollowUpRow[] = [...clientDetail.values()]
     .filter((d) => d.cancellations >= followUpThreshold)
@@ -338,7 +490,7 @@ export function computeCancellationCenter(
       const topReason =
         [...d.reasons.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? NOT_DOCUMENTED;
       const provider =
-        [...d.providers.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "Unassigned provider";
+        [...d.providers.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? UNASSIGNED_PROVIDER_LABEL;
       const risk: CancellationFollowUpRow["risk"] =
         rate != null && rate >= 30 && d.cancellations >= 4
           ? "critical"
@@ -353,8 +505,9 @@ export function computeCancellationCenter(
             ? `${plural(d.undocumented, "cancellation")} without a documented reason`
             : `${plural(d.cancellations, "cancellation")} · top reason ${topReason}`;
       return {
-        key: d.client.toLowerCase(),
+        key: d.key,
         client: d.client,
+        clientCrId: d.clientCrId,
         state: d.state,
         payor: d.payor,
         provider,
@@ -386,22 +539,24 @@ export function computeCancellationCenter(
   const repeatClients = new Set(
     [...clientDetail.values()]
       .filter((d) => d.cancellations >= followUpThreshold)
-      .map((d) => d.client.toLowerCase()),
+      .map((d) => d.key),
   );
 
   const followUpEvents: CancellationFollowUpEventRow[] = cancelled
     .map((row, index) => {
       const reason = cancellationReasonBucket(row);
       const documentedReason = reason !== NOT_DOCUMENTED;
-      const client = text(row.client_name, "Unknown client");
-      const repeat = repeatClients.has(client.toLowerCase());
+      const clientKey = identity.clientKeyOf(row);
+      const repeat = repeatClients.has(clientKey);
       const followUpStatus: CancellationFollowUpEventRow["followUpStatus"] =
         !documentedReason ? "Needs documentation" : repeat ? "Repeat cancellation" : "Logged";
+      const sourceId = text(row.id, "");
       return {
-        key: `${row.id ?? "event"}-${index}`,
+        // Source-id based and therefore stable across sorts and re-renders.
+        key: sourceId ? `event:${sourceId}` : `event-index:${index}`,
         eventDate: String(row.event_date ?? "").slice(0, 10) || null,
-        client,
-        provider: text(row.provider_name, "Unassigned provider"),
+        client: identity.clientLabelOf(row),
+        provider: identity.providerLabelOf(row),
         cancelledHours: Math.round(eventDurationHours(row) * 10) / 10,
         reason,
         reasonDocumented: documentedReason,
@@ -430,6 +585,9 @@ export function computeCancellationCenter(
         a.client.localeCompare(b.client),
     );
 
+  const weekLabels = [...weekly.keys()].sort((a, b) => a.localeCompare(b));
+  const knownConversion = converted + unconverted;
+
   return {
     loadedEvents: rows.length,
     deletedEvents: deleted.length,
@@ -440,7 +598,6 @@ export function computeCancellationCenter(
     cancellationRate: rate,
     cancelledHours: Math.round(cancelledHours * 10) / 10,
     keptHours: Math.round(keptHours * 10) / 10,
-
     affectedClients: clientSet.size,
     affectedProviders: providerSet.size,
     documentedReasons: documented,
@@ -448,15 +605,44 @@ export function computeCancellationCenter(
     documentedPct: totalCancellations ? pct(documented, totalCancellations) : null,
     topReason: byReason[0]?.name ?? null,
     truth: scheduleTruthCoverage(rows),
-    weekly: [...weekly.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([label, v]) => ({ label, value: v.c, secondary: Math.round(v.h * 10) / 10 })),
-    byDayOfWeek: DAY_OF_WEEK_ORDER.filter((d) => daily.has(d)).map((d) => {
+    conversion: {
+      converted,
+      unconverted,
+      unknown: conversionUnknown,
+      // Unknown states are excluded from the denominator, never counted as false.
+      conversionRate: knownConversion ? pct(converted, knownConversion) : null,
+      knownStates: knownConversion,
+      timingNote: CONVERSION_TIMING_NOTE,
+    },
+    weeklyCancellations: weekLabels.map((label) => ({
+      label,
+      value: weekly.get(label)!.c,
+    })),
+    weeklyCancelledHours: weekLabels.map((label) => ({
+      label,
+      value: Math.round(weekly.get(label)!.h * 10) / 10,
+    })),
+    weeklyCancellationRate: weekLabels.map((label) => {
+      const w = weekly.get(label)!;
+      return {
+        label,
+        // No active events in the week means no rate — never a plotted zero.
+        value: w.countable ? pct(w.c, w.countable) : null,
+        cancellations: w.c,
+        activeScheduleEvents: w.countable,
+      };
+    }),
+    byDayOfWeek: DAY_OF_WEEK_ORDER.filter((d) => daily.has(d)).map((d) => ({
+      label: d,
+      value: daily.get(d)!.c,
+    })),
+    byDayOfWeekRate: DAY_OF_WEEK_ORDER.filter((d) => daily.has(d)).map((d) => {
       const v = daily.get(d)!;
       return {
         label: d,
-        value: v.c,
-        secondary: v.countable ? pct(v.c, v.countable) : 0,
+        value: v.countable ? pct(v.c, v.countable) : null,
+        cancellations: v.c,
+        activeScheduleEvents: v.countable,
       };
     }),
     byReason,
