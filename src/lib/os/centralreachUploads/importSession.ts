@@ -443,8 +443,11 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
  * Persisted row_hash for a row. Uses the CentralReach row id when present so the
  * global unique index on row_hash matches the in-memory identity used for dedupe.
  */
-export function identityToRowHash(row: Record<string, unknown>): string {
-  return crImportRowHash(row);
+export function identityToRowHash(
+  row: Record<string, unknown>,
+  kind?: CRUploadKind,
+): string {
+  return crImportRowHash(row, kind);
 }
 
 export { crImportStrategyFor };
