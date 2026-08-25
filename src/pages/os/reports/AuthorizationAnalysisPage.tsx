@@ -283,7 +283,9 @@ const SERVICE_GAP_DRILLDOWN_COLUMNS = [
   { key: "payor", label: "Payor" },
   { key: "lastEnd", label: "Last Coverage End" },
   { key: "sessions", label: "Sessions In Range" },
-  { key: "hours", label: "Hours In Range" },
+  { key: "hours", label: "Recorded Hours In Range" },
+  { key: "missingHours", label: "Sessions Missing Hours" },
+  { key: "dataQuality", label: "Data Quality" },
   { key: "firstService", label: "First Service" },
   { key: "lastService", label: "Last Service" },
   { key: "status", label: "Status" },
@@ -320,6 +322,8 @@ const projectServiceGapRows = (
     lastEnd: r.lastEnd ?? NOT_DOCUMENTED,
     sessions: r.sessions,
     hours: r.hours,
+    missingHours: r.missingHours,
+    dataQuality: r.dataQualityNote ?? "Hours recorded on every session",
     firstService: r.firstService ?? NOT_DOCUMENTED,
     lastService: r.lastService ?? NOT_DOCUMENTED,
     status: "Needs Confirmation",
@@ -719,9 +723,16 @@ export default function AuthorizationCommandCenterPage() {
         exportName: "authorization-service-activity-no-coverage",
       });
     }
-    if (id === "receipt-to-submission" || id === "submission-to-decision") {
+    const timelineKpi = TIMELINE_DENOMINATOR_ROWS.find((t) => t.key === id);
+    if (timelineKpi) {
       setTab("lifecycle");
-      return;
+      return setDrilldown({
+        title: timelineKpi.label,
+        subtitle: timelineKpi.drilldownSubtitle,
+        rows: projectTimelineRows(timelines.rows),
+        columns: TIMELINE_DRILLDOWN_COLUMNS,
+        exportName: `authorization-${timelineKpi.key}`,
+      });
     }
     if (id === "submitted" || id === "denied") {
       setTab("lifecycle");
@@ -1286,9 +1297,18 @@ export default function AuthorizationCommandCenterPage() {
                 },
                 {
                   key: "hours",
-                  label: "Hours in range",
+                  label: "Recorded hours in range",
                   align: "right",
-                  render: (r) => <span className="tabular-nums">{fmtHours(r.hours)}</span>,
+                  render: (r) => (
+                    <span className="flex flex-col items-end">
+                      <span className="tabular-nums">{fmtHours(r.hours)}</span>
+                      {r.missingHours > 0 && (
+                        <span className="text-[10px] text-amber-600">
+                          {r.missingHours} session(s) missing hours
+                        </span>
+                      )}
+                    </span>
+                  ),
                 },
                 {
                   key: "lastEnd",
