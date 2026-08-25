@@ -58,9 +58,11 @@ import {
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
 import {
   UTILIZATION_RISK_LABELS,
+  numOrNull,
   resolveActiveScope,
   snapshotWindowMode,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationScope";
+import { buildUtilizationTabExport } from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationExport";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 
 const FILTER_FIELDS = ["state", "client", "payor", "code"] as const;
@@ -87,7 +89,8 @@ const UTILIZATION_COLUMNS = [
   { key: "code", label: "Service Code" },
   { key: "startDate", label: "Coverage Start" },
   { key: "endDate", label: "Coverage End" },
-  { key: "authorizedHours", label: "Authorized Hrs" },
+  { key: "authorizedHours", label: "Authorized Hrs (Full Range)" },
+  { key: "sourceWindowAuthorizedHours", label: "Authorized Hrs (Source Window)" },
   { key: "proratedAuthorizedHours", label: "Prorated Authorized Hrs" },
   { key: "prorationFactor", label: "Proration Factor" },
   { key: "overlapDays", label: "Days In Range" },
@@ -98,7 +101,8 @@ const UTILIZATION_COLUMNS = [
   { key: "joinedSessions", label: "Joined Sessions" },
   { key: "joinBasis", label: "Joined On" },
   { key: "utilizationPct", label: "Utilization %" },
-  { key: "remainingHours", label: "Remaining Hrs" },
+  { key: "sourceRemainingHours", label: "Remaining Hrs (Source)" },
+  { key: "remainingHours", label: "Remaining Hrs (Recomputed)" },
   { key: "scheduledHours", label: "Scheduled Hrs" },
   { key: "pendingHours", label: "Pending Hrs" },
   { key: "projectedDemandHours", label: "Projected Demand Hrs" },
@@ -119,6 +123,8 @@ function projectRows(rows: ProratedUtilizationRow[]): Record<string, unknown>[] 
     startDate: r.startDate ?? "Not documented",
     endDate: r.endDate ?? "Not documented",
     authorizedHours: r.authorizedHours ?? "Not documented",
+    sourceWindowAuthorizedHours:
+      r.sourceWindowAuthorizedHours ?? "Not available for selected window",
     proratedAuthorizedHours: r.proratedAuthorizedHours ?? "Cannot prorate",
     prorationFactor: r.prorationFactor ?? "—",
     overlapDays: r.overlapDays,
@@ -129,9 +135,11 @@ function projectRows(rows: ProratedUtilizationRow[]): Record<string, unknown>[] 
     joinedSessions: r.joinedSessions,
     joinBasis: JOIN_LABEL[r.joinBasis],
     utilizationPct: r.utilizationPct ?? "Cannot compute",
+    sourceRemainingHours:
+      r.sourceRemainingHours ?? "Not available for selected window",
     remainingHours: r.remainingHours ?? "Cannot compute",
-    scheduledHours: r.scheduledHours ?? "Not documented",
-    pendingHours: r.pendingHours ?? "Not documented",
+    scheduledHours: r.scheduledHours ?? "Not available for selected window",
+    pendingHours: r.pendingHours ?? "Not available for selected window",
     projectedDemandHours: r.projectedDemandHours ?? "Cannot compute",
     riskLevel: UTILIZATION_RISK_LABELS[r.riskLevel],
     riskReasons: r.riskReasons.join("; "),
@@ -139,6 +147,10 @@ function projectRows(rows: ProratedUtilizationRow[]): Record<string, unknown>[] 
     note: r.note,
   }));
 }
+
+/** Null totals are reported as undocumented — never rendered as 0 hours. */
+const hrsOrNotDocumented = (value: number | null | undefined) =>
+  value == null ? "Not documented" : fmtHours(value);
 
 const bandOf = (pctValue: number | null): "under" | "on_track" | "over" | "unknown" =>
   pctValue == null ? "unknown" : pctValue > 105 ? "over" : pctValue < 80 ? "under" : "on_track";
@@ -166,7 +178,8 @@ export default function AuthorizationUtilizationPage() {
   const data = useCrPrimaryReport(["authCurrent", "billingFacts"]);
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
   const [tabParam, setTabParam] = useUrlState("tab", "utilization");
-  const tab = tabParam as TabKey;
+  const TAB_KEYS: TabKey[] = ["utilization", "trends", "reconciliation", "gaps"];
+  const tab = (TAB_KEYS.includes(tabParam as TabKey) ? tabParam : "utilization") as TabKey;
   const setTab = (next: TabKey) => setTabParam(next);
   const [scope, setScope] = useUrlState("scope", "active");
   const [grain, setGrain] = useUrlState("grain", "week");
@@ -240,7 +253,11 @@ export default function AuthorizationUtilizationPage() {
         auths.map((a) => ({
           startDate: startDateOf(a),
           endDate: endDateOf(a),
-          authorizedHours: Number(a.authorized_hours ?? 0),
+          // Full authorization-range hours, null-safe: never `Number(null)`.
+          authorizedHours:
+            numOrNull(a.authorized_hours_auth_range) ??
+            numOrNull(a.authorized_hours_all) ??
+            numOrNull(a.authorized_hours),
         })),
         // Only cleanly allocated billing rows feed the trend: an ambiguous or
         // unjoined row cannot be proven to belong to any authorization.
@@ -288,18 +305,18 @@ export default function AuthorizationUtilizationPage() {
       {
         id: "authorized",
         label: result.prorationApplied ? "Prorated authorized hrs" : "Authorized hrs",
-        value: fmtHours(
+        value: hrsOrNotDocumented(
           result.prorationApplied ? totals.proratedAuthorizedHours : totals.authorizedHours,
         ),
         hint: result.prorationApplied
-          ? `Prorated to the selected range from ${fmtHours(totals.authorizedHours)} total`
+          ? `Prorated to the selected range from ${hrsOrNotDocumented(totals.authorizedHours)} of full-range authorized hours`
           : "Full authorization windows — no proration needed for this range",
       },
       {
         id: "utilization",
         label: "Utilization",
         value: fmtPct(totals.utilizationPct),
-        hint: `${fmtHours(totals.sourceUsedHours)} used per CentralReach`,
+        hint: `${hrsOrNotDocumented(totals.sourceUsedHours)} used per CentralReach · ${hrsOrNotDocumented(totals.recomputedUsedHours)} recomputed from billing`,
         tone:
           totals.utilizationPct == null
             ? ("neutral" as const)
@@ -326,7 +343,10 @@ export default function AuthorizationUtilizationPage() {
       {
         id: "variance",
         label: "Hours variance",
-        value: fmtHours(Math.abs(totals.varianceHours)),
+        value:
+          totals.varianceHours == null
+            ? "Not documented"
+            : fmtHours(Math.abs(totals.varianceHours)),
         hint:
           totals.variancePct == null
             ? "No comparable hours to reconcile"
@@ -362,11 +382,33 @@ export default function AuthorizationUtilizationPage() {
       {
         id: "projected-demand",
         label: "Projected demand",
-        value:
-          totals.projectedDemandHours == null
-            ? "Not documented"
-            : fmtHours(totals.projectedDemandHours),
+        value: hrsOrNotDocumented(totals.projectedDemandHours),
         hint: "Used plus scheduled plus pending hours",
+      },
+      {
+        id: "scheduled",
+        label: "Scheduled hrs",
+        value: hrsOrNotDocumented(totals.scheduledHours),
+        hint: "Booked but not yet billed, for the selected window",
+      },
+      {
+        id: "pending",
+        label: "Pending hrs",
+        value: hrsOrNotDocumented(totals.pendingHours),
+        hint: "Billed but not yet reconciled, for the selected window",
+      },
+      {
+        id: "source-remaining",
+        label: "Remaining hrs (source)",
+        value: hrsOrNotDocumented(totals.sourceRemainingHours),
+        hint: "As CentralReach reports it for the selected window",
+      },
+      {
+        id: "expiring-60",
+        label: "Expiring ≤ 60 days",
+        value: fmtCount(totals.expiringWithin60),
+        hint: "Coverage ends within 60 days",
+        tone: totals.expiringWithin60 > 0 ? ("warn" as const) : ("good" as const),
       },
       {
         id: "expiring-30",
@@ -480,6 +522,102 @@ export default function AuthorizationUtilizationPage() {
       ),
     },
     {
+      key: "sourceRemaining",
+      label: "Remaining (source)",
+      align: "right",
+      render: (r) => (
+        <span className="tabular-nums" title="As CentralReach reports it for this window">
+          {r.sourceRemainingHours == null ? "—" : fmtHours(r.sourceRemainingHours)}
+        </span>
+      ),
+    },
+    {
+      key: "recomputedRemaining",
+      label: "Remaining (recomputed)",
+      align: "right",
+      render: (r) => (
+        <span className="tabular-nums" title="Prorated authorized hours minus the used hours">
+          {r.remainingHours == null ? "—" : fmtHours(r.remainingHours)}
+        </span>
+      ),
+    },
+    {
+      key: "scheduled",
+      label: "Scheduled",
+      align: "right",
+      render: (r) => (
+        <span className="tabular-nums">
+          {r.scheduledHours == null ? "—" : fmtHours(r.scheduledHours)}
+        </span>
+      ),
+    },
+    {
+      key: "pending",
+      label: "Pending",
+      align: "right",
+      render: (r) => (
+        <span className="tabular-nums">
+          {r.pendingHours == null ? "—" : fmtHours(r.pendingHours)}
+        </span>
+      ),
+    },
+    {
+      key: "projected",
+      label: "Projected demand",
+      align: "right",
+      render: (r) => (
+        <span className="tabular-nums" title="Used plus scheduled plus pending hours">
+          {r.projectedDemandHours == null ? "—" : fmtHours(r.projectedDemandHours)}
+        </span>
+      ),
+    },
+    {
+      key: "expiry",
+      label: "Expires",
+      align: "right",
+      render: (r) => (
+        <span className="text-[11px] text-muted-foreground">
+          {r.endDate ? fmtDate(r.endDate) : "Not documented"}
+          {r.daysToExpiry != null && (
+            <span className="ml-1 tabular-nums">({r.daysToExpiry}d)</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "risk",
+      label: "Risk",
+      align: "right",
+      render: (r) => (
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+            r.riskLevel === "exhausted"
+              ? "bg-destructive/10 text-destructive border border-destructive/30"
+              : r.riskLevel === "at_risk"
+                ? "bg-amber-500/10 text-amber-600 border border-amber-500/30"
+                : r.riskLevel === "on_track"
+                  ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30"
+                  : "bg-muted text-muted-foreground"
+          }`}
+          title={r.riskReasons.join(" ")}
+        >
+          {UTILIZATION_RISK_LABELS[r.riskLevel]}
+        </span>
+      ),
+    },
+    {
+      key: "riskWhy",
+      label: "Why",
+      render: (r) => (
+        <span
+          className="line-clamp-2 text-[10px] text-muted-foreground"
+          title={r.riskReasons.join(" ")}
+        >
+          {r.riskReasons.join(" ") || "—"}
+        </span>
+      ),
+    },
+    {
       key: "band",
       label: "Status",
       align: "right",
@@ -563,7 +701,14 @@ export default function AuthorizationUtilizationPage() {
   ];
 
   const exportView = () => {
-    downloadCsv("authorization-utilization-hour-based", projectRows(result.rows), UTILIZATION_COLUMNS);
+    const projection = buildUtilizationTabExport(tab, {
+      utilizationRows: projectRows(result.rows),
+      utilizationColumns: UTILIZATION_COLUMNS,
+      reconciliationRows: projectRows(variances),
+      gapRows: projectRows(result.rows.filter((r) => r.dataState !== "ok")),
+      trend,
+    });
+    downloadCsv(projection.name, projection.rows, projection.columns);
     toast.success("Exported the current utilization view.");
   };
 
@@ -684,31 +829,57 @@ export default function AuthorizationUtilizationPage() {
           </TabsList>
 
           <TabsContent value="utilization" className="mt-3 space-y-4">
-            <PrimaryChart
-              title="Utilization by client"
-              subtitle="Highest authorized-hour clients first — bar is utilization %, line is authorized hours."
-              type="bar"
-              data={computable
-                .slice()
-                .sort((a, b) => (b.authorizedHours ?? 0) - (a.authorizedHours ?? 0))
-                .slice(0, 12)
-                .map((r) => ({
-                  label: r.client,
-                  value: r.utilizationPct ?? 0,
-                  secondary: r.proratedAuthorizedHours ?? r.authorizedHours ?? 0,
-                }))}
-              valueLabel="Utilization %"
-              secondaryLabel="Authorized hours"
-              height={300}
-              onSelect={(label) =>
-                open(
-                  `Client · ${label}`,
-                  "Authorizations for this client in the current filters.",
-                  result.rows.filter((r) => r.client === label),
-                  `authorization-utilization-${label.toLowerCase().replace(/\s+/g, "-")}`,
-                )
-              }
-            />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <PrimaryChart
+                title="Utilization by client · percent"
+                subtitle="Percent only — hours are charted separately so the two units are never mixed on one axis."
+                type="bar"
+                data={computable
+                  .slice()
+                  .sort((a, b) => (b.utilizationPct ?? -1) - (a.utilizationPct ?? -1))
+                  .slice(0, 12)
+                  .map((r) => ({ label: r.client, value: r.utilizationPct ?? 0 }))}
+                valueLabel="Utilization %"
+                height={300}
+                onSelect={(label) =>
+                  open(
+                    `Client · ${label}`,
+                    "Authorizations for this client in the current filters.",
+                    result.rows.filter((r) => r.client === label),
+                    `authorization-utilization-${label.toLowerCase().replace(/\s+/g, "-")}`,
+                  )
+                }
+              />
+              <PrimaryChart
+                title="Hours by client · authorized vs used"
+                subtitle="Hours only — prorated authorized hours against the used hours for the window."
+                type="bar"
+                data={computable
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      (b.proratedAuthorizedHours ?? b.authorizedHours ?? 0) -
+                      (a.proratedAuthorizedHours ?? a.authorizedHours ?? 0),
+                  )
+                  .slice(0, 12)
+                  .map((r) => ({
+                    label: r.client,
+                    value: r.proratedAuthorizedHours ?? r.authorizedHours ?? 0,
+                    secondary: r.recomputedUsedHours ?? r.sourceUsedHours ?? 0,
+                  }))}
+                valueLabel="Authorized hours"
+                secondaryLabel="Used hours"
+                height={300}
+                onSelect={(label) =>
+                  open(
+                    `Client · ${label}`,
+                    "Authorizations for this client in the current filters.",
+                    result.rows.filter((r) => r.client === label),
+                    `authorization-hours-${label.toLowerCase().replace(/\s+/g, "-")}`,
+                  )
+                }
+              />
+            </div>
             <PrimaryTable
               title="Authorization utilization"
               subtitle="Click any row for the full authorization record, proration factor, and join basis."

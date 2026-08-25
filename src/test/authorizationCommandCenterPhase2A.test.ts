@@ -229,7 +229,10 @@ describe("billing allocation gives each row to at most one authorization", () =>
     const recomputedTotal = result.rows.reduce((s, r) => s + (r.recomputedUsedHours ?? 0), 0);
     expect(recomputedTotal).toBe(0); // ambiguous rows are held back, never copied
     expect(result.allocation.ambiguous).toBe(2);
-    expect(result.totals.recomputedUsedHours).toBe(0);
+    // Nothing could be allocated, so the total is undocumented (null) rather
+    // than a zero that looks like a verified measurement — and never the
+    // duplicated client-level hours.
+    expect(result.totals.recomputedUsedHours).toBeNull();
   });
 
   it("keeps a legitimate recomputed zero as zero", () => {

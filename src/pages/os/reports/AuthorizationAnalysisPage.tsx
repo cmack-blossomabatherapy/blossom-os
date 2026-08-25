@@ -52,10 +52,17 @@ import type {
 import { fmtCount, fmtDate, fmtHours, fmtPct } from "@/lib/os/reports/crPrimary/format";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
 import {
-  LIFECYCLE_KIND_LABELS,
   classifyLifecycleEvent,
   computeAuthorizationLifecycle,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationLifecycle";
+import {
+  CONTINUITY_LABEL,
+  RENEWAL_LABEL,
+  buildAuthorizationTabExport,
+  eventKindInput,
+  projectContinuityRows,
+  projectLifecycleEvent,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationExport";
 import {
   computeAuthorizationContinuity,
   endDateOf,
@@ -86,20 +93,6 @@ const CONTINUITY_TONE: Record<ContinuityRow["continuity"], string> = {
   unknown_dates: "bg-muted text-muted-foreground",
 };
 
-const CONTINUITY_LABEL: Record<ContinuityRow["continuity"], string> = {
-  active: "Active",
-  expiring: "Expiring",
-  expired: "Expired",
-  not_started: "Not started",
-  unknown_dates: "Dates missing",
-};
-
-const RENEWAL_LABEL: Record<ContinuityRow["renewal"], string> = {
-  needs_confirmation: "Confirm renewal",
-  no_action: "No action",
-  overdue: "Overdue",
-};
-
 const CONTINUITY_DRILLDOWN_COLUMNS = [
   { key: "authorizationNumber", label: "Authorization #" },
   { key: "client", label: "Client" },
@@ -122,6 +115,7 @@ const LIFECYCLE_DRILLDOWN_COLUMNS = [
   { key: "eventDate", label: "Event Date" },
   { key: "eventType", label: "Event Type" },
   { key: "kind", label: "Authorization Kind" },
+  { key: "kindSource", label: "Kind Source" },
   { key: "action", label: "Outcome" },
   { key: "authorizationNumber", label: "Authorization #" },
   { key: "client", label: "Client" },
@@ -132,26 +126,6 @@ const LIFECYCLE_DRILLDOWN_COLUMNS = [
 ];
 
 const asText = (v: unknown, fallback = "") => (String(v ?? "").trim() || fallback);
-
-function projectContinuityRows(rows: ContinuityRow[]): Record<string, unknown>[] {
-  return rows.map((r) => ({
-    authorizationNumber: r.authorizationNumber,
-    client: r.client,
-    clientCrId: r.clientCrId,
-    payor: r.payor,
-    state: r.state,
-    code: r.code,
-    startDate: r.startDate ?? "Not documented",
-    endDate: r.endDate ?? "Not documented",
-    daysToExpiry: r.daysToExpiry ?? "Unknown",
-    continuity: CONTINUITY_LABEL[r.continuity],
-    renewal: RENEWAL_LABEL[r.renewal],
-    authorizedHours: r.authorizedHours ?? "Not documented",
-    usedHours: r.usedHours ?? "Not documented",
-    remainingHours: r.remainingHours ?? "Not documented",
-    note: r.note,
-  }));
-}
 
 /** Exactly four tabs, in this order, addressable via `?tab=`. */
 const TABS = [
@@ -344,21 +318,7 @@ export default function AuthorizationCommandCenterPage() {
     setDrilldown({
       title,
       subtitle,
-      rows: events.filter(predicate).map((e) => {
-        const c = classifyLifecycleEvent(e.event_type);
-        return {
-          eventDate: asText(e.event_date).slice(0, 10),
-          eventType: asText(e.event_type, "Not documented"),
-          kind: LIFECYCLE_KIND_LABELS[c.kind],
-          action: c.action,
-          authorizationNumber: asText(e.authorization_number, "Not documented"),
-          client: asText(e.client_name, "Unknown client"),
-          payor: asText(e.payor),
-          state: asText(e.state),
-          reason: asText(e.reason, "Not documented"),
-          source: asText(e.source, "Not documented"),
-        };
-      }),
+      rows: events.filter(predicate).map(projectLifecycleEvent),
       columns: LIFECYCLE_DRILLDOWN_COLUMNS,
       exportName,
     });
@@ -372,7 +332,7 @@ export default function AuthorizationCommandCenterPage() {
         id === "denied" ? "Denials logged" : "Submissions logged",
         "Authorization events behind this number.",
         (e) =>
-          classifyLifecycleEvent(e.event_type).action ===
+          classifyLifecycleEvent(e.event_type, eventKindInput(e)).action ===
           (id === "denied" ? "denied" : "submitted"),
         `authorization-${id}`,
       );
@@ -427,13 +387,21 @@ export default function AuthorizationCommandCenterPage() {
       key: "authorized",
       label: "Authorized hrs",
       align: "right",
-      render: (r) => <span className="tabular-nums">{fmtHours(r.authorizedHours ?? 0)}</span>,
+      render: (r) => (
+        <span className="tabular-nums">
+          {r.authorizedHours == null ? "—" : fmtHours(r.authorizedHours)}
+        </span>
+      ),
     },
     {
       key: "remaining",
       label: "Remaining hrs",
       align: "right",
-      render: (r) => <span className="tabular-nums">{fmtHours(r.remainingHours ?? 0)}</span>,
+      render: (r) => (
+        <span className="tabular-nums">
+          {r.remainingHours == null ? "—" : fmtHours(r.remainingHours)}
+        </span>
+      ),
     },
     {
       key: "coverage",
@@ -458,28 +426,14 @@ export default function AuthorizationCommandCenterPage() {
   ];
 
   const exportView = () => {
-    if (tab === "lifecycle") {
-      downloadCsv(
-        "authorization-lifecycle",
-        lifecycle.byKind.map((k) => ({ ...k })),
-        [
-          { key: "label", label: "Authorization Kind" },
-          { key: "submitted", label: "Submitted" },
-          { key: "approved", label: "Approved" },
-          { key: "denied", label: "Denied" },
-          { key: "resubmitted", label: "Resubmitted" },
-          { key: "paused", label: "Paused" },
-          { key: "approvalRate", label: "Approval %" },
-          { key: "denialRate", label: "Denial %" },
-        ],
-      );
-    } else {
-      downloadCsv(
-        "authorization-continuity",
-        projectContinuityRows(continuity.rows),
-        CONTINUITY_DRILLDOWN_COLUMNS,
-      );
-    }
+    const projection = buildAuthorizationTabExport(tab, {
+      events,
+      byKind: lifecycle.byKind,
+      continuityRows: continuity.rows,
+      progress: progressReports,
+      pauses,
+    });
+    downloadCsv(projection.name, projection.rows, projection.columns);
     toast.success("Exported the current authorization view.");
   };
 
@@ -629,18 +583,10 @@ export default function AuthorizationCommandCenterPage() {
                 <PrimaryTable
                   title="Logged authorization events"
                   subtitle="Every event behind the lifecycle numbers, with where it was logged from."
-                  rows={events.slice(0, 500).map((e, i) => {
-                    const c = classifyLifecycleEvent(e.event_type);
-                    return {
-                      key: `${e.record_id ?? i}`,
-                      eventDate: asText(e.event_date).slice(0, 10),
-                      eventType: asText(e.event_type, "Not documented"),
-                      kind: LIFECYCLE_KIND_LABELS[c.kind],
-                      action: c.action,
-                      client: asText(e.client_name, "Unknown client"),
-                      source: asText(e.source, "Not documented"),
-                    };
-                  })}
+                  rows={events.slice(0, 500).map((e, i) => ({
+                    key: `${e.record_id ?? i}`,
+                    ...projectLifecycleEvent(e),
+                  }))}
                   rowKey={(r) => r.key}
                   columns={[
                     { key: "eventDate", label: "Event date", render: (r) => fmtDate(r.eventDate) },
@@ -702,7 +648,8 @@ export default function AuthorizationCommandCenterPage() {
                     openLifecycle(
                       `Lifecycle · ${k.label}`,
                       "Logged events for this authorization kind.",
-                      (e) => classifyLifecycleEvent(e.event_type).kind === k.kind,
+                      (e) =>
+                        classifyLifecycleEvent(e.event_type, eventKindInput(e)).kind === k.kind,
                       `authorization-lifecycle-${k.kind}`,
                     )
                   }
