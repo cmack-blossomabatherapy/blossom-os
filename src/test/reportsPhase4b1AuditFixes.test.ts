@@ -35,7 +35,8 @@ const action = (over: Partial<AuthorizationActionRow>): AuthorizationActionRow =
 const applyNonDateFilters = (rows: AuthorizationActionRow[]) =>
   applyFilters(
     rows,
-    { ...EMPTY_FILTERS, from: RANGE.from, to: RANGE.to, from: "", to: "" },
+    // Exactly what the page does: the selected range is stripped, everything else stays.
+    { ...EMPTY_FILTERS, from: "", to: "" },
     (r) => ({
       state: r.state,
       client: r.client_name,
