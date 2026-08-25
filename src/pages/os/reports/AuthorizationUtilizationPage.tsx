@@ -12,7 +12,7 @@
  * Rows we cannot compute (no authorized hours, no coverage dates, nothing
  * joined) are labelled with the reason instead of being rendered as 0%.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
