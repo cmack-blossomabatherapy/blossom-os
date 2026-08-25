@@ -101,7 +101,10 @@ describe("Phase 4A1 reporting access lockdown migration", () => {
       "report_bcba_performance_targets",
       "report_billing_facts",
     ]) {
-      expect(lockdown).toContain(fn);
+      expect(sql).toContain(fn);
+      expect(sql).toMatch(
+        new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${fn}[^;]*TO authenticated`),
+      );
     }
     expect(lockdown).not.toMatch(/GRANT EXECUTE ON FUNCTION[^;]*TO anon/);
   });

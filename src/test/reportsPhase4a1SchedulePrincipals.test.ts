@@ -74,8 +74,8 @@ describe("Phase 4A1 schedule principal orientation", () => {
   it("keeps timestamps oriented to the event start and end", () => {
     const row = normalizeCrRow("scheduling", principalOnlyRow);
     expect(row.event_date).toBe("2026-08-24");
-    expect(row.start_time).toBe("09:00");
-    expect(row.end_time).toBe("11:00");
+    expect(row.start_time).toBe("09:00:00");
+    expect(row.end_time).toBe("11:00:00");
   });
 
   it("selects the new identity columns from the curated current view", () => {
