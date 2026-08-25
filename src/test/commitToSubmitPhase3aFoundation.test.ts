@@ -58,7 +58,14 @@ const upheldRecord: C2sTrackerRecord = {
   category: "rbt_documentation",
   reviewStatus: "upheld",
   isFormalViolation: true,
+  formalViolationRecordedAt: "2026-09-25T12:00:00Z",
 };
+
+/** Coaching that precedes the formal-recorded date (required for any formal step). */
+const priorCoaching = [
+  { id: "c1", subjectEmployeeId: "emp-1", coachingDate: "2026-09-10" },
+];
+
 
 function row(over: Partial<C2sProxyRow> = {}): C2sProxyRow {
   const lagDays = over.lagDays === undefined ? 3 : over.lagDays;
@@ -218,6 +225,7 @@ describe("C2S formal violation eligibility", () => {
   it("ignores a denied exception", () => {
     const result = evaluateFormalViolation(upheldRecord, {
       config: approvedConfig,
+      coaching: priorCoaching,
       exceptions: [
         { id: "x1", subjectEmployeeId: "emp-1", trackerRecordId: "rec-1", status: "denied", exceptionType: "system_outage" },
       ],
@@ -228,6 +236,7 @@ describe("C2S formal violation eligibility", () => {
   it("blocks when a dispute was upheld", () => {
     const result = evaluateFormalViolation(upheldRecord, {
       config: approvedConfig,
+      coaching: priorCoaching,
       disputes: [{ id: "d1", subjectEmployeeId: "emp-1", trackerRecordId: "rec-1", status: "upheld" }],
     });
     expect(result.eligible).toBe(false);
@@ -237,38 +246,43 @@ describe("C2S formal violation eligibility", () => {
   it("requires authoritative completion plus reviewed QA criteria for BCBA Category 1", () => {
     const noEvidence = evaluateFormalViolation(
       { ...upheldRecord, roleGroup: "bcba", category: "bcba_category_1", authoritativeCompletedAt: null, sourceKind: "reviewed_tracker" },
-      { config: approvedConfig },
+      { config: approvedConfig, coaching: priorCoaching },
     );
     expect(noEvidence.eligible).toBe(false);
     expect(noEvidence.reasons.join(" ")).toMatch(/Category 1/);
 
     const withEvidence = evaluateFormalViolation(
       { ...upheldRecord, roleGroup: "bcba", category: "bcba_category_1", category1CriteriaReference: "QA-2026-11" },
-      { config: approvedConfig },
+      { config: approvedConfig, coaching: priorCoaching },
     );
     expect(withEvidence.eligible).toBe(true);
   });
+
 });
 
 describe("C2S notices", () => {
-  const coaching = [{ id: "c1", subjectEmployeeId: "emp-1", coachingDate: "2026-09-10" }];
+  const coaching = priorCoaching;
 
   it("requires prior coaching", () => {
     const noCoaching = evaluateNoticeEligibility({ level: 1, config: approvedConfig, record: upheldRecord });
     expect(noCoaching.allowed).toBe(false);
-    expect(noCoaching.reasons.join(" ")).toMatch(/Coaching must precede/i);
+    expect(noCoaching.reasons.join(" ")).toMatch(/Coaching must exist and precede/i);
 
     const withCoaching = evaluateNoticeEligibility({ level: 1, config: approvedConfig, record: upheldRecord, coaching });
     expect(withCoaching.allowed).toBe(true);
   });
 
   it("only allows a notice with an active approved configuration", () => {
-    const result = evaluateNoticeEligibility({ level: 2, config: null, record: upheldRecord, coaching });
+    const result = evaluateNoticeEligibility({
+      level: 2, config: null, record: upheldRecord, coaching, priorLevels: [1],
+    });
     expect(result.allowed).toBe(false);
   });
 
   it("makes a third notice HR-review-only with no employment action", () => {
-    const third = evaluateNoticeEligibility({ level: 3, config: approvedConfig, record: upheldRecord, coaching });
+    const third = evaluateNoticeEligibility({
+      level: 3, config: approvedConfig, record: upheldRecord, coaching, priorLevels: [1, 2],
+    });
     expect(third.allowed).toBe(true);
     expect(third.hrReviewRequired).toBe(true);
     expect(third.employmentAction).toBeNull();
@@ -298,9 +312,11 @@ describe("C2S dispute window (weekend-aware)", () => {
 describe("C2S governance counts", () => {
   it("separates reviewed, unreviewed, exception and dispute outcomes", () => {
     const summary = summarizeGovernance({
+      config: approvedConfig,
+      coaching: priorCoaching,
       records: [upheldRecord, { ...upheldRecord, id: "rec-2", reviewStatus: "unreviewed", isFormalViolation: false }],
       exceptions: [
-        { id: "x1", subjectEmployeeId: "emp-1", trackerRecordId: null, status: "approved", exceptionType: "qa_error" },
+        { id: "x1", subjectEmployeeId: "emp-1", trackerRecordId: null, status: "approved", exceptionType: "qa_error", appliesFrom: "2026-10-01", appliesTo: "2026-10-31" },
         { id: "x2", subjectEmployeeId: "emp-1", trackerRecordId: null, status: "requested", exceptionType: "other" },
       ],
       disputes: [
@@ -312,7 +328,10 @@ describe("C2S governance counts", () => {
       reviewedRecords: 1,
       unreviewedRecords: 1,
       upheldRecords: 1,
-      formalViolations: 1,
+      // The upheld dispute on rec-1 removes it from ACTIVE formal counts while
+      // the recorded history is preserved.
+      formalViolations: 0,
+      recordedFormalViolations: 1,
       approvedExceptions: 1,
       pendingExceptions: 1,
       disputesFiled: 2,
@@ -321,6 +340,7 @@ describe("C2S governance counts", () => {
     });
   });
 });
+
 
 describe("C2S migration policy contract", () => {
   it("makes activation impossible without every approval and value", () => {
