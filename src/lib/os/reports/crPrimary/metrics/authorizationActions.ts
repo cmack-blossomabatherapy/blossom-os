@@ -38,9 +38,35 @@ export interface AuthorizationActionRow {
   next_action?: string | null;
   next_action_due_date?: string | null;
   appeal_due_date?: string | null;
+  received_date?: string | null;
 }
 
 export const NO_AUTHORITATIVE_DUE = "No authoritative due date";
+export const NOT_DOCUMENTED = "Not documented";
+
+/** Valid `YYYY-MM-DD` day, or null. A malformed source date is never a date. */
+export function validDay(value: unknown): string | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const day = raw.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  return Number.isNaN(new Date(`${day}T00:00:00`).getTime()) ? null : day;
+}
+
+const RESOLVED_STATUS =
+  /\b(resolved|complete|completed|approved|closed|withdrawn|cancell?ed|canceled)\b/i;
+
+/**
+ * A resolved action is finished work: it must never appear as overdue, no
+ * matter how old its recorded due date is. Merely submitted / pending /
+ * denied-with-next-action rows are NOT resolved — that appeal work is live.
+ */
+export function isActionResolved(action: AuthorizationActionRow): boolean {
+  if (validDay(action.approved_date)) return true;
+  return [action.workflow_stage, action.status].some((v) =>
+    RESOLVED_STATUS.test(String(v ?? "")),
+  );
+}
 
 export interface ProgressReportEventRow {
   key: string;
@@ -67,6 +93,9 @@ export interface ProgressReportDueRow {
   dueSource: "next_action_due_date" | "appeal_due_date" | "none";
   daysUntilDue: number | null;
   overdue: boolean;
+  /** Finished work. Kept visible for history, excluded from the overdue queue. */
+  resolved: boolean;
+  resolvedNote: string | null;
   note: string;
 }
 
@@ -80,6 +109,7 @@ export interface ProgressReportOps {
   dueRows: ProgressReportDueRow[];
   overdueCount: number;
   withoutDueSource: number;
+  resolvedCount: number;
 }
 
 const text = (v: unknown, fallback: string) => String(v ?? "").trim() || fallback;
@@ -149,8 +179,8 @@ export function computeProgressReportOps(
   // Only true progress-report records enter the due queue.
   const prActions = actions.filter(isProgressReportAction);
   const dueRows: ProgressReportDueRow[] = prActions.map((a, i) => {
-    const nextDue = String(a.next_action_due_date ?? "").slice(0, 10) || null;
-    const appealDue = String(a.appeal_due_date ?? "").slice(0, 10) || null;
+    const nextDue = validDay(a.next_action_due_date);
+    const appealDue = validDay(a.appeal_due_date);
     const dueDate = nextDue ?? appealDue;
     const dueSource: ProgressReportDueRow["dueSource"] = nextDue
       ? "next_action_due_date"
@@ -158,6 +188,8 @@ export function computeProgressReportOps(
         ? "appeal_due_date"
         : "none";
     const days = dueDate ? daysBetween(todayIso, dueDate) : null;
+    const resolved = isActionResolved(a);
+    const overdue = !resolved && days != null && days < 0;
     return {
       key: `${a.record_id}-${i}`,
       client: text(a.client_name, "Unknown client"),
@@ -169,9 +201,14 @@ export function computeProgressReportOps(
       dueDate,
       dueSource,
       daysUntilDue: days,
-      overdue: days != null && days < 0,
-      note:
-        dueSource === "none"
+      overdue,
+      resolved,
+      resolvedNote: resolved
+        ? "Resolved — closed out in the source record, so it is not overdue work."
+        : null,
+      note: resolved
+        ? "Resolved — no outstanding action against the recorded due date."
+        : dueSource === "none"
           ? NO_AUTHORITATIVE_DUE
           : days != null && days < 0
             ? `Overdue by ${Math.abs(days)} day(s) against the recorded due date.`
@@ -195,6 +232,7 @@ export function computeProgressReportOps(
     }),
     overdueCount: dueRows.filter((r) => r.overdue).length,
     withoutDueSource: dueRows.filter((r) => r.dueSource === "none").length,
+    resolvedCount: dueRows.filter((r) => r.resolved).length,
   };
 }
 
@@ -275,5 +313,107 @@ export function computePauseOps(
       note: g.note,
       needsConfirmation: true as const,
     })),
+  };
+}
+
+
+/**
+ * Authoritative action timelines — received → submitted and submitted →
+ * decision (approved or denied). Only real documented date pairs count. A
+ * missing, malformed or reversed pair is `null` / "Not documented", never 0,
+ * and a genuine same-day pair is preserved as 0 days.
+ */
+export interface ActionTimelineRow {
+  key: string;
+  client: string;
+  authorizationNumber: string;
+  state: string;
+  payor: string;
+  receivedDate: string | null;
+  submittedDate: string | null;
+  decisionDate: string | null;
+  decisionType: "approved" | "denied" | null;
+  receivedToSubmittedDays: number | null;
+  receivedToSubmittedDisplay: string;
+  submittedToDecisionDays: number | null;
+  submittedToDecisionDisplay: string;
+}
+
+export interface ActionTimelineMetrics {
+  rows: ActionTimelineRow[];
+  documentedReceivedToSubmitted: number;
+  documentedSubmittedToDecision: number;
+  avgReceivedToSubmittedDays: number | null;
+  avgSubmittedToDecisionDays: number | null;
+  approvedDecisions: number;
+  deniedDecisions: number;
+}
+
+/** Non-negative day span between two valid dates, else null. */
+export function timelineDays(
+  from: string | null | undefined,
+  to: string | null | undefined,
+): number | null {
+  const a = validDay(from);
+  const b = validDay(to);
+  if (!a || !b) return null;
+  const days = daysBetween(a, b);
+  if (days == null || days < 0) return null;
+  return days;
+}
+
+const timelineDisplay = (days: number | null): string =>
+  days == null ? NOT_DOCUMENTED : `${days} day(s)`;
+
+export function computeAuthorizationActionTimelines(
+  actions: AuthorizationActionRow[],
+): ActionTimelineMetrics {
+  const rows: ActionTimelineRow[] = actions.map((a, i) => {
+    const receivedDate = validDay(a.received_date);
+    const submittedDate = validDay(a.submitted_date);
+    const approved = validDay(a.approved_date);
+    const denied = validDay(a.denied_date);
+    const decisionType: ActionTimelineRow["decisionType"] = approved
+      ? "approved"
+      : denied
+        ? "denied"
+        : null;
+    const decisionDate = approved ?? denied;
+    const receivedToSubmittedDays = timelineDays(receivedDate, submittedDate);
+    const submittedToDecisionDays = timelineDays(submittedDate, decisionDate);
+    return {
+      key: `${a.record_id}-${i}`,
+      client: text(a.client_name, "Unknown client"),
+      authorizationNumber: text(a.authorization_number, NOT_DOCUMENTED),
+      state: text(a.state, "Unknown"),
+      payor: text(a.payor, "Unknown"),
+      receivedDate,
+      submittedDate,
+      decisionDate,
+      decisionType,
+      receivedToSubmittedDays,
+      receivedToSubmittedDisplay: timelineDisplay(receivedToSubmittedDays),
+      submittedToDecisionDays,
+      submittedToDecisionDisplay: timelineDisplay(submittedToDecisionDays),
+    };
+  });
+
+  const avg = (values: number[]): number | null =>
+    values.length ? Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) / 10 : null;
+  const rts = rows
+    .map((r) => r.receivedToSubmittedDays)
+    .filter((v): v is number => v != null);
+  const std = rows
+    .map((r) => r.submittedToDecisionDays)
+    .filter((v): v is number => v != null);
+
+  return {
+    rows,
+    documentedReceivedToSubmitted: rts.length,
+    documentedSubmittedToDecision: std.length,
+    avgReceivedToSubmittedDays: avg(rts),
+    avgSubmittedToDecisionDays: avg(std),
+    approvedDecisions: rows.filter((r) => r.decisionType === "approved").length,
+    deniedDecisions: rows.filter((r) => r.decisionType === "denied").length,
   };
 }
