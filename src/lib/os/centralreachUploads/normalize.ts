@@ -245,7 +245,25 @@ const EVENT_END = [
 ];
 
 
+/**
+ * Scheduling principal orientation (audited CentralReach schedule export):
+ *   Principal1 / Principal1Name = PROVIDER
+ *   Principal2 / Principal2Name = CLIENT
+ * These are fallbacks only — explicit client/provider columns take precedence.
+ */
+export const SCHEDULE_CLIENT_PRINCIPAL_NAME = ["Principal2Name", "Principal 2 Name"];
+export const SCHEDULE_CLIENT_PRINCIPAL_ID = ["Principal2", "Principal 2"];
+export const SCHEDULE_PROVIDER_PRINCIPAL_NAME = ["Principal1Name", "Principal 1 Name"];
+export const SCHEDULE_PROVIDER_PRINCIPAL_ID = ["Principal1", "Principal 1"];
+const SCHEDULE_PROVIDER = [
+  "Provider", "ProviderName", "Employee", "EmployeeName", "StaffName", "Resource",
+];
+const SCHEDULE_PROVIDER_ID = [
+  "ProviderId", "Provider Id", "RenderingProviderId", "EmployeeId", "StaffId", "ResourceId",
+];
+
 function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
+
   const code = resolveServiceCode(row);
   const deleted = crBool(row, ["Deleted", "IsDeleted", "Is Deleted"]);
   const cancelled = crBool(row, ["Cancelled", "Canceled", "IsCancelled", "IsCanceled"]);
@@ -272,18 +290,28 @@ function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
       "ScheduledHours", "Scheduled Hours", "SegmentHours", "EventHours",
       "Hours", "Duration", "TimeScheduledInHours",
     ]),
+    // CentralReach scheduling exports orient the principals as
+    // Principal1 = PROVIDER and Principal2 = CLIENT (verified against the
+    // audited August 24 export). Explicit client/provider columns always win;
+    // the principal columns are only ever a fallback.
     client_name: fullName(
       row,
       ["ClientFirstName", "Client First Name"],
       ["ClientLastName", "Client Last Name"],
-      [...CLIENT, "Principal1Name", "Principal 1 Name"],
+      [...CLIENT, ...SCHEDULE_CLIENT_PRINCIPAL_NAME],
     ),
+    client_cr_id: text(row, [...CLIENT_ID, ...SCHEDULE_CLIENT_PRINCIPAL_ID]),
     provider_name: fullName(
       row,
       ["ProviderFirstName", "Provider First Name"],
       ["ProviderLastName", "Provider Last Name"],
-      ["Provider", "ProviderName", "Principal2Name", "Principal 2 Name", "Employee", "EmployeeName", "StaffName", "Resource"],
+      [...SCHEDULE_PROVIDER, ...SCHEDULE_PROVIDER_PRINCIPAL_NAME],
     ),
+    provider_cr_id: text(row, [
+      ...SCHEDULE_PROVIDER_ID,
+      ...SCHEDULE_PROVIDER_PRINCIPAL_ID,
+    ]),
+
     status,
     attendance,
     deleted,
