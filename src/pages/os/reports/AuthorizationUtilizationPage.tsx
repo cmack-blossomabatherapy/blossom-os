@@ -56,6 +56,11 @@ import {
   endDateOf,
   startDateOf,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
+import {
+  UTILIZATION_RISK_LABELS,
+  resolveActiveScope,
+  snapshotWindowMode,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationScope";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 
 const FILTER_FIELDS = ["state", "client", "payor", "code"] as const;
@@ -94,6 +99,11 @@ const UTILIZATION_COLUMNS = [
   { key: "joinBasis", label: "Joined On" },
   { key: "utilizationPct", label: "Utilization %" },
   { key: "remainingHours", label: "Remaining Hrs" },
+  { key: "scheduledHours", label: "Scheduled Hrs" },
+  { key: "pendingHours", label: "Pending Hrs" },
+  { key: "projectedDemandHours", label: "Projected Demand Hrs" },
+  { key: "riskLevel", label: "Exhaustion Risk" },
+  { key: "riskReasons", label: "Why" },
   { key: "dataState", label: "Completeness" },
   { key: "note", label: "What This Means" },
 ];
@@ -120,6 +130,11 @@ function projectRows(rows: ProratedUtilizationRow[]): Record<string, unknown>[] 
     joinBasis: JOIN_LABEL[r.joinBasis],
     utilizationPct: r.utilizationPct ?? "Cannot compute",
     remainingHours: r.remainingHours ?? "Cannot compute",
+    scheduledHours: r.scheduledHours ?? "Not documented",
+    pendingHours: r.pendingHours ?? "Not documented",
+    projectedDemandHours: r.projectedDemandHours ?? "Cannot compute",
+    riskLevel: UTILIZATION_RISK_LABELS[r.riskLevel],
+    riskReasons: r.riskReasons.join("; "),
     dataState: UTILIZATION_DATA_STATE_LABELS[r.dataState],
     note: r.note,
   }));
@@ -168,11 +183,15 @@ export default function AuthorizationUtilizationPage() {
 
   const scopedAuths = useMemo(() => {
     if (scope === "all") return data.authCurrent;
-    // Active = coverage window still open today (missing end date counts as open).
-    return data.authCurrent.filter((r) => {
-      const end = endDateOf(r);
-      return !end || end >= today;
-    });
+    // Active never includes a future-dated authorization: it has no hours to
+    // utilize yet. An explicit inactive flag always wins over the dates.
+    return data.authCurrent.filter(
+      (r) =>
+        resolveActiveScope(
+          { is_active: r.is_active, startDate: startDateOf(r), endDate: endDateOf(r) },
+          today,
+        ).active,
+    );
   }, [data.authCurrent, scope, today]);
 
   const auths = useMemo(
@@ -206,6 +225,11 @@ export default function AuthorizationUtilizationPage() {
         from: filters.from,
         to: filters.to,
         today,
+        snapshotWindow: snapshotWindowMode(
+          { from: filters.from, to: filters.to },
+          today,
+          !filters.from && !filters.to,
+        ),
       }),
     [auths, billing, filters.from, filters.to, today],
   );
@@ -218,10 +242,14 @@ export default function AuthorizationUtilizationPage() {
           endDate: endDateOf(a),
           authorizedHours: Number(a.authorized_hours ?? 0),
         })),
-        billing.map((b) => ({ date: b.date_of_service, hours: b.hours })),
+        // Only cleanly allocated billing rows feed the trend: an ambiguous or
+        // unjoined row cannot be proven to belong to any authorization.
+        result.allocations
+          .filter((a) => a.basis === "authorization_id" || a.basis === "unique_fallback")
+          .map((a) => ({ date: a.date, hours: a.hours })),
         { from: filters.from, to: filters.to, grain: grain as TrendGrain },
       ),
-    [auths, billing, filters.from, filters.to, grain],
+    [auths, result.allocations, filters.from, filters.to, grain],
   );
 
   const filterFields = useMemo<FilterFieldConfig[]>(
@@ -316,6 +344,36 @@ export default function AuthorizationUtilizationPage() {
         value: fmtCount(notJoined.length),
         hint: "Utilization cannot be independently verified for these",
         tone: notJoined.length > 0 ? ("warn" as const) : ("good" as const),
+      },
+      {
+        id: "exhausted",
+        label: "Exhausted",
+        value: fmtCount(totals.exhausted),
+        hint: "No usable authorized hours remain",
+        tone: totals.exhausted > 0 ? ("bad" as const) : ("good" as const),
+      },
+      {
+        id: "exhaustion-risk",
+        label: "Exhaustion risk",
+        value: fmtCount(totals.exhaustionRisk),
+        hint: "Projected demand exceeds authorized hours, or 90%+ used with over 14 days left",
+        tone: totals.exhaustionRisk > 0 ? ("warn" as const) : ("good" as const),
+      },
+      {
+        id: "projected-demand",
+        label: "Projected demand",
+        value:
+          totals.projectedDemandHours == null
+            ? "Not documented"
+            : fmtHours(totals.projectedDemandHours),
+        hint: "Used plus scheduled plus pending hours",
+      },
+      {
+        id: "expiring-30",
+        label: "Expiring ≤ 30 days",
+        value: fmtCount(totals.expiringWithin30),
+        hint: "Coverage ends within 30 days",
+        tone: totals.expiringWithin30 > 0 ? ("warn" as const) : ("good" as const),
       },
       {
         id: "incomplete",

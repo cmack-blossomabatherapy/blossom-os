@@ -96,7 +96,7 @@ describe("progress reports and pauses stay separate and honest", () => {
         client_name: "Client A",
         authorization_number: "A-1",
         status: "In progress",
-        next_action: "Send packet",
+        next_action: "Send progress report packet",
         next_action_due_date: null,
         appeal_due_date: null,
       },

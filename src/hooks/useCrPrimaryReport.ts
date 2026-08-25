@@ -25,6 +25,7 @@ import {
   fetchCrUtilization,
   fetchReportAuthorizationActions,
   fetchReportAuthorizationEvents,
+  fetchReportBcbaTargets,
   fetchReportBillingFacts,
   summarizeFreshness,
 } from "@/lib/os/reports/crPrimary/source";
@@ -38,6 +39,7 @@ import type {
   CrUtilizationRow,
   ReportAuthorizationActionRow,
   ReportAuthorizationEventRow,
+  ReportBcbaTargetRow,
   ReportBillingFactRow,
 } from "@/lib/os/reports/crPrimary/types";
 import type { FreshnessInfo } from "@/components/reports/crPrimary/PrimaryReportShell";
@@ -51,7 +53,8 @@ export type CrDataset =
   | "authCurrent"
   | "authEvents"
   | "authActions"
-  | "billingFacts";
+  | "billingFacts"
+  | "bcbaTargets";
 
 const BATCH_TYPES: Record<CrDataset, string[]> = {
   billing: ["billing", "billing_sessions", "sessions"],
@@ -63,6 +66,7 @@ const BATCH_TYPES: Record<CrDataset, string[]> = {
   authEvents: [],
   authActions: [],
   billingFacts: ["billing", "billing_sessions", "sessions"],
+  bcbaTargets: [],
 };
 
 export interface CrPrimaryReportData {
@@ -75,6 +79,8 @@ export interface CrPrimaryReportData {
   authEvents: ReportAuthorizationEventRow[];
   authActions: ReportAuthorizationActionRow[];
   billingFacts: ReportBillingFactRow[];
+  /** Recorded BCBA productivity targets; absent rows mean "No target". */
+  bcbaTargets: ReportBcbaTargetRow[];
   batches: CrBatchSummary[];
   freshness: FreshnessInfo;
   loading: boolean;
@@ -99,6 +105,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
   const [authEvents, setAuthEvents] = useState<ReportAuthorizationEventRow[]>([]);
   const [authActions, setAuthActions] = useState<ReportAuthorizationActionRow[]>([]);
   const [billingFacts, setBillingFacts] = useState<ReportBillingFactRow[]>([]);
+  const [bcbaTargets, setBcbaTargets] = useState<ReportBcbaTargetRow[]>([]);
   const [batches, setBatches] = useState<CrBatchSummary[]>([]);
   const [nonce, setNonce] = useState(0);
 
@@ -113,7 +120,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       const errors: string[] = [];
       const batchTypes = [...wanted].flatMap((d) => BATCH_TYPES[d]);
 
-      const [b, s, a, u, sc, ac, ae, aa, bf, batchRes] = await Promise.all([
+      const [b, s, a, u, sc, ac, ae, aa, bf, bt, batchRes] = await Promise.all([
         wanted.has("billing") ? fetchCrBillingSessions() : Promise.resolve(EMPTY_RESULT),
         wanted.has("schedule") ? fetchCrScheduleEvents() : Promise.resolve(EMPTY_RESULT),
         wanted.has("authorizations") ? fetchCrAuthorizations() : Promise.resolve(EMPTY_RESULT),
@@ -127,11 +134,12 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
           ? fetchReportAuthorizationActions()
           : Promise.resolve(EMPTY_RESULT),
         wanted.has("billingFacts") ? fetchReportBillingFacts() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("bcbaTargets") ? fetchReportBcbaTargets() : Promise.resolve(EMPTY_RESULT),
         fetchCrBatches(batchTypes),
       ]);
       if (cancelled) return;
 
-      for (const r of [b, s, a, u, sc, ac, ae, aa, bf, batchRes]) if (r.error) errors.push(r.error);
+      for (const r of [b, s, a, u, sc, ac, ae, aa, bf, bt, batchRes]) if (r.error) errors.push(r.error);
       setBilling(b.rows as CrBillingSessionRow[]);
       setSchedule(s.rows as CrScheduleEventRow[]);
       setAuthorizations(a.rows as CrAuthorizationRow[]);
@@ -141,6 +149,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       setAuthEvents(ae.rows as ReportAuthorizationEventRow[]);
       setAuthActions(aa.rows as ReportAuthorizationActionRow[]);
       setBillingFacts(bf.rows as ReportBillingFactRow[]);
+      setBcbaTargets(bt.rows as ReportBcbaTargetRow[]);
       setBatches(batchRes.rows);
       setErrorMessage(errors.length ? errors[0] : null);
       setLoading(false);
@@ -180,6 +189,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
     authEvents,
     authActions,
     billingFacts,
+    bcbaTargets,
     batches,
     freshness,
     loading,

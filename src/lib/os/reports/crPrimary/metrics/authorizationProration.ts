@@ -20,6 +20,12 @@
 import { pickNumber, pickText } from "../tolerant";
 import { cleanReasonText } from "../scheduleTruth";
 import { endDateOf, startDateOf, daysBetween, type ContinuityAuthRow } from "./authorizationContinuity";
+import {
+  assessUtilizationRisk,
+  numOrNull,
+  type SnapshotWindowMode,
+  type UtilizationRiskLevel,
+} from "./authorizationUtilizationScope";
 
 export interface ProrationBillingRow {
   id?: string;
@@ -64,7 +70,22 @@ export interface AllocationCounts {
   unjoined: number;
 }
 
+/** Per-billing-row allocation provenance, so trends can use only clean rows. */
+export interface BillingAllocationRow {
+  /** Billing row id when present, else a synthetic index key. */
+  key: string;
+  date: string | null;
+  hours: number;
+  client: string;
+  code: string | null;
+  basis: AllocationBasis;
+  /** Authorization slot the hours landed in; null for ambiguous/unjoined rows. */
+  slotKey: string | null;
+}
+
 export interface BillingAllocation {
+  /** Every billing row considered, with the basis it was allocated on. */
+  allocations: BillingAllocationRow[];
   /** Worked hours per authorization slot key. Each billing row lands in ≤ 1 slot. */
   bySlot: Map<string, WorkedIndexEntry>;
   /** How each allocated slot was matched, for provenance in the UI. */
@@ -141,6 +162,7 @@ export function allocateBillingToAuthorizations(
 ): BillingAllocation {
   const bySlot = new Map<string, WorkedIndexEntry>();
   const slotBasis = new Map<string, AllocationBasis>();
+  const allocations: BillingAllocationRow[] = [];
   const counts: AllocationCounts = { exact: 0, uniqueFallback: 0, ambiguous: 0, unjoined: 0 };
 
   interface Slot {
@@ -179,22 +201,40 @@ export function allocateBillingToAuthorizations(
     if (basis === "authorization_id" || !slotBasis.has(key)) slotBasis.set(key, basis);
   };
 
-  for (const row of billing) {
-    const date = String(row.date_of_service ?? "").slice(0, 10);
-    if (window.from && date && date < window.from) continue;
-    if (window.to && date && date > window.to) continue;
+  billing.forEach((row, rowIndex) => {
+    const date = String(row.date_of_service ?? "").slice(0, 10) || null;
+    // A billing row inside a selected window must have a usable date of
+    // service; an undated row cannot be proven to belong to the window.
+    if (window.from || window.to) {
+      if (!date) return;
+      if (window.from && date < window.from) return;
+      if (window.to && date > window.to) return;
+    }
     const hours = billingHoursOf(row);
+    const record = (basis: AllocationBasis, slotKey: string | null) => {
+      allocations.push({
+        key: String(row.id ?? `row-${rowIndex}`),
+        date,
+        hours,
+        client: String(row.client_name ?? "").trim() || "Unknown client",
+        code: row.procedure_code ?? null,
+        basis,
+        slotKey,
+      });
+    };
 
     const authId = billingAuthorizationId(row);
     const exact = authId ? byAuthId.get(authId) : undefined;
     if (exact && exact.length === 1) {
       counts.exact += 1;
       add(exact[0].key, hours, "authorization_id");
-      continue;
+      record("authorization_id", exact[0].key);
+      return;
     }
     if (exact && exact.length > 1) {
       counts.ambiguous += 1;
-      continue;
+      record("ambiguous", null);
+      return;
     }
 
     const crId = (cleanReasonText(row.client_cr_id) ?? "").toLowerCase();
@@ -216,14 +256,17 @@ export function allocateBillingToAuthorizations(
     if (candidates.length === 1) {
       counts.uniqueFallback += 1;
       add(candidates[0].key, hours, "unique_fallback");
+      record("unique_fallback", candidates[0].key);
     } else if (candidates.length > 1) {
       counts.ambiguous += 1;
+      record("ambiguous", null);
     } else {
       counts.unjoined += 1;
+      record("unjoined", null);
     }
-  }
+  });
 
-  return { bySlot, slotBasis, counts };
+  return { allocations, bySlot, slotBasis, counts };
 }
 
 export interface ProrationWindow {
@@ -308,6 +351,22 @@ export interface ProratedUtilizationRow {
   sourceUsedHours: number | null;
   /** Hours recomputed from billing facts joined to this authorization. */
   recomputedUsedHours: number | null;
+  /** Remaining hours as the snapshot reports them, for the selected window. */
+  sourceRemainingHours: number | null;
+  /** Scheduled (not yet billed) hours from the snapshot for the window. */
+  scheduledHours: number | null;
+  /** Pending (billed, not yet reconciled) hours from the snapshot. */
+  pendingHours: number | null;
+  /** Which snapshot hour variant these window figures came from. */
+  snapshotWindow: SnapshotWindowMode;
+  expiringWithin30: boolean;
+  expiringWithin60: boolean;
+  /** used + scheduled + pending. */
+  projectedDemandHours: number | null;
+  /** Used hours as a percentage of prorated authorized hours. */
+  utilizationPacePct: number | null;
+  riskLevel: UtilizationRiskLevel;
+  riskReasons: string[];
   joinBasis: JoinBasis;
   joinedSessions: number;
   varianceHours: number | null;
@@ -324,6 +383,14 @@ export interface ProratedUtilizationTotals {
   proratedAuthorizedHours: number;
   sourceUsedHours: number;
   recomputedUsedHours: number;
+  sourceRemainingHours: number | null;
+  scheduledHours: number | null;
+  pendingHours: number | null;
+  projectedDemandHours: number | null;
+  exhausted: number;
+  exhaustionRisk: number;
+  expiringWithin30: number;
+  expiringWithin60: number;
   varianceHours: number;
   variancePct: number | null;
   utilizationPct: number | null;
@@ -338,6 +405,11 @@ export interface ProratedUtilizationResult {
   joinBasisCounts: Record<JoinBasis, number>;
   /** Billing-row allocation provenance, surfaced as data-quality warnings. */
   allocation: AllocationCounts;
+  /**
+   * Per-billing-row allocation results. Trends read only the cleanly allocated
+   * rows so ambiguous hours never distort a period.
+   */
+  allocations: BillingAllocationRow[];
   /** True when the selected range narrows at least one authorization window. */
   prorationApplied: boolean;
 }
@@ -347,9 +419,16 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 export function computeProratedUtilization(
   auths: ContinuityAuthRow[],
   billing: ProrationBillingRow[],
-  options: { from?: string; to?: string; today?: string } = {},
+  options: {
+    from?: string;
+    to?: string;
+    today?: string;
+    /** Which snapshot hour variant the selected window may honestly use. */
+    snapshotWindow?: SnapshotWindowMode;
+  } = {},
 ): ProratedUtilizationResult {
   const today = options.today ?? new Date().toISOString().slice(0, 10);
+  const snapshotWindow: SnapshotWindowMode = options.snapshotWindow ?? "unavailable";
   const allocation = allocateBillingToAuthorizations(auths, billing, {
     from: options.from,
     to: options.to,
@@ -374,6 +453,9 @@ export function computeProratedUtilization(
   let proratedTotal = 0;
   let sourceUsedTotal = 0;
   let recomputedTotal = 0;
+  let remainingTotal: number | null = null;
+  let scheduledTotal: number | null = null;
+  let pendingTotal: number | null = null;
   let prorationApplied = false;
 
   auths.forEach((auth, index) => {
@@ -382,12 +464,18 @@ export function computeProratedUtilization(
     const window = prorationWindow(start, end, options.from, options.to);
     if (window.factor != null && window.factor < 1) prorationApplied = true;
 
-    const authorized = Number.isFinite(Number(auth.authorized_hours))
-      ? Number(auth.authorized_hours)
-      : null;
-    const sourceUsed = Number.isFinite(Number(auth.worked_hours))
-      ? Number(auth.worked_hours)
-      : null;
+    // `numOrNull` (never `Number(...)`) so an absent source field stays null
+    // instead of being documented as a real zero.
+    const row = auth as unknown as Record<string, unknown>;
+    const suffix = snapshotWindow === "month" ? "_month" : snapshotWindow === "auth_range" ? "_auth_range" : null;
+    const windowField = (base: string): number | null =>
+      suffix ? numOrNull(row[`${base}${suffix}`]) : null;
+
+    const authorized = windowField("authorized_hours") ?? numOrNull(auth.authorized_hours);
+    const sourceUsed = windowField("worked_hours") ?? numOrNull(auth.worked_hours);
+    const sourceRemaining = windowField("remaining_hours") ?? numOrNull(auth.remaining_hours);
+    const scheduled = windowField("scheduled_hours");
+    const pending = windowField("pending_hours");
 
     const slotKey = authorizationSlotKey(auth, index);
     const match = allocation.bySlot.get(slotKey);
@@ -417,8 +505,24 @@ export function computeProratedUtilization(
         ? Math.round((numerator / denominator) * 1000) / 10
         : null;
 
+    const expiringDays = end ? daysBetween(today, end) : null;
+    const risk = assessUtilizationRisk({
+      proratedAuthorizedHours: prorated ?? authorized,
+      usedHours: numerator,
+      scheduledHours: scheduled,
+      pendingHours: pending,
+      remainingHours:
+        sourceRemaining ??
+        (denominator != null && numerator != null ? round1(denominator - numerator) : null),
+      utilizationPct,
+      daysToExpiry: expiringDays,
+    });
+
     if (dataState !== "outside_range") {
       if (authorized != null) authorizedTotal += authorized;
+      if (sourceRemaining != null) remainingTotal = (remainingTotal ?? 0) + sourceRemaining;
+      if (scheduled != null) scheduledTotal = (scheduledTotal ?? 0) + scheduled;
+      if (pending != null) pendingTotal = (pendingTotal ?? 0) + pending;
       if (prorated != null) proratedTotal += prorated;
       if (sourceUsed != null) sourceUsedTotal += sourceUsed;
       if (recomputed != null) recomputedTotal += recomputed;
@@ -442,6 +546,17 @@ export function computeProratedUtilization(
       coverageDays: window.authDays,
       sourceUsedHours: sourceUsed != null ? round1(sourceUsed) : null,
       recomputedUsedHours: recomputed,
+      sourceRemainingHours: sourceRemaining != null ? round1(sourceRemaining) : null,
+      scheduledHours: scheduled != null ? round1(scheduled) : null,
+      pendingHours: pending != null ? round1(pending) : null,
+      snapshotWindow,
+      expiringWithin30: expiringDays != null && expiringDays >= 0 && expiringDays <= 30,
+      expiringWithin60: expiringDays != null && expiringDays >= 0 && expiringDays <= 60,
+      projectedDemandHours:
+        risk.projectedDemand != null ? round1(risk.projectedDemand) : null,
+      utilizationPacePct: utilizationPct,
+      riskLevel: risk.level,
+      riskReasons: risk.reasons,
       joinBasis: basis,
       joinedSessions: match?.sessions ?? 0,
       varianceHours:
@@ -481,6 +596,16 @@ export function computeProratedUtilization(
       proratedAuthorizedHours: round1(proratedTotal),
       sourceUsedHours: round1(sourceUsedTotal),
       recomputedUsedHours: round1(recomputedTotal),
+      sourceRemainingHours: remainingTotal != null ? round1(remainingTotal) : null,
+      scheduledHours: scheduledTotal != null ? round1(scheduledTotal) : null,
+      pendingHours: pendingTotal != null ? round1(pendingTotal) : null,
+      projectedDemandHours: round1(
+        usedNumerator + (scheduledTotal ?? 0) + (pendingTotal ?? 0),
+      ),
+      exhausted: rows.filter((r) => r.riskLevel === "exhausted").length,
+      exhaustionRisk: rows.filter((r) => r.riskLevel === "at_risk").length,
+      expiringWithin30: rows.filter((r) => r.expiringWithin30).length,
+      expiringWithin60: rows.filter((r) => r.expiringWithin60).length,
       varianceHours: round1(recomputedTotal - sourceUsedTotal),
       variancePct: sourceUsedTotal
         ? Math.round(((recomputedTotal - sourceUsedTotal) / sourceUsedTotal) * 1000) / 10
@@ -495,6 +620,7 @@ export function computeProratedUtilization(
     dataStateCounts,
     joinBasisCounts,
     allocation: allocation.counts,
+    allocations: allocation.allocations,
     prorationApplied,
   };
 }

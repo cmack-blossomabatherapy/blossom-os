@@ -34185,17 +34185,32 @@ export type Database = {
       report_authorization_events: {
         Args: never
         Returns: {
+          auth_type: string
           authorization_number: string
           client_cr_id: string
           client_name: string
           created_at: string
           event_date: string
           event_type: string
+          lifecycle_kind: string
           payor: string
           reason: string
           record_id: string
           source: string
           state: string
+        }[]
+      }
+      report_bcba_performance_targets: {
+        Args: never
+        Returns: {
+          bcba_name: string
+          forecast_hours: number
+          mtd_actual_hours: number
+          mtd_target_hours: number
+          period_end: string
+          period_start: string
+          state: string
+          updated_at: string
         }[]
       }
       report_billing_facts: {

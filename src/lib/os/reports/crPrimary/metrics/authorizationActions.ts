@@ -14,7 +14,7 @@
  *    "Needs Confirmation" list — they are a question, not a pause.
  */
 import type { LifecycleEventRow } from "./authorizationLifecycle";
-import { classifyLifecycleEvent } from "./authorizationLifecycle";
+import { classifyLifecycleEvent, classifyLifecycleKind } from "./authorizationLifecycle";
 import { cleanReasonText } from "../scheduleTruth";
 
 export interface AuthorizationActionRow {
@@ -91,7 +91,29 @@ const daysBetween = (from: string, to: string): number | null => {
   return Math.round((b - a) / 86_400_000);
 };
 
+/**
+ * True only for authorization records that are actually progress-report work.
+ *
+ * Two authoritative signals are accepted, in order:
+ *  1. an explicit `auth_type` that classifies as `progress_report`; or
+ *  2. a workflow/status/next-action string that explicitly names a progress
+ *     report (or carries a standalone `PR` token).
+ *
+ * A generic authorization action — "submit reauth", "await payor" — is *not*
+ * progress-report work and must stay out of the PR due queue.
+ */
+export function isProgressReportAction(action: AuthorizationActionRow): boolean {
+  if (classifyLifecycleKind(action.auth_type) === "progress_report") return true;
+  const text = [action.workflow_stage, action.status, action.next_action]
+    .map((v) => String(v ?? ""))
+    .join(" ")
+    .toLowerCase();
+  if (!text.trim()) return false;
+  return /progress\s*report|\bprogress[_-]report\b|(?:^|[^a-z])pr(?:$|[^a-z])/.test(text);
+}
+
 /** True progress-report events, split by real outcome (never manufactured). */
+
 export function computeProgressReportOps(
   events: LifecycleEventRow[],
   actions: AuthorizationActionRow[],
@@ -124,7 +146,9 @@ export function computeProgressReportOps(
     });
   }
 
-  const dueRows: ProgressReportDueRow[] = actions.map((a, i) => {
+  // Only true progress-report records enter the due queue.
+  const prActions = actions.filter(isProgressReportAction);
+  const dueRows: ProgressReportDueRow[] = prActions.map((a, i) => {
     const nextDue = String(a.next_action_due_date ?? "").slice(0, 10) || null;
     const appealDue = String(a.appeal_due_date ?? "").slice(0, 10) || null;
     const dueDate = nextDue ?? appealDue;

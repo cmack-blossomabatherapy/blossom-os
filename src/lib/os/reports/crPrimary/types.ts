@@ -185,6 +185,12 @@ export interface ReportBillingFactRow {
 /**
  * Curated authorization lifecycle event from the `report_authorization_events`
  * SECURITY DEFINER RPC. No PHI beyond the client name, no financial fields.
+ *
+ * `auth_type` / `lifecycle_kind` carry the *recorded* authorization type for
+ * operational records so a real submitted/approved/denied event is classified
+ * honestly instead of collapsing into "Unclassified". Manually logged weekly
+ * events leave both null unless the event type itself names the kind — the kind
+ * is never invented from dates.
  */
 export interface ReportAuthorizationEventRow {
   record_id: string;
@@ -194,11 +200,31 @@ export interface ReportAuthorizationEventRow {
   client_name: string | null;
   client_cr_id: string | null;
   authorization_number: string | null;
+  auth_type: string | null;
+  lifecycle_kind: string | null;
   payor: string | null;
   state: string | null;
   reason: string | null;
   created_at: string | null;
 }
+
+/**
+ * Curated BCBA productivity target from `report_bcba_performance_targets()`.
+ * Target/forecast hours only — no UUIDs, notes, risks, or admin fields. When no
+ * row exists for a BCBA and period the report must show "No target" rather than
+ * fabricate a minimum.
+ */
+export interface ReportBcbaTargetRow {
+  bcba_name: string | null;
+  state: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  mtd_target_hours: number | null;
+  mtd_actual_hours: number | null;
+  forecast_hours: number | null;
+  updated_at: string | null;
+}
+
 
 export interface CrAuthorizationRow {
   id: string;
