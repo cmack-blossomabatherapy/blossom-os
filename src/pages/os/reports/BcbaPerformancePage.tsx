@@ -764,13 +764,23 @@ export default function BcbaPerformancePage() {
       label: "Reasons & action",
       render: (r) => (
         <div className="min-w-[16rem] max-w-[26rem] space-y-1">
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            {statusReasons(r).join(" · ") || "No blocking reason recorded."}
-          </p>
+          <ul className="space-y-0.5">
+            {statusReasons(r).map((reason) => (
+              <li key={reason} className="text-[11px] leading-snug text-muted-foreground">
+                {reason}
+              </li>
+            ))}
+            {statusReasons(r).length === 0 && (
+              <li className="text-[11px] leading-snug text-muted-foreground">
+                No measurable dimension recorded.
+              </li>
+            )}
+          </ul>
           <p className="text-[11px] font-medium leading-snug">{relevantAction(r)}</p>
         </div>
       ),
     },
+
   ];
 
   const incentiveColumns: PrimaryTableColumn<IncentiveProgressRow>[] = [
