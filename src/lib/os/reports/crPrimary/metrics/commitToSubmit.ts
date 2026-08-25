@@ -89,6 +89,8 @@ export interface C2sTrackerRecord {
     | "withdrawn";
   isFormalViolation: boolean;
   category1CriteriaReference?: string | null;
+  /** When the formal disposition was recorded. Coaching must precede this. */
+  formalViolationRecordedAt?: string | null;
 }
 
 export interface C2sExceptionRecord {
@@ -97,6 +99,9 @@ export interface C2sExceptionRecord {
   trackerRecordId: string | null;
   status: "requested" | "approved" | "denied" | "withdrawn";
   exceptionType: string;
+  /** Unlinked date-window exceptions cover any service date in the window. */
+  appliesFrom?: string | null;
+  appliesTo?: string | null;
 }
 
 export interface C2sDisputeRecord {
@@ -111,6 +116,7 @@ export interface C2sCoachingRecord {
   subjectEmployeeId: string;
   coachingDate: string | null;
 }
+
 
 // ---------------------------------------------------------------- timeliness
 
@@ -359,16 +365,63 @@ export interface C2sFormalEligibility {
   reasons: string[];
 }
 
+function dayOf(value: string | null | undefined): string | null {
+  const raw = String(value ?? "").trim();
+  return raw === "" ? null : raw.slice(0, 10);
+}
+
+/**
+ * True when an approved exception covers the record: either linked directly, or
+ * an unlinked exception whose date window contains the service date. An
+ * unlinked exception with no window at all covers the employee outright.
+ */
+export function approvedExceptionApplies(
+  record: C2sTrackerRecord,
+  exceptions: C2sExceptionRecord[] | undefined,
+): boolean {
+  const serviceDay = dayOf(record.serviceDate);
+  return (exceptions ?? []).some((e) => {
+    if (e.status !== "approved") return false;
+    if (e.subjectEmployeeId !== record.subjectEmployeeId) return false;
+    if (e.trackerRecordId) return e.trackerRecordId === record.id;
+    const from = dayOf(e.appliesFrom);
+    const to = dayOf(e.appliesTo);
+    if (!from && !to) return true;
+    if (!serviceDay) return false;
+    if (from && serviceDay < from) return false;
+    if (to && serviceDay > to) return false;
+    return true;
+  });
+}
+
+/** Coaching for the same employee that precedes the formal-recorded date. */
+export function priorCoachingExists(
+  record: C2sTrackerRecord,
+  coaching: C2sCoachingRecord[] | undefined,
+): boolean {
+  const recordedOn = dayOf(record.formalViolationRecordedAt);
+  return (coaching ?? []).some((c) => {
+    if (c.subjectEmployeeId !== record.subjectEmployeeId) return false;
+    const coachedOn = dayOf(c.coachingDate);
+    if (!coachedOn) return false;
+    if (!recordedOn) return true;
+    return coachedOn <= recordedOn;
+  });
+}
+
 /**
  * A formal violation may come only from an authoritative completion timestamp
- * or an explicitly reviewed tracker record, and only after an upheld review
- * with no approved exception and no upheld dispute. BCBA Category 1 further
- * requires authoritative completion plus reviewed QA criteria.
+ * or an explicitly reviewed tracker record, and only after an upheld review,
+ * with prior coaching that precedes the formal-recorded date, an active
+ * approved configuration, no approved exception, and no upheld dispute. BCBA
+ * Category 1 further requires authoritative completion plus reviewed QA
+ * criteria.
  */
 export function evaluateFormalViolation(
   record: C2sTrackerRecord,
   context: {
     config?: C2sProgramConfig | null;
+    coaching?: C2sCoachingRecord[];
     exceptions?: C2sExceptionRecord[];
     disputes?: C2sDisputeRecord[];
   } = {},
@@ -395,13 +448,12 @@ export function evaluateFormalViolation(
       "BCBA Category 1 requires an authoritative completion source and reviewed QA criteria.",
     );
   }
-  const approvedException = (context.exceptions ?? []).some(
-    (e) =>
-      e.status === "approved" &&
-      e.subjectEmployeeId === record.subjectEmployeeId &&
-      (e.trackerRecordId === null || e.trackerRecordId === record.id),
-  );
-  if (approvedException) reasons.push("An approved exception applies to this record.");
+  if (!priorCoachingExists(record, context.coaching)) {
+    reasons.push("Coaching must exist and precede the formal-recorded date.");
+  }
+  if (approvedExceptionApplies(record, context.exceptions)) {
+    reasons.push("An approved exception applies to this record.");
+  }
   const upheldDispute = (context.disputes ?? []).some(
     (d) => d.status === "upheld" && d.trackerRecordId === record.id,
   );
@@ -429,18 +481,23 @@ export function evaluateNoticeEligibility(input: {
   coaching?: C2sCoachingRecord[];
   exceptions?: C2sExceptionRecord[];
   disputes?: C2sDisputeRecord[];
+  /** Levels already issued to this subject. Levels must advance 1 -> 2 -> 3. */
+  priorLevels?: number[];
 }): C2sNoticeEligibility {
   const reasons: string[] = [];
   const formal = evaluateFormalViolation(input.record, {
     config: input.config,
+    coaching: input.coaching,
     exceptions: input.exceptions,
     disputes: input.disputes,
   });
   if (!formal.eligible) reasons.push(...formal.reasons);
-  const hasCoaching = (input.coaching ?? []).some(
-    (c) => c.subjectEmployeeId === input.record.subjectEmployeeId,
-  );
-  if (!hasCoaching) reasons.push("Coaching must precede a formal notice.");
+  const highest = (input.priorLevels ?? []).reduce((max, n) => Math.max(max, n), 0);
+  if (input.level !== highest + 1) {
+    reasons.push(
+      `Notice levels must advance sequentially; the next allowed level is ${highest + 1}.`,
+    );
+  }
   return {
     allowed: reasons.length === 0,
     reasons,
@@ -448,6 +505,7 @@ export function evaluateNoticeEligibility(input: {
     employmentAction: null,
   };
 }
+
 
 // ---------------------------------------------------------- dispute deadline
 
@@ -494,7 +552,14 @@ export interface C2sGovernanceSummary {
   reviewedRecords: number;
   unreviewedRecords: number;
   upheldRecords: number;
+  /**
+   * Active formal violations only: evaluated against the configuration,
+   * coaching, exceptions, and disputes. A later approved exception or upheld
+   * dispute removes a record from this count without erasing its history.
+   */
   formalViolations: number;
+  /** Historical count of recorded formal dispositions (never erased). */
+  recordedFormalViolations: number;
   approvedExceptions: number;
   pendingExceptions: number;
   disputesFiled: number;
@@ -507,15 +572,29 @@ export function summarizeGovernance(input: {
   records?: C2sTrackerRecord[];
   exceptions?: C2sExceptionRecord[];
   disputes?: C2sDisputeRecord[];
+  config?: C2sProgramConfig | null;
+  coaching?: C2sCoachingRecord[];
 }): C2sGovernanceSummary {
   const records = input.records ?? [];
   const exceptions = input.exceptions ?? [];
   const disputes = input.disputes ?? [];
+  const activeFormal = records.filter(
+    (r) =>
+      r.isFormalViolation &&
+      evaluateFormalViolation(r, {
+        config: input.config,
+        coaching: input.coaching,
+        exceptions,
+        disputes,
+      }).eligible,
+  ).length;
   return {
     reviewedRecords: records.filter((r) => r.reviewStatus !== "unreviewed").length,
     unreviewedRecords: records.filter((r) => r.reviewStatus === "unreviewed").length,
     upheldRecords: records.filter((r) => r.reviewStatus === "upheld").length,
-    formalViolations: records.filter((r) => r.isFormalViolation).length,
+    formalViolations: activeFormal,
+    recordedFormalViolations: records.filter((r) => r.isFormalViolation).length,
+
     approvedExceptions: exceptions.filter((e) => e.status === "approved").length,
     pendingExceptions: exceptions.filter((e) => e.status === "requested").length,
     disputesFiled: disputes.length,

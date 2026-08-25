@@ -34908,8 +34908,25 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      c2s_add_business_days: {
+        Args: { _days: number; _from: string }
+        Returns: string
+      }
       c2s_can_read_subject: {
         Args: { _subject_employee_id: string; _user_id?: string }
+        Returns: boolean
+      }
+      c2s_config_is_active: { Args: { _config_id: string }; Returns: boolean }
+      c2s_has_approved_exception: {
+        Args: {
+          _service_date: string
+          _subject: string
+          _tracker_record_id: string
+        }
+        Returns: boolean
+      }
+      c2s_is_active_formal: {
+        Args: { _tracker_record_id: string }
         Returns: boolean
       }
       c2s_is_direct_manager: {
@@ -35767,6 +35784,18 @@ export type Database = {
           state: string
           timeliness_status: string
           used_authoritative_completion: boolean
+        }[]
+      }
+      report_c2s_program_status: {
+        Args: never
+        Returns: {
+          activation_ready: boolean
+          approvals_complete: boolean
+          configured: boolean
+          enabled: boolean
+          policy_version: string
+          required_values_complete: boolean
+          tracking_start_date: string
         }[]
       }
       report_source_coverage: { Args: never; Returns: Json }

@@ -58,7 +58,14 @@ const upheldRecord: C2sTrackerRecord = {
   category: "rbt_documentation",
   reviewStatus: "upheld",
   isFormalViolation: true,
+  formalViolationRecordedAt: "2026-09-25T12:00:00Z",
 };
+
+/** Coaching that precedes the formal-recorded date (required for any formal step). */
+const priorCoaching = [
+  { id: "c1", subjectEmployeeId: "emp-1", coachingDate: "2026-09-10" },
+];
+
 
 function row(over: Partial<C2sProxyRow> = {}): C2sProxyRow {
   const lagDays = over.lagDays === undefined ? 3 : over.lagDays;
@@ -218,6 +225,7 @@ describe("C2S formal violation eligibility", () => {
   it("ignores a denied exception", () => {
     const result = evaluateFormalViolation(upheldRecord, {
       config: approvedConfig,
+      coaching: priorCoaching,
       exceptions: [
         { id: "x1", subjectEmployeeId: "emp-1", trackerRecordId: "rec-1", status: "denied", exceptionType: "system_outage" },
       ],
@@ -228,6 +236,7 @@ describe("C2S formal violation eligibility", () => {
   it("blocks when a dispute was upheld", () => {
     const result = evaluateFormalViolation(upheldRecord, {
       config: approvedConfig,
+      coaching: priorCoaching,
       disputes: [{ id: "d1", subjectEmployeeId: "emp-1", trackerRecordId: "rec-1", status: "upheld" }],
     });
     expect(result.eligible).toBe(false);
@@ -237,17 +246,18 @@ describe("C2S formal violation eligibility", () => {
   it("requires authoritative completion plus reviewed QA criteria for BCBA Category 1", () => {
     const noEvidence = evaluateFormalViolation(
       { ...upheldRecord, roleGroup: "bcba", category: "bcba_category_1", authoritativeCompletedAt: null, sourceKind: "reviewed_tracker" },
-      { config: approvedConfig },
+      { config: approvedConfig, coaching: priorCoaching },
     );
     expect(noEvidence.eligible).toBe(false);
     expect(noEvidence.reasons.join(" ")).toMatch(/Category 1/);
 
     const withEvidence = evaluateFormalViolation(
       { ...upheldRecord, roleGroup: "bcba", category: "bcba_category_1", category1CriteriaReference: "QA-2026-11" },
-      { config: approvedConfig },
+      { config: approvedConfig, coaching: priorCoaching },
     );
     expect(withEvidence.eligible).toBe(true);
   });
+
 });
 
 describe("C2S notices", () => {
