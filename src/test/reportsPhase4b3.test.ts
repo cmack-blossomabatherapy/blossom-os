@@ -407,6 +407,23 @@ describe("Phase 4B3 audit — proof and deterministic targets", () => {
     expect(proof.passes({ clientCrId: null, clientName: "Unknown Person" })).toBe(false);
   });
 
+  it("rejects an id-less authorization when distinct IDs and an id-less row share the name", () => {
+    const mixed = [
+      { clientCrId: "c9", clientName: "Twin Name" },
+      { clientCrId: null, clientName: "Twin Name" },
+      { clientCrId: "c10", clientName: "Twin Name" },
+    ];
+    const rotate = <T,>(xs: T[], n: number) => [...xs.slice(n), ...xs.slice(0, n)];
+    for (let n = 0; n < mixed.length; n += 1) {
+      const proof = buildProvenClientProof(rotate(mixed, n));
+      // Ambiguous: an id-less activity row does not resolve two distinct IDs.
+      expect(proof.passes({ clientCrId: null, clientName: "Twin Name" })).toBe(false);
+      // Exact CR ID proof still passes.
+      expect(proof.passes({ clientCrId: "c9", clientName: "Twin Name" })).toBe(true);
+      expect(proof.passes({ clientCrId: "c11", clientName: "Twin Name" })).toBe(false);
+    }
+  });
+
   it("is order independent across activity permutations", () => {
     const rotate = <T,>(xs: T[], n: number) => [...xs.slice(n), ...xs.slice(0, n)];
     const probes = [

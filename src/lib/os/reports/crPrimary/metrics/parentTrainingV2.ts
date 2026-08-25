@@ -296,8 +296,12 @@ export function buildProvenClientProof(
       if (id) return crIds.has(id);
       const name = normName(auth.clientName);
       if (!name) return false;
-      if (idlessNames.has(name)) return true;
-      return (idsByName.get(name)?.size ?? 0) === 1;
+      const ids = idsByName.get(name)?.size ?? 0;
+      // Two or more distinct CR IDs share this name: the id-less authorization
+      // is ambiguous even when an id-less activity row also exists.
+      if (ids > 1) return false;
+      if (ids === 1) return true;
+      return idlessNames.has(name);
     },
   };
 }
