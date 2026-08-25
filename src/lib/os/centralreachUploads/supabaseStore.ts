@@ -157,6 +157,9 @@ export interface CrNormalizedCounts {
   utilization: number;
   claims: number;
   contacts: number;
+  payments: number;
+  eraPayments: number;
+  timesheet: number;
   rawRows: number;
 }
 
@@ -170,11 +173,15 @@ export async function fetchCrNormalizedCounts(): Promise<CrNormalizedCounts> {
     ["utilization", "cr_authorization_utilization"],
     ["claims", "cr_claims"],
     ["contacts", "cr_contacts"],
+    ["payments", "cr_payments"],
+    ["eraPayments", "cr_era_payments"],
+    ["timesheet", "cr_timesheet_status"],
     ["rawRows", "cr_raw_rows"],
   ];
   const counts: CrNormalizedCounts = {
     batches: 0, billing: 0, scheduling: 0, authorization: 0,
-    utilization: 0, claims: 0, contacts: 0, rawRows: 0,
+    utilization: 0, claims: 0, contacts: 0,
+    payments: 0, eraPayments: 0, timesheet: 0, rawRows: 0,
   };
   await Promise.all(
     tables.map(async ([key, table]) => {
@@ -184,6 +191,7 @@ export async function fetchCrNormalizedCounts(): Promise<CrNormalizedCounts> {
   );
   return counts;
 }
+
 
 export interface CrBatchRecord {
   id: string;

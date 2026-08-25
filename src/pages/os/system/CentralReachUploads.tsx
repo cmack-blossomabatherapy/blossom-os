@@ -98,7 +98,8 @@ const SHARED_KEYS: SharedReportKey[] = [
 ];
 
 const NORMALIZED_CARDS: Array<{
-  key: "billing" | "scheduling" | "authorization" | "utilization" | "claims" | "contacts";
+  key: "billing" | "scheduling" | "authorization" | "utilization" | "claims" | "contacts"
+    | "payments" | "eraPayments" | "timesheet";
   label: string;
   table: string;
   reports: string;
@@ -107,8 +108,11 @@ const NORMALIZED_CARDS: Array<{
   { key: "scheduling", label: "Schedule events", table: "cr_schedule_events", reports: "Cancellation Command Center" },
   { key: "authorization", label: "Authorizations", table: "cr_authorizations", reports: "Authorization Analysis" },
   { key: "utilization", label: "Auth utilization", table: "cr_authorization_utilization", reports: "Authorization Utilization" },
-  { key: "claims", label: "Claims", table: "cr_claims", reports: "Authorization claim coverage" },
+  { key: "claims", label: "Claims", table: "cr_claims", reports: "Claims Submission & Error Queue, Authorization claim coverage" },
   { key: "contacts", label: "Contacts", table: "cr_contacts", reports: "Client & staff match queues" },
+  { key: "payments", label: "Payments", table: "cr_payments", reports: "Payment Reconciliation" },
+  { key: "eraPayments", label: "ERA payment detail", table: "cr_era_payments", reports: "Payment Reconciliation" },
+  { key: "timesheet", label: "Timesheet documentation", table: "cr_timesheet_status", reports: "Commit to Submit documentation readiness (never billing facts)" },
 ];
 
 const SHARED_LABELS: Record<SharedReportKey, { label: string; reports: string }> = {
@@ -554,8 +558,9 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">CentralReach Uploads</h1>
             <p className="text-sm text-muted-foreground mt-1.5 max-w-3xl">
-              Drop any CentralReach daily export here. Billing, scheduling, and authorization files are auto-detected and
-              distributed to every report that needs them — no more separate upload pages per report.
+              Drop any CentralReach daily export here. Billing, scheduling, authorization, utilization, claims, contacts,
+              payments, ERA payment detail, and timesheet/documentation files are auto-detected and distributed to every
+              report that needs them. Timesheet exports update documentation status only and never create billing facts.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -765,7 +770,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
             </div>
             <div className="text-[15px] font-semibold">Drop CentralReach exports here</div>
             <div className="text-[12.5px] text-muted-foreground mt-1">
-              Billing · Scheduling · Authorization · CSV or XLSX · multiple files at once
+              Billing · Scheduling · Authorization · Utilization · Claims · Contacts · Payments · ERA payment detail ·
+              Timesheet/documentation · CSV or XLSX · multiple files at once
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
               <input

@@ -20,6 +20,9 @@ export const CR_RUN_TYPE_FOR_KIND: Record<Exclude<CRUploadKind, "unknown">, stri
   utilization: "utilization",
   claims: "claims",
   contacts: "contacts",
+  payments: "payments",
+  era_payments: "era_payments",
+  timesheet: "timesheets",
 };
 
 export function crRunTypeForKind(kind: CRUploadKind): string {

@@ -24,6 +24,11 @@ export const CR_TABLE_FOR_KIND: Record<Exclude<CRUploadKind, "unknown">, string>
   utilization: "cr_authorization_utilization",
   claims: "cr_claims",
   contacts: "cr_contacts",
+  payments: "cr_payments",
+  era_payments: "cr_era_payments",
+  // Documentation-only current status. Deliberately NOT cr_billing_sessions:
+  // a timesheet export must never append a billing fact.
+  timesheet: "cr_timesheet_status",
 };
 
 export function crTableForKind(kind: CRUploadKind): string {
@@ -39,6 +44,9 @@ export const CR_COVERAGE_FIELD: Record<Exclude<CRUploadKind, "unknown">, string 
   utilization: "week_start",
   claims: "date_of_service",
   contacts: null,
+  payments: "record_date",
+  era_payments: "received_date",
+  timesheet: "date_of_service",
 };
 
 const MONTHS = [
@@ -558,6 +566,104 @@ function contactRow(row: Record<string, unknown>): NormalizedCrRow {
   };
 }
 
+/**
+ * Payments export → `cr_payments` (mutable CURRENT snapshot).
+ * `Amount` has no documented unit in CentralReach exports, so it is stored raw
+ * with an explicitly unknown unit and never presented as a dollar figure.
+ */
+function paymentRow(row: Record<string, unknown>): NormalizedCrRow {
+  return {
+    payment_cr_id: text(row, ["Id", "PaymentId", "Payment Id"]),
+    billing_entry_id: text(row, ["BillingEntryId", "Billing Entry Id"]),
+    record_date: date(row, ["RecordDate", "Record Date"]),
+    creation_date: date(row, ["CreationDate", "Creation Date"]),
+    date_of_service: date(row, ["DateOfService", "Date of Service"]),
+    client_name: text(row, CLIENT),
+    client_cr_id: text(row, CLIENT_ID),
+    department: text(row, ["Department"]),
+    payor: text(row, PAYOR),
+    payor_nickname: text(row, ["PayorNickname", "Payor Nickname"]),
+    payment_type: text(row, ["PaymentType", "Payment Type"]),
+    reference: text(row, ["Reference"]),
+    notes: text(row, ["Notes"]),
+    applied_by_name: text(row, ["AppliedByFullName", "Applied By Full Name"]),
+    applied_by_contact_id: text(row, ["AppliedByContactId", "Applied By Contact Id"]),
+    resource_id: text(row, ["ResourceId", "Resource Id"]),
+    amount_raw: num(row, ["Amount"]),
+    amount_unit: "unknown",
+    is_copay: crBool(row, ["IsCopay", "Is Copay"]),
+    voided_by: text(row, ["VoidedBy", "Voided By"]),
+    voided_date: date(row, ["VoidedDate", "Voided Date"]),
+    voided_reason: crReason(text(row, ["VoidedReason", "Voided Reason"])),
+    payment_labels: text(row, ["PaymentLabels", "Payment Labels"]),
+    primary_location: text(row, ["PrimaryLocation", "Primary Location"]),
+    invoice_number: text(row, ["Invoice#", "InvoiceNumber", "Invoice Number"]),
+    first_billed: date(row, ["FirstBilled", "First Billed"]),
+    procedure_code_string: text(row, ["ProcedureCodeString", "Procedure Code String"]),
+    claims_raw: text(row, ["claims", "Claims"]),
+    claim_adjustments_raw: text(row, ["ClaimAdjustments", "Claim Adjustments"]),
+  };
+}
+
+/** ERA payment detail export → `cr_era_payments` (mutable CURRENT snapshot). */
+function eraPaymentRow(row: Record<string, unknown>): NormalizedCrRow {
+  return {
+    era_cr_id: text(row, ["Id", "ERAId", "ERA Id"]),
+    era_labels: text(row, ["ERA Labels", "ERALabels"]),
+    received_date: date(row, ["Received", "ReceivedDate", "Received Date"]),
+    payor: text(row, PAYOR),
+    check_number: text(row, ["Check Number", "CheckNumber"]),
+    claim_count: num(row, ["# of Claims", "NumberOfClaims", "ClaimCount"]),
+    client_count: num(row, ["# of Clients", "NumberOfClients", "ClientCount"]),
+    est_total_claim_charges: num(row, ["Est. Total Claim Charges", "EstTotalClaimCharges"]),
+    agreed_charges: num(row, ["Agreed Charges", "AgreedCharges"]),
+    claim_adjustment_amount: num(row, ["Claim Adj. Amount", "ClaimAdjAmount"]),
+    provider_adjustment_amount: num(row, ["Provider Adj. Amount", "ProviderAdjAmount"]),
+    contractual_obligations: num(row, ["Contractual Obligations", "ContractualObligations"]),
+    corrections_reversals: num(row, ["Correction & Reversals", "CorrectionAndReversals"]),
+    other_adjustments: num(row, ["Other Adj.", "OtherAdj"]),
+    payor_initiated_reductions: num(row, ["Payor Initiated Red.", "Payor Initiated Red", "PayorInitiatedRed"]),
+    total_adjustments: num(row, ["Total Adjustments", "TotalAdjustments"]),
+    patient_responsibility: num(row, ["Patient Responsibility", "PatientResponsibility"]),
+    insurance_paid_amount: num(row, ["Insurance Paid Amount", "InsurancePaidAmount"]),
+    total_adjustment_amount: num(row, ["Total Adj. Amount", "TotalAdjAmount"]),
+    paid_amount: num(row, ["Paid Amount", "PaidAmount"]),
+    amount_unit: "unknown",
+    reconcile_status: text(row, ["Reconcile Status", "ReconcileStatus"]),
+    files_raw: text(row, ["Files"]),
+  };
+}
+
+/**
+ * Timesheet / documentation export → `cr_timesheet_status`.
+ * Documentation status only. This mapper intentionally produces NO billing
+ * fact columns so a timesheet upload can never reach `cr_billing_sessions`.
+ */
+function timesheetRow(row: Record<string, unknown>): NormalizedCrRow {
+  const hours = num(row, ["TimeWorkedInHours", "Time Worked In Hours"]);
+  const mins = num(row, ["TimeWorkedInMins", "Time Worked In Mins"]);
+  return {
+    timesheet_cr_id: text(row, ["Id", "TimesheetId", "BillingId"]),
+    date_of_service: date(row, ["DateOfService", "Date of Service"]),
+    datetime_from: text(row, ["DateTimeFrom", "Date Time From"]),
+    datetime_to: text(row, ["DateTimeTo", "Date Time To"]),
+    client_cr_id: text(row, CLIENT_ID),
+    client_name: text(row, CLIENT),
+    provider_cr_id: text(row, ["ProviderId", "Provider Id", "EmployeeId"]),
+    provider_name: text(row, PROVIDER),
+    authorization_id: text(row, ["AuthorizationId", "Authorization Id"]),
+    procedure_code: text(row, CODE),
+    time_worked_hours: hours ?? (mins !== null ? Math.round((mins / 60) * 100) / 100 : null),
+    billing_labels: text(row, ["BillingLabels", "Billing Labels"]),
+    client_signature: crBool(row, ["ClientSignature", "Client Signature"]),
+    provider_signature: crBool(row, ["ProviderSignature", "Provider Signature"]),
+    is_void: crBool(row, ["IsVoid", "Is Void"]),
+    is_locked: crBool(row, ["IsLocked", "Is Locked"]),
+    tasks_total: num(row, ["Tasks"]),
+    tasks_completed: num(row, ["TasksCompleted", "Tasks Completed"]),
+  };
+}
+
 const MAPPERS: Record<Exclude<CRUploadKind, "unknown">, (row: Record<string, unknown>) => NormalizedCrRow> = {
   billing: billingRow,
   scheduling: scheduleRow,
@@ -565,7 +671,11 @@ const MAPPERS: Record<Exclude<CRUploadKind, "unknown">, (row: Record<string, unk
   utilization: utilizationRow,
   claims: claimRow,
   contacts: contactRow,
+  payments: paymentRow,
+  era_payments: eraPaymentRow,
+  timesheet: timesheetRow,
 };
+
 
 /** Map one raw export row into its normalized shape, carrying raw provenance. */
 export function normalizeCrRow(kind: CRUploadKind, row: Record<string, unknown>): NormalizedCrRow {

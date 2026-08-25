@@ -21,7 +21,11 @@ import {
   fetchCrBatches,
   fetchCrBillingSessions,
   fetchCrScheduleCurrent,
+  fetchCrClaimsStatus,
+  fetchCrEraReconciliation,
+  fetchCrPaymentsCurrent,
   fetchCrScheduleEvents,
+  fetchCrTimesheetDocumentation,
   fetchCrUtilization,
   fetchReportAuthorizationActions,
   fetchReportAuthorizationEvents,
@@ -34,8 +38,12 @@ import type {
   CrAuthorizationRow,
   CrBatchSummary,
   CrBillingSessionRow,
+  CrClaimsStatusRow,
+  CrEraReconciliationRow,
+  CrPaymentCurrentRow,
   CrScheduleCurrentRow,
   CrScheduleEventRow,
+  CrTimesheetDocRow,
   CrUtilizationRow,
   ReportAuthorizationActionRow,
   ReportAuthorizationEventRow,
@@ -54,7 +62,11 @@ export type CrDataset =
   | "authEvents"
   | "authActions"
   | "billingFacts"
-  | "bcbaTargets";
+  | "bcbaTargets"
+  | "claimsStatus"
+  | "payments"
+  | "eraPayments"
+  | "timesheetDocs";
 
 const BATCH_TYPES: Record<CrDataset, string[]> = {
   billing: ["billing", "billing_sessions", "sessions"],
@@ -67,6 +79,10 @@ const BATCH_TYPES: Record<CrDataset, string[]> = {
   authActions: [],
   billingFacts: ["billing", "billing_sessions", "sessions"],
   bcbaTargets: [],
+  claimsStatus: ["claims"],
+  payments: ["payments"],
+  eraPayments: ["era_payments"],
+  timesheetDocs: ["timesheet", "timesheets"],
 };
 
 export interface CrPrimaryReportData {
@@ -81,6 +97,10 @@ export interface CrPrimaryReportData {
   billingFacts: ReportBillingFactRow[];
   /** Recorded BCBA productivity targets; absent rows mean "No target". */
   bcbaTargets: ReportBcbaTargetRow[];
+  claimsStatus: CrClaimsStatusRow[];
+  payments: CrPaymentCurrentRow[];
+  eraPayments: CrEraReconciliationRow[];
+  timesheetDocs: CrTimesheetDocRow[];
   batches: CrBatchSummary[];
   freshness: FreshnessInfo;
   loading: boolean;
@@ -106,6 +126,10 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
   const [authActions, setAuthActions] = useState<ReportAuthorizationActionRow[]>([]);
   const [billingFacts, setBillingFacts] = useState<ReportBillingFactRow[]>([]);
   const [bcbaTargets, setBcbaTargets] = useState<ReportBcbaTargetRow[]>([]);
+  const [claimsStatus, setClaimsStatus] = useState<CrClaimsStatusRow[]>([]);
+  const [payments, setPayments] = useState<CrPaymentCurrentRow[]>([]);
+  const [eraPayments, setEraPayments] = useState<CrEraReconciliationRow[]>([]);
+  const [timesheetDocs, setTimesheetDocs] = useState<CrTimesheetDocRow[]>([]);
   const [batches, setBatches] = useState<CrBatchSummary[]>([]);
   const [nonce, setNonce] = useState(0);
 
@@ -120,7 +144,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       const errors: string[] = [];
       const batchTypes = [...wanted].flatMap((d) => BATCH_TYPES[d]);
 
-      const [b, s, a, u, sc, ac, ae, aa, bf, bt, batchRes] = await Promise.all([
+      const [b, s, a, u, sc, ac, ae, aa, bf, bt, cs, pay, era, tsd, batchRes] = await Promise.all([
         wanted.has("billing") ? fetchCrBillingSessions() : Promise.resolve(EMPTY_RESULT),
         wanted.has("schedule") ? fetchCrScheduleEvents() : Promise.resolve(EMPTY_RESULT),
         wanted.has("authorizations") ? fetchCrAuthorizations() : Promise.resolve(EMPTY_RESULT),
@@ -135,11 +159,19 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
           : Promise.resolve(EMPTY_RESULT),
         wanted.has("billingFacts") ? fetchReportBillingFacts() : Promise.resolve(EMPTY_RESULT),
         wanted.has("bcbaTargets") ? fetchReportBcbaTargets() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("claimsStatus") ? fetchCrClaimsStatus() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("payments") ? fetchCrPaymentsCurrent() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("eraPayments") ? fetchCrEraReconciliation() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("timesheetDocs")
+          ? fetchCrTimesheetDocumentation()
+          : Promise.resolve(EMPTY_RESULT),
         fetchCrBatches(batchTypes),
       ]);
       if (cancelled) return;
 
-      for (const r of [b, s, a, u, sc, ac, ae, aa, bf, bt, batchRes]) if (r.error) errors.push(r.error);
+      for (const r of [b, s, a, u, sc, ac, ae, aa, bf, bt, cs, pay, era, tsd, batchRes]) {
+        if (r.error) errors.push(r.error);
+      }
       setBilling(b.rows as CrBillingSessionRow[]);
       setSchedule(s.rows as CrScheduleEventRow[]);
       setAuthorizations(a.rows as CrAuthorizationRow[]);
@@ -150,6 +182,10 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       setAuthActions(aa.rows as ReportAuthorizationActionRow[]);
       setBillingFacts(bf.rows as ReportBillingFactRow[]);
       setBcbaTargets(bt.rows as ReportBcbaTargetRow[]);
+      setClaimsStatus(cs.rows as CrClaimsStatusRow[]);
+      setPayments(pay.rows as CrPaymentCurrentRow[]);
+      setEraPayments(era.rows as CrEraReconciliationRow[]);
+      setTimesheetDocs(tsd.rows as CrTimesheetDocRow[]);
       setBatches(batchRes.rows);
       setErrorMessage(errors.length ? errors[0] : null);
       setLoading(false);
@@ -171,7 +207,11 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
     utilization.length +
     scheduleCurrent.length +
     authCurrent.length +
-    billingFacts.length;
+    billingFacts.length +
+    claimsStatus.length +
+    payments.length +
+    eraPayments.length +
+    timesheetDocs.length;
 
   const freshness = useMemo<FreshnessInfo>(() => {
     const summary = summarizeFreshness(batches);
@@ -190,7 +230,12 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
     authActions,
     billingFacts,
     bcbaTargets,
+    claimsStatus,
+    payments,
+    eraPayments,
+    timesheetDocs,
     batches,
+
     freshness,
     loading,
     empty: !loading && sourceRowCount === 0,

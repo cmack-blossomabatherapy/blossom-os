@@ -63,6 +63,11 @@ const RAW_ID_KEYS = [
  */
 const RAW_ID_KEYS_BY_KIND: Partial<Record<CRUploadKind, string[]>> = {
   scheduling: ["eventid", "appointmentid", "scheduleid", "event"],
+  // Payments, ERA remittances and timesheets are all keyed by the export's own
+  // CentralReach `Id` column, never by a nested reference/resource id.
+  payments: ["id", "paymentid"],
+  era_payments: ["id", "eraid"],
+  timesheet: ["id", "timesheetid"],
 };
 
 function normKey(key: string): string {

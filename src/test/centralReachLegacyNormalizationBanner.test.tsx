@@ -9,7 +9,8 @@ import {
 
 const emptyCounts = {
   batches: 0, billing: 0, scheduling: 0, authorization: 0,
-  utilization: 0, claims: 0, contacts: 0, rawRows: 0,
+  utilization: 0, claims: 0, contacts: 0,
+  payments: 0, eraPayments: 0, timesheet: 0, rawRows: 0,
 };
 
 const fetchCrNormalizedCounts = vi.fn();

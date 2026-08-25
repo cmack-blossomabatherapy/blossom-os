@@ -692,6 +692,9 @@ export default function CommitToSubmitCompliancePage() {
         "The Commit to Submit program is not active yet. This page reports documentation timeliness only — no notice, formal violation, or employment action can come from it until a configuration is enabled and fully approved.",
       );
     }
+    out.push(
+      "Documentation timeliness here is a date-of-service to billing-creation lag proxy only. CentralReach timesheet documentation status — lock state, signatures, and task completion — is a source readiness signal and can never create a formal violation on its own.",
+    );
     if (summary.missing + summary.invalid > 0) {
       out.push(
         `${fmtCount(summary.missing + summary.invalid)} row(s) cannot be measured because a documentation date is missing or unusable. They are excluded from the on-time and late percentages rather than counted as on time.`,
