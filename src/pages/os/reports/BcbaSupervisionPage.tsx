@@ -350,11 +350,7 @@ export default function BcbaSupervisionPage() {
         ownership.refetch();
       }}
       onExport={() =>
-        downloadCsv(
-          "bcba-supervision",
-          EXPORT_COLUMNS.map((c) => c.label),
-          projectGroups(active.rows).map((r) => EXPORT_COLUMNS.map((c) => String(r[c.key] ?? ""))),
-        )
+        downloadCsv("bcba-supervision", projectGroups(active.rows), EXPORT_COLUMNS)
       }
       exportDisabled={active.rows.length === 0}
       filters={
