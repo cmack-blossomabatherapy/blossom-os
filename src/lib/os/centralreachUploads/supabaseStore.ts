@@ -168,19 +168,23 @@ export interface CrNormalizedCounts {
 
 /** True row counts for Data Hub readiness — never inferred from batch metadata. */
 export async function fetchCrNormalizedCounts(): Promise<CrNormalizedCounts> {
+  // Readiness reads the curated CURRENT views for snapshot kinds so counts
+  // reflect the latest successful snapshot batch instead of historical rows.
+  // Billing and claims intentionally keep counting their base tables.
   const tables: Array<[keyof CrNormalizedCounts, string]> = [
     ["batches", "cr_import_batches"],
     ["billing", "cr_billing_sessions"],
-    ["scheduling", "cr_schedule_events"],
-    ["authorization", "cr_authorizations"],
+    ["scheduling", "v_cr_schedule_current"],
+    ["authorization", "v_cr_authorization_current"],
     ["utilization", "cr_authorization_utilization"],
     ["claims", "cr_claims"],
     ["contacts", "cr_contacts"],
-    ["payments", "cr_payments"],
-    ["eraPayments", "cr_era_payments"],
-    ["timesheet", "cr_timesheet_status"],
+    ["payments", "v_cr_payments_current"],
+    ["eraPayments", "v_cr_era_reconciliation"],
+    ["timesheet", "v_cr_timesheet_documentation"],
     ["rawRows", "cr_raw_rows"],
   ];
+
   const counts: CrNormalizedCounts = {
     batches: 0, billing: 0, scheduling: 0, authorization: 0,
     utilization: 0, claims: 0, contacts: 0,

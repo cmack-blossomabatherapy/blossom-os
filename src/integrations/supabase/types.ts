@@ -34513,30 +34513,6 @@ export type Database = {
           reconcile_status: string | null
           source_row_id: string | null
         }
-        Insert: {
-          amount_unit?: string | null
-          claim_count?: number | null
-          client_count?: number | null
-          era_labels?: string | null
-          id?: string | null
-          last_seen_at?: string | null
-          payor?: string | null
-          received_date?: string | null
-          reconcile_status?: string | null
-          source_row_id?: string | null
-        }
-        Update: {
-          amount_unit?: string | null
-          claim_count?: number | null
-          client_count?: number | null
-          era_labels?: string | null
-          id?: string | null
-          last_seen_at?: string | null
-          payor?: string | null
-          received_date?: string | null
-          reconcile_status?: string | null
-          source_row_id?: string | null
-        }
         Relationships: []
       }
       v_cr_payments_current: {
@@ -34559,46 +34535,6 @@ export type Database = {
           primary_location: string | null
           record_date: string | null
           source_row_id: string | null
-        }
-        Insert: {
-          amount_unit?: string | null
-          applied_to_billing_entry?: never
-          client_cr_id?: string | null
-          client_name?: string | null
-          creation_date?: string | null
-          date_of_service?: string | null
-          department?: string | null
-          first_billed?: string | null
-          id?: string | null
-          is_copay?: boolean | null
-          is_voided?: never
-          last_seen_at?: string | null
-          payment_labels?: string | null
-          payment_type?: string | null
-          payor?: string | null
-          primary_location?: string | null
-          record_date?: string | null
-          source_row_id?: string | null
-        }
-        Update: {
-          amount_unit?: string | null
-          applied_to_billing_entry?: never
-          client_cr_id?: string | null
-          client_name?: string | null
-          creation_date?: string | null
-          date_of_service?: string | null
-          department?: string | null
-          first_billed?: string | null
-          id?: string | null
-          is_copay?: boolean | null
-          is_voided?: never
-          last_seen_at?: string | null
-          payment_labels?: string | null
-          payment_type?: string | null
-          payor?: string | null
-          primary_location?: string | null
-          record_date?: string | null
-          source_row_id?: string | null
         }
         Relationships: []
       }
@@ -34667,46 +34603,6 @@ export type Database = {
           tasks_completed: number | null
           tasks_total: number | null
           time_worked_hours: number | null
-        }
-        Insert: {
-          authorization_id?: string | null
-          billing_labels?: string | null
-          client_cr_id?: string | null
-          client_name?: string | null
-          client_signature?: boolean | null
-          date_of_service?: string | null
-          id?: string | null
-          is_locked?: boolean | null
-          is_void?: boolean | null
-          last_seen_at?: string | null
-          procedure_code?: string | null
-          provider_cr_id?: string | null
-          provider_name?: string | null
-          provider_signature?: boolean | null
-          source_row_id?: string | null
-          tasks_completed?: number | null
-          tasks_total?: number | null
-          time_worked_hours?: number | null
-        }
-        Update: {
-          authorization_id?: string | null
-          billing_labels?: string | null
-          client_cr_id?: string | null
-          client_name?: string | null
-          client_signature?: boolean | null
-          date_of_service?: string | null
-          id?: string | null
-          is_locked?: boolean | null
-          is_void?: boolean | null
-          last_seen_at?: string | null
-          procedure_code?: string | null
-          provider_cr_id?: string | null
-          provider_name?: string | null
-          provider_signature?: boolean | null
-          source_row_id?: string | null
-          tasks_completed?: number | null
-          tasks_total?: number | null
-          time_worked_hours?: number | null
         }
         Relationships: []
       }
