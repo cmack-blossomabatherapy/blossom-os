@@ -157,7 +157,7 @@ describe("Data Hub UI is wired to the normalized path", () => {
 
   it("shows cr_import_batches history and a legacy reprocess action", () => {
     expect(ui).toMatch(/listCrImportBatches/);
-    expect(ui).toMatch(/reprocessLegacySharedDatasets/);
+    expect(ui).toMatch(/refreshReportsFromExistingUploads/);
   });
 
   it("marks a file done only after normalized rows are accounted for", () => {
