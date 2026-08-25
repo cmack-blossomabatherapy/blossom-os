@@ -111,10 +111,8 @@ describe("cancellationReasonBucket", () => {
     expect(cancellationReasonBucket(row({ attendance: "No Show" }))).toBe("No Show");
   });
 
-  it("uses documented reason text when present", () => {
-    expect(cancellationReasonBucket(row({ cancellation_reason: "Client illness" }))).toMatch(
-      /client/i,
-    );
+  it("maps documented reason text into a shared reason bucket", () => {
+    expect(cancellationReasonBucket(row({ cancellation_reason: "Client illness" }))).toBe("Illness");
   });
 
   it("resolves a service code from the first usable column", () => {
