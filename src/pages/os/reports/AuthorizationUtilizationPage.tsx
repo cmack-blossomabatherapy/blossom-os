@@ -62,6 +62,10 @@ import {
   snapshotWindowMode,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationScope";
 import { buildUtilizationTabExport } from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationExport";
+import {
+  dedupeGapReasons,
+  reconciliationEmptyLabel,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationQa";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 
 const FILTER_FIELDS = ["state", "client", "payor", "code"] as const;
@@ -314,6 +318,7 @@ export default function AuthorizationUtilizationPage() {
   const overUtilized = computable.filter((r) => bandOf(r.utilizationPct) === "over");
   const underUtilized = computable.filter((r) => bandOf(r.utilizationPct) === "under");
   const notJoined = result.rows.filter((r) => r.joinBasis === "none");
+  const comparablePairs = computable.filter((r) => r.varianceHours != null).length;
   const variances = computable.filter(
     (r) => r.varianceHours != null && Math.abs(r.varianceHours) >= 1,
   );
@@ -713,16 +718,22 @@ export default function AuthorizationUtilizationPage() {
     {
       key: "state",
       label: "Why it cannot be computed",
-      render: (r) => (
-        <div className="min-w-0">
-          <p className="text-[11px] font-medium">
-            {UTILIZATION_DATA_STATE_LABELS[r.dataState]}
-          </p>
-          <p className="truncate text-[10px] text-muted-foreground">{r.note}</p>
-        </div>
-      ),
+      render: (r) => {
+        const reasons = dedupeGapReasons([UTILIZATION_DATA_STATE_LABELS[r.dataState], r.note]);
+        return (
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium">{reasons[0] ?? "Not documented"}</p>
+            {reasons.slice(1).map((reason) => (
+              <p key={reason} className="truncate text-[10px] text-muted-foreground">
+                {reason}
+              </p>
+            ))}
+          </div>
+        );
+      },
     },
   ];
+
 
   const exportView = () => {
     const projection = buildUtilizationTabExport(tab, {
@@ -991,7 +1002,7 @@ export default function AuthorizationUtilizationPage() {
               rows={variances}
               rowKey={(r) => r.key}
               columns={reconciliationColumns}
-              emptyLabel="CentralReach used hours agree with recomputed billing hours for every authorization in view."
+              emptyLabel={reconciliationEmptyLabel(comparablePairs)}
               onRowClick={(r) => open(`${r.client} · ${r.authorizationNumber}`, r.note, [r], `authorization-variance-${r.authorizationNumber.toLowerCase()}`)}
             />
           </TabsContent>
