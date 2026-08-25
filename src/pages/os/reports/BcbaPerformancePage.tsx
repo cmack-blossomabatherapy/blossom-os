@@ -50,29 +50,16 @@ import {
   normalizeCode,
 } from "@/lib/os/reports/crPrimary/metrics/codes";
 import {
-  endDateOf,
+  computeAuthorizationContinuity,
   daysBetween,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
-import { isProgressReportAction } from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
+import {
+  isActionResolved,
+  isProgressReportAction,
+  validDay,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
 import { inDayRange } from "@/lib/os/reports/dateKey";
 
-/**
- * A progress-report action only counts as overdue when nothing records it as
- * finished. Any recorded completion/approval/closure — a status word or an
- * approved date — takes it out of the overdue count.
- */
-const RESOLVED_STATUS_RE = /(complete|completed|approved|closed|resolved)/i;
-function isActionResolved(action: {
-  status?: string | null;
-  workflow_stage?: string | null;
-  next_action?: string | null;
-  approved_date?: string | null;
-}): boolean {
-  if (action.approved_date) return true;
-  return [action.status, action.workflow_stage, action.next_action].some(
-    (v) => v && RESOLVED_STATUS_RE.test(String(v)),
-  );
-}
 
 import { classifyLifecycleEvent } from "@/lib/os/reports/crPrimary/metrics/authorizationLifecycle";
 import { computeParentTrainingAnalysis } from "@/lib/os/reports/crPrimary/metrics/parentTrainingV2";
@@ -131,6 +118,8 @@ const STATUS_COLUMNS = [
   { key: "rbts", label: "RBTs" },
   { key: "states", label: "States" },
   { key: "drivers", label: "Status Driven By" },
+  { key: "reasons", label: "Reasons" },
+  { key: "action", label: "Relevant Action" },
 ];
 
 const INCENTIVE_COLUMNS = [
@@ -157,6 +146,26 @@ const statusOf = (r: BcbaPerformanceRow, key: string) => {
   return d ? PERFORMANCE_STATUS_LABELS[d.status] : "Insufficient Data";
 };
 
+/** Every reason behind the overall status, in the words of each dimension. */
+const statusReasons = (r: BcbaPerformanceRow): string[] =>
+  r.dimensions
+    .filter((d) => d.status === r.status)
+    .map((d) => `${d.label}: ${d.reason}`);
+
+/** The single next step staff should take for this BCBA. */
+const relevantAction = (r: BcbaPerformanceRow): string => {
+  if (r.status === "at_risk") {
+    return "Review with the BCBA now — confirm coverage, documentation, and reporting before scheduling more hours.";
+  }
+  if (r.status === "needs_attention") {
+    return "Check in this week on the flagged dimension and the nearest documented deadline.";
+  }
+  if (r.status === "insufficient_data") {
+    return "Complete the missing source records so this BCBA can be measured.";
+  }
+  return "No action needed — keep the current cadence.";
+};
+
 const projectRows = (rows: BcbaPerformanceRow[]): Record<string, unknown>[] =>
   rows.map((r) => ({
     bcba: r.bcba,
@@ -176,6 +185,8 @@ const projectRows = (rows: BcbaPerformanceRow[]): Record<string, unknown>[] =>
     rbts: r.rbts,
     states: r.states.join(", "),
     drivers: r.drivers.join(", "),
+    reasons: statusReasons(r).join(" · ") || "No blocking reason recorded",
+    action: relevantAction(r),
   }));
 
 const projectIncentives = (rows: IncentiveProgressRow[]): Record<string, unknown>[] =>
@@ -416,58 +427,76 @@ export default function BcbaPerformancePage() {
       return { owner, fallbackDate: !applicable };
     };
 
-    // Authorization readiness: real coverage end dates only.
+    /**
+     * Authorization readiness reads the FULL current authorization snapshot
+     * through the shared continuity engine.
+     *
+     * A lapse is **one client identity with no current coverage today**, not one
+     * row per historical authorization, and ownership is resolved at that
+     * client's actual last valid coverage end date. Only rows classified as real
+     * current coverage (active or expiring) can carry a deadline, so future,
+     * unknown, inactive, malformed and historical rows never become coverage.
+     */
+    const continuity = computeAuthorizationContinuity(authCurrent, today);
     const lapses = new Map<string, number>();
     const nearestDeadline = new Map<string, { days: number; basis: string }>();
     const measurable = new Set<string>();
-    for (const auth of authCurrent) {
-      const client = String(auth.client_name ?? "").trim();
-      if (!client) continue;
-      const end = endDateOf(auth);
-      if (!end) continue;
-      const { owner, fallbackDate } = ownerAt(client, auth.client_cr_id, end);
+
+    for (const gap of continuity.clientsWithoutCoverage) {
+      const { owner } = ownerAt(gap.client, gap.clientCrId, gap.lastEnd);
       if (!owner) continue;
       measurable.add(owner);
+      lapses.set(owner, (lapses.get(owner) ?? 0) + 1);
+    }
+
+    for (const row of continuity.rows) {
+      if (row.continuity !== "active" && row.continuity !== "expiring") continue;
+      const end = validDay(row.endDate);
+      if (!end) continue;
       const days = daysBetween(today, end);
+      if (days == null || days < 0) continue;
+      const { owner, fallbackDate } = ownerAt(row.client, row.clientCrId, end);
+      if (!owner) continue;
+      measurable.add(owner);
       const suffix = fallbackDate ? " (ownership resolved at window end — fallback)" : "";
-      if (days < 0) lapses.set(owner, (lapses.get(owner) ?? 0) + 1);
-      else {
-        const prev = nearestDeadline.get(owner);
-        if (!prev || days < prev.days) {
-          nearestDeadline.set(owner, {
-            days,
-            basis: `${client} authorization ends ${end}${suffix}`,
-          });
-        }
+      const prev = nearestDeadline.get(owner);
+      if (!prev || days < prev.days) {
+        nearestDeadline.set(owner, {
+          days,
+          basis: `${row.client} authorization ends ${end}${suffix}`,
+        });
       }
     }
 
-    // Progress reports: true PR records with a real due date.
+    /**
+     * Progress reports: true PR records only, and only a real source-recorded
+     * due date. A missing, malformed or impossible date is not a deadline, and
+     * resolved work is never overdue.
+     */
     const prOverdue = new Map<string, number>();
     for (const action of authActions) {
       if (!isProgressReportAction(action)) continue;
       const client = String(action.client_name ?? "").trim();
       if (!client) continue;
-      const due = action.next_action_due_date
-        ? String(action.next_action_due_date).slice(0, 10)
-        : null;
-      // Ownership date: the due date, else the recorded lifecycle date.
+      const due = validDay(action.next_action_due_date) ?? validDay(action.appeal_due_date);
       const recorded =
-        action.submitted_date ??
-        action.approved_date ??
-        action.denied_date ??
-        action.received_date ??
-        action.updated_at ??
-        null;
+        validDay(action.submitted_date) ??
+        validDay(action.approved_date) ??
+        validDay(action.denied_date) ??
+        validDay(action.received_date) ??
+        validDay(action.updated_at);
       const { owner, fallbackDate } = ownerAt(client, action.client_cr_id, due ?? recorded);
       if (!owner) continue;
       measurable.add(owner);
       const suffix = fallbackDate ? " (ownership resolved at window end — fallback)" : "";
-      // Only a real due date in the past, with no completion recorded, is overdue.
-      if (due && due < today && !isActionResolved(action)) {
-        prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
-      } else if (due && due >= today) {
-        const days = daysBetween(today, due);
+      if (!due) continue;
+      const days = daysBetween(today, due);
+      if (days == null) continue;
+      if (days < 0) {
+        if (!isActionResolved(action)) {
+          prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
+        }
+      } else if (!isActionResolved(action)) {
         const prev = nearestDeadline.get(owner);
         if (!prev || days < prev.days) {
           nearestDeadline.set(owner, {
@@ -477,6 +506,7 @@ export default function BcbaPerformancePage() {
         }
       }
     }
+
 
     // Confirmed pauses only — a logged pause event, never an inferred gap.
     const pauses = new Map<string, number>();
@@ -708,6 +738,18 @@ export default function BcbaPerformancePage() {
     { key: "auth", label: "Auth / PR", render: (r) => dimensionCell(r, "authorization_readiness") },
     { key: "docs", label: "Documentation", render: (r) => dimensionCell(r, "documentation") },
     { key: "clients", label: "Clients", align: "right", render: (r) => fmtCount(r.clients) },
+    {
+      key: "reasons",
+      label: "Reasons & action",
+      render: (r) => (
+        <div className="min-w-[16rem] max-w-[26rem] space-y-1">
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            {statusReasons(r).join(" · ") || "No blocking reason recorded."}
+          </p>
+          <p className="text-[11px] font-medium leading-snug">{relevantAction(r)}</p>
+        </div>
+      ),
+    },
   ];
 
   const incentiveColumns: PrimaryTableColumn<IncentiveProgressRow>[] = [
@@ -816,7 +858,11 @@ export default function BcbaPerformancePage() {
         {DOCUMENTATION_LATE_DAYS} calendar days — and is not a formal Commit to Submit finding.
         Fewer than three measurable dimensions reads Insufficient Data. Authorization, progress-report,
         and pause facts are attributed to the owner at each record's own relevant date (coverage end
-        date, due date, or event date).
+        date, due date, or event date). An authorization lapse is counted once per client with no
+        current coverage today — never once per historical authorization row — and only authorizations
+        classified as current (active or expiring) create a deadline. Progress-report deadlines come
+        only from a real recorded due date; resolved work is never overdue. Coverage-gap candidates
+        are never reported as a confirmed service pause: only a logged pause event is.
         {providerFilterActive ? (
           <>
             {" "}

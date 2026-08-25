@@ -65,16 +65,27 @@ import {
 } from "@/lib/os/reports/crPrimary/metrics/authorizationExport";
 import {
   computeAuthorizationContinuity,
-  endDateOf,
-  startDateOf,
   type ContinuityRow,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
 import {
   NO_AUTHORITATIVE_DUE,
+  NOT_DOCUMENTED,
+  computeAuthorizationActionTimelines,
   computePauseOps,
   computeProgressReportOps,
   type ProgressReportDueRow,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
+import {
+  computeAuthorizationActionQueues,
+  computeCodeEventCounts,
+  computeKindEventCounts,
+  computeServiceActivityWithoutCoverage,
+  type ActionQueueRow,
+  type AuthorizationActionQueues,
+  type ServiceActivityWithoutCoverageRow,
+  type SourceEventCountRow,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationCommandCenter";
+import { localIsoDate } from "@/lib/os/reports/crPrimary/reportWindow";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 
 const FILTER_FIELDS = ["state", "client", "payor", "code"] as const;
@@ -111,6 +122,129 @@ const CONTINUITY_DRILLDOWN_COLUMNS = [
   { key: "note", label: "What This Means" },
 ];
 
+const SOURCE_COUNT_COLUMNS: PrimaryTableColumn<SourceEventCountRow>[] = [
+  { key: "label", label: "Source", render: (r) => r.label },
+  {
+    key: "submitted",
+    label: "Submitted",
+    align: "right",
+    render: (r) => <span className="tabular-nums">{fmtCount(r.submitted)}</span>,
+  },
+  {
+    key: "approved",
+    label: "Approved",
+    align: "right",
+    render: (r) => <span className="tabular-nums">{fmtCount(r.approved)}</span>,
+  },
+  {
+    key: "denied",
+    label: "Denied",
+    align: "right",
+    render: (r) => <span className="tabular-nums">{fmtCount(r.denied)}</span>,
+  },
+];
+
+/** The four open-work queues, each with the rule that puts a record in it. */
+const QUEUE_SUMMARY_ROWS: {
+  key: string;
+  label: string;
+  note: string;
+  rows: (q: AuthorizationActionQueues) => ActionQueueRow[];
+}[] = [
+  {
+    key: "pending-submissions",
+    label: "Pending submissions",
+    note: "Received date recorded, no submitted date recorded, not resolved.",
+    rows: (q) => q.pendingSubmissions,
+  },
+  {
+    key: "pending-decisions",
+    label: "Pending decisions",
+    note: "Submitted date recorded, no approval or denial date recorded, not resolved.",
+    rows: (q) => q.pendingDecisions,
+  },
+  {
+    key: "overdue-actions",
+    label: "Overdue actions",
+    note: "A real recorded due date already in the past, and not resolved.",
+    rows: (q) => q.overdueActions,
+  },
+  {
+    key: "reassessment",
+    label: "Reassessment / reauthorization work",
+    note: "Open records whose recorded authorization type is a reauthorization.",
+    rows: (q) => q.reassessmentWork,
+  },
+];
+
+const QUEUE_DRILLDOWN_COLUMNS = [
+  { key: "client", label: "Client" },
+  { key: "authorizationNumber", label: "Authorization #" },
+  { key: "serviceCode", label: "Service Code" },
+  { key: "status", label: "Stage" },
+  { key: "nextAction", label: "Next Action" },
+  { key: "receivedDate", label: "Received" },
+  { key: "submittedDate", label: "Submitted" },
+  { key: "approvedDate", label: "Approved" },
+  { key: "deniedDate", label: "Denied" },
+  { key: "dueDate", label: "Due" },
+  { key: "daysOverdue", label: "Days Overdue" },
+  { key: "resolved", label: "Resolved" },
+  { key: "payor", label: "Payor" },
+  { key: "state", label: "State" },
+  { key: "note", label: "What This Means" },
+];
+
+const SERVICE_GAP_DRILLDOWN_COLUMNS = [
+  { key: "client", label: "Client" },
+  { key: "clientCrId", label: "CR Client Id" },
+  { key: "state", label: "State" },
+  { key: "payor", label: "Payor" },
+  { key: "lastEnd", label: "Last Coverage End" },
+  { key: "sessions", label: "Sessions In Range" },
+  { key: "hours", label: "Hours In Range" },
+  { key: "firstService", label: "First Service" },
+  { key: "lastService", label: "Last Service" },
+  { key: "status", label: "Status" },
+  { key: "note", label: "Next Step" },
+];
+
+const projectQueueRows = (rows: ActionQueueRow[]): Record<string, unknown>[] =>
+  rows.map((r) => ({
+    client: r.client,
+    authorizationNumber: r.authorizationNumber,
+    serviceCode: r.serviceCode,
+    status: r.status,
+    nextAction: r.nextAction,
+    receivedDate: r.receivedDate ?? NOT_DOCUMENTED,
+    submittedDate: r.submittedDate ?? NOT_DOCUMENTED,
+    approvedDate: r.approvedDate ?? NOT_DOCUMENTED,
+    deniedDate: r.deniedDate ?? NOT_DOCUMENTED,
+    dueDate: r.dueDate ?? NOT_DOCUMENTED,
+    daysOverdue: r.daysOverdue ?? NOT_DOCUMENTED,
+    resolved: r.resolved ? "Resolved (history only)" : "Open",
+    payor: r.payor,
+    state: r.state,
+    note: r.note,
+  }));
+
+const projectServiceGapRows = (
+  rows: ServiceActivityWithoutCoverageRow[],
+): Record<string, unknown>[] =>
+  rows.map((r) => ({
+    client: r.client,
+    clientCrId: r.clientCrId || NOT_DOCUMENTED,
+    state: r.state,
+    payor: r.payor,
+    lastEnd: r.lastEnd ?? NOT_DOCUMENTED,
+    sessions: r.sessions,
+    hours: r.hours,
+    firstService: r.firstService ?? NOT_DOCUMENTED,
+    lastService: r.lastService ?? NOT_DOCUMENTED,
+    status: "Needs Confirmation",
+    note: r.note,
+  }));
+
 const LIFECYCLE_DRILLDOWN_COLUMNS = [
   { key: "eventDate", label: "Event Date" },
   { key: "eventType", label: "Event Type" },
@@ -141,7 +275,7 @@ type TabKey = (typeof TABS)[number]["key"];
 const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function AuthorizationCommandCenterPage() {
-  const data = useCrPrimaryReport(["authCurrent", "authEvents", "authActions"]);
+  const data = useCrPrimaryReport(["authCurrent", "authEvents", "authActions", "billingFacts"]);
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
   const [tabParam, setTabParam] = useUrlState("tab", "continuity");
   const tab = (TABS.some((t) => t.key === tabParam) ? tabParam : "continuity") as TabKey;
@@ -154,17 +288,31 @@ export default function AuthorizationCommandCenterPage() {
     pushRecent("authorization-analysis");
   }, []);
 
+  const today = useMemo(() => localIsoDate(), []);
+  const range = useMemo(
+    () => ({ from: filters.from ?? "", to: filters.to ?? "" }),
+    [filters.from, filters.to],
+  );
+
+  /**
+   * Current coverage is a **current snapshot**. Provider/client/state/payor and
+   * service-code filters apply to it, but the selected lifecycle date range does
+   * NOT — narrowing a snapshot by an event window would hide live coverage.
+   */
+  const snapshotFilters = useMemo(
+    () => ({ ...filters, from: "", to: "" }),
+    [filters],
+  );
+
   const auths = useMemo(
     () =>
-      applyFilters(data.authCurrent, filters, (r) => ({
-        date: startDateOf(r),
-        endDate: endDateOf(r),
+      applyFilters(data.authCurrent, snapshotFilters, (r) => ({
         state: r.state,
         client: r.client_name,
         payor: r.payor,
         code: r.service_codes ?? r.procedure_code,
       })),
-    [data.authCurrent, filters],
+    [data.authCurrent, snapshotFilters],
   );
 
   const events = useMemo(
@@ -179,7 +327,7 @@ export default function AuthorizationCommandCenterPage() {
   );
 
   const lifecycle = useMemo(() => computeAuthorizationLifecycle(events), [events]);
-  const continuity = useMemo(() => computeAuthorizationContinuity(auths), [auths]);
+  const continuity = useMemo(() => computeAuthorizationContinuity(auths, today), [auths, today]);
 
   const actions = useMemo(
     () =>
@@ -197,6 +345,51 @@ export default function AuthorizationCommandCenterPage() {
   const progressReports = useMemo(
     () => computeProgressReportOps(events, actions),
     [events, actions],
+  );
+
+  const queues = useMemo(
+    () => computeAuthorizationActionQueues(actions, range, today),
+    [actions, range, today],
+  );
+
+  const timelines = useMemo(() => computeAuthorizationActionTimelines(actions), [actions]);
+
+  const codeCounts = useMemo(
+    () => computeCodeEventCounts(actions, ["97151", "97153"], range),
+    [actions, range],
+  );
+
+  const kindCounts = useMemo(() => computeKindEventCounts(actions, range), [actions, range]);
+
+  /**
+   * Selected-range service activity for clients whose *current* snapshot shows no
+   * coverage. These are confirmation candidates, never confirmed pauses.
+   */
+  const serviceActivityFacts = useMemo(
+    () =>
+      applyFilters(data.billingFacts, filters, (r) => ({
+        date: r.date_of_service,
+        state: r.state,
+        client: r.client_name,
+        payor: r.payor,
+        code: r.procedure_code,
+      })),
+    [data.billingFacts, filters],
+  );
+
+  const serviceWithoutCoverage = useMemo(
+    () =>
+      computeServiceActivityWithoutCoverage(
+        serviceActivityFacts,
+        continuity.clientsWithoutCoverage.map((c) => ({
+          client: c.client,
+          clientCrId: c.clientCrId,
+          state: c.state,
+          payor: c.payor,
+          lastEnd: c.lastEnd,
+        })),
+      ),
+    [serviceActivityFacts, continuity.clientsWithoutCoverage],
   );
 
   const pauses = useMemo(
@@ -290,8 +483,70 @@ export default function AuthorizationCommandCenterPage() {
           : "Denial tracking starts once events are logged",
         tone: lifecycle.denied > 0 ? ("bad" as const) : ("neutral" as const),
       },
+      {
+        id: "pending-submissions",
+        label: "Pending submissions",
+        value: fmtCount(queues.pendingSubmissions.length),
+        hint: "Received with no submitted date recorded, and not resolved",
+        tone: queues.pendingSubmissions.length > 0 ? ("warn" as const) : ("good" as const),
+      },
+      {
+        id: "pending-decisions",
+        label: "Pending decisions",
+        value: fmtCount(queues.pendingDecisions.length),
+        hint: "Submitted with no approval or denial date recorded, and not resolved",
+        tone: queues.pendingDecisions.length > 0 ? ("warn" as const) : ("good" as const),
+      },
+      {
+        id: "overdue-actions",
+        label: "Overdue actions",
+        value: fmtCount(queues.overdueActions.length),
+        hint: "Unresolved work past a real recorded due date — missing dates are never overdue",
+        tone: queues.overdueActions.length > 0 ? ("bad" as const) : ("good" as const),
+      },
+      {
+        id: "reassessment",
+        label: "Reassessment / reauth work",
+        value: fmtCount(queues.reassessmentWork.length),
+        hint: "Open reauthorization records in the current workflow",
+      },
+      {
+        id: "source-denials",
+        label: "Denials (source dated)",
+        value: fmtCount(queues.denials.length),
+        hint:
+          queues.denialRatePct == null
+            ? `No recorded decisions in this range — denial rate is ${NOT_DOCUMENTED}`
+            : `${fmtPct(queues.denialRatePct)} of ${fmtCount(queues.decisionsInRange)} recorded decisions`,
+        tone: queues.denials.length > 0 ? ("bad" as const) : ("good" as const),
+      },
+      {
+        id: "receipt-to-submission",
+        label: "Receipt → submission",
+        value:
+          timelines.avgReceivedToSubmittedDays == null
+            ? NOT_DOCUMENTED
+            : `${timelines.avgReceivedToSubmittedDays} day(s)`,
+        hint: `Average over ${fmtCount(timelines.documentedReceivedToSubmitted)} record(s) with both dates documented`,
+      },
+      {
+        id: "submission-to-decision",
+        label: "Submission → decision",
+        value:
+          timelines.avgSubmittedToDecisionDays == null
+            ? NOT_DOCUMENTED
+            : `${timelines.avgSubmittedToDecisionDays} day(s)`,
+        hint: `Average over ${fmtCount(timelines.documentedSubmittedToDecision)} record(s) with both dates documented`,
+      },
+      {
+        id: "service-gap",
+        label: "Service activity, no coverage",
+        value: fmtCount(serviceWithoutCoverage.length),
+        hint: "Clients with billed activity in this range and no current coverage — needs confirmation",
+        tone: serviceWithoutCoverage.length > 0 ? ("warn" as const) : ("good" as const),
+      },
     ],
-    [continuity, lifecycle],
+    [continuity, lifecycle, queues, timelines, serviceWithoutCoverage],
   );
 
   const openContinuity = (
@@ -324,7 +579,52 @@ export default function AuthorizationCommandCenterPage() {
     });
   };
 
+  const openQueue = (title: string, subtitle: string, rows: ActionQueueRow[], exportName: string) =>
+    setDrilldown({
+      title,
+      subtitle,
+      rows: projectQueueRows(rows),
+      columns: QUEUE_DRILLDOWN_COLUMNS,
+      exportName,
+    });
+
+  const QUEUE_KPIS: Record<string, { title: string; rows: () => ActionQueueRow[] }> = {
+    "pending-submissions": {
+      title: "Pending submissions",
+      rows: () => queues.pendingSubmissions,
+    },
+    "pending-decisions": { title: "Pending decisions", rows: () => queues.pendingDecisions },
+    "overdue-actions": { title: "Overdue unresolved actions", rows: () => queues.overdueActions },
+    reassessment: { title: "Reassessment / reauthorization work", rows: () => queues.reassessmentWork },
+    "source-denials": { title: "Denials (source dated)", rows: () => queues.denials },
+  };
+
   const handleKpi = (id: string) => {
+    const queueKpi = QUEUE_KPIS[id];
+    if (queueKpi) {
+      setTab("lifecycle");
+      return openQueue(
+        queueKpi.title,
+        "Authorization workflow records behind this number. Resolved work is shown for history only.",
+        queueKpi.rows(),
+        `authorization-${id}`,
+      );
+    }
+    if (id === "service-gap") {
+      setTab("pauses");
+      return setDrilldown({
+        title: "Service activity with no current coverage — needs confirmation",
+        subtitle:
+          "Clients with billed activity in the selected range whose current snapshot shows no coverage. This is a question for staff, not a confirmed pause.",
+        rows: projectServiceGapRows(serviceWithoutCoverage),
+        columns: SERVICE_GAP_DRILLDOWN_COLUMNS,
+        exportName: "authorization-service-activity-no-coverage",
+      });
+    }
+    if (id === "receipt-to-submission" || id === "submission-to-decision") {
+      setTab("lifecycle");
+      return;
+    }
     if (id === "submitted" || id === "denied") {
       setTab("lifecycle");
       if (!lifecycle.hasEvents) return;
@@ -484,11 +784,16 @@ export default function AuthorizationCommandCenterPage() {
     >
       <div className="space-y-5">
         <ReportProvenance>
-          Coverage, hours, and expiry come from the current authorization snapshot — the latest
-          version of each authorization, not a history of edits. Lifecycle outcomes come only from
-          logged authorization events; where no event exists, this report says so instead of
-          assuming an approval. Renewal readiness is always shown as something to confirm, never as
-          a fact.
+          <strong>Current coverage is a current snapshot.</strong> Coverage, hours, and expiry read
+          the latest version of each authorization, so the selected date range is deliberately not
+          applied to it — the range filters workflow events, recorded actions, and service activity
+          only. Lifecycle outcomes and dates come only from real recorded events and dates; a
+          submission, approval, denial, progress report, reassessment, or pause is never inferred
+          from an authorization start date. Missing, malformed, or reversed timestamps read
+          "{NOT_DOCUMENTED}" rather than zero, while a genuine same-day turnaround is 0 days.
+          Resolved work stays visible for history but never counts as pending or overdue, and a
+          denial with an open appeal or next-action requirement stays unresolved. Renewal readiness
+          and coverage-gap candidates are always something to confirm, never a confirmed pause.
         </ReportProvenance>
 
         <KpiScorecards kpis={kpis} onSelect={handleKpi} />
@@ -539,6 +844,59 @@ export default function AuthorizationCommandCenterPage() {
           </TabsContent>
 
           <TabsContent value="lifecycle" className="mt-3 space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <PrimaryTable
+                title="Source-dated activity by service code"
+                subtitle="97151 and 97153 submitted, approved, and denied. Each date is range-filtered on its own."
+                rows={codeCounts}
+                rowKey={(r) => r.key}
+                columns={SOURCE_COUNT_COLUMNS}
+                emptyLabel="No 97151 or 97153 workflow records for these filters."
+              />
+              <PrimaryTable
+                title="Source-dated activity by authorization kind"
+                subtitle="IA, IT, RA, and PR submitted, approved, and denied events inside the selected range."
+                rows={kindCounts}
+                rowKey={(r) => r.key}
+                columns={SOURCE_COUNT_COLUMNS}
+                emptyLabel="No authorization workflow records for these filters."
+              />
+            </div>
+
+            <PrimaryTable
+              title="Open authorization work"
+              subtitle="Pending submissions, pending decisions, overdue actions, and reassessment work. Resolved records stay visible in the drilldowns for history but never count as pending."
+              rows={QUEUE_SUMMARY_ROWS.map((q) => ({
+                key: q.key,
+                label: q.label,
+                value: q.rows(queues).length,
+                note: q.note,
+              }))}
+              rowKey={(r) => r.key}
+              columns={[
+                { key: "label", label: "Queue", render: (r) => r.label },
+                {
+                  key: "value",
+                  label: "Records",
+                  align: "right",
+                  render: (r) => <span className="tabular-nums">{fmtCount(r.value)}</span>,
+                },
+                {
+                  key: "note",
+                  label: "Rule",
+                  render: (r) => <span className="text-[11px] text-muted-foreground">{r.note}</span>,
+                },
+              ]}
+              onRowClick={(r) =>
+                openQueue(
+                  r.label,
+                  "Authorization workflow records behind this queue.",
+                  QUEUE_SUMMARY_ROWS.find((q) => q.key === r.key)?.rows(queues) ?? [],
+                  `authorization-queue-${r.key}`,
+                )
+              }
+            />
+
             {!lifecycle.hasEvents ? (
               <ReportInsufficientData
                 title="No authorization events have been logged for this range"
@@ -759,6 +1117,61 @@ export default function AuthorizationCommandCenterPage() {
           </TabsContent>
 
           <TabsContent value="pauses" className="mt-3 space-y-4">
+            <PrimaryTable
+              title="Service activity with no current coverage — needs confirmation"
+              subtitle="One row per client: billed activity inside the selected range for a client whose current snapshot shows no coverage. Client identity is matched on the CentralReach client id first. These are questions, never confirmed pauses or violations."
+              rows={serviceWithoutCoverage}
+              rowKey={(r) => r.key}
+              columns={[
+                { key: "client", label: "Client", render: (r) => r.client },
+                { key: "state", label: "State", render: (r) => r.state },
+                { key: "payor", label: "Payor", render: (r) => r.payor },
+                {
+                  key: "sessions",
+                  label: "Sessions in range",
+                  align: "right",
+                  render: (r) => <span className="tabular-nums">{fmtCount(r.sessions)}</span>,
+                },
+                {
+                  key: "hours",
+                  label: "Hours in range",
+                  align: "right",
+                  render: (r) => <span className="tabular-nums">{fmtHours(r.hours)}</span>,
+                },
+                {
+                  key: "lastEnd",
+                  label: "Last coverage end",
+                  align: "right",
+                  render: (r) =>
+                    r.lastEnd ? (
+                      <span className="tabular-nums">{fmtDate(r.lastEnd)}</span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">{NOT_DOCUMENTED}</span>
+                    ),
+                },
+                {
+                  key: "confirm",
+                  label: "Status",
+                  align: "right",
+                  render: () => (
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+                      Needs Confirmation
+                    </span>
+                  ),
+                },
+              ]}
+              emptyLabel="No billed activity in this range for a client without current coverage."
+              onRowClick={(r) =>
+                setDrilldown({
+                  title: `${r.client} · service activity with no current coverage`,
+                  subtitle: r.note,
+                  rows: projectServiceGapRows([r]),
+                  columns: SERVICE_GAP_DRILLDOWN_COLUMNS,
+                  exportName: "authorization-service-activity-no-coverage",
+                })
+              }
+            />
+
             <PrimaryTable
               title="Confirmed pauses"
               subtitle="Pause events actually logged by the authorization team, with the reason as recorded."
