@@ -8,7 +8,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { CRBatchDescriptor } from "./dataHub";
-import { CR_TABLE_FOR_KIND } from "./normalize";
 import type { CrImportStore } from "./importSession";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -17,17 +16,16 @@ const db = () => supabase as any;
 const PAGE = 1000;
 const INSERT_CHUNK = 500;
 
-const KIND_FOR_TABLE = Object.fromEntries(
-  Object.entries(CR_TABLE_FOR_KIND).map(([kind, table]) => [table, kind]),
-) as Record<string, string>;
-
 /** `row_hash` values already stored map back to in-memory identities. */
 export function rowHashToIdentity(hash: string): string {
   return hash.startsWith("id:") ? hash : `hash:${hash}`;
 }
 
 export interface CrSupabaseStoreOptions {
-  /** Raw payload lookup keyed by persisted row_hash, used for `cr_raw_rows`. */
+  /**
+   * Deprecated: raw provenance is now written by the import session for every
+   * parsed row. Kept so existing callers keep type-checking.
+   */
   rawByHash?: Map<string, Record<string, unknown>>;
   notes?: string | null;
 }
