@@ -54,12 +54,10 @@ import {
   daysBetween,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
 import {
-  isActionResolved,
-  isProgressReportAction,
+  computeProgressReportOps,
   validDay,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
 import { inDayRange } from "@/lib/os/reports/dateKey";
-
 
 import { classifyLifecycleEvent } from "@/lib/os/reports/crPrimary/metrics/authorizationLifecycle";
 import { computeParentTrainingAnalysis } from "@/lib/os/reports/crPrimary/metrics/parentTrainingV2";
@@ -146,22 +144,50 @@ const statusOf = (r: BcbaPerformanceRow, key: string) => {
   return d ? PERFORMANCE_STATUS_LABELS[d.status] : "Insufficient Data";
 };
 
-/** Every reason behind the overall status, in the words of each dimension. */
-const statusReasons = (r: BcbaPerformanceRow): string[] =>
-  r.dimensions
-    .filter((d) => d.status === r.status)
-    .map((d) => `${d.label}: ${d.reason}`);
+/**
+ * EVERY applicable dimension's status and reason — not only the dimensions that
+ * happen to match the overall worst status. A dimension is omitted only when it
+ * is genuinely not measurable for this BCBA, and that omission is itself stated.
+ */
+const statusReasons = (r: BcbaPerformanceRow): string[] => {
+  const applicable = r.dimensions.filter((d) => d.measurable);
+  const reasons = applicable.map(
+    (d) => `${d.label} — ${PERFORMANCE_STATUS_LABELS[d.status]}: ${d.reason}`,
+  );
+  const notApplicable = r.dimensions.filter((d) => !d.measurable);
+  if (notApplicable.length > 0) {
+    reasons.push(
+      `Not measurable from the source records: ${notApplicable.map((d) => d.label).join(", ")}`,
+    );
+  }
+  return reasons;
+};
 
-/** The single next step staff should take for this BCBA. */
+/** The dimensions actually responsible for the overall status. */
+const worstDimensions = (r: BcbaPerformanceRow) =>
+  r.dimensions.filter((d) => d.measurable && d.status === r.status);
+
+/**
+ * The next step staff should take, named after the dimension(s) that actually
+ * set the overall status rather than a generic coverage sentence.
+ */
 const relevantAction = (r: BcbaPerformanceRow): string => {
+  if (r.status === "insufficient_data") {
+    const missing = r.dimensions.filter((d) => !d.measurable).map((d) => d.label);
+    return missing.length
+      ? `Complete the source records for ${missing.join(", ")} so this BCBA can be measured.`
+      : "Complete the missing source records so this BCBA can be measured.";
+  }
+  const driving = worstDimensions(r).map((d) => d.label);
   if (r.status === "at_risk") {
-    return "Review with the BCBA now — confirm coverage, documentation, and reporting before scheduling more hours.";
+    return driving.length
+      ? `Review with the BCBA now — ${driving.join(" and ")} ${driving.length > 1 ? "are" : "is"} at risk.`
+      : "Review with the BCBA now.";
   }
   if (r.status === "needs_attention") {
-    return "Check in this week on the flagged dimension and the nearest documented deadline.";
-  }
-  if (r.status === "insufficient_data") {
-    return "Complete the missing source records so this BCBA can be measured.";
+    return driving.length
+      ? `Check in this week on ${driving.join(" and ")}.`
+      : "Check in this week on the flagged dimension.";
   }
   return "No action needed — keep the current cadence.";
 };
@@ -185,7 +211,7 @@ const projectRows = (rows: BcbaPerformanceRow[]): Record<string, unknown>[] =>
     rbts: r.rbts,
     states: r.states.join(", "),
     drivers: r.drivers.join(", "),
-    reasons: statusReasons(r).join(" · ") || "No blocking reason recorded",
+    reasons: statusReasons(r).join(" · ") || "No measurable dimension recorded",
     action: relevantAction(r),
   }));
 
@@ -469,44 +495,39 @@ export default function BcbaPerformancePage() {
     }
 
     /**
-     * Progress reports: true PR records only, and only a real source-recorded
-     * due date. A missing, malformed or impossible date is not a deadline, and
-     * resolved work is never overdue.
+     * Progress reports come from the SHARED engine (`computeProgressReportOps`)
+     * — there is no page-local PR classifier, due-date parser or deadline rule.
+     * Each shared due row is attributed to V3 ownership at its own due date,
+     * falling back to a real recorded workflow date purely for ownership.
+     * Only an unresolved row with a real due date can be overdue or produce a
+     * deadline; resolved, missing, malformed, impossible and reversed dates
+     * never do.
      */
+    const prOps = computeProgressReportOps([], authActions, new Date(`${today}T00:00:00`));
     const prOverdue = new Map<string, number>();
-    for (const action of authActions) {
-      if (!isProgressReportAction(action)) continue;
-      const client = String(action.client_name ?? "").trim();
-      if (!client) continue;
-      const due = validDay(action.next_action_due_date) ?? validDay(action.appeal_due_date);
-      const recorded =
-        validDay(action.submitted_date) ??
-        validDay(action.approved_date) ??
-        validDay(action.denied_date) ??
-        validDay(action.received_date) ??
-        validDay(action.updated_at);
-      const { owner, fallbackDate } = ownerAt(client, action.client_cr_id, due ?? recorded);
+    for (const row of prOps.dueRows) {
+      if (!row.clientCrId && row.client === "Unknown client") continue;
+      const { owner, fallbackDate } = ownerAt(
+        row.client,
+        row.clientCrId || null,
+        row.dueDate ?? row.recordedDate,
+      );
       if (!owner) continue;
       measurable.add(owner);
+      if (row.resolved || !row.dueDate || row.daysUntilDue == null) continue;
       const suffix = fallbackDate ? " (ownership resolved at window end — fallback)" : "";
-      if (!due) continue;
-      const days = daysBetween(today, due);
-      if (days == null) continue;
-      if (days < 0) {
-        if (!isActionResolved(action)) {
-          prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
-        }
-      } else if (!isActionResolved(action)) {
-        const prev = nearestDeadline.get(owner);
-        if (!prev || days < prev.days) {
-          nearestDeadline.set(owner, {
-            days,
-            basis: `${client} progress report due ${due}${suffix}`,
-          });
-        }
+      if (row.overdue) {
+        prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
+        continue;
+      }
+      const prev = nearestDeadline.get(owner);
+      if (!prev || row.daysUntilDue < prev.days) {
+        nearestDeadline.set(owner, {
+          days: row.daysUntilDue,
+          basis: `${row.client} progress report due ${row.dueDate}${suffix}`,
+        });
       }
     }
-
 
     // Confirmed pauses only — a logged pause event, never an inferred gap.
     const pauses = new Map<string, number>();
@@ -743,13 +764,23 @@ export default function BcbaPerformancePage() {
       label: "Reasons & action",
       render: (r) => (
         <div className="min-w-[16rem] max-w-[26rem] space-y-1">
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            {statusReasons(r).join(" · ") || "No blocking reason recorded."}
-          </p>
+          <ul className="space-y-0.5">
+            {statusReasons(r).map((reason) => (
+              <li key={reason} className="text-[11px] leading-snug text-muted-foreground">
+                {reason}
+              </li>
+            ))}
+            {statusReasons(r).length === 0 && (
+              <li className="text-[11px] leading-snug text-muted-foreground">
+                No measurable dimension recorded.
+              </li>
+            )}
+          </ul>
           <p className="text-[11px] font-medium leading-snug">{relevantAction(r)}</p>
         </div>
       ),
     },
+
   ];
 
   const incentiveColumns: PrimaryTableColumn<IncentiveProgressRow>[] = [
@@ -860,8 +891,11 @@ export default function BcbaPerformancePage() {
         and pause facts are attributed to the owner at each record's own relevant date (coverage end
         date, due date, or event date). An authorization lapse is counted once per client with no
         current coverage today — never once per historical authorization row — and only authorizations
-        classified as current (active or expiring) create a deadline. Progress-report deadlines come
-        only from a real recorded due date; resolved work is never overdue. Coverage-gap candidates
+        classified as current (active or expiring) create a deadline. Progress-report readiness comes
+        from the shared progress-report engine used across the reports — never a second local rule —
+        and only an unresolved record with a real recorded due date can be overdue or count toward the
+        14-day window. Every measurable dimension's status and reason is shown, and the overall status
+        is the worst measurable dimension. Coverage-gap candidates
         are never reported as a confirmed service pause: only a logged pause event is.
         {providerFilterActive ? (
           <>

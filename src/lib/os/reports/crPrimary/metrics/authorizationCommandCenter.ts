@@ -20,6 +20,7 @@ import {
   type AuthorizationActionRow,
 } from "./authorizationActions";
 import { buildClientIdentityResolver } from "./clientIdentity";
+import { finiteNumberOrNull } from "./numeric";
 import { inDayRange } from "@/lib/os/reports/dateKey";
 
 const text = (v: unknown, fallback: string) => String(v ?? "").trim() || fallback;
@@ -256,12 +257,17 @@ export interface ServiceActivityWithoutCoverageRow {
   payor: string;
   lastEnd: string | null;
   sessions: number;
+  /** Sum of the hours that are actually recorded. Missing values are excluded. */
   hours: number;
+  /** Sessions counted here whose hours are missing, blank or non-numeric. */
+  missingHours: number;
   firstService: string | null;
   lastService: string | null;
   /** Always true: this is a question for staff, never a confirmed pause. */
   needsConfirmation: true;
   note: string;
+  /** Plain-language data-quality note, or null when every session has hours. */
+  dataQualityNote: string | null;
 }
 
 /**
@@ -292,7 +298,8 @@ export function computeServiceActivityWithoutCoverage(
     const gap = gapByKey.get(key);
     if (!gap) continue;
     const day = validDay(r.date_of_service);
-    const hours = Number.isFinite(Number(r.hours)) ? Number(r.hours) : 0;
+    // A blank, boolean or non-finite hours value is missing, never a real 0.
+    const hours = finiteNumberOrNull(r.hours);
     if (!acc.has(key)) {
       acc.set(key, {
         key,
@@ -304,19 +311,29 @@ export function computeServiceActivityWithoutCoverage(
         lastEnd: gap.lastEnd,
         sessions: 0,
         hours: 0,
+        missingHours: 0,
         firstService: null,
         lastService: null,
         needsConfirmation: true as const,
         note: "Service activity recorded in this range with no current authorization coverage — confirm with the authorization team before treating it as a pause.",
+        dataQualityNote: null,
       });
     }
     const row = acc.get(key)!;
     row.sessions += 1;
-    row.hours = Math.round((row.hours + hours) * 100) / 100;
+    if (hours == null) row.missingHours += 1;
+    else row.hours = Math.round((row.hours + hours) * 100) / 100;
     if (day) {
       if (!row.firstService || day < row.firstService) row.firstService = day;
       if (!row.lastService || day > row.lastService) row.lastService = day;
     }
+  }
+
+  for (const row of acc.values()) {
+    row.dataQualityNote =
+      row.missingHours > 0
+        ? `${row.missingHours} of ${row.sessions} session(s) have no recorded hours, so the hour total covers the documented sessions only.`
+        : null;
   }
 
   return [...acc.values()].sort((a, b) => b.sessions - a.sessions || a.client.localeCompare(b.client));

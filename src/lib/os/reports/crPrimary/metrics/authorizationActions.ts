@@ -17,6 +17,7 @@ import type { LifecycleEventRow } from "./authorizationLifecycle";
 import { classifyLifecycleEvent, classifyLifecycleKind } from "./authorizationLifecycle";
 import { cleanReasonText } from "../scheduleTruth";
 import { strictDay, strictDaysBetween } from "./calendarDate";
+import { inDayRange } from "@/lib/os/reports/dateKey";
 
 export interface AuthorizationActionRow {
   record_id: string;
@@ -92,7 +93,6 @@ export function isActionResolved(action: AuthorizationActionRow): boolean {
   return statusText.some((v) => RESOLVED_STATUS.test(v));
 }
 
-
 export interface ProgressReportEventRow {
   key: string;
   eventDate: string | null;
@@ -108,6 +108,8 @@ export interface ProgressReportEventRow {
 export interface ProgressReportDueRow {
   key: string;
   client: string;
+  /** CentralReach client id when the source row carries one, else "". */
+  clientCrId: string;
   authorizationNumber: string;
   state: string;
   payor: string;
@@ -116,6 +118,12 @@ export interface ProgressReportDueRow {
   /** Authoritative due date, or null when no usable due source exists. */
   dueDate: string | null;
   dueSource: "next_action_due_date" | "appeal_due_date" | "none";
+  /**
+   * A real recorded workflow date on this row (submitted / approved / denied /
+   * received). Used ONLY as an ownership-resolution fallback — it is never a
+   * due date and never creates a deadline.
+   */
+  recordedDate: string | null;
   daysUntilDue: number | null;
   overdue: boolean;
   /** Finished work. Kept visible for history, excluded from the overdue queue. */
@@ -211,9 +219,15 @@ export function computeProgressReportOps(
     const days = dueDate ? daysBetween(todayIso, dueDate) : null;
     const resolved = isActionResolved(a);
     const overdue = !resolved && days != null && days < 0;
+    const recordedDate =
+      validDay(a.submitted_date) ??
+      validDay(a.approved_date) ??
+      validDay(a.denied_date) ??
+      validDay(a.received_date);
     return {
       key: `${a.record_id}-${i}`,
       client: text(a.client_name, "Unknown client"),
+      clientCrId: text(a.client_cr_id, ""),
       authorizationNumber: text(a.authorization_number, "Not documented"),
       state: text(a.state, "Unknown"),
       payor: text(a.payor, "Unknown"),
@@ -221,6 +235,7 @@ export function computeProgressReportOps(
       nextAction: text(a.next_action, "Not documented"),
       dueDate,
       dueSource,
+      recordedDate,
       daysUntilDue: days,
       overdue,
       resolved,
@@ -337,7 +352,6 @@ export function computePauseOps(
   };
 }
 
-
 /**
  * Authoritative action timelines — received → submitted and submitted →
  * decision (approved or denied). Only real documented date pairs count. A
@@ -358,17 +372,44 @@ export interface ActionTimelineRow {
   receivedToSubmittedDisplay: string;
   submittedToDecisionDays: number | null;
   submittedToDecisionDisplay: string;
+  /**
+   * Whether this row's documented pair contributes to the averages. With a
+   * date-range scope a valid pair only counts when the event that completes it
+   * (the submission, or the decision) actually happened inside the range.
+   */
+  countsForReceivedToSubmitted: boolean;
+  countsForSubmittedToDecision: boolean;
 }
 
 export interface ActionTimelineMetrics {
   rows: ActionTimelineRow[];
+  /** Denominator of the receipt -> submission average. */
   documentedReceivedToSubmitted: number;
+  /** Denominator of the submission -> decision average. */
   documentedSubmittedToDecision: number;
+  /** Valid pairs excluded because the completing event is outside the range. */
+  outOfRangeReceivedToSubmitted: number;
+  outOfRangeSubmittedToDecision: number;
+  /** Rows whose pair is missing, malformed or reversed — never counted as 0. */
+  notDocumentedReceivedToSubmitted: number;
+  notDocumentedSubmittedToDecision: number;
   avgReceivedToSubmittedDays: number | null;
   avgSubmittedToDecisionDays: number | null;
   approvedDecisions: number;
   deniedDecisions: number;
 }
+
+/** Optional day-range scope for the turnaround averages. */
+export interface TimelineRangeScope {
+  from: string;
+  to: string;
+}
+
+const withinScope = (day: string | null, scope?: TimelineRangeScope): boolean => {
+  if (!scope) return true;
+  if (!day) return false;
+  return inDayRange(day, scope.from, scope.to);
+};
 
 /** Non-negative day span between two valid dates, else null. */
 export function timelineDays(
@@ -388,6 +429,13 @@ const timelineDisplay = (days: number | null): string =>
 
 export function computeAuthorizationActionTimelines(
   actions: AuthorizationActionRow[],
+  /**
+   * When given, a documented pair only enters an average if the event that
+   * completes it falls inside the range: the real `submitted_date` for
+   * receipt -> submission, and the real decision date for submission ->
+   * decision. Existing unscoped callers keep their previous behaviour.
+   */
+  scope?: TimelineRangeScope,
 ): ActionTimelineMetrics {
   const rows: ActionTimelineRow[] = actions.map((a, i) => {
     const receivedDate = validDay(a.received_date);
@@ -416,15 +464,21 @@ export function computeAuthorizationActionTimelines(
       receivedToSubmittedDisplay: timelineDisplay(receivedToSubmittedDays),
       submittedToDecisionDays,
       submittedToDecisionDisplay: timelineDisplay(submittedToDecisionDays),
+      countsForReceivedToSubmitted:
+        receivedToSubmittedDays != null && withinScope(submittedDate, scope),
+      countsForSubmittedToDecision:
+        submittedToDecisionDays != null && withinScope(decisionDate, scope),
     };
   });
 
   const avg = (values: number[]): number | null =>
     values.length ? Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) / 10 : null;
   const rts = rows
+    .filter((r) => r.countsForReceivedToSubmitted)
     .map((r) => r.receivedToSubmittedDays)
     .filter((v): v is number => v != null);
   const std = rows
+    .filter((r) => r.countsForSubmittedToDecision)
     .map((r) => r.submittedToDecisionDays)
     .filter((v): v is number => v != null);
 
@@ -432,6 +486,14 @@ export function computeAuthorizationActionTimelines(
     rows,
     documentedReceivedToSubmitted: rts.length,
     documentedSubmittedToDecision: std.length,
+    outOfRangeReceivedToSubmitted: rows.filter(
+      (r) => r.receivedToSubmittedDays != null && !r.countsForReceivedToSubmitted,
+    ).length,
+    outOfRangeSubmittedToDecision: rows.filter(
+      (r) => r.submittedToDecisionDays != null && !r.countsForSubmittedToDecision,
+    ).length,
+    notDocumentedReceivedToSubmitted: rows.filter((r) => r.receivedToSubmittedDays == null).length,
+    notDocumentedSubmittedToDecision: rows.filter((r) => r.submittedToDecisionDays == null).length,
     avgReceivedToSubmittedDays: avg(rts),
     avgSubmittedToDecisionDays: avg(std),
     approvedDecisions: rows.filter((r) => r.decisionType === "approved").length,

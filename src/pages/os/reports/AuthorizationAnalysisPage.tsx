@@ -71,6 +71,8 @@ import {
   NO_AUTHORITATIVE_DUE,
   NOT_DOCUMENTED,
   computeAuthorizationActionTimelines,
+  type ActionTimelineMetrics,
+  type ActionTimelineRow,
   computePauseOps,
   computeProgressReportOps,
   type ProgressReportDueRow,
@@ -144,6 +146,13 @@ const SOURCE_COUNT_COLUMNS: PrimaryTableColumn<SourceEventCountRow>[] = [
   },
 ];
 
+/**
+ * Open queues are a current workflow backlog, not dated activity, so the
+ * selected range must never hide them.
+ */
+const OPEN_WORK_SCOPE_HINT =
+  "The date range filters dated activity and turnaround KPIs, not the open backlog.";
+
 /** The four open-work queues, each with the rule that puts a record in it. */
 const QUEUE_SUMMARY_ROWS: {
   key: string;
@@ -177,6 +186,78 @@ const QUEUE_SUMMARY_ROWS: {
   },
 ];
 
+/** The two turnaround averages, each with its own documented denominator. */
+const TIMELINE_DENOMINATOR_ROWS: {
+  key: string;
+  label: string;
+  drilldownSubtitle: string;
+  average: (t: ActionTimelineMetrics) => number | null;
+  counted: (t: ActionTimelineMetrics) => number;
+  outOfRange: (t: ActionTimelineMetrics) => number;
+  notDocumented: (t: ActionTimelineMetrics) => number;
+}[] = [
+  {
+    key: "receipt-to-submission",
+    label: "Receipt → submission",
+    drilldownSubtitle:
+      "Counted when the receipt date is documented and the real submitted date falls inside the selected range.",
+    average: (t) => t.avgReceivedToSubmittedDays,
+    counted: (t) => t.documentedReceivedToSubmitted,
+    outOfRange: (t) => t.outOfRangeReceivedToSubmitted,
+    notDocumented: (t) => t.notDocumentedReceivedToSubmitted,
+  },
+  {
+    key: "submission-to-decision",
+    label: "Submission → decision",
+    drilldownSubtitle:
+      "Counted when the submission date is documented and the real approval or denial date falls inside the selected range.",
+    average: (t) => t.avgSubmittedToDecisionDays,
+    counted: (t) => t.documentedSubmittedToDecision,
+    outOfRange: (t) => t.outOfRangeSubmittedToDecision,
+    notDocumented: (t) => t.notDocumentedSubmittedToDecision,
+  },
+];
+
+const TIMELINE_DRILLDOWN_COLUMNS = [
+  { key: "client", label: "Client" },
+  { key: "authorizationNumber", label: "Authorization #" },
+  { key: "receivedDate", label: "Received" },
+  { key: "submittedDate", label: "Submitted" },
+  { key: "decisionDate", label: "Decision" },
+  { key: "decisionType", label: "Decision Type" },
+  { key: "receivedToSubmitted", label: "Receipt → Submission" },
+  { key: "countedReceiptToSubmission", label: "Counted In Receipt → Submission" },
+  { key: "submittedToDecision", label: "Submission → Decision" },
+  { key: "countedSubmissionToDecision", label: "Counted In Submission → Decision" },
+  { key: "state", label: "State" },
+  { key: "payor", label: "Payor" },
+];
+
+const countedLabel = (documented: boolean, counted: boolean): string =>
+  !documented ? NOT_DOCUMENTED : counted ? "Counted" : "Documented, outside range";
+
+const projectTimelineRows = (rows: ActionTimelineRow[]): Record<string, unknown>[] =>
+  rows.map((r) => ({
+    client: r.client,
+    authorizationNumber: r.authorizationNumber,
+    receivedDate: r.receivedDate ?? NOT_DOCUMENTED,
+    submittedDate: r.submittedDate ?? NOT_DOCUMENTED,
+    decisionDate: r.decisionDate ?? NOT_DOCUMENTED,
+    decisionType: r.decisionType ?? NOT_DOCUMENTED,
+    receivedToSubmitted: r.receivedToSubmittedDisplay,
+    countedReceiptToSubmission: countedLabel(
+      r.receivedToSubmittedDays != null,
+      r.countsForReceivedToSubmitted,
+    ),
+    submittedToDecision: r.submittedToDecisionDisplay,
+    countedSubmissionToDecision: countedLabel(
+      r.submittedToDecisionDays != null,
+      r.countsForSubmittedToDecision,
+    ),
+    state: r.state,
+    payor: r.payor,
+  }));
+
 const QUEUE_DRILLDOWN_COLUMNS = [
   { key: "client", label: "Client" },
   { key: "authorizationNumber", label: "Authorization #" },
@@ -202,7 +283,9 @@ const SERVICE_GAP_DRILLDOWN_COLUMNS = [
   { key: "payor", label: "Payor" },
   { key: "lastEnd", label: "Last Coverage End" },
   { key: "sessions", label: "Sessions In Range" },
-  { key: "hours", label: "Hours In Range" },
+  { key: "hours", label: "Recorded Hours In Range" },
+  { key: "missingHours", label: "Sessions Missing Hours" },
+  { key: "dataQuality", label: "Data Quality" },
   { key: "firstService", label: "First Service" },
   { key: "lastService", label: "Last Service" },
   { key: "status", label: "Status" },
@@ -239,6 +322,8 @@ const projectServiceGapRows = (
     lastEnd: r.lastEnd ?? NOT_DOCUMENTED,
     sessions: r.sessions,
     hours: r.hours,
+    missingHours: r.missingHours,
+    dataQuality: r.dataQualityNote ?? "Hours recorded on every session",
     firstService: r.firstService ?? NOT_DOCUMENTED,
     lastService: r.lastService ?? NOT_DOCUMENTED,
     status: "Needs Confirmation",
@@ -295,24 +380,26 @@ export default function AuthorizationCommandCenterPage() {
   );
 
   /**
-   * Current coverage is a **current snapshot**. Provider/client/state/payor and
-   * service-code filters apply to it, but the selected lifecycle date range does
-   * NOT — narrowing a snapshot by an event window would hide live coverage.
+   * Every non-date filter (state, client, payor, service code, status) with the
+   * selected range stripped out. Used for the two things that are a *current*
+   * picture rather than dated activity: the current authorization snapshot and
+   * the open workflow backlog. Narrowing either by an event window would hide
+   * live coverage and live open work.
    */
-  const snapshotFilters = useMemo(
+  const nonDateFilters = useMemo(
     () => ({ ...filters, from: "", to: "" }),
     [filters],
   );
 
   const auths = useMemo(
     () =>
-      applyFilters(data.authCurrent, snapshotFilters, (r) => ({
+      applyFilters(data.authCurrent, nonDateFilters, (r) => ({
         state: r.state,
         client: r.client_name,
         payor: r.payor,
         code: r.service_codes ?? r.procedure_code,
       })),
-    [data.authCurrent, snapshotFilters],
+    [data.authCurrent, nonDateFilters],
   );
 
   const events = useMemo(
@@ -329,17 +416,24 @@ export default function AuthorizationCommandCenterPage() {
   const lifecycle = useMemo(() => computeAuthorizationLifecycle(events), [events]);
   const continuity = useMemo(() => computeAuthorizationContinuity(auths, today), [auths, today]);
 
+  /**
+   * Authorization workflow records are NEVER pre-filtered by one fallback date.
+   * A single `date` field would collapse received / submitted / approved /
+   * denied / due into one column and silently drop an approval that landed in
+   * the selected range because its submission happened earlier. State, client,
+   * payor, service code and status still apply; the selected range is applied
+   * downstream, per real recorded date, by each helper that needs it.
+   */
   const actions = useMemo(
     () =>
-      applyFilters(data.authActions, filters, (r) => ({
-        date: r.submitted_date ?? r.received_date ?? r.next_action_due_date,
+      applyFilters(data.authActions, nonDateFilters, (r) => ({
         state: r.state,
         client: r.client_name,
         payor: r.payor,
         code: r.service_code,
         status: r.status,
       })),
-    [data.authActions, filters],
+    [data.authActions, nonDateFilters],
   );
 
   const progressReports = useMemo(
@@ -352,7 +446,15 @@ export default function AuthorizationCommandCenterPage() {
     [actions, range, today],
   );
 
-  const timelines = useMemo(() => computeAuthorizationActionTimelines(actions), [actions]);
+  /**
+   * Turnaround averages are range-scoped on the completing event: a documented
+   * receipt -> submission pair counts when its real submitted date is in range,
+   * and a submission -> decision pair when its real decision date is in range.
+   */
+  const timelines = useMemo(
+    () => computeAuthorizationActionTimelines(actions, range),
+    [actions, range],
+  );
 
   const codeCounts = useMemo(
     () => computeCodeEventCounts(actions, ["97151", "97153"], range),
@@ -487,28 +589,28 @@ export default function AuthorizationCommandCenterPage() {
         id: "pending-submissions",
         label: "Pending submissions",
         value: fmtCount(queues.pendingSubmissions.length),
-        hint: "Received with no submitted date recorded, and not resolved",
+        hint: `Current open work · received with no submitted date recorded, and not resolved. ${OPEN_WORK_SCOPE_HINT}`,
         tone: queues.pendingSubmissions.length > 0 ? ("warn" as const) : ("good" as const),
       },
       {
         id: "pending-decisions",
         label: "Pending decisions",
         value: fmtCount(queues.pendingDecisions.length),
-        hint: "Submitted with no approval or denial date recorded, and not resolved",
+        hint: `Current open work · submitted with no approval or denial date recorded, and not resolved. ${OPEN_WORK_SCOPE_HINT}`,
         tone: queues.pendingDecisions.length > 0 ? ("warn" as const) : ("good" as const),
       },
       {
         id: "overdue-actions",
         label: "Overdue actions",
         value: fmtCount(queues.overdueActions.length),
-        hint: "Unresolved work past a real recorded due date — missing dates are never overdue",
+        hint: `Current open work · unresolved past a real recorded due date; a missing due date is never overdue. ${OPEN_WORK_SCOPE_HINT}`,
         tone: queues.overdueActions.length > 0 ? ("bad" as const) : ("good" as const),
       },
       {
         id: "reassessment",
         label: "Reassessment / reauth work",
         value: fmtCount(queues.reassessmentWork.length),
-        hint: "Open reauthorization records in the current workflow",
+        hint: `Current open work · open reauthorization records. ${OPEN_WORK_SCOPE_HINT}`,
       },
       {
         id: "source-denials",
@@ -527,7 +629,7 @@ export default function AuthorizationCommandCenterPage() {
           timelines.avgReceivedToSubmittedDays == null
             ? NOT_DOCUMENTED
             : `${timelines.avgReceivedToSubmittedDays} day(s)`,
-        hint: `Average over ${fmtCount(timelines.documentedReceivedToSubmitted)} record(s) with both dates documented`,
+        hint: `Average over ${fmtCount(timelines.documentedReceivedToSubmitted)} record(s) whose submission date falls in this range and whose receipt date is documented`,
       },
       {
         id: "submission-to-decision",
@@ -536,7 +638,7 @@ export default function AuthorizationCommandCenterPage() {
           timelines.avgSubmittedToDecisionDays == null
             ? NOT_DOCUMENTED
             : `${timelines.avgSubmittedToDecisionDays} day(s)`,
-        hint: `Average over ${fmtCount(timelines.documentedSubmittedToDecision)} record(s) with both dates documented`,
+        hint: `Average over ${fmtCount(timelines.documentedSubmittedToDecision)} record(s) whose decision date falls in this range and whose submission date is documented`,
       },
       {
         id: "service-gap",
@@ -621,9 +723,16 @@ export default function AuthorizationCommandCenterPage() {
         exportName: "authorization-service-activity-no-coverage",
       });
     }
-    if (id === "receipt-to-submission" || id === "submission-to-decision") {
+    const timelineKpi = TIMELINE_DENOMINATOR_ROWS.find((t) => t.key === id);
+    if (timelineKpi) {
       setTab("lifecycle");
-      return;
+      return setDrilldown({
+        title: timelineKpi.label,
+        subtitle: timelineKpi.drilldownSubtitle,
+        rows: projectTimelineRows(timelines.rows),
+        columns: TIMELINE_DRILLDOWN_COLUMNS,
+        exportName: `authorization-${timelineKpi.key}`,
+      });
     }
     if (id === "submitted" || id === "denied") {
       setTab("lifecycle");
@@ -791,7 +900,9 @@ export default function AuthorizationCommandCenterPage() {
           submission, approval, denial, progress report, reassessment, or pause is never inferred
           from an authorization start date. Missing, malformed, or reversed timestamps read
           "{NOT_DOCUMENTED}" rather than zero, while a genuine same-day turnaround is 0 days.
-          Resolved work stays visible for history but never counts as pending or overdue, and a
+          Workflow records are never pre-filtered by a single fallback date, so an approval or denial
+          inside the range still counts when its submission happened earlier; the open queues are a
+          current backlog and the range never hides them. Resolved work stays visible for history but never counts as pending or overdue, and a
           denial with an open appeal or next-action requirement stays unresolved. Renewal readiness
           and coverage-gap candidates are always something to confirm, never a confirmed pause.
         </ReportProvenance>
@@ -864,8 +975,62 @@ export default function AuthorizationCommandCenterPage() {
             </div>
 
             <PrimaryTable
+              title="Turnaround averages — what is actually counted"
+              subtitle="Each average has its own denominator. A pair only counts when the event that completes it happened inside the selected range; missing, malformed and reversed dates read Not documented and are never counted as zero. A genuine same-day turnaround is 0 days."
+              rows={TIMELINE_DENOMINATOR_ROWS}
+              rowKey={(r) => r.key}
+              columns={[
+                { key: "label", label: "Measure", render: (r) => r.label },
+                {
+                  key: "average",
+                  label: "Average",
+                  align: "right",
+                  render: (r) => {
+                    const avg = r.average(timelines);
+                    return avg == null ? (
+                      <span className="text-[10px] text-muted-foreground">{NOT_DOCUMENTED}</span>
+                    ) : (
+                      <span className="tabular-nums">{avg} day(s)</span>
+                    );
+                  },
+                },
+                {
+                  key: "counted",
+                  label: "Counted (denominator)",
+                  align: "right",
+                  render: (r) => <span className="tabular-nums">{fmtCount(r.counted(timelines))}</span>,
+                },
+                {
+                  key: "outOfRange",
+                  label: "Documented, outside range",
+                  align: "right",
+                  render: (r) => (
+                    <span className="tabular-nums">{fmtCount(r.outOfRange(timelines))}</span>
+                  ),
+                },
+                {
+                  key: "notDocumented",
+                  label: NOT_DOCUMENTED,
+                  align: "right",
+                  render: (r) => (
+                    <span className="tabular-nums">{fmtCount(r.notDocumented(timelines))}</span>
+                  ),
+                },
+              ]}
+              onRowClick={(r) =>
+                setDrilldown({
+                  title: r.label,
+                  subtitle: r.drilldownSubtitle,
+                  rows: projectTimelineRows(timelines.rows),
+                  columns: TIMELINE_DRILLDOWN_COLUMNS,
+                  exportName: `authorization-${r.key}`,
+                })
+              }
+            />
+
+            <PrimaryTable
               title="Open authorization work"
-              subtitle="Pending submissions, pending decisions, overdue actions, and reassessment work. Resolved records stay visible in the drilldowns for history but never count as pending."
+              subtitle={`Pending submissions, pending decisions, overdue actions, and reassessment work. Current open work; ${OPEN_WORK_SCOPE_HINT.charAt(0).toLowerCase()}${OPEN_WORK_SCOPE_HINT.slice(1)} Resolved records stay visible in the drilldowns for history but never count as pending or overdue.`}
               rows={QUEUE_SUMMARY_ROWS.map((q) => ({
                 key: q.key,
                 label: q.label,
@@ -1134,9 +1299,18 @@ export default function AuthorizationCommandCenterPage() {
                 },
                 {
                   key: "hours",
-                  label: "Hours in range",
+                  label: "Recorded hours in range",
                   align: "right",
-                  render: (r) => <span className="tabular-nums">{fmtHours(r.hours)}</span>,
+                  render: (r) => (
+                    <span className="flex flex-col items-end">
+                      <span className="tabular-nums">{fmtHours(r.hours)}</span>
+                      {r.missingHours > 0 && (
+                        <span className="text-[10px] text-amber-600">
+                          {r.missingHours} session(s) missing hours
+                        </span>
+                      )}
+                    </span>
+                  ),
                 },
                 {
                   key: "lastEnd",
