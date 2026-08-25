@@ -38,51 +38,11 @@ export type JoinBasis =
   | "ambiguous"
   | "none";
 
-export interface JoinKey {
-  key: string;
-  basis: JoinBasis;
-}
-
 export function normalizeName(value: string | null | undefined): string {
   return String(value ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
-}
-
-/** Id-first join key for an authorization row. */
-export function authorizationJoinKey(row: ContinuityAuthRow): JoinKey {
-  const authId = cleanReasonText(row.authorization_id);
-  if (authId) return { key: `auth:${authId.toLowerCase()}`, basis: "authorization_id" };
-  const crId = cleanReasonText(row.client_cr_id);
-  if (crId) return { key: `crid:${crId.toLowerCase()}`, basis: "client_cr_id" };
-  const name = normalizeName(row.client_name);
-  if (name) return { key: `name:${name}`, basis: "client_name" };
-  return { key: "", basis: "none" };
-}
-
-/**
- * Id-first join key for a billing fact. CentralReach billing exports only
- * sometimes carry an authorization id, so it is read tolerantly from the raw
- * payload before falling back to the client CR id and finally the name.
- */
-export function billingJoinKeys(row: ProrationBillingRow): JoinKey[] {
-  const keys: JoinKey[] = [];
-  const authId = pickText(row as unknown as Record<string, unknown>, [
-    "authorization_id",
-    "authorizationId",
-    "authorization_number",
-    "auth_id",
-    "auth_number",
-  ]);
-  if (cleanReasonText(authId)) {
-    keys.push({ key: `auth:${authId.toLowerCase()}`, basis: "authorization_id" });
-  }
-  const crId = cleanReasonText(row.client_cr_id);
-  if (crId) keys.push({ key: `crid:${crId.toLowerCase()}`, basis: "client_cr_id" });
-  const name = normalizeName(row.client_name);
-  if (name) keys.push({ key: `name:${name}`, basis: "client_name" });
-  return keys;
 }
 
 export interface WorkedIndexEntry {
