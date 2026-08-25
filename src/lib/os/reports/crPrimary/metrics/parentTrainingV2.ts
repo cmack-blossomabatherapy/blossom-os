@@ -18,6 +18,11 @@
 import { CODE_PARENT_TRAINING, hoursOf, normalizeCode } from "./codes";
 import { localIsoDate } from "../reportWindow";
 import { buildClientIdentityResolver } from "./clientIdentity";
+import { finiteNumberOrNull } from "./numeric";
+import {
+  selectCoveragePair,
+  type ContinuityAuthRow,
+} from "./authorizationContinuity";
 
 export const NO_TARGET_LABEL = "No target";
 
@@ -111,39 +116,74 @@ export interface PtAuthorizationInput {
   authorizedHoursMonth?: number | null;
   startDate?: string | null;
   endDate?: string | null;
+  /** Matched source pairs — never crossed with the base start/end columns. */
+  actualStartDate?: string | null;
+  actualEndDate?: string | null;
+  followupStartDate?: string | null;
+  followupEndDate?: string | null;
   isActive?: boolean | null;
+}
+
+/** True when the authorization carries a 97156 service scope. */
+export function isParentTrainingAuth(auth: PtAuthorizationInput): boolean {
+  return /97156/.test(`${auth.procedureCode ?? ""} ${auth.serviceCodes ?? ""}`);
 }
 
 /**
  * Pure date-scope rule for a parent-training target authorization.
  *
  * A target may only come from a 97156 authorization that the source has not
- * marked inactive and whose coverage overlaps the applicable scope — the
- * selected window when one is given, otherwise today. A future authorization
- * (starts after the scope) and an expired one (ended before the scope) can
- * never set the current target.
+ * marked inactive and that has ONE valid matched coverage pair overlapping the
+ * applicable scope — the selected window when given, otherwise today. Column
+ * types are never crossed (an actual start only pairs with an actual end), and
+ * reversed, malformed, future, expired or pairless rows can never set a target.
  */
 export function isAuthTargetInScope(
-  auth: Pick<PtAuthorizationInput, "startDate" | "endDate" | "isActive">,
+  auth: Pick<
+    PtAuthorizationInput,
+    | "startDate"
+    | "endDate"
+    | "actualStartDate"
+    | "actualEndDate"
+    | "followupStartDate"
+    | "followupEndDate"
+    | "isActive"
+  >,
   scope: { from?: string | null; to?: string | null },
   today: string,
 ): boolean {
   if (auth.isActive === false) return false;
-  const start = auth.startDate ? String(auth.startDate).slice(0, 10) : null;
-  const end = auth.endDate ? String(auth.endDate).slice(0, 10) : null;
+  const row: ContinuityAuthRow = {
+    start_date: auth.startDate ?? null,
+    end_date: auth.endDate ?? null,
+    actual_start_date: auth.actualStartDate ?? null,
+    actual_end_date: auth.actualEndDate ?? null,
+    followup_start_date: auth.followupStartDate ?? null,
+    followup_end_date: auth.followupEndDate ?? null,
+    is_active: auth.isActive ?? null,
+  };
   const from = scope.from ? String(scope.from).slice(0, 10) : today;
   const to = scope.to ? String(scope.to).slice(0, 10) : today;
-  if (end && end < from) return false; // expired before the scope
-  if (start && start > to) return false; // starts after the scope
-  return true;
+  const pair = selectCoveragePair(row, { from, to, today });
+  if (!pair) return false; // no valid matched pair at all
+  return pair.overlapDays != null && pair.overlapDays > 0;
+}
+
+/**
+ * Strict positive authorized monthly hours. Blank, null, boolean and nonfinite
+ * source values are missing — never zero and never a target.
+ */
+export function strictAuthorizedHoursMonth(value: unknown): number | null {
+  const parsed = finiteNumberOrNull(value);
+  return parsed != null && parsed > 0 ? parsed : null;
 }
 
 /** Prefer documented authorized monthly hours; fall back to a clear cadence. */
 export function resolveClientTarget(auths: PtAuthorizationInput[]): PtClientTarget {
   let best: PtClientTarget = NO_TARGET;
   for (const a of auths) {
-    const hours = Number(a.authorizedHoursMonth);
-    if (Number.isFinite(hours) && hours > 0) {
+    const hours = strictAuthorizedHoursMonth(a.authorizedHoursMonth);
+    if (hours != null) {
       return {
         type: "hours",
         perMonth: Math.round(hours * 10) / 10,
@@ -371,11 +411,10 @@ export function computeParentTrainingAnalysis({
   for (const a of authorizations) {
     const name = String(a.clientName ?? "").trim();
     if (!name) continue;
-    const code = `${a.procedureCode ?? ""} ${a.serviceCodes ?? ""}`;
     // 97156 authorizations only; an unrelated code can never set a PT target.
-    if (!/97156/.test(code)) continue;
-    // Only an in-scope authorization may set a target: never inactive, never
-    // future, never already expired relative to the applicable scope.
+    if (!isParentTrainingAuth(a)) continue;
+    // Only a usable in-scope matched coverage pair may set a target: never
+    // inactive, never future, never expired, never reversed or pairless.
     if (!isAuthTargetInScope(a, { from: window?.from, to: window?.to }, today)) continue;
     const key = identityKey(a.clientCrId, name);
     if (!authsByClient.has(key)) authsByClient.set(key, []);
@@ -448,6 +487,14 @@ export function computeParentTrainingAnalysis({
     });
   }
 
+  /** Latest kept 97156 appointment per client: billed fact or noncancelled event. */
+  const latestKept = new Map<string, string | null>();
+  const noteKept = (key: string, date: string | null) => {
+    if (!date) return;
+    const prev = latestKept.get(key) ?? null;
+    if (!prev || date > prev) latestKept.set(key, date);
+  };
+
   billed.forEach((s, i) => {
     if (!isPt(s.procedureCode)) return;
     const row = ensure({
@@ -462,6 +509,7 @@ export function computeParentTrainingAnalysis({
     row.completedHours = round1(row.completedHours + hours);
     row.completedSessions += 1;
     if (date && (!row.lastCompleted || date > row.lastCompleted)) row.lastCompleted = date;
+    noteKept(row.clientKey, date);
     events.push({
       key: `billed-${i}`,
       bucket: "completed",
@@ -513,6 +561,7 @@ export function computeParentTrainingAnalysis({
       });
       return;
     }
+    noteKept(row.clientKey, date);
     // Only events still ahead of today are "upcoming"; a kept past event is
     // proven by the billed facts, not by the calendar.
     if (date && date >= today) {
@@ -550,10 +599,17 @@ export function computeParentTrainingAnalysis({
     r.noUpcoming = r.upcomingSessions === 0;
     r.belowTarget = r.hasTarget && r.pacePct != null && r.pacePct < 100;
 
+    /**
+     * A cancelled session only needs rescheduling when NO later kept 97156
+     * appointment exists — a later billed fact or a later noncancelled event
+     * both prove the replacement, so the queue never nags about work already
+     * made up.
+     */
     const cancelledOn = lastCancelled.get(r.clientKey) ?? null;
+    const keptOn = latestKept.get(r.clientKey) ?? null;
     r.needsReschedule =
       r.cancelledSessions > 0 &&
-      (r.nextScheduled == null || (cancelledOn != null && r.nextScheduled <= cancelledOn));
+      (cancelledOn == null ? keptOn == null : !(keptOn != null && keptOn > cancelledOn));
 
     const unit = r.targetType === "sessions" ? "session(s)" : "hour(s)";
     r.status = !r.hasTarget

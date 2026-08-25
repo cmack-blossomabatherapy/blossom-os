@@ -185,6 +185,7 @@ export default function BcbaSupervisionPage() {
         clientName: r.client_name,
         clientCrId: r.client_cr_id,
         providerName: r.provider_name,
+        providerCrId: r.provider_cr_id ?? null,
         state: r.state,
         payor: r.payor,
       }));
@@ -197,8 +198,9 @@ export default function BcbaSupervisionPage() {
         procedureCode: r.service_code ?? r.procedure_code ?? r.billing_code,
         hours: eventDurationHours(r),
         clientName: r.client_name,
-        clientCrId: null,
+        clientCrId: r.client_cr_id ?? null,
         providerName: r.provider_name,
+        providerCrId: r.provider_cr_id ?? null,
         state: r.state,
         payor: r.payor,
       }));
@@ -213,15 +215,28 @@ export default function BcbaSupervisionPage() {
       FILTER_FIELDS.map((key) => ({
         key: key as FilterFieldConfig["key"],
         label: FILTER_LABELS[key] ?? key,
-        options: optionsFor(data.billingFacts, (r: ReportBillingFactRow) =>
-          key === "client"
-            ? r.client_name
-            : key === "provider"
-              ? r.provider_name
-              : (r[key as "state" | "payor"] as string | null),
-        ),
+        // Union of billing and schedule values, so a schedule-only future
+        // client, provider, state or payor is selectable.
+        options: [
+          ...new Set([
+            ...optionsFor(data.billingFacts, (r: ReportBillingFactRow) =>
+              key === "client"
+                ? r.client_name
+                : key === "provider"
+                  ? r.provider_name
+                  : (r[key as "state" | "payor"] as string | null),
+            ),
+            ...optionsFor(data.scheduleCurrent, (r) =>
+              key === "client"
+                ? r.client_name
+                : key === "provider"
+                  ? r.provider_name
+                  : (r[key as "state" | "payor"] as string | null),
+            ),
+          ]),
+        ].sort((a, b) => a.localeCompare(b)),
       })),
-    [data.billingFacts],
+    [data.billingFacts, data.scheduleCurrent],
   );
 
   const kpis = useMemo<KpiDefinition[]>(
@@ -358,6 +373,24 @@ export default function BcbaSupervisionPage() {
     .slice(0, 15)
     .map((r) => ({ label: r.label, value: r.ratioPct as number }));
 
+  /**
+   * Future scheduled rows whose cancellation or timesheet-conversion state the
+   * source has not recorded. Their inclusion in Projected Performance is
+   * uncertain, so the report says so instead of silently treating an unknown
+   * conversion state as delivered.
+   */
+  const unknownProjectedState = useMemo(
+    () =>
+      schedule.filter((r) => {
+        const date = String(r.event_date ?? "");
+        if (!date || date < today) return false;
+        const code = normalizeCode(r.service_code ?? r.procedure_code ?? r.billing_code);
+        if (code !== CODE_DIRECT && code !== CODE_SUPERVISION) return false;
+        return r.cancelled == null || r.converted_to_timesheet == null;
+      }).length,
+    [schedule, today],
+  );
+
   const codeCoverage = useMemo(() => {
     const codes = new Set(
       billing.map((r) => normalizeCode(r.procedure_code)).filter((c) => c === CODE_DIRECT || c === CODE_SUPERVISION),
@@ -379,6 +412,9 @@ export default function BcbaSupervisionPage() {
           : "",
         ownership.data?.health?.truncated
           ? "Some billing history could not be loaded, so a few sessions may be attributed to Unassigned."
+          : "",
+        unknownProjectedState > 0
+          ? `${unknownProjectedState.toLocaleString("en-US")} future scheduled 97153/97155 event(s) do not record a cancellation or timesheet-conversion state, so their inclusion in ${SUPERVISION_VIEW_LABELS.projected} is uncertain. An unknown conversion state is never treated as delivered.`
           : "",
       ].filter(Boolean)}
       onRefresh={() => {

@@ -204,16 +204,16 @@ export default function ParentTrainingPage() {
    */
   const provenClientKeys = useMemo(() => {
     const keys = new Set<string>();
-    for (const r of billing) {
-      const id = String(r.client_cr_id ?? "").trim();
+    const add = (crId: unknown, clientName: unknown) => {
+      const id = String(crId ?? "").trim();
       if (id) keys.add(`cr:${id}`);
-      const name = String(r.client_name ?? "").trim().toLowerCase();
+      const name = String(clientName ?? "").trim().toLowerCase();
       if (name) keys.add(`nm:${name}`);
-    }
-    for (const r of schedule) {
-      const name = String(r.client_name ?? "").trim().toLowerCase();
-      if (name) keys.add(`nm:${name}`);
-    }
+    };
+    // CR client id first, from BOTH sources: a schedule-only client keeps its
+    // id-based proof instead of falling back to name-only matching.
+    for (const r of billing) add(r.client_cr_id, r.client_name);
+    for (const r of schedule) add(r.client_cr_id, r.client_name);
     return keys;
   }, [billing, schedule]);
 
@@ -273,7 +273,7 @@ export default function ParentTrainingPage() {
           procedureCode: r.service_code ?? r.procedure_code ?? r.billing_code,
           hours: eventDurationHours(r),
           clientName: r.client_name,
-          clientCrId: null,
+          clientCrId: r.client_cr_id ?? null,
           providerName: r.provider_name,
           payor: r.payor,
           state: r.state,
@@ -282,23 +282,39 @@ export default function ParentTrainingPage() {
         };
       });
 
-    // Every client with any activity in the window, so gaps are visible.
+    /**
+     * Every client with billed OR scheduled activity in the window, so a
+     * schedule-only client still appears in the no-upcoming and reschedule
+     * workflows. Identity is keyed CR-id first, then normalized name.
+     */
     const activeClients = new Map<
       string,
       { client: string; clientCrId?: string | null; payor?: string | null; state?: string | null }
     >();
-    for (const r of billing) {
-      const name = String(r.client_name ?? "").trim();
-      if (!name) continue;
-      if (!activeClients.has(name.toLowerCase())) {
-        activeClients.set(name.toLowerCase(), {
+    const addActive = (row: {
+      client_name?: string | null;
+      client_cr_id?: string | null;
+      payor?: string | null;
+      state?: string | null;
+    }) => {
+      const name = String(row.client_name ?? "").trim();
+      if (!name) return;
+      const id = String(row.client_cr_id ?? "").trim();
+      const key = id ? `cr:${id}` : `nm:${name.toLowerCase()}`;
+      const existing = activeClients.get(key);
+      if (!existing) {
+        activeClients.set(key, {
           client: name,
-          clientCrId: r.client_cr_id,
-          payor: r.payor,
-          state: r.state,
+          clientCrId: id || null,
+          payor: row.payor,
+          state: row.state,
         });
+        return;
       }
-    }
+      if (!existing.clientCrId && id) existing.clientCrId = id;
+    };
+    for (const r of billing) addActive(r);
+    for (const r of schedule) addActive(r);
 
     const authorizations = authRows.map((a) => ({
       clientName: a.client_name,
@@ -311,6 +327,10 @@ export default function ParentTrainingPage() {
       authorizedHoursMonth: a.authorized_hours_month,
       startDate: a.start_date,
       endDate: a.end_date,
+      actualStartDate: a.actual_start_date,
+      actualEndDate: a.actual_end_date,
+      followupStartDate: a.followup_start_date,
+      followupEndDate: a.followup_end_date,
       isActive: a.is_active,
     }));
 
@@ -348,15 +368,28 @@ export default function ParentTrainingPage() {
       FILTER_FIELDS.map((key) => ({
         key: key as FilterFieldConfig["key"],
         label: FILTER_LABELS[key] ?? key,
-        options: optionsFor(data.billingFacts, (r: ReportBillingFactRow) =>
-          key === "client"
-            ? r.client_name
-            : key === "provider"
-              ? r.provider_name
-              : (r[key as "state" | "payor"] as string | null),
-        ),
+        // Union of billing and schedule values so a schedule-only future
+        // client, provider, state or payor is still selectable.
+        options: [
+          ...new Set([
+            ...optionsFor(data.billingFacts, (r: ReportBillingFactRow) =>
+              key === "client"
+                ? r.client_name
+                : key === "provider"
+                  ? r.provider_name
+                  : (r[key as "state" | "payor"] as string | null),
+            ),
+            ...optionsFor(data.scheduleCurrent, (r) =>
+              key === "client"
+                ? r.client_name
+                : key === "provider"
+                  ? r.provider_name
+                  : (r[key as "state" | "payor"] as string | null),
+            ),
+          ]),
+        ].sort((a, b) => a.localeCompare(b)),
       })),
-    [data.billingFacts],
+    [data.billingFacts, data.scheduleCurrent],
   );
 
   const noUpcoming = clientRows.filter((r) => r.noUpcoming);
@@ -604,12 +637,12 @@ export default function ParentTrainingPage() {
             subtitle="Click a client to see every parent-training event."
             columns={clientColumns}
             rows={clientRows}
-            rowKey={(r) => r.client}
+            rowKey={(r) => r.clientKey}
             onRowClick={(r) =>
               setDrilldown({
                 title: `${r.client} — parent training`,
                 subtitle: r.reason,
-                rows: projectEvents(eventRows.filter((e) => e.client === r.client)),
+                rows: projectEvents(eventRows.filter((e) => e.clientKey === r.clientKey)),
                 columns: EVENT_COLUMNS,
                 exportName: "parent-training-client",
               })
@@ -669,12 +702,12 @@ export default function ParentTrainingPage() {
                   ? needsReschedule
                   : dataGaps
           }
-          rowKey={(r) => r.client}
+          rowKey={(r) => r.clientKey}
           onRowClick={(r) =>
             setDrilldown({
               title: `${r.client} — parent training`,
               subtitle: r.reason,
-              rows: projectEvents(eventRows.filter((e) => e.client === r.client)),
+              rows: projectEvents(eventRows.filter((e) => e.clientKey === r.clientKey)),
               columns: EVENT_COLUMNS,
               exportName: "parent-training-client",
             })

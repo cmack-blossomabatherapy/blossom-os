@@ -266,6 +266,9 @@ describe("parent training", () => {
           clientName: "A",
           procedureCode: "97156",
           authorizedHoursMonth: 4,
+          // Phase 4B3: a target now requires one valid matched coverage pair.
+          startDate: "2026-01-01",
+          endDate: "2026-12-31",
           isActive: true,
         },
       ],
