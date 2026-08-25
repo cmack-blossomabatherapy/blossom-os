@@ -39,10 +39,18 @@ export const CR_SAFETY_CAP = 250000;
 /** Explicit, visible error when a read hits the safety cap. */
 export const CR_SAFETY_CAP_ERROR =
   `Result exceeded the ${CR_SAFETY_CAP.toLocaleString()} row safety cap — totals would be incomplete`;
+/** Explicit error when a report RPC client cannot be paged with `.range(...)`. */
+export const CR_RPC_PAGING_UNAVAILABLE_ERROR =
+  "Paged reads are unavailable for this report source — totals would be incomplete";
 
 export interface CrLoadResult<T> {
   rows: T[];
   error: string | null;
+}
+
+/** All-or-nothing failure shape: never return partially paged rows. */
+function failed<T>(error: string): CrLoadResult<T> {
+  return { rows: [], error };
 }
 
 /**
@@ -51,7 +59,8 @@ export interface CrLoadResult<T> {
  * The Data API silently caps every response at 1,000 rows, so a single read
  * would present a partial total as if it were complete. Rows are ordered by a
  * stable unique column before `.range(...)` so pages never overlap or skip, and
- * paging stops on the first short page.
+ * paging stops on the first short page. Any error, exception or cap exhaustion
+ * discards every accumulated row.
  */
 export async function readTable<T>(
   table: string,
@@ -68,24 +77,25 @@ export async function readTable<T>(
         query = query.order(orderColumn, { ascending: true });
       }
       const { data, error } = await query.range(from, to);
-      if (error) return { rows: rows as T[], error: error.message };
+      if (error) return failed<T>(error.message);
       const page = (data ?? []) as T[];
       rows.push(...page);
       if (page.length < to - from + 1) return { rows, error: null };
     }
-    return { rows, error: CR_SAFETY_CAP_ERROR };
+    return failed<T>(CR_SAFETY_CAP_ERROR);
   } catch (err) {
-    return {
-      rows,
-      error: err instanceof Error ? err.message : `Failed to read ${table}`,
-    };
+    return failed<T>(
+      err instanceof Error ? err.message : `Failed to read ${table}`,
+    );
   }
 }
 
 /**
  * Complete, deterministic paging over a curated SECURITY DEFINER report RPC.
  * The functions carry their own `ORDER BY` over stable unique fields, so range
- * requests are stable across calls.
+ * requests are stable across calls. When the client cannot page the RPC there is
+ * no one-shot fallback — an unpaged read would silently cap at 1,000 rows, so an
+ * explicit paging-unavailable error is returned with zero rows.
  */
 export async function readRpcPaged<T>(
   name: string,
@@ -97,17 +107,18 @@ export async function readRpcPaged<T>(
       const to = Math.min(from + CR_PAGE_SIZE, CR_SAFETY_CAP) - 1;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const query = (supabase as any).rpc(name);
-      const { data, error } =
-        typeof query?.range === "function" ? await query.range(from, to) : await query;
-      if (error) return { rows, error: error.message };
+      if (typeof query?.range !== "function") {
+        return failed<T>(`${CR_RPC_PAGING_UNAVAILABLE_ERROR} (${label})`);
+      }
+      const { data, error } = await query.range(from, to);
+      if (error) return failed<T>(error.message);
       const page = (data ?? []) as T[];
       rows.push(...page);
-      if (typeof query?.range !== "function") return { rows, error: null };
       if (page.length < to - from + 1) return { rows, error: null };
     }
-    return { rows, error: CR_SAFETY_CAP_ERROR };
+    return failed<T>(CR_SAFETY_CAP_ERROR);
   } catch (err) {
-    return { rows, error: err instanceof Error ? err.message : `Failed to read ${label}` };
+    return failed<T>(err instanceof Error ? err.message : `Failed to read ${label}`);
   }
 }
 
