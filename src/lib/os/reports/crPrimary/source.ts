@@ -8,11 +8,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import type {
   AuthorizationWeeklyEventRow,
+  CrAuthorizationCurrentRow,
   CrAuthorizationRow,
   CrBatchSummary,
   CrBillingSessionRow,
+  CrScheduleCurrentRow,
   CrScheduleEventRow,
   CrUtilizationRow,
+  ReportAuthorizationEventRow,
 } from "./types";
 
 /**
@@ -75,6 +78,49 @@ export function fetchCrAuthorizations(): Promise<CrLoadResult<CrAuthorizationRow
     "cr_authorizations",
     "id,batch_id,authorization_number,client_name,client_cr_id,payor,state,procedure_code,start_date,end_date,authorized_hours,worked_hours,remaining_hours,status,service_codes,client_labels,is_active,actual_start_date,actual_end_date,followup_start_date,followup_end_date",
   );
+}
+
+/**
+ * Phase 1 curated scheduling view. Staff-facing scheduling reports read this
+ * instead of `cr_schedule_events` so they always see one row per event with
+ * the explicit cancellation / deletion truth columns.
+ */
+export function fetchCrScheduleCurrent(): Promise<CrLoadResult<CrScheduleCurrentRow>> {
+  return readTable<CrScheduleCurrentRow>(
+    "v_cr_schedule_current",
+    "id,event_date,start_time,end_time,service_code,procedure_code,billing_code,billing_code_name,scheduled_hours,client_name,provider_name,status,attendance,cancelled,deleted,converted_to_timesheet,cancellation_reason,cancelled_by,state,location,payor,billing_creation_date,last_seen_at",
+  );
+}
+
+/** Phase 1 curated authorization snapshot (latest state per authorization). */
+export function fetchCrAuthorizationCurrent(): Promise<
+  CrLoadResult<CrAuthorizationCurrentRow>
+> {
+  return readTable<CrAuthorizationCurrentRow>(
+    "v_cr_authorization_current",
+    "id,authorization_id,authorization_number,followup_authorization_number,client_name,client_cr_id,payor,state,procedure_code,service_codes,frequency,manager,implementer,start_date,end_date,actual_start_date,actual_end_date,followup_start_date,followup_end_date,is_active,status,authorized_hours,worked_hours,remaining_hours,authorized_hours_month,worked_hours_month,utilization_percent_all,utilization_percent_month,last_seen_at",
+  );
+}
+
+/**
+ * Curated authorization lifecycle events via the `report_authorization_events`
+ * SECURITY DEFINER RPC — cross-state, no PHI beyond the client name.
+ */
+export async function fetchReportAuthorizationEvents(): Promise<
+  CrLoadResult<ReportAuthorizationEventRow>
+> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc("report_authorization_events");
+    if (error) return { rows: [], error: error.message };
+    return { rows: (data ?? []) as ReportAuthorizationEventRow[], error: null };
+  } catch (err) {
+    return {
+      rows: [],
+      error:
+        err instanceof Error ? err.message : "Failed to read authorization lifecycle events",
+    };
+  }
 }
 
 /** Authorization-team logged workflow events (submissions, denials, PRs, pauses). */

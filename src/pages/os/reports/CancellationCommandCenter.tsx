@@ -1,16 +1,19 @@
 /**
- * Cancellation Command Center — staff-facing operational report.
+ * Cancellation Command Center — staff-facing operational report (Phase 2A).
  *
- * Reads normalized CentralReach scheduling data straight from the
- * CentralReach Data Hub (`cr_schedule_events`). There are intentionally NO
- * upload controls, requirement checklists, or export-file language on this
- * page: CentralReach files are ingested once in the Data Hub and every report
- * updates automatically.
+ * Reads the Phase 1 curated scheduling view (`v_cr_schedule_current`) so every
+ * cancellation number comes from the explicit CentralReach cancellation truth
+ * columns, with a plain-language provenance line when those columns are absent
+ * on older rows.
  *
- * Layout mirrors BCBA Productivity Report V3: KPI scorecards → primary trend
- * visual → supporting visual → actionable breakdown tabs → source-row
- * drilldown, with URL-backed filters so a view survives tab switches, reloads
- * and shared links.
+ * Deliberate product rules:
+ * - No upload, file, or export-plumbing UI. CentralReach data is ingested once
+ *   in the Data Hub; this report just reads it.
+ * - No revenue or dollar estimates — the scheduling export carries no rate.
+ * - Undocumented cancellation reasons are reported as undocumented, never
+ *   bucketed into "Other".
+ * - All calculations live in pure modules (`scheduleTruth`,
+ *   `metrics/cancellationCenter`) so they are unit-testable and consistent.
  */
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -19,9 +22,13 @@ import { toast } from "sonner";
 import { PrimaryReportShell } from "@/components/reports/crPrimary/PrimaryReportShell";
 import { KpiScorecards } from "@/components/reports/crPrimary/KpiScorecards";
 import { PrimaryChart } from "@/components/reports/crPrimary/PrimaryChart";
-import { PrimaryFilterBar, type FilterFieldConfig } from "@/components/reports/crPrimary/PrimaryFilterBar";
+import {
+  PrimaryFilterBar,
+  type FilterFieldConfig,
+} from "@/components/reports/crPrimary/PrimaryFilterBar";
 import { PrimaryTable, type PrimaryTableColumn } from "@/components/reports/crPrimary/PrimaryTable";
 import { DrilldownDrawer } from "@/components/reports/crPrimary/DrilldownDrawer";
+import { ReportProvenance } from "@/components/reports/crPrimary/ReportProvenance";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,46 +38,45 @@ import { useUrlFilterState } from "@/hooks/useUrlFilterState";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
 import { optionsFor, applyFilters } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
-import type { DrilldownRequest, PrimaryReportFilters, CrScheduleEventRow } from "@/lib/os/reports/crPrimary/types";
+import type {
+  DrilldownRequest,
+  PrimaryReportFilters,
+  CrScheduleCurrentRow,
+} from "@/lib/os/reports/crPrimary/types";
 import { fmtCount, fmtHours, fmtPct, fmtDate } from "@/lib/os/reports/crPrimary/format";
 import {
-  SCHEDULE_DRILLDOWN_COLUMNS,
-  projectScheduleRows,
+  SCHEDULE_CURRENT_DRILLDOWN_COLUMNS,
+  projectScheduleCurrentRows,
 } from "@/lib/os/reports/crPrimary/drilldown";
 import {
-  computeCancellationMetrics,
-  isCancelledEvent,
-  normalizeCancellationReason,
-  type CancellationGroup,
-} from "@/lib/os/reports/crPrimary/metrics/cancellation";
+  isCancelledEventStrict,
+  isCountableEvent,
+  dayOfWeekLabel,
+} from "@/lib/os/reports/crPrimary/scheduleTruth";
+import {
+  NOT_DOCUMENTED,
+  cancellationReasonBucket,
+  computeCancellationCenter,
+  eventCode,
+  type CancellationFollowUpRow,
+  type CancellationGroupRow,
+} from "@/lib/os/reports/crPrimary/metrics/cancellationCenter";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 import {
   saveCancellationReport,
   getCancellationSavedReport,
 } from "@/lib/os/cancellationSavedReports";
-import {
-  listRemoteFollowups,
-  upsertRemoteFollowup,
-} from "@/lib/os/reportPersistence";
+import { listRemoteFollowups, upsertRemoteFollowup } from "@/lib/os/reportPersistence";
 
-const FILTER_FIELDS: FilterFieldConfig["key"][] = [
-  "state",
-  "client",
-  "provider",
-  "payor",
-  "code",
-  "location",
-  "status",
-];
+const FILTER_FIELDS = ["state", "client", "provider", "payor", "code", "location"] as const;
 
 const FILTER_LABELS: Record<string, string> = {
   state: "State",
   client: "Client",
   provider: "Provider",
   payor: "Payor",
-  code: "Code",
+  code: "Service Code",
   location: "Location",
-  status: "Status",
 };
 
 type FollowUpStatus = "todo" | "contacted" | "resolved";
@@ -87,20 +93,42 @@ const FOLLOWUP_TONE: Record<FollowUpStatus, string> = {
   resolved: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30",
 };
 
+const RISK_TONE: Record<CancellationFollowUpRow["risk"], string> = {
+  critical: "bg-destructive/10 text-destructive border border-destructive/30",
+  watch: "bg-amber-500/10 text-amber-600 border border-amber-500/30",
+  monitor: "bg-muted text-muted-foreground",
+};
+
 const BREAKDOWNS = [
-  { key: "reason", label: "Reason", column: "Cancellation Reason" },
+  { key: "reason", label: "Reason", column: "Cancellation reason" },
   { key: "provider", label: "Provider", column: "Provider" },
   { key: "client", label: "Client", column: "Client" },
   { key: "state", label: "State", column: "State" },
   { key: "payor", label: "Payor", column: "Payor" },
+  { key: "code", label: "Service code", column: "Service code" },
 ] as const;
 
 type BreakdownKey = (typeof BREAKDOWNS)[number]["key"];
 
+/** Same-length window immediately before the selected range, or null. */
+function previousWindow(from: string, to: string): { from: string; to: string } | null {
+  if (!from || !to) return null;
+  const start = new Date(`${from}T00:00:00Z`).getTime();
+  const end = new Date(`${to}T00:00:00Z`).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return null;
+  const span = end - start + 86_400_000;
+  const prevEnd = new Date(start - 86_400_000);
+  const prevStart = new Date(start - span);
+  return {
+    from: prevStart.toISOString().slice(0, 10),
+    to: prevEnd.toISOString().slice(0, 10),
+  };
+}
+
 export default function CancellationCommandCenter() {
   const [params] = useSearchParams();
   const savedId = params.get("saved");
-  const data = useCrPrimaryReport(["schedule"]);
+  const data = useCrPrimaryReport(["scheduleCurrent"]);
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(EMPTY_FILTERS);
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
   const [tab, setTab] = useState<BreakdownKey>("reason");
@@ -152,24 +180,31 @@ export default function CancellationCommandCenter() {
     };
   }, []);
 
-  const allRows = data.schedule;
+  const allRows = data.scheduleCurrent;
 
-  const rows = useMemo(
-    () =>
-      applyFilters(allRows, filters, (r) => ({
-        date: r.event_date,
-        state: r.state,
-        client: r.client_name,
-        provider: r.provider_name,
-        payor: r.payor,
-        code: r.procedure_code,
-        location: r.location,
-        status: r.status,
-      })),
-    [allRows, filters],
+  const project = (r: CrScheduleCurrentRow) => ({
+    date: r.event_date,
+    state: r.state,
+    client: r.client_name,
+    provider: r.provider_name,
+    payor: r.payor,
+    code: eventCode(r),
+    location: r.location,
+    status: r.status,
+  });
+
+  const rows = useMemo(() => applyFilters(allRows, filters, project), [allRows, filters]);
+
+  const previousRows = useMemo(() => {
+    const window = previousWindow(filters.from, filters.to);
+    if (!window) return undefined;
+    return applyFilters(allRows, { ...filters, ...window }, project);
+  }, [allRows, filters]);
+
+  const metrics = useMemo(
+    () => computeCancellationCenter(rows, { previous: previousRows }),
+    [rows, previousRows],
   );
-
-  const metrics = useMemo(() => computeCancellationMetrics(rows), [rows]);
 
   const filterFields = useMemo<FilterFieldConfig[]>(
     () =>
@@ -182,12 +217,25 @@ export default function CancellationCommandCenter() {
             : key === "provider"
               ? r.provider_name
               : key === "code"
-                ? r.procedure_code
-                : (r[key as "state" | "payor" | "location" | "status"] as string | null),
+                ? eventCode(r)
+                : (r[key as "state" | "payor" | "location"] as string | null),
         ),
       })),
     [allRows],
   );
+
+  const cancelledRows = useMemo(
+    () => rows.filter((r) => isCountableEvent(r) && isCancelledEventStrict(r)),
+    [rows],
+  );
+
+  const comparisonHint = metrics.comparison
+    ? metrics.comparison.rateDelta == null
+      ? "No comparable prior period"
+      : `${metrics.comparison.rateDelta > 0 ? "▲" : metrics.comparison.rateDelta < 0 ? "▼" : "="} ${fmtPct(
+          Math.abs(metrics.comparison.rateDelta),
+        )} vs prior period`
+    : "Select a date range to compare periods";
 
   const kpis = useMemo(
     () => [
@@ -195,101 +243,125 @@ export default function CancellationCommandCenter() {
         id: "cancellation-rate",
         label: "Cancellation rate",
         value: fmtPct(metrics.cancellationRate),
-        hint: `${fmtCount(metrics.totalCancellations)} of ${fmtCount(metrics.scheduledSessions)} scheduled`,
+        hint: `${fmtCount(metrics.cancelledEvents)} of ${fmtCount(metrics.countableEvents)} scheduled · ${comparisonHint}`,
         tone:
-          metrics.cancellationRate != null && metrics.cancellationRate >= 20
-            ? ("bad" as const)
-            : metrics.cancellationRate != null && metrics.cancellationRate >= 12
-              ? ("warn" as const)
-              : ("good" as const),
+          metrics.cancellationRate == null
+            ? ("neutral" as const)
+            : metrics.cancellationRate >= 20
+              ? ("bad" as const)
+              : metrics.cancellationRate >= 12
+                ? ("warn" as const)
+                : ("good" as const),
       },
       {
         id: "cancellations",
         label: "Cancelled sessions",
-        value: fmtCount(metrics.totalCancellations),
+        value: fmtCount(metrics.cancelledEvents),
         hint: metrics.topReason ? `Top reason: ${metrics.topReason}` : "No cancellations in range",
       },
       {
-        id: "lost-hours",
-        label: "Lost hours",
-        value: fmtHours(metrics.lostHours),
-        hint: "Scheduled hours never delivered",
-        tone: metrics.lostHours > 0 ? ("warn" as const) : ("neutral" as const),
+        id: "cancelled-hours",
+        label: "Cancelled hours",
+        value: fmtHours(metrics.cancelledHours),
+        hint: "Scheduled hours that were not delivered",
+        tone: metrics.cancelledHours > 0 ? ("warn" as const) : ("neutral" as const),
+      },
+      {
+        id: "kept-events",
+        label: "Kept sessions",
+        value: fmtCount(metrics.activeEvents),
+        hint: `${fmtHours(metrics.activeHours)} hrs retained`,
+        tone: "good" as const,
+      },
+      {
+        id: "no-shows",
+        label: "No-shows",
+        value: fmtCount(metrics.noShowEvents),
+        hint: "Cancellations recorded as a no-show",
+        tone: metrics.noShowEvents > 0 ? ("bad" as const) : ("good" as const),
       },
       {
         id: "clients",
         label: "Clients affected",
         value: fmtCount(metrics.affectedClients),
-        hint: "Distinct clients with a cancellation",
+        hint: `${fmtCount(metrics.affectedProviders)} providers impacted`,
       },
       {
-        id: "providers",
-        label: "Providers affected",
-        value: fmtCount(metrics.affectedProviders),
-        hint: "Distinct BCBAs / RBTs impacted",
+        id: "undocumented",
+        label: "Undocumented reasons",
+        value: fmtCount(metrics.undocumentedReasons),
+        hint:
+          metrics.documentedPct != null
+            ? `${fmtPct(metrics.documentedPct)} of cancellations have a reason`
+            : "No cancellations to document",
+        tone: metrics.undocumentedReasons > 0 ? ("warn" as const) : ("good" as const),
       },
       {
-        id: "top-reason",
-        label: "Leading reason",
-        value: metrics.topReason ?? "—",
-        hint: metrics.byReason[0]
-          ? `${fmtCount(metrics.byReason[0].cancellations)} sessions · ${fmtHours(metrics.byReason[0].lostHours)} hrs`
-          : undefined,
+        id: "follow-ups",
+        label: "Clients to follow up",
+        value: fmtCount(metrics.followUps.length),
+        hint: "2+ cancellations in the selected range",
+        tone: metrics.followUps.length > 0 ? ("warn" as const) : ("good" as const),
       },
     ],
-    [metrics],
+    [metrics, comparisonHint],
   );
-
-  const cancelledRows = useMemo(() => rows.filter(isCancelledEvent), [rows]);
 
   const openDrilldown = (
     title: string,
     subtitle: string,
-    sourceRows: CrScheduleEventRow[],
+    sourceRows: CrScheduleCurrentRow[],
     exportName: string,
+    chips?: { label: string; value: string }[],
   ) => {
     setDrilldown({
       title,
       subtitle,
-      rows: projectScheduleRows(sourceRows, (r) =>
-        normalizeCancellationReason(r.cancellation_reason, r.cancelled_by),
-      ),
-      columns: SCHEDULE_DRILLDOWN_COLUMNS,
+      filters: chips,
+      rows: projectScheduleCurrentRows(sourceRows, cancellationReasonBucket),
+      columns: SCHEDULE_CURRENT_DRILLDOWN_COLUMNS,
       exportName,
     });
   };
 
   const handleKpi = (id: string) => {
-    if (id === "cancellation-rate" || id === "cancellations" || id === "lost-hours") {
-      openDrilldown(
-        "Cancelled sessions",
-        "Every cancelled or no-show CentralReach schedule event in the current filters.",
-        cancelledRows,
-        "cancellations",
+    if (id === "kept-events") {
+      return openDrilldown(
+        "Kept sessions",
+        "Scheduled events that were neither cancelled nor deleted in CentralReach.",
+        rows.filter((r) => isCountableEvent(r) && !isCancelledEventStrict(r)),
+        "kept-sessions",
       );
-      return;
     }
-    if (id === "top-reason" && metrics.topReason) {
-      const reason = metrics.topReason;
-      openDrilldown(
-        `Reason · ${reason}`,
-        "Cancellations mapped to this reason bucket.",
-        cancelledRows.filter(
-          (r) => normalizeCancellationReason(r.cancellation_reason, r.cancelled_by) === reason,
+    if (id === "no-shows") {
+      return openDrilldown(
+        "No-show cancellations",
+        "Cancellations recorded as a no-show in status, attendance, or reason text.",
+        cancelledRows.filter((r) =>
+          /no[\s-]?show|did not attend|dna\b/i.test(
+            `${r.attendance ?? ""} ${r.status ?? ""} ${r.cancellation_reason ?? ""}`,
+          ),
         ),
-        `cancellations-${reason.toLowerCase().replace(/\s+/g, "-")}`,
+        "no-shows",
       );
-      return;
     }
-    openDrilldown(
+    if (id === "undocumented") {
+      return openDrilldown(
+        "Cancellations without a documented reason",
+        "These cancellations have no usable reason text in CentralReach — the documentation gap is the action.",
+        cancelledRows.filter((r) => cancellationReasonBucket(r) === NOT_DOCUMENTED),
+        "cancellations-undocumented",
+      );
+    }
+    return openDrilldown(
       "Cancelled sessions",
-      "Source rows behind this metric.",
+      "Every cancelled CentralReach schedule event in the current filters.",
       cancelledRows,
       "cancellations",
     );
   };
 
-  const groupsFor = (key: BreakdownKey): CancellationGroup[] =>
+  const groupsFor = (key: BreakdownKey): CancellationGroupRow[] =>
     key === "reason"
       ? metrics.byReason
       : key === "provider"
@@ -298,25 +370,26 @@ export default function CancellationCommandCenter() {
           ? metrics.byClient
           : key === "state"
             ? metrics.byState
-            : metrics.byPayor;
+            : key === "payor"
+              ? metrics.byPayor
+              : metrics.byCode;
 
-  const matchesGroup = (row: CrScheduleEventRow, key: BreakdownKey, name: string) => {
-    const val =
-      key === "reason"
-        ? normalizeCancellationReason(row.cancellation_reason, row.cancelled_by)
-        : key === "provider"
-          ? (row.provider_name ?? "").trim() || "Unknown provider"
-          : key === "client"
-            ? (row.client_name ?? "").trim() || "Unknown client"
-            : key === "state"
-              ? (row.state ?? "").trim() || "Unknown"
-              : (row.payor ?? "").trim() || "Unknown";
-    return val === name;
-  };
+  const groupValue = (row: CrScheduleCurrentRow, key: BreakdownKey): string =>
+    key === "reason"
+      ? cancellationReasonBucket(row)
+      : key === "provider"
+        ? (row.provider_name ?? "").trim() || "Unassigned provider"
+        : key === "client"
+          ? (row.client_name ?? "").trim() || "Unknown client"
+          : key === "state"
+            ? (row.state ?? "").trim() || "Unknown"
+            : key === "payor"
+              ? (row.payor ?? "").trim() || "Unknown"
+              : eventCode(row);
 
-  const followUpKey = (key: BreakdownKey, name: string) => `${key}:${name}`;
+  const followUpKey = (key: string, name: string) => `${key}:${name}`;
 
-  const cycleFollowUp = (key: BreakdownKey, name: string) => {
+  const cycleFollowUp = (key: string, name: string) => {
     const rowKey = followUpKey(key, name);
     const status = FOLLOWUP_NEXT[followUps[rowKey] ?? "todo"];
     setFollowUps((prev) => ({ ...prev, [rowKey]: status }));
@@ -330,7 +403,7 @@ export default function CancellationCommandCenter() {
     })();
   };
 
-  const columnsFor = (key: BreakdownKey): PrimaryTableColumn<CancellationGroup>[] => [
+  const breakdownColumns = (key: BreakdownKey): PrimaryTableColumn<CancellationGroupRow>[] => [
     {
       key: "label",
       label: BREAKDOWNS.find((b) => b.key === key)!.column,
@@ -343,10 +416,22 @@ export default function CancellationCommandCenter() {
       render: (g) => <span className="tabular-nums">{fmtCount(g.cancellations)}</span>,
     },
     {
-      key: "lostHours",
-      label: "Lost hours",
+      key: "cancelledHours",
+      label: "Cancelled hrs",
       align: "right",
-      render: (g) => <span className="tabular-nums">{fmtHours(g.lostHours)}</span>,
+      render: (g) => <span className="tabular-nums">{fmtHours(g.cancelledHours)}</span>,
+    },
+    {
+      key: "rate",
+      label: "Own cancel rate",
+      align: "right",
+      render: (g) => <span className="tabular-nums">{fmtPct(g.cancellationRate)}</span>,
+    },
+    {
+      key: "share",
+      label: "Share of cancellations",
+      align: "right",
+      render: (g) => <span className="tabular-nums">{fmtPct(g.share)}</span>,
     },
     {
       key: "clients",
@@ -354,13 +439,60 @@ export default function CancellationCommandCenter() {
       align: "right",
       render: (g) => <span className="tabular-nums">{fmtCount(g.clients)}</span>,
     },
+  ];
+
+  const followUpColumns: PrimaryTableColumn<CancellationFollowUpRow>[] = [
     {
-      key: "share",
-      label: "Share of cancellations",
+      key: "client",
+      label: "Client",
+      render: (r) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium">{r.client}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{r.reason}</p>
+        </div>
+      ),
+    },
+    { key: "provider", label: "Provider", render: (r) => r.provider },
+    { key: "state", label: "State", render: (r) => r.state },
+    {
+      key: "cancellations",
+      label: "Cancellations",
       align: "right",
-      render: (g) => (
-        <span className="tabular-nums">
-          {fmtPct(metrics.totalCancellations ? (g.cancellations / metrics.totalCancellations) * 100 : null)}
+      render: (r) => <span className="tabular-nums">{fmtCount(r.cancellations)}</span>,
+    },
+    {
+      key: "rate",
+      label: "Cancel rate",
+      align: "right",
+      render: (r) => <span className="tabular-nums">{fmtPct(r.cancellationRate)}</span>,
+    },
+    {
+      key: "hours",
+      label: "Cancelled hrs",
+      align: "right",
+      render: (r) => <span className="tabular-nums">{fmtHours(r.cancelledHours)}</span>,
+    },
+    {
+      key: "weeks",
+      label: "Weeks affected",
+      align: "right",
+      render: (r) => <span className="tabular-nums">{fmtCount(r.weeksAffected)}</span>,
+    },
+    {
+      key: "last",
+      label: "Last cancellation",
+      align: "right",
+      render: (r) => fmtDate(r.lastCancellation),
+    },
+    {
+      key: "risk",
+      label: "Risk",
+      align: "right",
+      render: (r) => (
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${RISK_TONE[r.risk]}`}
+        >
+          {r.risk}
         </span>
       ),
     },
@@ -368,14 +500,14 @@ export default function CancellationCommandCenter() {
       key: "followUp",
       label: "Follow-up",
       align: "right",
-      render: (g) => {
-        const status = followUps[followUpKey(key, g.name)] ?? "todo";
+      render: (r) => {
+        const status = followUps[followUpKey("client", r.client)] ?? "todo";
         return (
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              cycleFollowUp(key, g.name);
+              cycleFollowUp("client", r.client);
             }}
             className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${FOLLOWUP_TONE[status]}`}
           >
@@ -387,15 +519,19 @@ export default function CancellationCommandCenter() {
   ];
 
   const exportView = () => {
-    const projected = projectScheduleRows(cancelledRows, (r) =>
-      normalizeCancellationReason(r.cancellation_reason, r.cancelled_by),
+    downloadCsv(
+      "cancellation-command-center",
+      projectScheduleCurrentRows(cancelledRows, cancellationReasonBucket),
+      SCHEDULE_CURRENT_DRILLDOWN_COLUMNS,
     );
-    downloadCsv("cancellation-command-center", projected, SCHEDULE_DRILLDOWN_COLUMNS);
     toast.success("Exported the current cancellation view.");
   };
 
   const saveView = async () => {
-    const name = window.prompt("Name this view", `Cancellations · ${fmtDate(new Date().toISOString())}`);
+    const name = window.prompt(
+      "Name this view",
+      `Cancellations · ${fmtDate(new Date().toISOString())}`,
+    );
     if (!name) return;
     const saved = await saveCancellationReport({
       name,
@@ -415,16 +551,10 @@ export default function CancellationCommandCenter() {
     toast.success(`Saved view "${saved.name}"`);
   };
 
-  const trend = metrics.trend.map((t) => ({
-    label: t.label,
-    value: t.value,
-    secondary: t.secondary,
-  }));
-
   return (
     <PrimaryReportShell
       title="Cancellation Command Center"
-      subtitle="Cancelled and no-show sessions from CentralReach scheduling — lost hours, leading reasons, and the clients and providers that need follow-up."
+      subtitle="Cancelled sessions from CentralReach scheduling — rate, lost hours, leading reasons, and the clients who need a follow-up call."
       requiredExports={["Schedule / Appointments export"]}
       freshness={data.freshness}
       loading={data.loading}
@@ -440,16 +570,26 @@ export default function CancellationCommandCenter() {
               preset="cancellation"
               contextExtra={`Filters: ${JSON.stringify(filters)}. Cancellation rate ${fmtPct(
                 metrics.cancellationRate,
-              )}, ${fmtCount(metrics.totalCancellations)} cancellations, ${fmtHours(
-                metrics.lostHours,
-              )} lost hours.`}
+              )}, ${fmtCount(metrics.cancelledEvents)} cancellations, ${fmtHours(
+                metrics.cancelledHours,
+              )} cancelled hours, ${metrics.undocumentedReasons} undocumented reasons.`}
             />
-            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => void saveView()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => void saveView()}
+            >
               <Save className="h-3.5 w-3.5" /> Save view
             </Button>
             <Badge variant="secondary" className="text-[10px]">
-              {fmtCount(rows.length)} scheduled events in view
+              {fmtCount(metrics.countableEvents)} scheduled events in view
             </Badge>
+            {metrics.deletedEvents > 0 && (
+              <Badge variant="outline" className="text-[10px]">
+                {fmtCount(metrics.deletedEvents)} deleted events excluded
+              </Badge>
+            )}
           </div>
           <PrimaryFilterBar
             filters={filters}
@@ -461,59 +601,104 @@ export default function CancellationCommandCenter() {
       }
     >
       <div className="space-y-5">
+        <ReportProvenance tone={metrics.truth.mode === "explicit" ? "info" : "warn"}>
+          {metrics.truth.label} Deleted events are excluded from every count. Hours come from the
+          scheduled duration on each event — this report shows no revenue estimates because the
+          scheduling data carries no rate.
+        </ReportProvenance>
+
         <KpiScorecards kpis={kpis} onSelect={handleKpi} />
 
         <PrimaryChart
           title="Cancellations by week"
-          subtitle="Cancelled sessions per ISO week, with lost hours as the secondary series."
+          subtitle="Cancelled sessions per ISO week, with cancelled hours as the secondary series."
           type="line"
-          data={trend}
+          data={metrics.weekly}
           valueLabel="Cancelled sessions"
-          secondaryLabel="Lost hours"
+          secondaryLabel="Cancelled hours"
           onSelect={(label) =>
             openDrilldown(
               `Week of ${fmtDate(label)}`,
               "Cancellations recorded in this week.",
               cancelledRows.filter((r) => {
-                const wk = trend.find((t) => t.label === label)?.label;
-                if (!wk) return false;
-                const d = (r.event_date ?? "").slice(0, 10);
-                if (!d) return false;
-                const start = new Date(`${wk}T00:00:00Z`);
+                const date = String(r.event_date ?? "").slice(0, 10);
+                if (!date) return false;
+                const start = new Date(`${label}T00:00:00Z`);
                 const end = new Date(start);
                 end.setUTCDate(end.getUTCDate() + 7);
-                const dt = new Date(`${d}T00:00:00Z`);
+                const dt = new Date(`${date}T00:00:00Z`);
                 return dt >= start && dt < end;
               }),
               `cancellations-week-${label}`,
+              [{ label: "Week", value: label }],
             )
           }
           height={280}
         />
 
-        <PrimaryChart
-          title="Lost hours by reason"
-          subtitle="Where the delivered-hours gap is actually coming from."
-          type="bar"
-          data={metrics.byReason.slice(0, 8).map((g) => ({
-            label: g.name,
-            value: g.lostHours,
-            secondary: g.cancellations,
-          }))}
-          valueLabel="Lost hours"
-          secondaryLabel="Cancellations"
-          onSelect={(label) =>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <PrimaryChart
+            title="Cancellation pattern by weekday"
+            subtitle="Where in the week sessions are lost — the secondary series is that day's cancellation rate."
+            type="bar"
+            data={metrics.byDayOfWeek}
+            valueLabel="Cancelled sessions"
+            secondaryLabel="Cancel rate %"
+            onSelect={(label) =>
+              openDrilldown(
+                `${label} cancellations`,
+                "Cancellations that fell on this weekday.",
+                cancelledRows.filter((r) => dayOfWeekLabel(r.event_date) === label),
+                `cancellations-${label.toLowerCase()}`,
+                [{ label: "Weekday", value: label }],
+              )
+            }
+          />
+          <PrimaryChart
+            title="Cancelled hours by reason"
+            subtitle="Where the delivered-hours gap actually comes from."
+            type="bar"
+            data={metrics.byReason.slice(0, 8).map((g) => ({
+              label: g.name,
+              value: g.cancelledHours,
+              secondary: g.cancellations,
+            }))}
+            valueLabel="Cancelled hours"
+            secondaryLabel="Cancellations"
+            onSelect={(label) =>
+              openDrilldown(
+                `Reason · ${label}`,
+                "Cancellations mapped to this reason bucket.",
+                cancelledRows.filter((r) => cancellationReasonBucket(r) === label),
+                `cancellations-reason-${label.toLowerCase().replace(/\s+/g, "-")}`,
+                [{ label: "Reason", value: label }],
+              )
+            }
+          />
+        </div>
+
+        <PrimaryTable
+          title="Follow-up queue"
+          subtitle="Clients with repeat cancellations in the selected range, ranked by operational impact. Click a row for the source sessions."
+          rows={metrics.followUps}
+          rowKey={(r) => r.key}
+          columns={followUpColumns}
+          emptyLabel="No client has more than one cancellation in this range."
+          onRowClick={(r) =>
             openDrilldown(
-              `Reason · ${label}`,
-              "Cancellations mapped to this reason bucket.",
-              cancelledRows.filter((r) => matchesGroup(r, "reason", label)),
-              `cancellations-${label.toLowerCase().replace(/\s+/g, "-")}`,
+              `Client · ${r.client}`,
+              "Every cancelled session for this client in the current filters.",
+              cancelledRows.filter(
+                (row) => ((row.client_name ?? "").trim() || "Unknown client") === r.client,
+              ),
+              `cancellations-client-${r.client.toLowerCase().replace(/\s+/g, "-")}`,
+              [{ label: "Client", value: r.client }],
             )
           }
         />
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as BreakdownKey)}>
-          <TabsList>
+          <TabsList className="h-9">
             {BREAKDOWNS.map((b) => (
               <TabsTrigger key={b.key} value={b.key} className="text-xs">
                 {b.label}
@@ -522,18 +707,19 @@ export default function CancellationCommandCenter() {
           </TabsList>
           {BREAKDOWNS.map((b) => (
             <TabsContent key={b.key} value={b.key} className="mt-3">
-              <PrimaryTable<CancellationGroup>
+              <PrimaryTable
                 title={`Cancellations by ${b.label.toLowerCase()}`}
-                subtitle="Click a row to open the CentralReach source rows behind it."
-                columns={columnsFor(b.key)}
+                subtitle="Click a row to open the exact CentralReach source events behind it."
                 rows={groupsFor(b.key)}
                 rowKey={(g) => g.name}
+                columns={breakdownColumns(b.key)}
                 onRowClick={(g) =>
                   openDrilldown(
                     `${b.label} · ${g.name}`,
-                    `${fmtCount(g.cancellations)} cancellations · ${fmtHours(g.lostHours)} lost hours`,
-                    cancelledRows.filter((r) => matchesGroup(r, b.key, g.name)),
+                    "Cancelled CentralReach events behind this row.",
+                    cancelledRows.filter((r) => groupValue(r, b.key) === g.name),
                     `cancellations-${b.key}-${g.name.toLowerCase().replace(/\s+/g, "-")}`,
+                    [{ label: b.label, value: g.name }],
                   )
                 }
               />

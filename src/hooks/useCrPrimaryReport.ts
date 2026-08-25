@@ -1,36 +1,60 @@
 /**
- * Loader for the 8 primary CentralReach-backed reports.
+ * Loader for the primary CentralReach-backed reports.
  *
- * Each report declares which normalized `cr_*` datasets it needs; the hook
- * loads them in parallel, resolves the freshness indicator from
- * `cr_import_batches`, and exposes an exact `empty` flag so pages can render
- * the Data Hub empty state instead of fabricated numbers.
+ * Each report declares which normalized datasets it needs; the hook loads them
+ * in parallel, resolves the freshness indicator from `cr_import_batches`, and
+ * exposes an exact `empty` flag so pages can render an honest empty state
+ * instead of fabricated numbers.
+ *
+ * Phase 2A adds the curated Phase 1 sources:
+ * - `scheduleCurrent` → `v_cr_schedule_current` (explicit cancellation truth)
+ * - `authCurrent`     → `v_cr_authorization_current` (latest snapshot state)
+ * - `authEvents`      → `report_authorization_events()` (logged lifecycle)
+ *
+ * The legacy `schedule` / `authorizations` datasets stay untouched for the
+ * reports that still read the raw tables.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  fetchCrAuthorizationCurrent,
   fetchCrAuthorizations,
   fetchCrBatches,
   fetchCrBillingSessions,
+  fetchCrScheduleCurrent,
   fetchCrScheduleEvents,
   fetchCrUtilization,
+  fetchReportAuthorizationEvents,
   summarizeFreshness,
 } from "@/lib/os/reports/crPrimary/source";
 import type {
+  CrAuthorizationCurrentRow,
   CrAuthorizationRow,
   CrBatchSummary,
   CrBillingSessionRow,
+  CrScheduleCurrentRow,
   CrScheduleEventRow,
   CrUtilizationRow,
+  ReportAuthorizationEventRow,
 } from "@/lib/os/reports/crPrimary/types";
 import type { FreshnessInfo } from "@/components/reports/crPrimary/PrimaryReportShell";
 
-export type CrDataset = "billing" | "schedule" | "authorizations" | "utilization";
+export type CrDataset =
+  | "billing"
+  | "schedule"
+  | "authorizations"
+  | "utilization"
+  | "scheduleCurrent"
+  | "authCurrent"
+  | "authEvents";
 
 const BATCH_TYPES: Record<CrDataset, string[]> = {
   billing: ["billing", "billing_sessions", "sessions"],
   schedule: ["schedule", "scheduling", "schedule_events"],
   authorizations: ["authorizations", "authorization"],
   utilization: ["utilization", "authorization_utilization"],
+  scheduleCurrent: ["schedule", "scheduling", "schedule_events"],
+  authCurrent: ["authorizations", "authorization"],
+  authEvents: [],
 };
 
 export interface CrPrimaryReportData {
@@ -38,6 +62,9 @@ export interface CrPrimaryReportData {
   schedule: CrScheduleEventRow[];
   authorizations: CrAuthorizationRow[];
   utilization: CrUtilizationRow[];
+  scheduleCurrent: CrScheduleCurrentRow[];
+  authCurrent: CrAuthorizationCurrentRow[];
+  authEvents: ReportAuthorizationEventRow[];
   batches: CrBatchSummary[];
   freshness: FreshnessInfo;
   loading: boolean;
@@ -47,6 +74,8 @@ export interface CrPrimaryReportData {
   refresh: () => void;
 }
 
+const EMPTY_RESULT = { rows: [], error: null } as const;
+
 export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
   const key = datasets.slice().sort().join(",");
   const [loading, setLoading] = useState(true);
@@ -55,6 +84,9 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
   const [schedule, setSchedule] = useState<CrScheduleEventRow[]>([]);
   const [authorizations, setAuthorizations] = useState<CrAuthorizationRow[]>([]);
   const [utilization, setUtilization] = useState<CrUtilizationRow[]>([]);
+  const [scheduleCurrent, setScheduleCurrent] = useState<CrScheduleCurrentRow[]>([]);
+  const [authCurrent, setAuthCurrent] = useState<CrAuthorizationCurrentRow[]>([]);
+  const [authEvents, setAuthEvents] = useState<ReportAuthorizationEventRow[]>([]);
   const [batches, setBatches] = useState<CrBatchSummary[]>([]);
   const [nonce, setNonce] = useState(0);
 
@@ -69,20 +101,28 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       const errors: string[] = [];
       const batchTypes = [...wanted].flatMap((d) => BATCH_TYPES[d]);
 
-      const [b, s, a, u, batchRes] = await Promise.all([
-        wanted.has("billing") ? fetchCrBillingSessions() : Promise.resolve({ rows: [], error: null }),
-        wanted.has("schedule") ? fetchCrScheduleEvents() : Promise.resolve({ rows: [], error: null }),
-        wanted.has("authorizations") ? fetchCrAuthorizations() : Promise.resolve({ rows: [], error: null }),
-        wanted.has("utilization") ? fetchCrUtilization() : Promise.resolve({ rows: [], error: null }),
+      const [b, s, a, u, sc, ac, ae, batchRes] = await Promise.all([
+        wanted.has("billing") ? fetchCrBillingSessions() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("schedule") ? fetchCrScheduleEvents() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("authorizations") ? fetchCrAuthorizations() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("utilization") ? fetchCrUtilization() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("scheduleCurrent") ? fetchCrScheduleCurrent() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("authCurrent") ? fetchCrAuthorizationCurrent() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("authEvents")
+          ? fetchReportAuthorizationEvents()
+          : Promise.resolve(EMPTY_RESULT),
         fetchCrBatches(batchTypes),
       ]);
       if (cancelled) return;
 
-      for (const r of [b, s, a, u, batchRes]) if (r.error) errors.push(r.error);
+      for (const r of [b, s, a, u, sc, ac, ae, batchRes]) if (r.error) errors.push(r.error);
       setBilling(b.rows as CrBillingSessionRow[]);
       setSchedule(s.rows as CrScheduleEventRow[]);
       setAuthorizations(a.rows as CrAuthorizationRow[]);
       setUtilization(u.rows as CrUtilizationRow[]);
+      setScheduleCurrent(sc.rows as CrScheduleCurrentRow[]);
+      setAuthCurrent(ac.rows as CrAuthorizationCurrentRow[]);
+      setAuthEvents(ae.rows as ReportAuthorizationEventRow[]);
       setBatches(batchRes.rows);
       setErrorMessage(errors.length ? errors[0] : null);
       setLoading(false);
@@ -93,8 +133,17 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
     };
   }, [key, nonce]);
 
+  /**
+   * Lifecycle events alone never make a report "non-empty" — an authorization
+   * report with a snapshot but no logged events must still render its data.
+   */
   const sourceRowCount =
-    billing.length + schedule.length + authorizations.length + utilization.length;
+    billing.length +
+    schedule.length +
+    authorizations.length +
+    utilization.length +
+    scheduleCurrent.length +
+    authCurrent.length;
 
   const freshness = useMemo<FreshnessInfo>(() => {
     const summary = summarizeFreshness(batches);
@@ -107,6 +156,9 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
     schedule,
     authorizations,
     utilization,
+    scheduleCurrent,
+    authCurrent,
+    authEvents,
     batches,
     freshness,
     loading,

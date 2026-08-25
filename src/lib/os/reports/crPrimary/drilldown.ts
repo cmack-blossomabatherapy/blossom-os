@@ -6,11 +6,19 @@
 import type {
   CrAuthorizationRow,
   CrBillingSessionRow,
+  CrScheduleCurrentRow,
   CrScheduleEventRow,
   CrUtilizationRow,
 } from "./types";
 import { normalizeCode } from "./metrics/codes";
 import { pickNumber, pickText } from "./tolerant";
+import {
+  cancellationTruth,
+  cleanReasonText,
+  clockMinutes,
+  dayOfWeekLabel,
+  eventDurationHours,
+} from "./scheduleTruth";
 
 export const BILLING_DRILLDOWN_COLUMNS = [
   { key: "date", label: "Date of Service" },
@@ -127,6 +135,68 @@ export function projectScheduleRows(
     location: pickText(r as unknown as Record<string, unknown>, ["location", "office", "clinic"]),
     batchId: r.batch_id ?? "",
   }));
+}
+
+/**
+ * Drilldown over the Phase 1 curated scheduling view. It shows the explicit
+ * cancellation truth columns plus which signal decided the answer, so an
+ * operator can always see why a row counted as cancelled.
+ */
+export const SCHEDULE_CURRENT_DRILLDOWN_COLUMNS = [
+  { key: "date", label: "Event Date" },
+  { key: "dayOfWeek", label: "Day" },
+  { key: "code", label: "Service Code" },
+  { key: "hours", label: "Hours" },
+  { key: "hoursBasis", label: "Hours From" },
+  { key: "client", label: "CR Client" },
+  { key: "provider", label: "Provider" },
+  { key: "status", label: "Source Status" },
+  { key: "attendance", label: "Attendance" },
+  { key: "cancelledFlag", label: "CR Cancelled Flag" },
+  { key: "cancelledBasis", label: "Cancelled Decided By" },
+  { key: "reasonRaw", label: "CR Cancellation Reason" },
+  { key: "reasonBucket", label: "Mapped Reason" },
+  { key: "cancelledByRaw", label: "Cancelled By" },
+  { key: "payor", label: "Payor" },
+  { key: "state", label: "State" },
+  { key: "location", label: "Location" },
+];
+
+const TRUTH_SOURCE_LABEL: Record<string, string> = {
+  explicit_flag: "CentralReach cancelled flag",
+  attendance_text: "Attendance text",
+  status_text: "Status text",
+  reason_text: "Documented reason text",
+  none: "Not cancelled",
+};
+
+export function projectScheduleCurrentRows(
+  rows: CrScheduleCurrentRow[],
+  mapReason: (row: CrScheduleCurrentRow) => string,
+): Record<string, unknown>[] {
+  return rows.map((r) => {
+    const truth = cancellationTruth(r);
+    const usedClock = clockMinutes(r.start_time) != null && clockMinutes(r.end_time) != null;
+    return {
+      date: (r.event_date ?? "").slice(0, 10),
+      dayOfWeek: dayOfWeekLabel(r.event_date) ?? "",
+      code: cleanReasonText(r.service_code) ?? normalizeCode(r.procedure_code),
+      hours: eventDurationHours(r).toFixed(2),
+      hoursBasis: usedClock ? "Start/end time" : "Exported scheduled hours",
+      client: (r.client_name ?? "").trim(),
+      provider: (r.provider_name ?? "").trim(),
+      status: r.status ?? "",
+      attendance: r.attendance ?? "",
+      cancelledFlag: r.cancelled == null ? "Not exported" : r.cancelled ? "Yes" : "No",
+      cancelledBasis: TRUTH_SOURCE_LABEL[truth.source] ?? truth.source,
+      reasonRaw: cleanReasonText(r.cancellation_reason) ?? "Not documented",
+      reasonBucket: mapReason(r),
+      cancelledByRaw: cleanReasonText(r.cancelled_by) ?? "",
+      payor: r.payor ?? "",
+      state: r.state ?? "",
+      location: r.location ?? "",
+    };
+  });
 }
 
 /**

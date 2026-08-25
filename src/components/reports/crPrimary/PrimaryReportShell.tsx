@@ -141,17 +141,25 @@ export function PrimaryReportShell({
             className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center"
           >
             <Database className="mx-auto h-8 w-8 text-muted-foreground" />
-            <h2 className="mt-3 text-base font-semibold">No CentralReach data available yet</h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-              This report reads normalized CentralReach data. Required export
-              {requiredExports.length === 1 ? "" : "s"}:{" "}
-              <strong className="text-foreground">{requiredExports.join(", ")}</strong>. Upload
-              {requiredExports.length === 1 ? " it" : " them"} once in the CentralReach Data Hub and
-              every report updates automatically.
-            </p>
-            <Button asChild size="sm" className="mt-4 h-8 text-xs">
-              <Link to="/system/centralreach-data-hub">Go to CentralReach Data Hub</Link>
-            </Button>
+            <h2 className="mt-3 text-base font-semibold">No data available for this report yet</h2>
+            {showDataSourceStrip ? (
+              <>
+                <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+                  This report reads normalized CentralReach data. Required source
+                  {requiredExports.length === 1 ? "" : "s"}:{" "}
+                  <strong className="text-foreground">{requiredExports.join(", ")}</strong>.
+                </p>
+                <Button asChild size="sm" className="mt-4 h-8 text-xs">
+                  <Link to="/system/centralreach-data-hub">Go to CentralReach Data Hub</Link>
+                </Button>
+              </>
+            ) : (
+              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+                The CentralReach data behind this report has not arrived yet. Nothing is broken on
+                your side and there is nothing for you to upload — check back shortly, or ask an
+                administrator if this persists.
+              </p>
+            )}
           </div>
         ) : (
           children

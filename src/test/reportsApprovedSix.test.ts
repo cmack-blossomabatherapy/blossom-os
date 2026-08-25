@@ -6,7 +6,7 @@ import { OS_ROLES } from "@/lib/os/permissions";
 const APPROVED: Array<{ id: string; title: string; path: string }> = [
   { id: "bcba-productivity-report-v3",           title: "BCBA Productivity Report V3",              path: "/reports/bcba-productivity-report-v3" },
   { id: "cancellation-command-center",           title: "Cancellation Command Center",              path: "/reports/cancellation-command-center" },
-  { id: "authorization-analysis",                title: "Authorization Analysis",                   path: "/reports/authorization-analysis" },
+  { id: "authorization-analysis",                title: "Authorization Command Center",                   path: "/reports/authorization-analysis" },
   { id: "authorization-utilization-hour-based",  title: "Authorization Utilization — Hour Based",   path: "/reports/authorization-utilization-hour-based" },
   { id: "parent-training",                       title: "Parent Training",                          path: "/reports/parent-training" },
   { id: "bcba-supervision",                      title: "BCBA Supervision",                         path: "/reports/bcba-supervision" },

@@ -1,0 +1,267 @@
+/**
+ * Phase 2A — Authorization continuity + renewal risk from the CentralReach
+ * authorization snapshot (`v_cr_authorization_current`).
+ *
+ * The snapshot tells us what coverage exists today. It does NOT tell us
+ * whether services actually stopped, so a coverage gap is reported as
+ * "Needs confirmation" — never as a confirmed service pause. Only a logged
+ * pause event can confirm that.
+ */
+import { cleanReasonText } from "../scheduleTruth";
+
+export interface ContinuityAuthRow {
+  id?: string;
+  authorization_id?: string | null;
+  authorization_number?: string | null;
+  client_name?: string | null;
+  client_cr_id?: string | null;
+  payor?: string | null;
+  state?: string | null;
+  procedure_code?: string | null;
+  service_codes?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  actual_start_date?: string | null;
+  actual_end_date?: string | null;
+  followup_start_date?: string | null;
+  followup_end_date?: string | null;
+  is_active?: boolean | null;
+  status?: string | null;
+  authorized_hours?: number | null;
+  worked_hours?: number | null;
+  remaining_hours?: number | null;
+}
+
+export const EXPIRING_WINDOWS = [
+  { key: "0_14", label: "Expires ≤ 14 days", maxDays: 14 },
+  { key: "15_30", label: "Expires 15–30 days", maxDays: 30 },
+  { key: "31_60", label: "Expires 31–60 days", maxDays: 60 },
+] as const;
+
+export type ExpiringWindowKey = (typeof EXPIRING_WINDOWS)[number]["key"];
+
+export type ContinuityState =
+  | "active"
+  | "expiring"
+  | "expired"
+  | "not_started"
+  | "unknown_dates";
+
+export interface ContinuityRow {
+  key: string;
+  authorizationNumber: string;
+  client: string;
+  clientCrId: string;
+  payor: string;
+  state: string;
+  code: string;
+  startDate: string | null;
+  endDate: string | null;
+  daysToExpiry: number | null;
+  continuity: ContinuityState;
+  window: ExpiringWindowKey | null;
+  authorizedHours: number | null;
+  usedHours: number | null;
+  remainingHours: number | null;
+  /** Renewal readiness is never asserted — the snapshot can't prove it. */
+  renewal: "needs_confirmation" | "no_action" | "overdue";
+  note: string;
+}
+
+export interface ContinuityMetrics {
+  total: number;
+  active: number;
+  expiringSoon: number;
+  expired: number;
+  unknownDates: number;
+  authorizedHours: number;
+  usedHours: number;
+  remainingHours: number;
+  byWindow: { key: ExpiringWindowKey; label: string; value: number }[];
+  rows: ContinuityRow[];
+  /** Clients with zero active coverage today — needs confirmation, not a fact. */
+  clientsWithoutCoverage: {
+    client: string;
+    state: string;
+    payor: string;
+    lastEnd: string | null;
+    note: string;
+  }[];
+}
+
+export function endDateOf(row: ContinuityAuthRow): string | null {
+  const candidate =
+    cleanReasonText(row.followup_end_date) ??
+    cleanReasonText(row.actual_end_date) ??
+    cleanReasonText(row.end_date);
+  return candidate ? candidate.slice(0, 10) : null;
+}
+
+export function startDateOf(row: ContinuityAuthRow): string | null {
+  const candidate =
+    cleanReasonText(row.actual_start_date) ??
+    cleanReasonText(row.start_date) ??
+    cleanReasonText(row.followup_start_date);
+  return candidate ? candidate.slice(0, 10) : null;
+}
+
+export function daysBetween(from: string, to: string): number | null {
+  const a = new Date(`${from}T00:00:00Z`).getTime();
+  const b = new Date(`${to}T00:00:00Z`).getTime();
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((b - a) / 86_400_000);
+}
+
+function num(v: number | null | undefined): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function computeAuthorizationContinuity(
+  rows: ContinuityAuthRow[],
+  today = new Date().toISOString().slice(0, 10),
+): ContinuityMetrics {
+  const out: ContinuityRow[] = [];
+  const windowCounts = new Map<ExpiringWindowKey, number>();
+  let authorizedHours = 0;
+  let usedHours = 0;
+  let remainingHours = 0;
+  let active = 0;
+  let expiring = 0;
+  let expired = 0;
+  let unknown = 0;
+
+  const clientCoverage = new Map<
+    string,
+    { client: string; state: string; payor: string; anyActive: boolean; lastEnd: string | null }
+  >();
+
+  rows.forEach((row, index) => {
+    const start = startDateOf(row);
+    const end = endDateOf(row);
+    const authorized = num(row.authorized_hours);
+    const used = num(row.worked_hours);
+    const remaining =
+      num(row.remaining_hours) ??
+      (authorized != null && used != null ? Math.round((authorized - used) * 100) / 100 : null);
+    if (authorized != null) authorizedHours += authorized;
+    if (used != null) usedHours += used;
+    if (remaining != null) remainingHours += remaining;
+
+    const daysToExpiry = end ? daysBetween(today, end) : null;
+    let continuity: ContinuityState;
+    if (!end) {
+      continuity = "unknown_dates";
+      unknown += 1;
+    } else if (daysToExpiry != null && daysToExpiry < 0) {
+      continuity = "expired";
+      expired += 1;
+    } else if (start && daysBetween(today, start) != null && daysBetween(today, start)! > 0) {
+      continuity = "not_started";
+    } else if (daysToExpiry != null && daysToExpiry <= 60) {
+      continuity = "expiring";
+      expiring += 1;
+      active += 1;
+    } else {
+      continuity = "active";
+      active += 1;
+    }
+
+    const window =
+      continuity === "expiring" && daysToExpiry != null
+        ? (EXPIRING_WINDOWS.find((w) => daysToExpiry <= w.maxDays)?.key ?? null)
+        : null;
+    if (window) windowCounts.set(window, (windowCounts.get(window) ?? 0) + 1);
+
+    const client = (row.client_name ?? "").trim() || "Unknown client";
+    const clientKey = (row.client_cr_id ?? client).toLowerCase();
+    if (!clientCoverage.has(clientKey)) {
+      clientCoverage.set(clientKey, {
+        client,
+        state: (row.state ?? "").trim() || "Unknown",
+        payor: (row.payor ?? "").trim() || "Unknown",
+        anyActive: false,
+        lastEnd: null,
+      });
+    }
+    const coverage = clientCoverage.get(clientKey)!;
+    if (continuity === "active" || continuity === "expiring") coverage.anyActive = true;
+    if (end && (!coverage.lastEnd || end > coverage.lastEnd)) coverage.lastEnd = end;
+
+    const renewal: ContinuityRow["renewal"] =
+      continuity === "expired"
+        ? "overdue"
+        : continuity === "expiring"
+          ? "needs_confirmation"
+          : "no_action";
+
+    out.push({
+      key: `${row.authorization_id ?? row.authorization_number ?? row.id ?? "auth"}-${index}`,
+      authorizationNumber: (row.authorization_number ?? "").trim() || "Not numbered",
+      client,
+      clientCrId: (row.client_cr_id ?? "").trim(),
+      payor: (row.payor ?? "").trim() || "Unknown",
+      state: (row.state ?? "").trim() || "Unknown",
+      code:
+        cleanReasonText(row.procedure_code) ?? cleanReasonText(row.service_codes) ?? "Not specified",
+      startDate: start,
+      endDate: end,
+      daysToExpiry,
+      continuity,
+      window,
+      authorizedHours: authorized,
+      usedHours: used,
+      remainingHours: remaining,
+      renewal,
+      note:
+        continuity === "unknown_dates"
+          ? "No end date on the CentralReach snapshot — confirm coverage in CentralReach."
+          : continuity === "expired"
+            ? `Coverage ended ${end}. Confirm whether a renewal was submitted.`
+            : continuity === "expiring"
+              ? `Coverage ends ${end}${daysToExpiry != null ? ` (${daysToExpiry} days)` : ""}.`
+              : "Coverage active on the latest snapshot.",
+    });
+  });
+
+  const clientsWithoutCoverage = [...clientCoverage.values()]
+    .filter((c) => !c.anyActive)
+    .map((c) => ({
+      client: c.client,
+      state: c.state,
+      payor: c.payor,
+      lastEnd: c.lastEnd,
+      note: "No active authorization on the latest snapshot — needs confirmation, not a confirmed service pause.",
+    }))
+    .sort((a, b) => (b.lastEnd ?? "").localeCompare(a.lastEnd ?? ""));
+
+  const riskRank: Record<ContinuityState, number> = {
+    expired: 4,
+    expiring: 3,
+    unknown_dates: 2,
+    active: 1,
+    not_started: 0,
+  };
+
+  return {
+    total: rows.length,
+    active,
+    expiringSoon: expiring,
+    expired,
+    unknownDates: unknown,
+    authorizedHours: Math.round(authorizedHours * 10) / 10,
+    usedHours: Math.round(usedHours * 10) / 10,
+    remainingHours: Math.round(remainingHours * 10) / 10,
+    byWindow: EXPIRING_WINDOWS.map((w) => ({
+      key: w.key,
+      label: w.label,
+      value: windowCounts.get(w.key) ?? 0,
+    })),
+    rows: out.sort(
+      (a, b) =>
+        riskRank[b.continuity] - riskRank[a.continuity] ||
+        (a.daysToExpiry ?? 9999) - (b.daysToExpiry ?? 9999),
+    ),
+    clientsWithoutCoverage,
+  };
+}
