@@ -40,11 +40,17 @@ describe("Authorizations Pass 11 — final stale-route cleanup", () => {
   });
 
   it("Authorizations role menus do not expose /ai/assistant", () => {
-    // Extract the two authorizations role menu blocks and assert /ai/assistant not present inside them
-    const blocks = menus.match(/id:\s*"authorizations"[\s\S]*?\]\s*\}/g) ?? [];
-    expect(blocks.length).toBeGreaterThan(0);
-    for (const b of blocks) {
-      expect(b).not.toMatch(/\/ai\/assistant/);
+    // Read the menu data itself rather than regexing the source file, which
+    // over-matched into later role blocks once role menus were reorganized.
+    const authRoles = (Object.keys(ROLE_MENUS) as OSRole[]).filter((r) =>
+      String(r).includes("auth"),
+    );
+    expect(authRoles.length).toBeGreaterThan(0);
+    for (const role of authRoles) {
+      const paths = (ROLE_MENUS[role]?.sections ?? []).flatMap((s) =>
+        s.items.map((i) => i.path),
+      );
+      expect(paths, role).not.toContain("/ai/assistant");
     }
   });
 });
