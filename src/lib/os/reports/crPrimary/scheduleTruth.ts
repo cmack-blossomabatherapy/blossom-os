@@ -196,8 +196,8 @@ export function scheduleTruthCoverage(rows: ScheduleTruthRow[]): TruthCoverage {
       : mode === "explicit"
         ? "Cancellations read from the CentralReach cancelled flag on every row."
         : mode === "inferred"
-          ? "These rows predate the CentralReach cancelled flag — cancellations are read from status, attendance, and documented reason text."
-          : `${explicitPct}% of rows carry the CentralReach cancelled flag; the rest fall back to status, attendance, and reason text.`;
+          ? "These rows predate the CentralReach cancelled flag — cancellations fall back to status and attendance text."
+          : `${explicitPct}% of rows carry the CentralReach cancelled flag; the rest fall back to status and attendance text.`;
   return { total, withExplicitFlag, explicitPct, mode, label };
 }
 
