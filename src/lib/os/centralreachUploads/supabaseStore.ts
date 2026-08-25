@@ -60,13 +60,16 @@ export function createSupabaseCrImportStore(
 
     async updateRows(table, rows) {
       if (!rows.length) return;
-      // CURRENT tables: refresh the stored row matched by its stable identity.
-      for (const row of rows) {
-        const { row_hash: rowHash, ...values } = row as Record<string, unknown> & { row_hash: string };
-        const { error } = await db().from(table).update(values).eq("row_hash", rowHash);
+      // CURRENT tables: refresh stored rows matched by their stable identity.
+      // Chunked upserts on `row_hash` keep a large snapshot refresh to a few
+      // round trips instead of one request per row.
+      for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
+        const chunk = rows.slice(i, i + INSERT_CHUNK);
+        const { error } = await db().from(table).upsert(chunk, { onConflict: "row_hash" });
         if (error) throw error;
       }
     },
+
 
     async upsertRows(table, rows) {
       if (!rows.length) return;
