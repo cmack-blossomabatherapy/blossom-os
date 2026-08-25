@@ -44,29 +44,53 @@ export interface AuthorizationActionRow {
 export const NO_AUTHORITATIVE_DUE = "No authoritative due date";
 export const NOT_DOCUMENTED = "Not documented";
 
-/** Valid `YYYY-MM-DD` day, or null. A malformed source date is never a date. */
+/**
+ * Valid `YYYY-MM-DD` day, or null. A malformed source date is never a date,
+ * and an impossible calendar date (2026-02-31, non-leap 2026-02-29) is never a
+ * date either — `strictDay` round-trips the day to reject JavaScript's silent
+ * month rollover.
+ */
 export function validDay(value: unknown): string | null {
-  const raw = String(value ?? "").trim();
-  if (!raw) return null;
-  const day = raw.slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
-  return Number.isNaN(new Date(`${day}T00:00:00`).getTime()) ? null : day;
+  return strictDay(value);
 }
 
 const RESOLVED_STATUS =
   /\b(resolved|complete|completed|approved|closed|withdrawn|cancell?ed|canceled)\b/i;
 
+const DENIED_STATUS = /\bdenie[dt]?\b|\bdenial\b/i;
+
+/** Placeholder next-action text that documents no real outstanding work. */
+const NO_MEANINGFUL_ACTION =
+  /^(n\/?a|none|no action|no action needed|no action required|not documented|not applicable|tbd|-|—)$/i;
+
+function hasMeaningfulNextAction(value: unknown): boolean {
+  const raw = String(value ?? "").trim();
+  if (!raw) return false;
+  return !NO_MEANINGFUL_ACTION.test(raw);
+}
+
 /**
  * A resolved action is finished work: it must never appear as overdue, no
  * matter how old its recorded due date is. Merely submitted / pending /
- * denied-with-next-action rows are NOT resolved — that appeal work is live.
+ * denied-with-next-action rows are NOT resolved — that appeal work is live,
+ * even when the source status also says "Completed - Denied".
  */
 export function isActionResolved(action: AuthorizationActionRow): boolean {
+  // A real approved date is definitive.
   if (validDay(action.approved_date)) return true;
-  return [action.workflow_stage, action.status].some((v) =>
-    RESOLVED_STATUS.test(String(v ?? "")),
-  );
+
+  const statusText = [action.workflow_stage, action.status].map((v) => String(v ?? ""));
+  const denied =
+    validDay(action.denied_date) != null || statusText.some((v) => DENIED_STATUS.test(v));
+  if (denied) {
+    const liveAppeal =
+      hasMeaningfulNextAction(action.next_action) || validDay(action.appeal_due_date) != null;
+    if (liveAppeal) return false;
+  }
+
+  return statusText.some((v) => RESOLVED_STATUS.test(v));
 }
+
 
 export interface ProgressReportEventRow {
   key: string;
