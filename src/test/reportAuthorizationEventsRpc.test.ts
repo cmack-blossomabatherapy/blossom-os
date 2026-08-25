@@ -9,7 +9,9 @@ const allSql = readdirSync(dir)
   .join("\n");
 
 const fn = (() => {
-  const start = allSql.lastIndexOf("FUNCTION public.report_authorization_events()");
+  const start = allSql.indexOf(
+    "CREATE OR REPLACE FUNCTION public.report_authorization_events()",
+  );
   expect(start).toBeGreaterThan(-1);
   return allSql.slice(start, allSql.indexOf("$$;", start) + 3);
 })();
