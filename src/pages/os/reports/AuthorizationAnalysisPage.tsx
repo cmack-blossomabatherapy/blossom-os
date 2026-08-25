@@ -71,6 +71,8 @@ import {
   NO_AUTHORITATIVE_DUE,
   NOT_DOCUMENTED,
   computeAuthorizationActionTimelines,
+  type ActionTimelineMetrics,
+  type ActionTimelineRow,
   computePauseOps,
   computeProgressReportOps,
   type ProgressReportDueRow,
@@ -183,6 +185,78 @@ const QUEUE_SUMMARY_ROWS: {
     rows: (q) => q.reassessmentWork,
   },
 ];
+
+/** The two turnaround averages, each with its own documented denominator. */
+const TIMELINE_DENOMINATOR_ROWS: {
+  key: string;
+  label: string;
+  drilldownSubtitle: string;
+  average: (t: ActionTimelineMetrics) => number | null;
+  counted: (t: ActionTimelineMetrics) => number;
+  outOfRange: (t: ActionTimelineMetrics) => number;
+  notDocumented: (t: ActionTimelineMetrics) => number;
+}[] = [
+  {
+    key: "receipt-to-submission",
+    label: "Receipt → submission",
+    drilldownSubtitle:
+      "Counted when the receipt date is documented and the real submitted date falls inside the selected range.",
+    average: (t) => t.avgReceivedToSubmittedDays,
+    counted: (t) => t.documentedReceivedToSubmitted,
+    outOfRange: (t) => t.outOfRangeReceivedToSubmitted,
+    notDocumented: (t) => t.notDocumentedReceivedToSubmitted,
+  },
+  {
+    key: "submission-to-decision",
+    label: "Submission → decision",
+    drilldownSubtitle:
+      "Counted when the submission date is documented and the real approval or denial date falls inside the selected range.",
+    average: (t) => t.avgSubmittedToDecisionDays,
+    counted: (t) => t.documentedSubmittedToDecision,
+    outOfRange: (t) => t.outOfRangeSubmittedToDecision,
+    notDocumented: (t) => t.notDocumentedSubmittedToDecision,
+  },
+];
+
+const TIMELINE_DRILLDOWN_COLUMNS = [
+  { key: "client", label: "Client" },
+  { key: "authorizationNumber", label: "Authorization #" },
+  { key: "receivedDate", label: "Received" },
+  { key: "submittedDate", label: "Submitted" },
+  { key: "decisionDate", label: "Decision" },
+  { key: "decisionType", label: "Decision Type" },
+  { key: "receivedToSubmitted", label: "Receipt → Submission" },
+  { key: "countedReceiptToSubmission", label: "Counted In Receipt → Submission" },
+  { key: "submittedToDecision", label: "Submission → Decision" },
+  { key: "countedSubmissionToDecision", label: "Counted In Submission → Decision" },
+  { key: "state", label: "State" },
+  { key: "payor", label: "Payor" },
+];
+
+const countedLabel = (documented: boolean, counted: boolean): string =>
+  !documented ? NOT_DOCUMENTED : counted ? "Counted" : "Documented, outside range";
+
+const projectTimelineRows = (rows: ActionTimelineRow[]): Record<string, unknown>[] =>
+  rows.map((r) => ({
+    client: r.client,
+    authorizationNumber: r.authorizationNumber,
+    receivedDate: r.receivedDate ?? NOT_DOCUMENTED,
+    submittedDate: r.submittedDate ?? NOT_DOCUMENTED,
+    decisionDate: r.decisionDate ?? NOT_DOCUMENTED,
+    decisionType: r.decisionType ?? NOT_DOCUMENTED,
+    receivedToSubmitted: r.receivedToSubmittedDisplay,
+    countedReceiptToSubmission: countedLabel(
+      r.receivedToSubmittedDays != null,
+      r.countsForReceivedToSubmitted,
+    ),
+    submittedToDecision: r.submittedToDecisionDisplay,
+    countedSubmissionToDecision: countedLabel(
+      r.submittedToDecisionDays != null,
+      r.countsForSubmittedToDecision,
+    ),
+    state: r.state,
+    payor: r.payor,
+  }));
 
 const QUEUE_DRILLDOWN_COLUMNS = [
   { key: "client", label: "Client" },
