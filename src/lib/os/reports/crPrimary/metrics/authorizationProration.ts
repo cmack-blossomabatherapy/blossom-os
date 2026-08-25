@@ -34,14 +34,9 @@ export interface ProrationBillingRow {
 
 export type JoinBasis =
   | "authorization_id"
-  | "client_cr_id"
-  | "client_name"
+  | "unique_fallback"
+  | "ambiguous"
   | "none";
-
-export interface JoinKey {
-  key: string;
-  basis: JoinBasis;
-}
 
 export function normalizeName(value: string | null | undefined): string {
   return String(value ?? "")
@@ -50,24 +45,65 @@ export function normalizeName(value: string | null | undefined): string {
     .trim();
 }
 
-/** Id-first join key for an authorization row. */
-export function authorizationJoinKey(row: ContinuityAuthRow): JoinKey {
-  const authId = cleanReasonText(row.authorization_id);
-  if (authId) return { key: `auth:${authId.toLowerCase()}`, basis: "authorization_id" };
-  const crId = cleanReasonText(row.client_cr_id);
-  if (crId) return { key: `crid:${crId.toLowerCase()}`, basis: "client_cr_id" };
-  const name = normalizeName(row.client_name);
-  if (name) return { key: `name:${name}`, basis: "client_name" };
-  return { key: "", basis: "none" };
+export interface WorkedIndexEntry {
+  hours: number;
+  sessions: number;
 }
 
-/**
- * Id-first join key for a billing fact. CentralReach billing exports only
- * sometimes carry an authorization id, so it is read tolerantly from the raw
- * payload before falling back to the client CR id and finally the name.
- */
-export function billingJoinKeys(row: ProrationBillingRow): JoinKey[] {
-  const keys: JoinKey[] = [];
+/** How a billing row was allocated to an authorization (or why it was not). */
+export type AllocationBasis =
+  | "authorization_id"
+  | "unique_fallback"
+  | "ambiguous"
+  | "unjoined";
+
+export interface AllocationCounts {
+  exact: number;
+  uniqueFallback: number;
+  ambiguous: number;
+  unjoined: number;
+}
+
+export interface BillingAllocation {
+  /** Worked hours per authorization slot key. Each billing row lands in ≤ 1 slot. */
+  bySlot: Map<string, WorkedIndexEntry>;
+  /** How each allocated slot was matched, for provenance in the UI. */
+  slotBasis: Map<string, AllocationBasis>;
+  counts: AllocationCounts;
+}
+
+/** Stable per-authorization slot key — never shared between two authorizations. */
+export function authorizationSlotKey(row: ContinuityAuthRow, index: number): string {
+  return `slot:${index}:${cleanReasonText(row.authorization_id) ?? cleanReasonText(row.authorization_number) ?? "unnumbered"}`;
+}
+
+const normalizeCodeText = (value: string | null | undefined): string =>
+  String(value ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+/** Every service code an authorization covers; empty means "covers anything". */
+export function authorizationCodeSet(row: ContinuityAuthRow): Set<string> {
+  const raw = `${row.procedure_code ?? ""},${row.service_codes ?? ""}`;
+  const codes = raw
+    .split(/[,;/|]+/)
+    .map((c) => normalizeCodeText(c))
+    .filter(Boolean);
+  return new Set(codes);
+}
+
+/** A billing code is compatible when the authorization lists it, or lists nothing. */
+export function codesCompatible(
+  authCodes: Set<string>,
+  billingCode: string | null | undefined,
+): boolean {
+  if (authCodes.size === 0) return true;
+  const code = normalizeCodeText(billingCode);
+  if (!code) return false;
+  for (const c of authCodes) if (c === code || c.includes(code) || code.includes(c)) return true;
+  return false;
+}
+
+/** Authorization id carried by a billing fact, when CentralReach exported one. */
+export function billingAuthorizationId(row: ProrationBillingRow): string {
   const authId = pickText(row as unknown as Record<string, unknown>, [
     "authorization_id",
     "authorizationId",
@@ -75,49 +111,119 @@ export function billingJoinKeys(row: ProrationBillingRow): JoinKey[] {
     "auth_id",
     "auth_number",
   ]);
-  if (cleanReasonText(authId)) {
-    keys.push({ key: `auth:${authId.toLowerCase()}`, basis: "authorization_id" });
-  }
-  const crId = cleanReasonText(row.client_cr_id);
-  if (crId) keys.push({ key: `crid:${crId.toLowerCase()}`, basis: "client_cr_id" });
-  const name = normalizeName(row.client_name);
-  if (name) keys.push({ key: `name:${name}`, basis: "client_name" });
-  return keys;
+  return (cleanReasonText(authId) ?? "").toLowerCase();
 }
 
-export interface WorkedIndexEntry {
-  hours: number;
-  sessions: number;
+function billingHoursOf(row: ProrationBillingRow): number {
+  const hours = pickNumber(row as unknown as Record<string, unknown>, [
+    "hours",
+    "units_hours",
+    "billed_hours",
+  ]);
+  return Number.isFinite(hours) ? hours : 0;
 }
 
 /**
- * Sum worked hours per join key, limited to the selected window. A billing row
- * is indexed under every key it can supply so the authorization side can pick
- * its most specific available match.
+ * Allocate every billing row to **at most one** authorization.
+ *
+ * 1. Exact `AuthorizationId` wins outright.
+ * 2. Otherwise candidates are authorizations for the same client (CR id, or
+ *    normalized name only when no client id exists on either side) whose service
+ *    codes are compatible and whose coverage window contains the date of service.
+ * 3. That fallback is only used when exactly one candidate survives — ambiguous
+ *    rows stay unjoined so a client-level total is never copied onto every
+ *    authorization that client has.
  */
-export function buildWorkedHoursIndex(
+export function allocateBillingToAuthorizations(
+  auths: ContinuityAuthRow[],
   billing: ProrationBillingRow[],
   window: { from?: string; to?: string } = {},
-): Map<string, WorkedIndexEntry> {
-  const index = new Map<string, WorkedIndexEntry>();
+): BillingAllocation {
+  const bySlot = new Map<string, WorkedIndexEntry>();
+  const slotBasis = new Map<string, AllocationBasis>();
+  const counts: AllocationCounts = { exact: 0, uniqueFallback: 0, ambiguous: 0, unjoined: 0 };
+
+  interface Slot {
+    key: string;
+    authId: string;
+    crId: string;
+    name: string;
+    codes: Set<string>;
+    start: string | null;
+    end: string | null;
+  }
+
+  const slots: Slot[] = auths.map((auth, index) => ({
+    key: authorizationSlotKey(auth, index),
+    authId: (cleanReasonText(auth.authorization_id) ?? cleanReasonText(auth.authorization_number) ?? "").toLowerCase(),
+    crId: (cleanReasonText(auth.client_cr_id) ?? "").toLowerCase(),
+    name: normalizeName(auth.client_name),
+    codes: authorizationCodeSet(auth),
+    start: startDateOf(auth),
+    end: endDateOf(auth),
+  }));
+
+  const byAuthId = new Map<string, Slot[]>();
+  for (const slot of slots) {
+    if (!slot.authId) continue;
+    if (!byAuthId.has(slot.authId)) byAuthId.set(slot.authId, []);
+    byAuthId.get(slot.authId)!.push(slot);
+  }
+
+  const add = (key: string, hours: number, basis: AllocationBasis) => {
+    if (!bySlot.has(key)) bySlot.set(key, { hours: 0, sessions: 0 });
+    const entry = bySlot.get(key)!;
+    entry.hours += hours;
+    entry.sessions += 1;
+    // Exact provenance is never downgraded by a later fallback allocation.
+    if (basis === "authorization_id" || !slotBasis.has(key)) slotBasis.set(key, basis);
+  };
+
   for (const row of billing) {
     const date = String(row.date_of_service ?? "").slice(0, 10);
     if (window.from && date && date < window.from) continue;
     if (window.to && date && date > window.to) continue;
-    const hours = pickNumber(row as unknown as Record<string, unknown>, [
-      "hours",
-      "units_hours",
-      "billed_hours",
-    ]);
-    for (const { key } of billingJoinKeys(row)) {
-      if (!key) continue;
-      if (!index.has(key)) index.set(key, { hours: 0, sessions: 0 });
-      const entry = index.get(key)!;
-      entry.hours += Number.isFinite(hours) ? hours : 0;
-      entry.sessions += 1;
+    const hours = billingHoursOf(row);
+
+    const authId = billingAuthorizationId(row);
+    const exact = authId ? byAuthId.get(authId) : undefined;
+    if (exact && exact.length === 1) {
+      counts.exact += 1;
+      add(exact[0].key, hours, "authorization_id");
+      continue;
+    }
+    if (exact && exact.length > 1) {
+      counts.ambiguous += 1;
+      continue;
+    }
+
+    const crId = (cleanReasonText(row.client_cr_id) ?? "").toLowerCase();
+    const name = normalizeName(row.client_name);
+    const candidates = slots.filter((slot) => {
+      const sameClient = crId
+        ? slot.crId === crId
+        : name
+          ? !slot.crId && slot.name === name
+          : false;
+      if (!sameClient) return false;
+      if (!codesCompatible(slot.codes, row.procedure_code)) return false;
+      if (!date) return false;
+      if (slot.start && date < slot.start) return false;
+      if (slot.end && date > slot.end) return false;
+      return true;
+    });
+
+    if (candidates.length === 1) {
+      counts.uniqueFallback += 1;
+      add(candidates[0].key, hours, "unique_fallback");
+    } else if (candidates.length > 1) {
+      counts.ambiguous += 1;
+    } else {
+      counts.unjoined += 1;
     }
   }
-  return index;
+
+  return { bySlot, slotBasis, counts };
 }
 
 export interface ProrationWindow {
@@ -167,6 +273,13 @@ export type UtilizationDataState =
   | "no_coverage_dates"
   | "no_worked_hours_joined"
   | "outside_range";
+
+export const JOIN_BASIS_LABELS: Record<JoinBasis, string> = {
+  authorization_id: "Matched on authorization id",
+  unique_fallback: "Matched on client, code, and date (single candidate)",
+  ambiguous: "Ambiguous — hours held back",
+  none: "No billing joined",
+};
 
 export const UTILIZATION_DATA_STATE_LABELS: Record<UtilizationDataState, string> = {
   ok: "Complete",
@@ -223,6 +336,8 @@ export interface ProratedUtilizationResult {
   totals: ProratedUtilizationTotals;
   dataStateCounts: Record<UtilizationDataState, number>;
   joinBasisCounts: Record<JoinBasis, number>;
+  /** Billing-row allocation provenance, surfaced as data-quality warnings. */
+  allocation: AllocationCounts;
   /** True when the selected range narrows at least one authorization window. */
   prorationApplied: boolean;
 }
@@ -235,7 +350,10 @@ export function computeProratedUtilization(
   options: { from?: string; to?: string; today?: string } = {},
 ): ProratedUtilizationResult {
   const today = options.today ?? new Date().toISOString().slice(0, 10);
-  const worked = buildWorkedHoursIndex(billing, { from: options.from, to: options.to });
+  const allocation = allocateBillingToAuthorizations(auths, billing, {
+    from: options.from,
+    to: options.to,
+  });
 
   const rows: ProratedUtilizationRow[] = [];
   const dataStateCounts: Record<UtilizationDataState, number> = {
@@ -247,8 +365,8 @@ export function computeProratedUtilization(
   };
   const joinBasisCounts: Record<JoinBasis, number> = {
     authorization_id: 0,
-    client_cr_id: 0,
-    client_name: 0,
+    unique_fallback: 0,
+    ambiguous: 0,
     none: 0,
   };
 
@@ -271,10 +389,13 @@ export function computeProratedUtilization(
       ? Number(auth.worked_hours)
       : null;
 
-    const join = authorizationJoinKey(auth);
-    const match = join.key ? worked.get(join.key) : undefined;
+    const slotKey = authorizationSlotKey(auth, index);
+    const match = allocation.bySlot.get(slotKey);
+    // A legitimate zero must survive: only a missing allocation is null.
     const recomputed = match ? round1(match.hours) : null;
-    const basis: JoinBasis = match ? join.basis : "none";
+    const basis: JoinBasis = match
+      ? ((allocation.slotBasis.get(slotKey) ?? "none") as JoinBasis)
+      : "none";
     joinBasisCounts[basis] += 1;
 
     const prorated =
@@ -288,6 +409,8 @@ export function computeProratedUtilization(
     dataStateCounts[dataState] += 1;
 
     const denominator = prorated ?? authorized;
+    // `??` (never `||`) so a recomputed 0 is reported as 0, not swapped for the
+    // CentralReach-reported figure.
     const numerator = recomputed ?? sourceUsed;
     const utilizationPct =
       denominator && denominator > 0 && numerator != null
@@ -337,8 +460,14 @@ export function computeProratedUtilization(
     });
   });
 
-  const proratedDenominator = proratedTotal || authorizedTotal;
-  const usedNumerator = recomputedTotal || sourceUsedTotal;
+  // Prorated totals of exactly 0 are real; only an absent prorated basis
+  // (no authorization had usable coverage dates) falls back to raw authorized.
+  const proratedDenominator = dataStateCounts.no_coverage_dates === auths.length
+    ? authorizedTotal
+    : proratedTotal;
+  const usedNumerator = allocation.counts.exact + allocation.counts.uniqueFallback > 0
+    ? recomputedTotal
+    : sourceUsedTotal;
 
   return {
     rows: rows.sort(
@@ -365,6 +494,7 @@ export function computeProratedUtilization(
     },
     dataStateCounts,
     joinBasisCounts,
+    allocation: allocation.counts,
     prorationApplied,
   };
 }

@@ -1,10 +1,11 @@
 /**
- * Authorization Command Center (`authorization-analysis`) — Phase 2A.
+ * Authorization Command Center (`authorization-analysis`) — Phase 2A repair.
  *
- * Three operational questions, three tabs:
- *   1. Lifecycle    — what happened to submissions (logged events only).
- *   2. Continuity    — who is expiring, expired, or has no coverage.
- *   3. Coverage gaps — clients with no active authorization today.
+ * Four URL-addressable tabs (`?tab=`):
+ *   1. lifecycle        — true logged event counts, with provenance.
+ *   2. continuity       — active / expired / expiring, renewals, gap candidates.
+ *   3. progress-reports — real PR events plus authoritative due dates only.
+ *   4. pauses           — confirmed pauses, separated from gap candidates.
  *
  * Rules enforced here:
  * - Lifecycle numbers come only from logged authorization events. When no
@@ -37,6 +38,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
 import { useUrlFilterState } from "@/hooks/useUrlFilterState";
+import { useUrlState } from "@/hooks/useUrlState";
+import { useAuthorizationWeeklyEvents } from "@/hooks/useAuthorizationWeeklyEvents";
+import { LogAuthEventDialog } from "@/components/reports/crPrimary/LogAuthEventDialog";
+import { withCurrentMonthDefault } from "@/lib/os/reports/crPrimary/reportWindow";
 import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
 import type {
@@ -57,6 +62,12 @@ import {
   startDateOf,
   type ContinuityRow,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
+import {
+  NO_AUTHORITATIVE_DUE,
+  computePauseOps,
+  computeProgressReportOps,
+  type ProgressReportDueRow,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 
 const FILTER_FIELDS = ["state", "client", "payor", "code"] as const;
@@ -142,13 +153,28 @@ function projectContinuityRows(rows: ContinuityRow[]): Record<string, unknown>[]
   }));
 }
 
-type TabKey = "lifecycle" | "continuity" | "gaps";
+/** Exactly four tabs, in this order, addressable via `?tab=`. */
+const TABS = [
+  { key: "lifecycle", label: "Lifecycle" },
+  { key: "continuity", label: "Continuity & Renewals" },
+  { key: "progress-reports", label: "Progress Reports" },
+  { key: "pauses", label: "Pauses" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
+/** Reports open on the current calendar month; Reset returns here. */
+const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function AuthorizationCommandCenterPage() {
-  const data = useCrPrimaryReport(["authCurrent", "authEvents"]);
-  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(EMPTY_FILTERS);
-  const [tab, setTab] = useState<TabKey>("continuity");
+  const data = useCrPrimaryReport(["authCurrent", "authEvents", "authActions"]);
+  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  const [tabParam, setTabParam] = useUrlState("tab", "continuity");
+  const tab = (TABS.some((t) => t.key === tabParam) ? tabParam : "continuity") as TabKey;
+  const setTab = (next: TabKey) => setTabParam(next);
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
+  const [logOpen, setLogOpen] = useState(false);
+  const { logEvent } = useAuthorizationWeeklyEvents();
 
   useEffect(() => {
     pushRecent("authorization-analysis");
@@ -180,6 +206,39 @@ export default function AuthorizationCommandCenterPage() {
 
   const lifecycle = useMemo(() => computeAuthorizationLifecycle(events), [events]);
   const continuity = useMemo(() => computeAuthorizationContinuity(auths), [auths]);
+
+  const actions = useMemo(
+    () =>
+      applyFilters(data.authActions, filters, (r) => ({
+        date: r.submitted_date ?? r.received_date ?? r.next_action_due_date,
+        state: r.state,
+        client: r.client_name,
+        payor: r.payor,
+        code: r.service_code,
+        status: r.status,
+      })),
+    [data.authActions, filters],
+  );
+
+  const progressReports = useMemo(
+    () => computeProgressReportOps(events, actions),
+    [events, actions],
+  );
+
+  const pauses = useMemo(
+    () =>
+      computePauseOps(
+        events,
+        continuity.clientsWithoutCoverage.map((c) => ({
+          client: c.client,
+          state: c.state,
+          payor: c.payor,
+          lastEnd: c.lastEnd,
+          note: c.note,
+        })),
+      ),
+    [events, continuity.clientsWithoutCoverage],
+  );
 
   const filterFields = useMemo<FilterFieldConfig[]>(
     () =>
@@ -319,7 +378,7 @@ export default function AuthorizationCommandCenterPage() {
       );
     }
     if (id === "gaps") {
-      setTab("gaps");
+      setTab("pauses");
       return;
     }
     setTab("continuity");
@@ -428,7 +487,6 @@ export default function AuthorizationCommandCenterPage() {
     <PrimaryReportShell
       title="Authorization Command Center"
       subtitle="Authorization lifecycle, coverage continuity, and the clients whose renewals need confirmation — read live from normalized CentralReach authorization data."
-      requiredExports={["Authorizations export", "Authorization events (optional)"]}
       freshness={data.freshness}
       loading={data.loading}
       empty={data.empty}
@@ -447,6 +505,14 @@ export default function AuthorizationCommandCenterPage() {
                 {fmtCount(lifecycle.totalEvents)} logged events
               </Badge>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setLogOpen(true)}
+            >
+              Log authorization event
+            </Button>
             <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
               <Link to="/reports/authorization-utilization-hour-based">
                 Hour-based utilization <ArrowUpRight className="h-3.5 w-3.5" />
@@ -457,7 +523,7 @@ export default function AuthorizationCommandCenterPage() {
             filters={filters}
             fields={filterFields}
             onChange={(next) => setFilters(next)}
-            onReset={() => setFilters(EMPTY_FILTERS)}
+            onReset={() => setFilters(DEFAULT_FILTERS)}
           />
         </>
       }
@@ -475,15 +541,11 @@ export default function AuthorizationCommandCenterPage() {
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
           <TabsList className="h-9">
-            <TabsTrigger value="continuity" className="text-xs">
-              Coverage &amp; renewals
-            </TabsTrigger>
-            <TabsTrigger value="lifecycle" className="text-xs">
-              Lifecycle
-            </TabsTrigger>
-            <TabsTrigger value="gaps" className="text-xs">
-              Coverage gaps
-            </TabsTrigger>
+            {TABS.map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="text-xs">
+                {t.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <TabsContent value="continuity" className="mt-3 space-y-4">
@@ -565,6 +627,32 @@ export default function AuthorizationCommandCenterPage() {
                   />
                 </div>
                 <PrimaryTable
+                  title="Logged authorization events"
+                  subtitle="Every event behind the lifecycle numbers, with where it was logged from."
+                  rows={events.slice(0, 500).map((e, i) => {
+                    const c = classifyLifecycleEvent(e.event_type);
+                    return {
+                      key: `${e.record_id ?? i}`,
+                      eventDate: asText(e.event_date).slice(0, 10),
+                      eventType: asText(e.event_type, "Not documented"),
+                      kind: LIFECYCLE_KIND_LABELS[c.kind],
+                      action: c.action,
+                      client: asText(e.client_name, "Unknown client"),
+                      source: asText(e.source, "Not documented"),
+                    };
+                  })}
+                  rowKey={(r) => r.key}
+                  columns={[
+                    { key: "eventDate", label: "Event date", render: (r) => fmtDate(r.eventDate) },
+                    { key: "client", label: "Client", render: (r) => r.client },
+                    { key: "eventType", label: "Event type", render: (r) => r.eventType },
+                    { key: "kind", label: "Authorization kind", render: (r) => r.kind },
+                    { key: "action", label: "Outcome", render: (r) => r.action },
+                    { key: "source", label: "Source", render: (r) => r.source },
+                  ]}
+                  emptyLabel="No logged authorization events for these filters."
+                />
+                <PrimaryTable
                   title="Lifecycle by authorization kind"
                   subtitle="Initial, reauthorization, assessment, and amendment activity side by side."
                   rows={lifecycle.byKind}
@@ -623,12 +711,129 @@ export default function AuthorizationCommandCenterPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="gaps" className="mt-3">
+          <TabsContent value="progress-reports" className="mt-3 space-y-4">
+            {!progressReports.hasEvents && progressReports.dueRows.length === 0 ? (
+              <ReportInsufficientData
+                title="No progress-report activity for this range"
+                detail="Progress-report counts come only from logged progress-report events, and due dates come only from the recorded next-action or appeal due date. Neither exists for the selected filters, so nothing is shown rather than a zero that looks like a fact."
+              />
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "PR submitted", value: progressReports.submitted },
+                    { label: "PR approved", value: progressReports.approved },
+                    { label: "PR denied", value: progressReports.denied },
+                    { label: "PR resubmitted", value: progressReports.resubmitted },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-xl border border-border/60 bg-card p-3">
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {s.label}
+                      </p>
+                      <p className="text-xl font-semibold tabular-nums">{fmtCount(s.value)}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <PrimaryTable
+                  title="Progress-report events"
+                  subtitle="True logged progress-report events only — an approval never implies a submission that was not logged."
+                  rows={progressReports.events}
+                  rowKey={(r) => r.key}
+                  columns={[
+                    { key: "date", label: "Event date", render: (r) => fmtDate(r.eventDate) },
+                    { key: "client", label: "Client", render: (r) => r.client },
+                    { key: "auth", label: "Authorization #", render: (r) => r.authorizationNumber },
+                    { key: "outcome", label: "Outcome", render: (r) => r.outcome },
+                    { key: "payor", label: "Payor", render: (r) => r.payor },
+                    { key: "state", label: "State", render: (r) => r.state },
+                    { key: "reason", label: "Reason / note", render: (r) => r.reason },
+                    { key: "source", label: "Logged from", render: (r) => r.source },
+                  ]}
+                  emptyLabel="No progress-report events logged for these filters."
+                />
+
+                <PrimaryTable
+                  title="Next actions and due dates"
+                  subtitle="Overdue is only ever computed from a recorded next-action or appeal due date. Rows without one say so."
+                  rows={progressReports.dueRows}
+                  rowKey={(r) => r.key}
+                  columns={
+                    [
+                      { key: "client", label: "Client", render: (r) => r.client },
+                      {
+                        key: "auth",
+                        label: "Authorization #",
+                        render: (r) => r.authorizationNumber,
+                      },
+                      { key: "status", label: "Stage", render: (r) => r.status },
+                      { key: "nextAction", label: "Next action", render: (r) => r.nextAction },
+                      {
+                        key: "due",
+                        label: "Due",
+                        align: "right",
+                        render: (r) =>
+                          r.dueDate ? (
+                            <span className="tabular-nums">{fmtDate(r.dueDate)}</span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">
+                              {NO_AUTHORITATIVE_DUE}
+                            </span>
+                          ),
+                      },
+                      {
+                        key: "state",
+                        label: "Status",
+                        align: "right",
+                        render: (r) => (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              r.overdue
+                                ? "bg-destructive/10 text-destructive border border-destructive/30"
+                                : r.dueSource === "none"
+                                  ? "bg-muted text-muted-foreground"
+                                  : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30"
+                            }`}
+                          >
+                            {r.overdue
+                              ? "Overdue"
+                              : r.dueSource === "none"
+                                ? "No due date"
+                                : "On track"}
+                          </span>
+                        ),
+                      },
+                    ] as PrimaryTableColumn<ProgressReportDueRow>[]
+                  }
+                  emptyLabel="No operational authorization actions match these filters."
+                />
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="pauses" className="mt-3 space-y-4">
             <PrimaryTable
-              title="Clients with no active authorization today"
-              subtitle="Each row needs confirmation before further sessions are scheduled — a missing snapshot row is not proof that coverage lapsed."
-              rows={continuity.clientsWithoutCoverage}
-              rowKey={(r) => r.client}
+              title="Confirmed pauses"
+              subtitle="Pause events actually logged by the authorization team, with the reason as recorded."
+              rows={pauses.confirmedPauses}
+              rowKey={(r) => r.key}
+              columns={[
+                { key: "date", label: "Pause date", render: (r) => fmtDate(r.eventDate) },
+                { key: "client", label: "Client", render: (r) => r.client },
+                { key: "auth", label: "Authorization #", render: (r) => r.authorizationNumber },
+                { key: "reason", label: "Reason", render: (r) => r.reason },
+                { key: "payor", label: "Payor", render: (r) => r.payor },
+                { key: "state", label: "State", render: (r) => r.state },
+                { key: "source", label: "Logged from", render: (r) => r.source },
+              ]}
+              emptyLabel="No pause events have been logged for these filters."
+            />
+
+            <PrimaryTable
+              title="Coverage-gap candidates · Needs Confirmation"
+              subtitle="Clients with no active authorization in the snapshot. These are questions to confirm, not confirmed pauses."
+              rows={pauses.candidates}
+              rowKey={(r) => r.key}
               columns={[
                 { key: "client", label: "Client", render: (r) => r.client },
                 { key: "state", label: "State", render: (r) => r.state },
@@ -646,12 +851,35 @@ export default function AuthorizationCommandCenterPage() {
                     <span className="text-[11px] text-muted-foreground">{r.note}</span>
                   ),
                 },
+                {
+                  key: "confirm",
+                  label: "Status",
+                  align: "right",
+                  render: () => (
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+                      Needs Confirmation
+                    </span>
+                  ),
+                },
               ]}
               emptyLabel="Every client in view has active authorization coverage today."
             />
           </TabsContent>
+
         </Tabs>
       </div>
+
+      <LogAuthEventDialog
+        open={logOpen}
+        onOpenChange={setLogOpen}
+        onSubmit={async (input) => {
+          const err = await logEvent(input);
+          if (!err) data.refresh();
+          return err;
+        }}
+        clients={filterFields.find((f) => f.key === "client")?.options ?? []}
+        payors={filterFields.find((f) => f.key === "payor")?.options ?? []}
+      />
 
       <DrilldownDrawer request={drilldown} onClose={() => setDrilldown(null)} />
     </PrimaryReportShell>

@@ -172,7 +172,6 @@ export default function BcbaPerformancePage() {
     <PrimaryReportShell
       title="BCBA Performance"
       subtitle="Comparable BCBA scorecards built from CentralReach billing and authorization data: productivity, supervision, parent training, caseload, RBT span, and authorization risk."
-      requiredExports={["Billing / session export", "Authorizations export"]}
       freshness={data.freshness}
       loading={data.loading}
       empty={data.empty}

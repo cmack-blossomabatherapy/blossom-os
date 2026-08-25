@@ -17,7 +17,7 @@ import {
   dayOfWeekLabel,
   eventDurationHours,
   isCancelledEventStrict,
-  isCountableEvent,
+  isActiveScheduleEvent,
   isDeletedEvent,
   isNoShow,
   scheduleTruthCoverage,
@@ -56,7 +56,8 @@ export interface CancellationGroupRow {
   name: string;
   cancellations: number;
   cancelledHours: number;
-  countableEvents: number;
+  /** Nondeleted events in this group — the rate denominator. */
+  activeScheduleEvents: number;
   cancellationRate: number | null;
   clients: number;
   share: number;
@@ -70,7 +71,7 @@ export interface CancellationFollowUpRow {
   provider: string;
   cancellations: number;
   cancelledHours: number;
-  countableEvents: number;
+  activeScheduleEvents: number;
   cancellationRate: number | null;
   weeksAffected: number;
   lastCancellation: string | null;
@@ -80,18 +81,43 @@ export interface CancellationFollowUpRow {
   reason: string;
 }
 
+/**
+ * One cancelled source event, with everything staff need to act on it without
+ * leaving the report. This is the queue operators asked for — the client-level
+ * summary above it answers "who is a pattern", this answers "what do I chase".
+ */
+export interface CancellationFollowUpEventRow {
+  key: string;
+  eventDate: string | null;
+  client: string;
+  provider: string;
+  cancelledHours: number;
+  reason: string;
+  /** Documented or not — drives the "needs documentation" action. */
+  reasonDocumented: boolean;
+  /** Whether CentralReach converted this event to a timesheet. */
+  conversionState: string;
+  state: string;
+  payor: string;
+  /** Human-readable service/billing code for the event. */
+  code: string;
+  followUpStatus: "Needs documentation" | "Repeat cancellation" | "Logged";
+  action: string;
+}
+
 export interface CancellationCenterMetrics {
   /** Rows loaded, before deletion filtering. */
   loadedEvents: number;
   deletedEvents: number;
-  /** Denominator: everything except deleted rows. */
-  countableEvents: number;
-  activeEvents: number;
+  /** Denominator: every nondeleted event, cancelled ones included. */
+  activeScheduleEvents: number;
+  /** Active schedule events minus cancellations. */
+  keptEvents: number;
   cancelledEvents: number;
   noShowEvents: number;
   cancellationRate: number | null;
   cancelledHours: number;
-  activeHours: number;
+  keptHours: number;
   affectedClients: number;
   affectedProviders: number;
   documentedReasons: number;
@@ -108,6 +134,8 @@ export interface CancellationCenterMetrics {
   byPayor: CancellationGroupRow[];
   byCode: CancellationGroupRow[];
   followUps: CancellationFollowUpRow[];
+  /** Event-level follow-up queue (one row per cancelled event). */
+  followUpEvents: CancellationFollowUpEventRow[];
   /** Prior-period comparison, only when a comparison set is supplied. */
   comparison: {
     previousCancellations: number;
@@ -116,6 +144,7 @@ export interface CancellationCenterMetrics {
     countDelta: number;
   } | null;
 }
+
 
 interface Bucket {
   cancellations: number;
@@ -146,12 +175,12 @@ export interface CancellationCenterOptions {
 }
 
 function summarize(rows: CancellationCenterRow[]) {
-  const countable = rows.filter(isCountableEvent);
-  const cancelled = countable.filter(isCancelledEventStrict);
+  const active = rows.filter(isActiveScheduleEvent);
+  const cancelled = active.filter(isCancelledEventStrict);
   return {
-    countable: countable.length,
+    activeScheduleEvents: active.length,
     cancelled: cancelled.length,
-    rate: countable.length ? pct(cancelled.length, countable.length) : null,
+    rate: active.length ? pct(cancelled.length, active.length) : null,
   };
 }
 
@@ -161,9 +190,11 @@ export function computeCancellationCenter(
 ): CancellationCenterMetrics {
   const followUpThreshold = opts.followUpThreshold ?? 2;
   const deleted = rows.filter(isDeletedEvent);
-  const countable = rows.filter(isCountableEvent);
-  const cancelled = countable.filter(isCancelledEventStrict);
-  const active = countable.filter((r) => !isCancelledEventStrict(r));
+  // Active schedule events = every nondeleted event. This is the denominator.
+  const activeSchedule = rows.filter(isActiveScheduleEvent);
+  const cancelled = activeSchedule.filter(isCancelledEventStrict);
+  const kept = activeSchedule.filter((r) => !isCancelledEventStrict(r));
+
 
   const dims = {
     reason: new Map<string, Bucket>(),
@@ -204,13 +235,13 @@ export function computeCancellationCenter(
   };
 
   let cancelledHours = 0;
-  let activeHours = 0;
+  let keptHours = 0;
   let documented = 0;
   let undocumented = 0;
   const clientSet = new Set<string>();
   const providerSet = new Set<string>();
 
-  for (const row of countable) {
+  for (const row of activeSchedule) {
     const isCancelled = isCancelledEventStrict(row);
     const hours = eventDurationHours(row);
     const client = text(row.client_name, "Unknown client");
@@ -228,7 +259,7 @@ export function computeCancellationCenter(
       else documented += 1;
       bump(dims.reason, reason, client, hours, true);
     } else {
-      activeHours += hours;
+      keptHours += hours;
     }
 
     bump(dims.provider, provider, client, hours, isCancelled);
@@ -293,7 +324,7 @@ export function computeCancellationCenter(
         name,
         cancellations: b.cancellations,
         cancelledHours: Math.round(b.hours * 10) / 10,
-        countableEvents: b.countable,
+        activeScheduleEvents: b.countable,
         cancellationRate: b.countable ? pct(b.cancellations, b.countable) : null,
         clients: b.clients.size,
         share: totalCancellations ? pct(b.cancellations, totalCancellations) : 0,
@@ -329,7 +360,7 @@ export function computeCancellationCenter(
         provider,
         cancellations: d.cancellations,
         cancelledHours: Math.round(d.hours * 10) / 10,
-        countableEvents: d.countable,
+        activeScheduleEvents: d.countable,
         cancellationRate: rate,
         weeksAffected: d.weeks.size,
         lastCancellation: d.last,
@@ -348,18 +379,68 @@ export function computeCancellationCenter(
 
   const byReason = toGroups(dims.reason);
   const previous = opts.previous ? summarize(opts.previous) : null;
-  const rate = countable.length ? pct(totalCancellations, countable.length) : null;
+  const rate = activeSchedule.length
+    ? pct(totalCancellations, activeSchedule.length)
+    : null;
+
+  const repeatClients = new Set(
+    [...clientDetail.values()]
+      .filter((d) => d.cancellations >= followUpThreshold)
+      .map((d) => d.client.toLowerCase()),
+  );
+
+  const followUpEvents: CancellationFollowUpEventRow[] = cancelled
+    .map((row, index) => {
+      const reason = cancellationReasonBucket(row);
+      const documentedReason = reason !== NOT_DOCUMENTED;
+      const client = text(row.client_name, "Unknown client");
+      const repeat = repeatClients.has(client.toLowerCase());
+      const followUpStatus: CancellationFollowUpEventRow["followUpStatus"] =
+        !documentedReason ? "Needs documentation" : repeat ? "Repeat cancellation" : "Logged";
+      return {
+        key: `${row.id ?? "event"}-${index}`,
+        eventDate: String(row.event_date ?? "").slice(0, 10) || null,
+        client,
+        provider: text(row.provider_name, "Unassigned provider"),
+        cancelledHours: Math.round(eventDurationHours(row) * 10) / 10,
+        reason,
+        reasonDocumented: documentedReason,
+        conversionState:
+          row.converted_to_timesheet == null
+            ? "Not reported"
+            : row.converted_to_timesheet
+              ? "Converted to timesheet"
+              : "Not converted",
+        state: text(row.state, "Unknown"),
+        payor: text(row.payor, "Unknown"),
+        code: eventCode(row),
+        followUpStatus,
+        action:
+          followUpStatus === "Needs documentation"
+            ? "Add the cancellation reason in CentralReach so this event can be categorized."
+            : followUpStatus === "Repeat cancellation"
+              ? "Repeat pattern for this client — confirm the plan with the family and BCBA."
+              : "Reason documented — no action unless the pattern grows.",
+      };
+    })
+    .sort(
+      (a, b) =>
+        String(b.eventDate ?? "").localeCompare(String(a.eventDate ?? "")) ||
+        b.cancelledHours - a.cancelledHours ||
+        a.client.localeCompare(b.client),
+    );
 
   return {
     loadedEvents: rows.length,
     deletedEvents: deleted.length,
-    countableEvents: countable.length,
-    activeEvents: active.length,
+    activeScheduleEvents: activeSchedule.length,
+    keptEvents: kept.length,
     cancelledEvents: totalCancellations,
     noShowEvents: cancelled.filter(isNoShow).length,
     cancellationRate: rate,
     cancelledHours: Math.round(cancelledHours * 10) / 10,
-    activeHours: Math.round(activeHours * 10) / 10,
+    keptHours: Math.round(keptHours * 10) / 10,
+
     affectedClients: clientSet.size,
     affectedProviders: providerSet.size,
     documentedReasons: documented,
@@ -385,6 +466,7 @@ export function computeCancellationCenter(
     byPayor: toGroups(dims.payor),
     byCode: toGroups(dims.code),
     followUps,
+    followUpEvents,
     comparison: previous
       ? {
           previousCancellations: previous.cancelled,

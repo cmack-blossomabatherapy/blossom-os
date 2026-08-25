@@ -171,7 +171,6 @@ export default function ProgressReportsPage() {
     <PrimaryReportShell
       title="Progress Reports"
       subtitle="Progress-report documentation status explicitly identified in CentralReach: due, submitted, approved, denied, overdue, and missing."
-      requiredExports={["Authorizations export", "Billing / session export"]}
       freshness={data.freshness}
       loading={data.loading}
       empty={data.empty}

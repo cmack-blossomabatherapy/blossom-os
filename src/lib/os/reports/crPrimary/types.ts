@@ -96,8 +96,89 @@ export interface CrAuthorizationCurrentRow {
   remaining_hours: number | null;
   authorized_hours_month: number | null;
   worked_hours_month: number | null;
+  authorized_hours_all: number | null;
+  authorized_hours_auth_range: number | null;
+  worked_hours_all: number | null;
+  worked_hours_auth_range: number | null;
+  scheduled_hours_all: number | null;
+  scheduled_hours_month: number | null;
+  scheduled_hours_auth_range: number | null;
+  pending_hours_all: number | null;
+  pending_hours_month: number | null;
+  pending_hours_auth_range: number | null;
+  remaining_hours_all: number | null;
+  remaining_hours_month: number | null;
+  remaining_hours_auth_range: number | null;
   utilization_percent_all: number | null;
   utilization_percent_month: number | null;
+  utilization_percent_auth_range: number | null;
+  followup_service_codes: string | null;
+  source_row_id: string | null;
+  last_seen_at: string | null;
+}
+
+/**
+ * Curated authorization operational action row from the
+ * `report_authorization_actions` SECURITY DEFINER RPC. Only the minimum
+ * operational fields — no contact info, assignee UUIDs, notes, or payloads.
+ */
+export interface ReportAuthorizationActionRow {
+  record_id: string;
+  client_name: string | null;
+  client_cr_id: string | null;
+  authorization_id: string | null;
+  authorization_number: string | null;
+  auth_type: string | null;
+  state: string | null;
+  payor: string | null;
+  service_code: string | null;
+  status: string | null;
+  workflow_stage: string | null;
+  received_date: string | null;
+  submitted_date: string | null;
+  approved_date: string | null;
+  denied_date: string | null;
+  resubmitted_date: string | null;
+  expiration_date: string | null;
+  denial_reason: string | null;
+  missing_info: string | null;
+  next_action: string | null;
+  next_action_due_date: string | null;
+  appeal_due_date: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Curated billing fact from the `report_billing_facts` SECURITY DEFINER RPC:
+ * `cr_billing_sessions` joined to its mutable status row. Reports read this
+ * instead of the base billing table — no rates, payloads, or contact labels.
+ */
+export interface ReportBillingFactRow {
+  id: string;
+  source_row_id: string | null;
+  date_of_service: string | null;
+  procedure_code: string | null;
+  hours: number | null;
+  client_name: string | null;
+  client_cr_id: string | null;
+  provider_name: string | null;
+  provider_cr_id: string | null;
+  payor: string | null;
+  state: string | null;
+  location: string | null;
+  status: string | null;
+  authorization_id: string | null;
+  creation_date: string | null;
+  first_bill_date: string | null;
+  first_claim_date: string | null;
+  is_void: boolean | null;
+  deleted: boolean | null;
+  signed_by_provider: boolean | null;
+  signed_by_client: boolean | null;
+  provider_role: string | null;
+  delivery_method: string | null;
+  place_of_service: string | null;
   last_seen_at: string | null;
 }
 

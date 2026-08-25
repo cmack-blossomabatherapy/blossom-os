@@ -56,26 +56,41 @@ export interface LifecycleEventRow {
   state?: string | null;
   reason?: string | null;
   created_at?: string | null;
+  /** Curated authorization type when the source provides one (wins over parsing). */
+  auth_type?: string | null;
+  lifecycle_kind?: string | null;
 }
 
 /**
  * Map a logged event type onto a lifecycle cell. Unknown event types are
  * reported as `unclassified` rather than being forced into a bucket.
  */
-export function classifyLifecycleEvent(eventType: string | null | undefined): {
+export function classifyLifecycleKind(text: string | null | undefined): LifecycleKind {
+  const t = String(text ?? "").toLowerCase();
+  // Reassessment / RA is a *re*authorization, never an initial assessment.
+  if (/re-?assessment|re-?auth|\bra\b|renewal|concurrent/.test(t)) return "reauthorization";
+  if (/progress[_\s-]*report|\bpr\b/.test(t)) return "progress_report";
+  if (/initial[_\s-]*treatment|\bit\b/.test(t)) return "initial_treatment";
+  if (/initial[_\s-]*assessment|\bia\b|\bassessment\b/.test(t)) return "initial_assessment";
+  return "unclassified";
+}
+
+/**
+ * Map a logged event onto a lifecycle cell. When the curated source carries an
+ * explicit `auth_type` / `lifecycle_kind`, that wins; otherwise the event type
+ * is parsed, and anything unrecognized stays honestly `unclassified`.
+ */
+export function classifyLifecycleEvent(
+  eventType: string | null | undefined,
+  explicitKind?: string | null,
+): {
   kind: LifecycleKind;
   action: LifecycleAction;
 } {
   const t = String(eventType ?? "").toLowerCase();
-  const kind: LifecycleKind = /initial[_\s-]*assessment|\bia\b|reassessment/.test(t)
-    ? "initial_assessment"
-    : /initial[_\s-]*treatment|\bit\b/.test(t)
-      ? "initial_treatment"
-      : /re-?auth|\bra\b|renewal|concurrent/.test(t)
-        ? "reauthorization"
-        : /progress[_\s-]*report|\bpr\b/.test(t)
-          ? "progress_report"
-          : "unclassified";
+  const fromExplicit = explicitKind ? classifyLifecycleKind(explicitKind) : "unclassified";
+  const kind: LifecycleKind =
+    fromExplicit !== "unclassified" ? fromExplicit : classifyLifecycleKind(t);
   const action: LifecycleAction = /resubmit/.test(t)
     ? "resubmitted"
     : /denied|denial|reject/.test(t)
@@ -169,31 +184,29 @@ export function computeAuthorizationLifecycle(
   let unclassified = 0;
 
   for (const e of events) {
-    const { kind, action } = classifyLifecycleEvent(e.event_type);
+    const { kind, action } = classifyLifecycleEvent(
+      e.event_type,
+      e.lifecycle_kind ?? e.auth_type,
+    );
     const row = ensureKind(kind);
     if (kind === "unclassified") unclassified += 1;
     if (e.source) sources.add(String(e.source));
 
-    // Approved / denied / resubmitted all imply a submission happened.
+    // Counts are TRUE event counts. An approval, denial, or resubmission is
+    // never allowed to manufacture a submission event that was not logged.
     if (action === "approved") {
       row.approved += 1;
-      row.submitted += 1;
       approved += 1;
-      submitted += 1;
     } else if (action === "denied") {
       row.denied += 1;
-      row.submitted += 1;
       denied += 1;
-      submitted += 1;
       denialReasons.set(
         cleanReasonText(e.reason) ?? "Reason not documented",
         (denialReasons.get(cleanReasonText(e.reason) ?? "Reason not documented") ?? 0) + 1,
       );
     } else if (action === "resubmitted") {
       row.resubmitted += 1;
-      row.submitted += 1;
       resubmitted += 1;
-      submitted += 1;
     } else if (action === "submitted") {
       row.submitted += 1;
       submitted += 1;
@@ -216,11 +229,9 @@ export function computeAuthorizationLifecycle(
       const w = weeks.get(wk)!;
       if (action === "approved") {
         w.approved += 1;
-        w.submitted += 1;
       } else if (action === "denied") {
         w.denied += 1;
-        w.submitted += 1;
-      } else if (action === "submitted" || action === "resubmitted") {
+      } else if (action === "submitted") {
         w.submitted += 1;
       } else if (action === "paused") {
         w.paused += 1;
@@ -231,8 +242,8 @@ export function computeAuthorizationLifecycle(
   const byKind = [...kinds.values()]
     .map((k) => ({
       ...k,
-      approvalRate: rate(k.approved, k.submitted),
-      denialRate: rate(k.denied, k.submitted),
+      approvalRate: rate(k.approved, k.approved + k.denied),
+      denialRate: rate(k.denied, k.approved + k.denied),
     }))
     .sort((a, b) => {
       const order = [...LIFECYCLE_KINDS, "unclassified"];
@@ -248,8 +259,10 @@ export function computeAuthorizationLifecycle(
     paused,
     resubmitted,
     unclassifiedEvents: unclassified,
-    approvalRate: rate(approved, submitted),
-    denialRate: rate(denied, submitted),
+    // Rates are share of *decided* outcomes; submissions are not a denominator
+    // because an approval logged this month may belong to a prior submission.
+    approvalRate: rate(approved, approved + denied),
+    denialRate: rate(denied, approved + denied),
     byKind,
     weekly: [...weeks.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart)),
     denialReasons: [...denialReasons.entries()]

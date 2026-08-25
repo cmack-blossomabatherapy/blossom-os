@@ -64,10 +64,44 @@ describe("Cancellation Command Center is Data Hub backed", () => {
   });
 });
 
-describe("import diagnostics are Super Admin only", () => {
-  it("gates the CentralReach freshness strip behind the super_admin role", () => {
-    expect(shell).toContain("useOSRoleSafe");
-    expect(shell).toMatch(/showDataSourceStrip\s*=\s*roleCtx\?\.role === "super_admin"/);
-    expect(shell).toMatch(/\{showDataSourceStrip && \(/);
+describe("the shared report shell is staff-facing for every role", () => {
+  it("has no Data Hub link, admin CTA, or import diagnostics strip", () => {
+    for (const forbidden of [
+      "centralreach-data-hub",
+      "useOSRoleSafe",
+      "showDataSourceStrip",
+      "requiredExports",
+      "SharedDatasetStatusPanel",
+    ]) {
+      expect(shell, forbidden).not.toContain(forbidden);
+    }
+  });
+
+  it("keeps freshness, refresh, export, and data-quality warnings", () => {
+    for (const piece of ["freshness", "onRefresh", "onExport", "dataQualityWarnings"]) {
+      expect(shell, piece).toContain(piece);
+    }
+  });
+});
+
+describe("cancellation report defaults and URL state", () => {
+  it("defaults to the current calendar month and resets back to it", () => {
+    expect(page).toContain("withCurrentMonthDefault");
+    expect(page).toMatch(/onReset=\{\(\) => setFilters\(DEFAULT_FILTERS\)\}/);
+  });
+
+  it("keeps the breakdown tab in the URL", () => {
+    expect(page).toMatch(/useUrlState\("tab"/);
+  });
+
+  it("shows active schedule events as the rate denominator", () => {
+    expect(page).toContain("active schedule events");
+    expect(page).toContain("metrics.activeScheduleEvents");
+  });
+
+  it("renders the event-level follow-up queue", () => {
+    expect(page).toContain("followUpEventColumns");
+    expect(page).toContain("metrics.followUpEvents");
+    expect(page).toContain("Cancellation follow-up queue");
   });
 });

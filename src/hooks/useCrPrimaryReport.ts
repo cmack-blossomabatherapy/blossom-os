@@ -23,7 +23,9 @@ import {
   fetchCrScheduleCurrent,
   fetchCrScheduleEvents,
   fetchCrUtilization,
+  fetchReportAuthorizationActions,
   fetchReportAuthorizationEvents,
+  fetchReportBillingFacts,
   summarizeFreshness,
 } from "@/lib/os/reports/crPrimary/source";
 import type {
@@ -34,7 +36,9 @@ import type {
   CrScheduleCurrentRow,
   CrScheduleEventRow,
   CrUtilizationRow,
+  ReportAuthorizationActionRow,
   ReportAuthorizationEventRow,
+  ReportBillingFactRow,
 } from "@/lib/os/reports/crPrimary/types";
 import type { FreshnessInfo } from "@/components/reports/crPrimary/PrimaryReportShell";
 
@@ -45,7 +49,9 @@ export type CrDataset =
   | "utilization"
   | "scheduleCurrent"
   | "authCurrent"
-  | "authEvents";
+  | "authEvents"
+  | "authActions"
+  | "billingFacts";
 
 const BATCH_TYPES: Record<CrDataset, string[]> = {
   billing: ["billing", "billing_sessions", "sessions"],
@@ -55,6 +61,8 @@ const BATCH_TYPES: Record<CrDataset, string[]> = {
   scheduleCurrent: ["schedule", "scheduling", "schedule_events"],
   authCurrent: ["authorizations", "authorization"],
   authEvents: [],
+  authActions: [],
+  billingFacts: ["billing", "billing_sessions", "sessions"],
 };
 
 export interface CrPrimaryReportData {
@@ -65,6 +73,8 @@ export interface CrPrimaryReportData {
   scheduleCurrent: CrScheduleCurrentRow[];
   authCurrent: CrAuthorizationCurrentRow[];
   authEvents: ReportAuthorizationEventRow[];
+  authActions: ReportAuthorizationActionRow[];
+  billingFacts: ReportBillingFactRow[];
   batches: CrBatchSummary[];
   freshness: FreshnessInfo;
   loading: boolean;
@@ -87,6 +97,8 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
   const [scheduleCurrent, setScheduleCurrent] = useState<CrScheduleCurrentRow[]>([]);
   const [authCurrent, setAuthCurrent] = useState<CrAuthorizationCurrentRow[]>([]);
   const [authEvents, setAuthEvents] = useState<ReportAuthorizationEventRow[]>([]);
+  const [authActions, setAuthActions] = useState<ReportAuthorizationActionRow[]>([]);
+  const [billingFacts, setBillingFacts] = useState<ReportBillingFactRow[]>([]);
   const [batches, setBatches] = useState<CrBatchSummary[]>([]);
   const [nonce, setNonce] = useState(0);
 
@@ -101,7 +113,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       const errors: string[] = [];
       const batchTypes = [...wanted].flatMap((d) => BATCH_TYPES[d]);
 
-      const [b, s, a, u, sc, ac, ae, batchRes] = await Promise.all([
+      const [b, s, a, u, sc, ac, ae, aa, bf, batchRes] = await Promise.all([
         wanted.has("billing") ? fetchCrBillingSessions() : Promise.resolve(EMPTY_RESULT),
         wanted.has("schedule") ? fetchCrScheduleEvents() : Promise.resolve(EMPTY_RESULT),
         wanted.has("authorizations") ? fetchCrAuthorizations() : Promise.resolve(EMPTY_RESULT),
@@ -111,11 +123,15 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
         wanted.has("authEvents")
           ? fetchReportAuthorizationEvents()
           : Promise.resolve(EMPTY_RESULT),
+        wanted.has("authActions")
+          ? fetchReportAuthorizationActions()
+          : Promise.resolve(EMPTY_RESULT),
+        wanted.has("billingFacts") ? fetchReportBillingFacts() : Promise.resolve(EMPTY_RESULT),
         fetchCrBatches(batchTypes),
       ]);
       if (cancelled) return;
 
-      for (const r of [b, s, a, u, sc, ac, ae, batchRes]) if (r.error) errors.push(r.error);
+      for (const r of [b, s, a, u, sc, ac, ae, aa, bf, batchRes]) if (r.error) errors.push(r.error);
       setBilling(b.rows as CrBillingSessionRow[]);
       setSchedule(s.rows as CrScheduleEventRow[]);
       setAuthorizations(a.rows as CrAuthorizationRow[]);
@@ -123,6 +139,8 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       setScheduleCurrent(sc.rows as CrScheduleCurrentRow[]);
       setAuthCurrent(ac.rows as CrAuthorizationCurrentRow[]);
       setAuthEvents(ae.rows as ReportAuthorizationEventRow[]);
+      setAuthActions(aa.rows as ReportAuthorizationActionRow[]);
+      setBillingFacts(bf.rows as ReportBillingFactRow[]);
       setBatches(batchRes.rows);
       setErrorMessage(errors.length ? errors[0] : null);
       setLoading(false);
@@ -143,7 +161,8 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
     authorizations.length +
     utilization.length +
     scheduleCurrent.length +
-    authCurrent.length;
+    authCurrent.length +
+    billingFacts.length;
 
   const freshness = useMemo<FreshnessInfo>(() => {
     const summary = summarizeFreshness(batches);
@@ -159,6 +178,8 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
     scheduleCurrent,
     authCurrent,
     authEvents,
+    authActions,
+    billingFacts,
     batches,
     freshness,
     loading,

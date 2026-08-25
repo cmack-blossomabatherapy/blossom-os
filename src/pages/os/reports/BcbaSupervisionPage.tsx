@@ -139,7 +139,6 @@ export default function BcbaSupervisionPage() {
     <PrimaryReportShell
       title="BCBA Supervision"
       subtitle="97155 supervision coverage against 97153 direct hours by BCBA and client, with clinical banding and the exact CentralReach sessions behind each number."
-      requiredExports={["Billing / session export"]}
       freshness={data.freshness}
       loading={data.loading}
       empty={data.empty}

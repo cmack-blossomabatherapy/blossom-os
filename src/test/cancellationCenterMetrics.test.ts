@@ -44,14 +44,14 @@ describe("scheduleTruth — explicit flags win", () => {
     expect(isCancelledEventStrict(row({ cancelled: false, status: "Cancelled" }))).toBe(false);
   });
 
-  it("infers from attendance, then status, then documented reason", () => {
+  it("falls back to attendance, then status, and never to reason text", () => {
     expect(cancellationTruth(row({ attendance: "No Show" })).source).toBe("attendance_text");
     expect(cancellationTruth(row({ status: "Cancelled" })).source).toBe("status_text");
-    expect(cancellationTruth(row({ cancellation_reason: "Client sick" })).source).toBe(
-      "reason_text",
-    );
+    expect(cancellationTruth(row({ cancellation_reason: "Client sick" })).source).toBe("none");
+    expect(cancellationTruth(row({ cancellation_reason: "Client sick" })).cancelled).toBe(false);
     expect(cancellationTruth(row()).cancelled).toBe(false);
   });
+
 
   it("never counts a deleted event as cancelled, active, or countable", () => {
     const deleted = row({ deleted: true, cancelled: true });
@@ -136,15 +136,15 @@ describe("computeCancellationCenter", () => {
   it("excludes deleted rows from the denominator and the numerator", () => {
     expect(m.loadedEvents).toBe(6);
     expect(m.deletedEvents).toBe(1);
-    expect(m.countableEvents).toBe(5);
+    expect(m.activeScheduleEvents).toBe(5);
     expect(m.cancelledEvents).toBe(3);
-    expect(m.activeEvents).toBe(2);
+    expect(m.keptEvents).toBe(2);
   });
 
   it("computes rate, hours, and no-shows from countable rows only", () => {
     expect(m.cancellationRate).toBe(60);
     expect(m.cancelledHours).toBe(6);
-    expect(m.activeHours).toBe(4);
+    expect(m.keptHours).toBe(4);
     expect(m.noShowEvents).toBe(1);
   });
 
@@ -203,5 +203,83 @@ describe("computeCancellationCenter", () => {
     const labels = m.byDayOfWeek.map((d) => d.label);
     expect(labels[0]).toBe("Monday");
     expect(labels).toEqual([...labels].filter(Boolean));
+  });
+});
+
+describe("reason text is never a cancellation truth source", () => {
+  it("does not treat a documented reason alone as a cancellation", () => {
+    const m = computeCancellationCenter([
+      row({ cancelled: null, cancellation_reason: "Client sick" }),
+    ]);
+    expect(m.activeScheduleEvents).toBe(1);
+    expect(m.cancelledEvents).toBe(0);
+    expect(m.keptEvents).toBe(1);
+    expect(m.cancellationRate).toBe(0);
+  });
+
+  it("still allows legacy status / attendance text as a fallback", () => {
+    const viaStatus = computeCancellationCenter([row({ cancelled: null, status: "Cancelled" })]);
+    const viaAttendance = computeCancellationCenter([
+      row({ cancelled: null, attendance: "No Show" }),
+    ]);
+    expect(viaStatus.cancelledEvents).toBe(1);
+    expect(viaAttendance.cancelledEvents).toBe(1);
+  });
+
+  it("lets an explicit false flag win over cancellation-looking status text", () => {
+    const m = computeCancellationCenter([row({ cancelled: false, status: "Cancelled" })]);
+    expect(m.cancelledEvents).toBe(0);
+  });
+});
+
+describe("reconciliation control: 3,568 active / 748 cancelled / 2,422 cancelled hours", () => {
+  const fixture: CancellationCenterRow[] = [];
+  let day = 0;
+  const nextDate = () => {
+    day += 1;
+    const d = new Date(Date.UTC(2026, 0, 1) + (day % 90) * 86_400_000);
+    return d.toISOString().slice(0, 10);
+  };
+  // 178 four-hour cancellations + 570 three-hour cancellations = 2,422 hours.
+  for (let i = 0; i < 178; i += 1) {
+    fixture.push(
+      row({ cancelled: true, scheduled_hours: 4, event_date: nextDate(), client_name: `C${i % 40}` }),
+    );
+  }
+  for (let i = 0; i < 570; i += 1) {
+    fixture.push(
+      row({ cancelled: true, scheduled_hours: 3, event_date: nextDate(), client_name: `C${i % 40}` }),
+    );
+  }
+  // Kept events to reach 3,568 nondeleted events.
+  for (let i = 0; i < 3568 - 748; i += 1) {
+    fixture.push(
+      row({ cancelled: false, scheduled_hours: 2, event_date: nextDate(), client_name: `C${i % 40}` }),
+    );
+  }
+  // Deleted noise must never move any number.
+  for (let i = 0; i < 120; i += 1) {
+    fixture.push(row({ cancelled: true, deleted: true, scheduled_hours: 5, event_date: nextDate() }));
+  }
+
+  const m = computeCancellationCenter(fixture);
+
+  it("matches the control totals exactly", () => {
+    expect(m.activeScheduleEvents).toBe(3568);
+    expect(m.cancelledEvents).toBe(748);
+    expect(m.keptEvents).toBe(2820);
+    expect(m.cancelledHours).toBe(2422);
+    expect(m.deletedEvents).toBe(120);
+    expect(Number(m.cancellationRate!.toFixed(1))).toBe(21.0);
+  });
+
+  it("emits an event-level follow-up row per cancelled event", () => {
+    expect(m.followUpEvents).toHaveLength(748);
+    for (const e of m.followUpEvents.slice(0, 5)) {
+      expect(e.client).toBeTruthy();
+      expect(e.eventDate).toBeTruthy();
+      expect(e.cancelledHours).toBeGreaterThan(0);
+      expect(e.action).toBeTruthy();
+    }
   });
 });

@@ -34153,6 +34153,35 @@ export type Database = {
         Args: { _employee_id: string; _reason?: string }
         Returns: boolean
       }
+      report_authorization_actions: {
+        Args: never
+        Returns: {
+          appeal_due_date: string
+          approved_date: string
+          auth_type: string
+          authorization_id: string
+          authorization_number: string
+          client_cr_id: string
+          client_name: string
+          created_at: string
+          denial_reason: string
+          denied_date: string
+          expiration_date: string
+          missing_info: string
+          next_action: string
+          next_action_due_date: string
+          payor: string
+          received_date: string
+          record_id: string
+          resubmitted_date: string
+          service_code: string
+          state: string
+          status: string
+          submitted_date: string
+          updated_at: string
+          workflow_stage: string
+        }[]
+      }
       report_authorization_events: {
         Args: never
         Returns: {
@@ -34167,6 +34196,36 @@ export type Database = {
           record_id: string
           source: string
           state: string
+        }[]
+      }
+      report_billing_facts: {
+        Args: never
+        Returns: {
+          authorization_id: string
+          client_cr_id: string
+          client_name: string
+          creation_date: string
+          date_of_service: string
+          deleted: boolean
+          delivery_method: string
+          first_bill_date: string
+          first_claim_date: string
+          hours: number
+          id: string
+          is_void: boolean
+          last_seen_at: string
+          location: string
+          payor: string
+          place_of_service: string
+          procedure_code: string
+          provider_cr_id: string
+          provider_name: string
+          provider_role: string
+          signed_by_client: boolean
+          signed_by_provider: boolean
+          source_row_id: string
+          state: string
+          status: string
         }[]
       }
       report_source_coverage: { Args: never; Returns: Json }

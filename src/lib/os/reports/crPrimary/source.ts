@@ -15,7 +15,9 @@ import type {
   CrScheduleCurrentRow,
   CrScheduleEventRow,
   CrUtilizationRow,
+  ReportAuthorizationActionRow,
   ReportAuthorizationEventRow,
+  ReportBillingFactRow,
 } from "./types";
 
 /**
@@ -98,7 +100,7 @@ export function fetchCrAuthorizationCurrent(): Promise<
 > {
   return readTable<CrAuthorizationCurrentRow>(
     "v_cr_authorization_current",
-    "id,authorization_id,authorization_number,followup_authorization_number,client_name,client_cr_id,payor,state,procedure_code,service_codes,frequency,manager,implementer,start_date,end_date,actual_start_date,actual_end_date,followup_start_date,followup_end_date,is_active,status,authorized_hours,worked_hours,remaining_hours,authorized_hours_month,worked_hours_month,utilization_percent_all,utilization_percent_month,last_seen_at",
+    "id,authorization_id,authorization_number,followup_authorization_number,client_name,client_cr_id,payor,state,procedure_code,service_codes,followup_service_codes,frequency,manager,implementer,start_date,end_date,actual_start_date,actual_end_date,followup_start_date,followup_end_date,is_active,status,authorized_hours,worked_hours,remaining_hours,authorized_hours_all,authorized_hours_month,authorized_hours_auth_range,worked_hours_all,worked_hours_month,worked_hours_auth_range,scheduled_hours_all,scheduled_hours_month,scheduled_hours_auth_range,pending_hours_all,pending_hours_month,pending_hours_auth_range,remaining_hours_all,remaining_hours_month,remaining_hours_auth_range,utilization_percent_all,utilization_percent_month,utilization_percent_auth_range,source_row_id,last_seen_at",
   );
 }
 
@@ -121,6 +123,37 @@ export async function fetchReportAuthorizationEvents(): Promise<
         err instanceof Error ? err.message : "Failed to read authorization lifecycle events",
     };
   }
+}
+
+/** Generic curated-RPC reader: never throws, returns rows plus an error. */
+async function readRpc<T>(name: string, label: string): Promise<CrLoadResult<T>> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc(name);
+    if (error) return { rows: [], error: error.message };
+    return { rows: (data ?? []) as T[], error: null };
+  } catch (err) {
+    return { rows: [], error: err instanceof Error ? err.message : `Failed to read ${label}` };
+  }
+}
+
+/**
+ * Curated authorization operational actions via `report_authorization_actions`.
+ * Supplies the authoritative due dates the Progress Reports and Pauses tabs
+ * need — reports must never infer a due date from an authorization start date.
+ */
+export function fetchReportAuthorizationActions(): Promise<
+  CrLoadResult<ReportAuthorizationActionRow>
+> {
+  return readRpc<ReportAuthorizationActionRow>(
+    "report_authorization_actions",
+    "authorization actions",
+  );
+}
+
+/** Curated billing facts via `report_billing_facts` (sessions + status join). */
+export function fetchReportBillingFacts(): Promise<CrLoadResult<ReportBillingFactRow>> {
+  return readRpc<ReportBillingFactRow>("report_billing_facts", "billing facts");
 }
 
 /** Authorization-team logged workflow events (submissions, denials, PRs, pauses). */

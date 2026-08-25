@@ -1,12 +1,9 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { Database, Download, RefreshCw, Clock, Rows3, CalendarRange } from "lucide-react";
+import { AlertTriangle, Clock, Download, Info, RefreshCw } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { fmtCount, fmtDate } from "@/lib/os/reports/crPrimary/format";
-import { useOSRoleSafe } from "@/contexts/OSRoleContext";
+import { fmtDate } from "@/lib/os/reports/crPrimary/format";
 
 export interface FreshnessInfo {
   latestUpload: string | null;
@@ -20,13 +17,13 @@ export interface FreshnessInfo {
 export interface PrimaryReportShellProps {
   title: string;
   subtitle: string;
-  /** Short list of CentralReach exports this report consumes. */
-  requiredExports: string[];
   freshness: FreshnessInfo;
   loading: boolean;
   /** True when no source rows are available at all. */
   empty: boolean;
   errorMessage?: string | null;
+  /** Plain-language data-quality notes shown above the report body. */
+  dataQualityWarnings?: string[];
   onRefresh: () => void;
   onExport: () => void;
   exportDisabled?: boolean;
@@ -35,31 +32,30 @@ export interface PrimaryReportShellProps {
 }
 
 /**
- * Shared chrome for the 8 primary CentralReach-backed reports: title,
- * data-freshness indicator, refresh, CSV export, filter slot, and the exact
- * empty state that points operators at the CentralReach Data Hub.
+ * Shared chrome for the staff-facing CentralReach reports: title, a compact
+ * freshness line, refresh, CSV export, a filter slot, data-quality warnings,
+ * and an honest empty state.
  *
- * There are intentionally NO upload controls here — all CentralReach files
- * are uploaded once in the Data Hub.
+ * These pages are staff surfaces for **every** role — including super admin.
+ * There is deliberately no admin link, no import/batch diagnostics, and no
+ * source-file copy anywhere in this shell: import plumbing lives only in the
+ * admin area, and nothing here should ever tell a reader to go find a file.
  */
 export function PrimaryReportShell({
   title,
   subtitle,
-  requiredExports,
   freshness,
   loading,
   empty,
   errorMessage,
+  dataQualityWarnings,
   onRefresh,
   onExport,
   exportDisabled,
   filters,
   children,
 }: PrimaryReportShellProps) {
-  // Import/export plumbing (upload freshness, coverage, batch counts, Data Hub
-  // link) is operator diagnostics — staff see only the report itself.
-  const roleCtx = useOSRoleSafe();
-  const showDataSourceStrip = roleCtx?.role === "super_admin";
+  const warnings = (dataQualityWarnings ?? []).filter(Boolean);
   return (
     <OSShell>
       <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 md:p-6">
@@ -67,6 +63,16 @@ export function PrimaryReportShell({
           <div className="min-w-0">
             <h1 className="truncate text-xl font-semibold tracking-tight md:text-2xl">{title}</h1>
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{subtitle}</p>
+            <p
+              data-testid="data-freshness"
+              className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground"
+            >
+              <Clock className="h-3.5 w-3.5" />
+              Data current as of{" "}
+              <strong className="font-medium text-foreground">
+                {freshness.latestUpload ? fmtDate(freshness.latestUpload) : "unknown"}
+              </strong>
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={onRefresh}>
@@ -84,43 +90,6 @@ export function PrimaryReportShell({
           </div>
         </header>
 
-        {showDataSourceStrip && (
-        <section
-          data-testid="data-freshness"
-          className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-border/60 bg-card/70 px-4 py-3 text-xs"
-        >
-          <span className="inline-flex items-center gap-1.5 font-medium">
-            <Database className="h-3.5 w-3.5 text-primary" /> CentralReach Data Freshness
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" /> Latest upload:{" "}
-            <strong className="text-foreground">{fmtDate(freshness.latestUpload)}</strong>
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-            <CalendarRange className="h-3.5 w-3.5" /> Coverage:{" "}
-            <strong className="text-foreground">
-              {freshness.coverageStart || freshness.coverageEnd
-                ? `${fmtDate(freshness.coverageStart)} – ${fmtDate(freshness.coverageEnd)}`
-                : "Not reported"}
-            </strong>
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-            <Rows3 className="h-3.5 w-3.5" /> Rows:{" "}
-            <strong className="text-foreground">{fmtCount(freshness.rowCount)}</strong>
-          </span>
-          <Badge variant="secondary" className="text-[10px]">
-            {fmtCount(freshness.batchCount)} import batch{freshness.batchCount === 1 ? "" : "es"}
-          </Badge>
-          <Link
-            to="/system/centralreach-data-hub"
-            className="ml-auto text-[11px] font-medium text-primary hover:underline"
-          >
-            Open CentralReach Data Hub →
-          </Link>
-        </section>
-        )}
-
-
         {filters}
 
         {errorMessage && (
@@ -129,10 +98,29 @@ export function PrimaryReportShell({
           </div>
         )}
 
+        {warnings.length > 0 && (
+          <section
+            data-testid="report-data-quality"
+            className="space-y-1 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400"
+          >
+            <span className="inline-flex items-center gap-1.5 font-semibold">
+              <AlertTriangle className="h-3.5 w-3.5" /> Data quality
+            </span>
+            <ul className="ml-5 list-disc space-y-0.5">
+              {warnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {loading ? (
           <div className="grid gap-3 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-24 animate-pulse rounded-2xl border border-border/60 bg-muted/40" />
+              <div
+                key={i}
+                className="h-24 animate-pulse rounded-2xl border border-border/60 bg-muted/40"
+              />
             ))}
           </div>
         ) : empty ? (
@@ -140,26 +128,16 @@ export function PrimaryReportShell({
             data-testid="report-empty-state"
             className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center"
           >
-            <Database className="mx-auto h-8 w-8 text-muted-foreground" />
-            <h2 className="mt-3 text-base font-semibold">No data available for this report yet</h2>
-            {showDataSourceStrip ? (
-              <>
-                <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-                  This report reads normalized CentralReach data. Required source
-                  {requiredExports.length === 1 ? "" : "s"}:{" "}
-                  <strong className="text-foreground">{requiredExports.join(", ")}</strong>.
-                </p>
-                <Button asChild size="sm" className="mt-4 h-8 text-xs">
-                  <Link to="/system/centralreach-data-hub">Go to CentralReach Data Hub</Link>
-                </Button>
-              </>
-            ) : (
-              <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-                The CentralReach data behind this report has not arrived yet. Nothing is broken on
-                your side and there is nothing for you to upload — check back shortly, or ask an
-                administrator if this persists.
-              </p>
-            )}
+            <Info className="mx-auto h-8 w-8 text-muted-foreground" />
+            <h2 className="mt-3 text-base font-semibold">Report data is unavailable right now</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+              The data behind this report is missing or out of date, so there is nothing to show
+              yet. Nothing is broken on your side. Try refreshing, and let your operations lead know
+              if it stays empty.
+            </p>
+            <Button variant="outline" size="sm" className="mt-4 h-8 gap-1.5 text-xs" onClick={onRefresh}>
+              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> Refresh
+            </Button>
           </div>
         ) : (
           children

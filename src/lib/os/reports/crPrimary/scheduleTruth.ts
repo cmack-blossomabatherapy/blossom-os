@@ -60,7 +60,6 @@ export type CancellationTruthSource =
   | "explicit_flag"
   | "attendance_text"
   | "status_text"
-  | "reason_text"
   | "none";
 
 export interface CancellationTruth {
@@ -71,11 +70,20 @@ export interface CancellationTruth {
 
 const CANCEL_TEXT = /cancel|no[\s-]?show|missed|did not attend|dna\b/i;
 
-/** Resolve whether an event is cancelled, and from which signal. */
+/**
+ * Resolve whether an event is cancelled, and from which signal.
+ *
+ * Reason text is deliberately NOT a truth source. CentralReach carries reason
+ * notes on kept events too (rescheduled from, late arrival, sickness noted at
+ * the visit), so a nonblank reason alone can never make an event cancelled.
+ * Reason text is used only to *classify* an event already determined to be
+ * cancelled — see `cancellationReasonBucket`.
+ */
 export function cancellationTruth(row: ScheduleTruthRow): CancellationTruth {
   if (row.cancelled != null) {
     return { cancelled: row.cancelled === true, source: "explicit_flag" };
   }
+  // Legacy rows only (imported before the explicit flag existed).
   const attendance = cleanReasonText(row.attendance);
   if (attendance && CANCEL_TEXT.test(attendance)) {
     return { cancelled: true, source: "attendance_text" };
@@ -84,27 +92,34 @@ export function cancellationTruth(row: ScheduleTruthRow): CancellationTruth {
   if (status && CANCEL_TEXT.test(status)) {
     return { cancelled: true, source: "status_text" };
   }
-  if (cleanReasonText(row.cancellation_reason)) {
-    return { cancelled: true, source: "reason_text" };
-  }
   return { cancelled: false, source: "none" };
 }
 
+/** A cancelled event: explicit flag true, or an allowed legacy text fallback. */
 export function isCancelledEventStrict(row: ScheduleTruthRow): boolean {
   if (isDeletedEvent(row)) return false;
   return cancellationTruth(row).cancelled;
 }
 
-/** A real, kept, delivered-or-deliverable event: not deleted, not cancelled. */
-export function isActiveEvent(row: ScheduleTruthRow): boolean {
+/**
+ * An **active schedule event**: any nondeleted event. This is the denominator
+ * for every cancellation rate — cancelled events are part of it.
+ */
+export function isActiveScheduleEvent(row: ScheduleTruthRow): boolean {
+  return !isDeletedEvent(row);
+}
+
+/** A **kept event**: an active schedule event that was not cancelled. */
+export function isKeptEvent(row: ScheduleTruthRow): boolean {
   if (isDeletedEvent(row)) return false;
   return !cancellationTruth(row).cancelled;
 }
 
-/** Deleted rows never count in a denominator. */
-export function isCountableEvent(row: ScheduleTruthRow): boolean {
-  return !isDeletedEvent(row);
-}
+/** @deprecated Use `isKeptEvent` — clearer about excluding cancellations. */
+export const isActiveEvent = isKeptEvent;
+
+/** @deprecated Use `isActiveScheduleEvent` — deleted rows never count. */
+export const isCountableEvent = isActiveScheduleEvent;
 
 export function isNoShow(row: ScheduleTruthRow): boolean {
   const text = `${cleanReasonText(row.attendance) ?? ""} ${cleanReasonText(row.status) ?? ""} ${
@@ -112,6 +127,7 @@ export function isNoShow(row: ScheduleTruthRow): boolean {
   }`;
   return /no[\s-]?show|did not attend|dna\b/i.test(text);
 }
+
 
 /** Minutes since midnight for `HH:MM`, `HH:MM:SS`, or an ISO timestamp. */
 export function clockMinutes(value: string | null | undefined): number | null {
@@ -180,8 +196,8 @@ export function scheduleTruthCoverage(rows: ScheduleTruthRow[]): TruthCoverage {
       : mode === "explicit"
         ? "Cancellations read from the CentralReach cancelled flag on every row."
         : mode === "inferred"
-          ? "These rows predate the CentralReach cancelled flag — cancellations are read from status, attendance, and documented reason text."
-          : `${explicitPct}% of rows carry the CentralReach cancelled flag; the rest fall back to status, attendance, and reason text.`;
+          ? "These rows predate the CentralReach cancelled flag — cancellations fall back to status and attendance text."
+          : `${explicitPct}% of rows carry the CentralReach cancelled flag; the rest fall back to status and attendance text.`;
   return { total, withExplicitFlag, explicitPct, mode, label };
 }
 

@@ -150,7 +150,6 @@ export function CentralReachPrimaryReport({ reportId }: CentralReachPrimaryRepor
       <PrimaryReportShell
         title={config.title}
         subtitle={config.subtitle}
-        requiredExports={config.requiredExports}
         freshness={data.freshness}
         loading={data.loading}
         empty={data.empty || allFacts.length === 0}
