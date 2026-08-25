@@ -162,7 +162,7 @@ export default function AuthorizationCommandCenterPage() {
         state: r.state,
         client: r.client_name,
         payor: r.payor,
-        code: r.service_code ?? r.procedure_code,
+        code: r.service_codes ?? r.procedure_code,
       })),
     [data.authCurrent, filters],
   );
@@ -174,7 +174,6 @@ export default function AuthorizationCommandCenterPage() {
         state: r.state,
         client: r.client_name,
         payor: r.payor,
-        code: r.service_code,
       })),
     [data.authEvents, filters],
   );
@@ -191,7 +190,7 @@ export default function AuthorizationCommandCenterPage() {
           key === "client"
             ? r.client_name
             : key === "code"
-              ? (r.service_code ?? r.procedure_code)
+              ? (r.service_codes ?? r.procedure_code)
               : (r[key as "state" | "payor"] as string | null),
         ),
       })),
