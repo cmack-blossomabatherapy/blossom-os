@@ -11,9 +11,25 @@ import { Navigate, useLocation } from "react-router-dom";
  * This wrapper preserves both, so filters, saved-view ids, drilldown keys,
  * and shared-report tokens survive the redirect.
  */
-export function NavigateWithSearch({ to, replace = true }: { to: string; replace?: boolean }) {
+export function NavigateWithSearch({
+  to,
+  replace = true,
+  mergeParams,
+}: {
+  to: string;
+  replace?: boolean;
+  /** Params forced onto the destination (e.g. the tab a legacy route maps to). */
+  mergeParams?: Record<string, string>;
+}) {
   const { search, hash } = useLocation();
-  return <Navigate to={{ pathname: to, search, hash }} replace={replace} />;
+  let nextSearch = search;
+  if (mergeParams) {
+    const params = new URLSearchParams(search);
+    for (const [k, v] of Object.entries(mergeParams)) params.set(k, v);
+    const qs = params.toString();
+    nextSearch = qs ? `?${qs}` : "";
+  }
+  return <Navigate to={{ pathname: to, search: nextSearch, hash }} replace={replace} />;
 }
 
 export default NavigateWithSearch;

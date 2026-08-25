@@ -927,7 +927,15 @@ const App = () => (
                   {/* Progress Reports: canonical destination is the Reports hub. The
                       /progress-reports URL stays as a backward-compatible redirect and
                       the working page is deep-linked at /reports/progress-reports. */}
-                  <Route path="/progress-reports" element={<Navigate to="/reports/progress-reports" replace />} />
+                  <Route
+                    path="/progress-reports"
+                    element={
+                      <NavigateWithSearch
+                        to="/reports/authorization-analysis"
+                        mergeParams={{ tab: "progress-reports" }}
+                      />
+                    }
+                  />
                   <Route path="/treatment-plan-reviews" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_team", "qa_director", "qa_specialist", "clinical_director", "bcba", "state_director", "assistant_state_director", "regional_state_director", "operations_leadership"]}><OSQATreatmentPlans /></PermissionRoute>} />
                   <Route path="/missing-information" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "operations_leadership"]}><OSQAMissingInfo /></PermissionRoute>} />
                   <Route path="/expiring-items" element={<PermissionRoute allowedRoles={["admin", "qa", "qa_team", "qa_director", "qa_specialist", "clinical_director", "state_director", "assistant_state_director", "regional_state_director", "operations_leadership"]}><OSQAExpiring /></PermissionRoute>} />
@@ -1088,7 +1096,17 @@ const App = () => (
                   {/* Legacy report routes → redirect to the approved replacements. */}
                   <Route path="/reports/intake-perf" element={<Navigate to="/reports" replace />} />
                   <Route path="/reports/intake-performance" element={<Navigate to="/reports" replace />} />
-                  <Route path="/reports/progress-reports" element={<ReportRoleGuard reportId="progress-reports"><CrProgressReportsPage /></ReportRoleGuard>} />
+                  {/* Progress reports now live as a tab of the Authorization Command
+                      Center; the old route redirects there with filters preserved. */}
+                  <Route
+                    path="/reports/progress-reports"
+                    element={
+                      <NavigateWithSearch
+                        to="/reports/authorization-analysis"
+                        mergeParams={{ tab: "progress-reports" }}
+                      />
+                    }
+                  />
                   <Route path="/reports/progress-reports-legacy" element={<ReportRoleGuard reportId="progress-reports"><OSQAProgressReports /></ReportRoleGuard>} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
@@ -1213,6 +1231,7 @@ const App = () => (
                   <Route path="/reports/qa-supervision" element={<NavigateWithSearch to="/reports/bcba-supervision" />} />
                   <Route path="/reports/qa-parent-training" element={<NavigateWithSearch to="/reports/parent-training" />} />
                   <Route path="/reports/auth-utilization" element={<NavigateWithSearch to="/reports/authorization-utilization-hour-based" />} />
+                  <Route path="/reports/authorization-utilization" element={<NavigateWithSearch to="/reports/authorization-utilization-hour-based" />} />
                   <Route path="/system/integration-registry" element={<Navigate to="/admin/integrations" replace />} />
                   <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
                   <Route path="/system/email-command-center" element={<AdminRoute><EmailCommandCenter /></AdminRoute>} />
