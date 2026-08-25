@@ -80,6 +80,8 @@ import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDash
 // Primary CentralReach-backed report pages (dedicated, non-placeholder).
 import CrAuthorizationAnalysisPage from "./pages/os/reports/AuthorizationAnalysisPage";
 import CrAuthorizationUtilizationPage from "./pages/os/reports/AuthorizationUtilizationPage";
+import CrClaimsQueuePage from "./pages/os/reports/ClaimsQueuePage";
+import CrPaymentReconciliationPage from "./pages/os/reports/PaymentReconciliationPage";
 import CrBcbaSupervisionPage from "./pages/os/reports/BcbaSupervisionPage";
 import CrParentTrainingPage from "./pages/os/reports/ParentTrainingPage";
 import CrCommitToSubmitCompliancePage from "./pages/os/reports/CommitToSubmitCompliancePage";
@@ -1090,6 +1092,8 @@ const App = () => (
                   <Route path="/reports/authorization-analysis" element={<ReportRoleGuard reportId="authorization-analysis"><CrAuthorizationAnalysisPage /></ReportRoleGuard>} />
                   <Route path="/reports/authorization-utilization-hour-based" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><CrAuthorizationUtilizationPage /></ReportRoleGuard>} />
                   <Route path="/reports/parent-training" element={<ReportRoleGuard reportId="parent-training"><CrParentTrainingPage /></ReportRoleGuard>} />
+                  <Route path="/reports/claims-submission-queue" element={<ReportRoleGuard reportId="claims-submission-queue"><CrClaimsQueuePage /></ReportRoleGuard>} />
+                  <Route path="/reports/payment-reconciliation" element={<ReportRoleGuard reportId="payment-reconciliation"><CrPaymentReconciliationPage /></ReportRoleGuard>} />
                   <Route path="/reports/commit-to-submit-compliance" element={<ReportRoleGuard reportId="commit-to-submit-compliance"><CrCommitToSubmitCompliancePage /></ReportRoleGuard>} />
                   <Route path="/reports/bcba-supervision" element={<ReportRoleGuard reportId="bcba-supervision"><CrBcbaSupervisionPage /></ReportRoleGuard>} />
                   <Route path="/reports/authorization-utilization-hour-based-legacy" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />

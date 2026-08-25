@@ -237,6 +237,51 @@ export default function CancellationCommandCenter() {
     [rows],
   );
 
+  /**
+   * Conversion queue: active nondeleted sessions the source explicitly states
+   * are NOT converted to a timesheet. A missing conversion flag is unknown and
+   * is never treated as unconverted, and nothing is ever "converted late"
+   * because the source carries no conversion timestamp.
+   */
+  const unconvertedQueue = useMemo(
+    () => rows.filter((r) => isActiveScheduleEvent(r) && r.converted_to_timesheet === false),
+    [rows],
+  );
+
+  const unconvertedColumns: PrimaryTableColumn<CrScheduleCurrentRow>[] = [
+    {
+      key: "date",
+      label: "Date",
+      render: (r) => (r.event_date ? fmtDate(r.event_date) : "Not documented"),
+    },
+    {
+      key: "client",
+      label: "Client",
+      render: (r) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium">{r.client_name ?? "Unknown client"}</p>
+          <p className="truncate text-[10px] text-muted-foreground">
+            {r.provider_name ?? "Unknown provider"}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "hours",
+      label: "Scheduled hrs",
+      align: "right",
+      render: (r) => <span className="tabular-nums">{fmtHours(r.scheduled_hours)}</span>,
+    },
+    { key: "code", label: "Service code", render: (r) => eventCode(r) ?? "Not documented" },
+    { key: "state", label: "State", render: (r) => r.state ?? "Not documented" },
+    { key: "payor", label: "Payor", render: (r) => r.payor ?? "Not documented" },
+    {
+      key: "action",
+      label: "Action",
+      render: () => "Convert the session to a timesheet in CentralReach",
+    },
+  ];
+
   const comparisonHint = metrics.comparison
     ? metrics.comparison.rateDelta == null
       ? "No comparable prior period"
@@ -946,6 +991,26 @@ export default function CancellationCommandCenter() {
           columns={followUpEventColumns}
           emptyLabel="No cancelled events in this range."
         />
+
+        <PrimaryTable
+          title="Timesheet conversion queue"
+          subtitle="Active nondeleted sessions the source states were not converted to a timesheet. The source records whether an event converted, never when, so nothing here is ever labelled converted late."
+          rows={unconvertedQueue}
+          rowKey={(r) => r.id}
+          columns={unconvertedColumns}
+          emptyLabel="Every active session with a reported conversion state is converted."
+          onRowClick={(r) =>
+            openDrilldown(
+              `Unconverted session · ${r.client_name ?? "Unknown client"}`,
+              "Source schedule event that the source states is not converted to a timesheet.",
+              [r],
+              "unconverted-session",
+              [{ label: "Conversion", value: "Not converted" }],
+            )
+          }
+        />
+
+
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as BreakdownKey)}>
           <TabsList className="h-9">

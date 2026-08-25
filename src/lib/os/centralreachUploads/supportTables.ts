@@ -107,6 +107,9 @@ export const CR_FRESHNESS_KEYS: Record<Exclude<CRUploadKind, "unknown">, string[
   utilization: ["authorization-utilization"],
   claims: ["authorization-claims"],
   contacts: ["identity-match-queues"],
+  payments: ["payment-reconciliation"],
+  era_payments: ["payment-reconciliation"],
+  timesheet: ["documentation-status"],
 };
 
 export function createSupabaseCrSupportRefresher(): CrSupportRefresher {

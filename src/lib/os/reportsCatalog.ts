@@ -209,6 +209,68 @@ export const REPORTS: ReportDef[] = [
     drilldownPath: "/reports/authorization-utilization-hour-based",
   },
   {
+    id: "claims-submission-queue",
+    title: "Claims Submission & Error Queue",
+    description:
+      "Claim submission state, source-reported claim errors, response mix, action age and the follow-up queue behind them. Claim dollar amounts are intentionally not shown because the source does not confirm their unit. Data freshness is shown inside the report.",
+    category: "financial",
+    visibleTo: [
+      "super_admin",
+      "executive_leadership",
+      "operations_leadership",
+      "billing_finance",
+      "finance_benefits_lead",
+      "finance_benefits_team",
+      "authorization_coordinator",
+      "authorization_manager",
+      "qa_team",
+    ],
+    type: "dashboard",
+    owner: "Billing / Finance",
+    lastUpdated: "Live",
+    popularity: 92,
+    featured: true,
+    aiInsight:
+      "See which claims carry source-reported errors, which have not been exported, and how old the last documented action is.",
+    kpiPreviews: [
+      { label: "Claims", value: "Live", trend: "neutral" },
+      { label: "With errors", value: "Live", trend: "down" },
+      { label: "Not exported", value: "Live", trend: "down" },
+    ],
+    sparkline: [55, 52, 50, 47, 45, 43, 40, 38, 36],
+    tags: ["Claims", "Errors", "Submission", "Featured"],
+    drilldownPath: "/reports/claims-submission-queue",
+  },
+  {
+    id: "payment-reconciliation",
+    title: "Payment Reconciliation",
+    description:
+      "Payment posting volume and date coverage, source-proven payment application status, and ERA remittance reconciliation status. Amounts, check numbers, references and notes are intentionally not shown. This is a reconciliation-status report, not a revenue-cycle dashboard.",
+    category: "financial",
+    visibleTo: [
+      "super_admin",
+      "executive_leadership",
+      "operations_leadership",
+      "billing_finance",
+      "finance_benefits_lead",
+      "finance_benefits_team",
+    ],
+    type: "dashboard",
+    owner: "Billing / Finance",
+    lastUpdated: "Live",
+    popularity: 90,
+    aiInsight:
+      "See which payments the source proves are unapplied and which remittances are still unreconciled.",
+    kpiPreviews: [
+      { label: "Payments", value: "Live", trend: "neutral" },
+      { label: "Not applied", value: "Live", trend: "down" },
+      { label: "ERA exceptions", value: "Live", trend: "down" },
+    ],
+    sparkline: [40, 44, 46, 50, 54, 56, 60, 64, 66],
+    tags: ["Payments", "ERA", "Reconciliation"],
+    drilldownPath: "/reports/payment-reconciliation",
+  },
+  {
     id: "parent-training",
     title: "Parent Training",
     description:

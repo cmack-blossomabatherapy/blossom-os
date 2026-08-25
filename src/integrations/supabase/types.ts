@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -10193,6 +10193,108 @@ export type Database = {
           },
         ]
       }
+      cr_era_payments: {
+        Row: {
+          agreed_charges: number | null
+          amount_unit: string
+          batch_id: string | null
+          check_number: string | null
+          claim_adjustment_amount: number | null
+          claim_count: number | null
+          client_count: number | null
+          contractual_obligations: number | null
+          corrections_reversals: number | null
+          created_at: string
+          era_cr_id: string | null
+          era_labels: string | null
+          est_total_claim_charges: number | null
+          files_raw: string | null
+          id: string
+          insurance_paid_amount: number | null
+          last_seen_at: string
+          last_seen_batch_id: string | null
+          other_adjustments: number | null
+          paid_amount: number | null
+          patient_responsibility: number | null
+          payor: string | null
+          payor_initiated_reductions: number | null
+          provider_adjustment_amount: number | null
+          received_date: string | null
+          reconcile_status: string | null
+          row_hash: string
+          source_row_id: string | null
+          total_adjustment_amount: number | null
+          total_adjustments: number | null
+          updated_at: string
+        }
+        Insert: {
+          agreed_charges?: number | null
+          amount_unit?: string
+          batch_id?: string | null
+          check_number?: string | null
+          claim_adjustment_amount?: number | null
+          claim_count?: number | null
+          client_count?: number | null
+          contractual_obligations?: number | null
+          corrections_reversals?: number | null
+          created_at?: string
+          era_cr_id?: string | null
+          era_labels?: string | null
+          est_total_claim_charges?: number | null
+          files_raw?: string | null
+          id?: string
+          insurance_paid_amount?: number | null
+          last_seen_at?: string
+          last_seen_batch_id?: string | null
+          other_adjustments?: number | null
+          paid_amount?: number | null
+          patient_responsibility?: number | null
+          payor?: string | null
+          payor_initiated_reductions?: number | null
+          provider_adjustment_amount?: number | null
+          received_date?: string | null
+          reconcile_status?: string | null
+          row_hash: string
+          source_row_id?: string | null
+          total_adjustment_amount?: number | null
+          total_adjustments?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agreed_charges?: number | null
+          amount_unit?: string
+          batch_id?: string | null
+          check_number?: string | null
+          claim_adjustment_amount?: number | null
+          claim_count?: number | null
+          client_count?: number | null
+          contractual_obligations?: number | null
+          corrections_reversals?: number | null
+          created_at?: string
+          era_cr_id?: string | null
+          era_labels?: string | null
+          est_total_claim_charges?: number | null
+          files_raw?: string | null
+          id?: string
+          insurance_paid_amount?: number | null
+          last_seen_at?: string
+          last_seen_batch_id?: string | null
+          other_adjustments?: number | null
+          paid_amount?: number | null
+          patient_responsibility?: number | null
+          payor?: string | null
+          payor_initiated_reductions?: number | null
+          provider_adjustment_amount?: number | null
+          received_date?: string | null
+          reconcile_status?: string | null
+          row_hash?: string
+          source_row_id?: string | null
+          total_adjustment_amount?: number | null
+          total_adjustments?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cr_external_records: {
         Row: {
           external_id: string
@@ -10576,6 +10678,126 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_payments: {
+        Row: {
+          amount_raw: number | null
+          amount_unit: string
+          applied_by_contact_id: string | null
+          applied_by_name: string | null
+          batch_id: string | null
+          billing_entry_id: string | null
+          claim_adjustments_raw: string | null
+          claims_raw: string | null
+          client_cr_id: string | null
+          client_name: string | null
+          created_at: string
+          creation_date: string | null
+          date_of_service: string | null
+          department: string | null
+          first_billed: string | null
+          id: string
+          invoice_number: string | null
+          is_copay: boolean | null
+          last_seen_at: string
+          last_seen_batch_id: string | null
+          notes: string | null
+          payment_cr_id: string | null
+          payment_labels: string | null
+          payment_type: string | null
+          payor: string | null
+          payor_nickname: string | null
+          primary_location: string | null
+          procedure_code_string: string | null
+          record_date: string | null
+          reference: string | null
+          resource_id: string | null
+          row_hash: string
+          source_row_id: string | null
+          updated_at: string
+          voided_by: string | null
+          voided_date: string | null
+          voided_reason: string | null
+        }
+        Insert: {
+          amount_raw?: number | null
+          amount_unit?: string
+          applied_by_contact_id?: string | null
+          applied_by_name?: string | null
+          batch_id?: string | null
+          billing_entry_id?: string | null
+          claim_adjustments_raw?: string | null
+          claims_raw?: string | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          creation_date?: string | null
+          date_of_service?: string | null
+          department?: string | null
+          first_billed?: string | null
+          id?: string
+          invoice_number?: string | null
+          is_copay?: boolean | null
+          last_seen_at?: string
+          last_seen_batch_id?: string | null
+          notes?: string | null
+          payment_cr_id?: string | null
+          payment_labels?: string | null
+          payment_type?: string | null
+          payor?: string | null
+          payor_nickname?: string | null
+          primary_location?: string | null
+          procedure_code_string?: string | null
+          record_date?: string | null
+          reference?: string | null
+          resource_id?: string | null
+          row_hash: string
+          source_row_id?: string | null
+          updated_at?: string
+          voided_by?: string | null
+          voided_date?: string | null
+          voided_reason?: string | null
+        }
+        Update: {
+          amount_raw?: number | null
+          amount_unit?: string
+          applied_by_contact_id?: string | null
+          applied_by_name?: string | null
+          batch_id?: string | null
+          billing_entry_id?: string | null
+          claim_adjustments_raw?: string | null
+          claims_raw?: string | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          creation_date?: string | null
+          date_of_service?: string | null
+          department?: string | null
+          first_billed?: string | null
+          id?: string
+          invoice_number?: string | null
+          is_copay?: boolean | null
+          last_seen_at?: string
+          last_seen_batch_id?: string | null
+          notes?: string | null
+          payment_cr_id?: string | null
+          payment_labels?: string | null
+          payment_type?: string | null
+          payor?: string | null
+          payor_nickname?: string | null
+          primary_location?: string | null
+          procedure_code_string?: string | null
+          record_date?: string | null
+          reference?: string | null
+          resource_id?: string | null
+          row_hash?: string
+          source_row_id?: string | null
+          updated_at?: string
+          voided_by?: string | null
+          voided_date?: string | null
+          voided_reason?: string | null
         }
         Relationships: []
       }
@@ -11061,6 +11283,93 @@ export type Database = {
           key?: Database["public"]["Enums"]["cr_sync_type_key"]
           label?: string
           required_fields?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cr_timesheet_status: {
+        Row: {
+          authorization_id: string | null
+          batch_id: string | null
+          billing_labels: string | null
+          client_cr_id: string | null
+          client_name: string | null
+          client_signature: boolean | null
+          created_at: string
+          date_of_service: string | null
+          datetime_from: string | null
+          datetime_to: string | null
+          id: string
+          is_locked: boolean | null
+          is_void: boolean | null
+          last_seen_at: string
+          last_seen_batch_id: string | null
+          procedure_code: string | null
+          provider_cr_id: string | null
+          provider_name: string | null
+          provider_signature: boolean | null
+          row_hash: string
+          source_row_id: string | null
+          tasks_completed: number | null
+          tasks_total: number | null
+          time_worked_hours: number | null
+          timesheet_cr_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          authorization_id?: string | null
+          batch_id?: string | null
+          billing_labels?: string | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          client_signature?: boolean | null
+          created_at?: string
+          date_of_service?: string | null
+          datetime_from?: string | null
+          datetime_to?: string | null
+          id?: string
+          is_locked?: boolean | null
+          is_void?: boolean | null
+          last_seen_at?: string
+          last_seen_batch_id?: string | null
+          procedure_code?: string | null
+          provider_cr_id?: string | null
+          provider_name?: string | null
+          provider_signature?: boolean | null
+          row_hash: string
+          source_row_id?: string | null
+          tasks_completed?: number | null
+          tasks_total?: number | null
+          time_worked_hours?: number | null
+          timesheet_cr_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authorization_id?: string | null
+          batch_id?: string | null
+          billing_labels?: string | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          client_signature?: boolean | null
+          created_at?: string
+          date_of_service?: string | null
+          datetime_from?: string | null
+          datetime_to?: string | null
+          id?: string
+          is_locked?: boolean | null
+          is_void?: boolean | null
+          last_seen_at?: string
+          last_seen_batch_id?: string | null
+          procedure_code?: string | null
+          provider_cr_id?: string | null
+          provider_name?: string | null
+          provider_signature?: boolean | null
+          row_hash?: string
+          source_row_id?: string | null
+          tasks_completed?: number | null
+          tasks_total?: number | null
+          time_worked_hours?: number | null
+          timesheet_cr_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -34191,6 +34500,108 @@ export type Database = {
         }
         Relationships: []
       }
+      v_cr_era_reconciliation: {
+        Row: {
+          amount_unit: string | null
+          claim_count: number | null
+          client_count: number | null
+          era_labels: string | null
+          id: string | null
+          last_seen_at: string | null
+          payor: string | null
+          received_date: string | null
+          reconcile_status: string | null
+          source_row_id: string | null
+        }
+        Insert: {
+          amount_unit?: string | null
+          claim_count?: number | null
+          client_count?: number | null
+          era_labels?: string | null
+          id?: string | null
+          last_seen_at?: string | null
+          payor?: string | null
+          received_date?: string | null
+          reconcile_status?: string | null
+          source_row_id?: string | null
+        }
+        Update: {
+          amount_unit?: string | null
+          claim_count?: number | null
+          client_count?: number | null
+          era_labels?: string | null
+          id?: string | null
+          last_seen_at?: string | null
+          payor?: string | null
+          received_date?: string | null
+          reconcile_status?: string | null
+          source_row_id?: string | null
+        }
+        Relationships: []
+      }
+      v_cr_payments_current: {
+        Row: {
+          amount_unit: string | null
+          applied_to_billing_entry: boolean | null
+          client_cr_id: string | null
+          client_name: string | null
+          creation_date: string | null
+          date_of_service: string | null
+          department: string | null
+          first_billed: string | null
+          id: string | null
+          is_copay: boolean | null
+          is_voided: boolean | null
+          last_seen_at: string | null
+          payment_labels: string | null
+          payment_type: string | null
+          payor: string | null
+          primary_location: string | null
+          record_date: string | null
+          source_row_id: string | null
+        }
+        Insert: {
+          amount_unit?: string | null
+          applied_to_billing_entry?: never
+          client_cr_id?: string | null
+          client_name?: string | null
+          creation_date?: string | null
+          date_of_service?: string | null
+          department?: string | null
+          first_billed?: string | null
+          id?: string | null
+          is_copay?: boolean | null
+          is_voided?: never
+          last_seen_at?: string | null
+          payment_labels?: string | null
+          payment_type?: string | null
+          payor?: string | null
+          primary_location?: string | null
+          record_date?: string | null
+          source_row_id?: string | null
+        }
+        Update: {
+          amount_unit?: string | null
+          applied_to_billing_entry?: never
+          client_cr_id?: string | null
+          client_name?: string | null
+          creation_date?: string | null
+          date_of_service?: string | null
+          department?: string | null
+          first_billed?: string | null
+          id?: string | null
+          is_copay?: boolean | null
+          is_voided?: never
+          last_seen_at?: string | null
+          payment_labels?: string | null
+          payment_type?: string | null
+          payor?: string | null
+          primary_location?: string | null
+          record_date?: string | null
+          source_row_id?: string | null
+        }
+        Relationships: []
+      }
       v_cr_provider_mapping: {
         Row: {
           ambiguity_reason: string | null
@@ -34233,6 +34644,69 @@ export type Database = {
           start_time: string | null
           state: string | null
           status: string | null
+        }
+        Relationships: []
+      }
+      v_cr_timesheet_documentation: {
+        Row: {
+          authorization_id: string | null
+          billing_labels: string | null
+          client_cr_id: string | null
+          client_name: string | null
+          client_signature: boolean | null
+          date_of_service: string | null
+          id: string | null
+          is_locked: boolean | null
+          is_void: boolean | null
+          last_seen_at: string | null
+          procedure_code: string | null
+          provider_cr_id: string | null
+          provider_name: string | null
+          provider_signature: boolean | null
+          source_row_id: string | null
+          tasks_completed: number | null
+          tasks_total: number | null
+          time_worked_hours: number | null
+        }
+        Insert: {
+          authorization_id?: string | null
+          billing_labels?: string | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          client_signature?: boolean | null
+          date_of_service?: string | null
+          id?: string | null
+          is_locked?: boolean | null
+          is_void?: boolean | null
+          last_seen_at?: string | null
+          procedure_code?: string | null
+          provider_cr_id?: string | null
+          provider_name?: string | null
+          provider_signature?: boolean | null
+          source_row_id?: string | null
+          tasks_completed?: number | null
+          tasks_total?: number | null
+          time_worked_hours?: number | null
+        }
+        Update: {
+          authorization_id?: string | null
+          billing_labels?: string | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          client_signature?: boolean | null
+          date_of_service?: string | null
+          id?: string | null
+          is_locked?: boolean | null
+          is_void?: boolean | null
+          last_seen_at?: string | null
+          procedure_code?: string | null
+          provider_cr_id?: string | null
+          provider_name?: string | null
+          provider_signature?: boolean | null
+          source_row_id?: string | null
+          tasks_completed?: number | null
+          tasks_total?: number | null
+          time_worked_hours?: number | null
         }
         Relationships: []
       }
@@ -36105,6 +36579,8 @@ export type Database = {
         | "utilization"
         | "claims"
         | "contacts"
+        | "payments"
+        | "era_payments"
       directory_onboarding_status:
         | "not_started"
         | "welcome"
@@ -36972,6 +37448,8 @@ export const Constants = {
         "utilization",
         "claims",
         "contacts",
+        "payments",
+        "era_payments",
       ],
       directory_onboarding_status: [
         "not_started",

@@ -13,6 +13,9 @@ export type CRUploadKind =
   | "utilization"
   | "claims"
   | "contacts"
+  | "payments"
+  | "era_payments"
+  | "timesheet"
   | "unknown";
 
 export interface CRUploadDetection {
@@ -36,6 +39,55 @@ function hasAny(set: Set<string>, cands: string[]) {
  */
 export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
   const set = new Set(headers.map(norm));
+
+  // ERA payment detail export — remittance-level reconciliation summary.
+  if (
+    hasAny(set, ["ERA Labels", "ERALabels"]) ||
+    (hasAny(set, ["Reconcile Status", "ReconcileStatus"]) &&
+      hasAny(set, ["Check Number", "CheckNumber"]))
+  ) {
+    return {
+      kind: "era_payments",
+      confidence: 0.95,
+      label: "ERA payment detail export",
+      targets: ["Payment Reconciliation"],
+    };
+  }
+
+  // Payments export — payment-level ledger keyed by CentralReach payment Id.
+  if (
+    hasAny(set, ["PaymentType", "Payment Type"]) &&
+    hasAny(set, ["RecordDate", "Record Date", "Amount", "IsCopay", "BillingEntryId"])
+  ) {
+    return {
+      kind: "payments",
+      confidence: 0.94,
+      label: "Payments export",
+      targets: ["Payment Reconciliation"],
+    };
+  }
+
+  // Timesheet / documentation export. MUST be checked before the generic
+  // billing detector: it shares DateOfService/ProcedureCode/TimeWorkedInHours
+  // but is documentation status only and never a billing fact.
+  if (
+    hasAny(set, ["TimeWorkedInHours", "Time Worked In Hours", "TimeWorkedInMins"]) &&
+    hasAny(set, [
+      "ClientSignature",
+      "ProviderSignature",
+      "IsLocked",
+      "IsVoid",
+      "TasksCompleted",
+      "Tasks",
+    ])
+  ) {
+    return {
+      kind: "timesheet",
+      confidence: 0.95,
+      label: "Timesheet / documentation export",
+      targets: ["Documentation status (Commit to Submit readiness)"],
+    };
+  }
 
   // Authorization utilization export — hour-based utilization by week.
   if (

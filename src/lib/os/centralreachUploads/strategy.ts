@@ -25,6 +25,12 @@ export const CR_IMPORT_STRATEGY: Record<Exclude<CRUploadKind, "unknown">, CrImpo
   authorization: "upsert_snapshot",
   utilization: "upsert_snapshot",
   claims: "upsert_snapshot",
+  // Payments, ERA remittances and timesheet documentation all change after
+  // first export (application, reconcile status, locks, signatures, tasks), so
+  // re-seeing a source Id must REPLACE the stored current values.
+  payments: "upsert_snapshot",
+  era_payments: "upsert_snapshot",
+  timesheet: "upsert_snapshot",
 };
 
 export function crImportStrategyFor(kind: CRUploadKind): CrImportStrategy {
@@ -39,6 +45,9 @@ export const CR_CURRENT_TABLES = [
   "cr_authorization_utilization",
   "cr_claims",
   "cr_billing_session_status",
+  "cr_payments",
+  "cr_era_payments",
+  "cr_timesheet_status",
 ] as const;
 
 /** Side table written alongside the immutable fact for a given kind. */

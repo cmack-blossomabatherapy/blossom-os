@@ -369,3 +369,96 @@ export interface DrilldownRequest {
   /** File slug used for the drilldown CSV export. */
   exportName: string;
 }
+/**
+ * Curated claims status view (`v_cr_claims_status`).
+ *
+ * `amount_raw` / `paid_amount_raw` carry an UNCONFIRMED unit (`amount_unit` is
+ * `unknown` for every CentralReach export seen so far), so staff-facing claims
+ * reporting must never render or estimate a dollar value from them.
+ */
+export interface CrClaimsStatusRow {
+  id: string;
+  claim_number: string | null;
+  client_name: string | null;
+  payor: string | null;
+  state: string | null;
+  date_of_service: string | null;
+  procedure_code: string | null;
+  status: string | null;
+  responses_status: string | null;
+  action_date: string | null;
+  action_by: string | null;
+  submit_reason: string | null;
+  error_count: number | null;
+  exported: boolean | null;
+  amount_unit: string | null;
+  source_row_id: string | null;
+  last_seen_at: string | null;
+}
+
+/**
+ * Curated payments view (`v_cr_payments_current`). Deliberately carries NO
+ * reference/check identifier, no notes and no amount — payment amount units are
+ * unconfirmed in CentralReach exports.
+ */
+export interface CrPaymentCurrentRow {
+  id: string;
+  record_date: string | null;
+  creation_date: string | null;
+  date_of_service: string | null;
+  first_billed: string | null;
+  client_name: string | null;
+  client_cr_id: string | null;
+  department: string | null;
+  payor: string | null;
+  payment_type: string | null;
+  is_copay: boolean | null;
+  payment_labels: string | null;
+  primary_location: string | null;
+  /** Source-proven application: the payment carries a billing entry id. */
+  applied_to_billing_entry: boolean | null;
+  is_voided: boolean | null;
+  amount_unit: string | null;
+  source_row_id: string | null;
+  last_seen_at: string | null;
+}
+
+/** Curated ERA remittance reconciliation view (`v_cr_era_reconciliation`). */
+export interface CrEraReconciliationRow {
+  id: string;
+  era_labels: string | null;
+  received_date: string | null;
+  payor: string | null;
+  claim_count: number | null;
+  client_count: number | null;
+  reconcile_status: string | null;
+  amount_unit: string | null;
+  source_row_id: string | null;
+  last_seen_at: string | null;
+}
+
+/**
+ * Curated timesheet documentation status (`v_cr_timesheet_documentation`).
+ * Documentation status only — never a billing fact and never an input to BCBA
+ * Productivity V3.
+ */
+export interface CrTimesheetDocRow {
+  id: string;
+  source_row_id: string | null;
+  date_of_service: string | null;
+  client_name: string | null;
+  client_cr_id: string | null;
+  provider_name: string | null;
+  provider_cr_id: string | null;
+  authorization_id: string | null;
+  procedure_code: string | null;
+  time_worked_hours: number | null;
+  billing_labels: string | null;
+  client_signature: boolean | null;
+  provider_signature: boolean | null;
+  is_void: boolean | null;
+  is_locked: boolean | null;
+  tasks_total: number | null;
+  tasks_completed: number | null;
+  last_seen_at: string | null;
+}
