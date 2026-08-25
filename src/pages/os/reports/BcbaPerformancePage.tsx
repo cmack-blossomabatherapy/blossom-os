@@ -469,44 +469,39 @@ export default function BcbaPerformancePage() {
     }
 
     /**
-     * Progress reports: true PR records only, and only a real source-recorded
-     * due date. A missing, malformed or impossible date is not a deadline, and
-     * resolved work is never overdue.
+     * Progress reports come from the SHARED engine (`computeProgressReportOps`)
+     * — there is no page-local PR classifier, due-date parser or deadline rule.
+     * Each shared due row is attributed to V3 ownership at its own due date,
+     * falling back to a real recorded workflow date purely for ownership.
+     * Only an unresolved row with a real due date can be overdue or produce a
+     * deadline; resolved, missing, malformed, impossible and reversed dates
+     * never do.
      */
+    const prOps = computeProgressReportOps([], authActions, new Date(`${today}T00:00:00`));
     const prOverdue = new Map<string, number>();
-    for (const action of authActions) {
-      if (!isProgressReportAction(action)) continue;
-      const client = String(action.client_name ?? "").trim();
-      if (!client) continue;
-      const due = validDay(action.next_action_due_date) ?? validDay(action.appeal_due_date);
-      const recorded =
-        validDay(action.submitted_date) ??
-        validDay(action.approved_date) ??
-        validDay(action.denied_date) ??
-        validDay(action.received_date) ??
-        validDay(action.updated_at);
-      const { owner, fallbackDate } = ownerAt(client, action.client_cr_id, due ?? recorded);
+    for (const row of prOps.dueRows) {
+      if (!row.clientCrId && row.client === "Unknown client") continue;
+      const { owner, fallbackDate } = ownerAt(
+        row.client,
+        row.clientCrId || null,
+        row.dueDate ?? row.recordedDate,
+      );
       if (!owner) continue;
       measurable.add(owner);
+      if (row.resolved || !row.dueDate || row.daysUntilDue == null) continue;
       const suffix = fallbackDate ? " (ownership resolved at window end — fallback)" : "";
-      if (!due) continue;
-      const days = daysBetween(today, due);
-      if (days == null) continue;
-      if (days < 0) {
-        if (!isActionResolved(action)) {
-          prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
-        }
-      } else if (!isActionResolved(action)) {
-        const prev = nearestDeadline.get(owner);
-        if (!prev || days < prev.days) {
-          nearestDeadline.set(owner, {
-            days,
-            basis: `${client} progress report due ${due}${suffix}`,
-          });
-        }
+      if (row.overdue) {
+        prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
+        continue;
+      }
+      const prev = nearestDeadline.get(owner);
+      if (!prev || row.daysUntilDue < prev.days) {
+        nearestDeadline.set(owner, {
+          days: row.daysUntilDue,
+          basis: `${row.client} progress report due ${row.dueDate}${suffix}`,
+        });
       }
     }
-
 
     // Confirmed pauses only — a logged pause event, never an inferred gap.
     const pauses = new Map<string, number>();
