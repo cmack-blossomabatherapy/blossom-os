@@ -296,11 +296,25 @@ export function summarizeProxyRows(rows: C2sProxyRow[]): C2sProxySummary {
   };
 }
 
+/**
+ * Deterministic grouping key for an UNMAPPED provider row. Equal names are never
+ * merged across role group or state, so two different unmapped people who share
+ * a display name stay separate rows.
+ */
+export function unmappedProviderKey(row: C2sProxyRow): string {
+  const name = (row.providerDisplayName ?? "unknown")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  return `unmapped:${name}|${row.roleGroup}|${(row.state ?? "unknown").trim().toLowerCase()}`;
+}
+
 /** Provider-level queue rows. Never includes any client field. */
 export function buildProviderQueue(rows: C2sProxyRow[]): C2sProviderQueueRow[] {
   const map = new Map<string, C2sProviderQueueRow>();
   for (const row of rows) {
-    const key = row.employeeId ?? `name:${row.providerDisplayName ?? "unknown"}`;
+    const key = row.employeeId ? `employee:${row.employeeId}` : unmappedProviderKey(row);
+
     if (!map.has(key)) {
       map.set(key, {
         employeeId: row.employeeId,
