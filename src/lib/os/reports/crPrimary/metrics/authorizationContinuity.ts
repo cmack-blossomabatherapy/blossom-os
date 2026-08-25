@@ -270,8 +270,9 @@ export function computeAuthorizationContinuity(
   >();
 
   rows.forEach((row, index) => {
-    const start = startDateOf(row);
-    const end = endDateOf(row);
+    const classification = classifyContinuityRow(row, today);
+    const start = classification.startDate;
+    const end = classification.endDate;
     const authorized = num(row.authorized_hours);
     const used = num(row.worked_hours);
     const remaining =
@@ -281,24 +282,15 @@ export function computeAuthorizationContinuity(
     if (used != null) usedHours += used;
     if (remaining != null) remainingHours += remaining;
 
-    const daysToExpiry = end ? daysBetween(today, end) : null;
-    let continuity: ContinuityState;
-    if (!end) {
-      continuity = "unknown_dates";
-      unknown += 1;
-    } else if (daysToExpiry != null && daysToExpiry < 0) {
-      continuity = "expired";
-      expired += 1;
-    } else if (start && daysBetween(today, start) != null && daysBetween(today, start)! > 0) {
-      continuity = "not_started";
-    } else if (daysToExpiry != null && daysToExpiry <= 60) {
-      continuity = "expiring";
+    const daysToExpiry = classification.daysToExpiry;
+    const continuity = classification.continuity;
+    if (continuity === "unknown_dates") unknown += 1;
+    else if (continuity === "expired") expired += 1;
+    else if (continuity === "expiring") {
       expiring += 1;
       active += 1;
-    } else {
-      continuity = "active";
-      active += 1;
-    }
+    } else if (continuity === "active") active += 1;
+
 
     const window =
       continuity === "expiring" && daysToExpiry != null
