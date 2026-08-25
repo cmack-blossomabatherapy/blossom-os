@@ -59,7 +59,6 @@ import {
 import {
   UTILIZATION_RISK_LABELS,
   numOrNull,
-  resolveActiveScope,
   snapshotWindowMode,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationScope";
 import { buildUtilizationTabExport } from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationExport";
