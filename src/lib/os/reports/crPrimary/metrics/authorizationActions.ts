@@ -93,7 +93,6 @@ export function isActionResolved(action: AuthorizationActionRow): boolean {
   return statusText.some((v) => RESOLVED_STATUS.test(v));
 }
 
-
 export interface ProgressReportEventRow {
   key: string;
   eventDate: string | null;
@@ -353,7 +352,6 @@ export function computePauseOps(
   };
 }
 
-
 /**
  * Authoritative action timelines — received → submitted and submitted →
  * decision (approved or denied). Only real documented date pairs count. A
@@ -374,17 +372,44 @@ export interface ActionTimelineRow {
   receivedToSubmittedDisplay: string;
   submittedToDecisionDays: number | null;
   submittedToDecisionDisplay: string;
+  /**
+   * Whether this row's documented pair contributes to the averages. With a
+   * date-range scope a valid pair only counts when the event that completes it
+   * (the submission, or the decision) actually happened inside the range.
+   */
+  countsForReceivedToSubmitted: boolean;
+  countsForSubmittedToDecision: boolean;
 }
 
 export interface ActionTimelineMetrics {
   rows: ActionTimelineRow[];
+  /** Denominator of the receipt -> submission average. */
   documentedReceivedToSubmitted: number;
+  /** Denominator of the submission -> decision average. */
   documentedSubmittedToDecision: number;
+  /** Valid pairs excluded because the completing event is outside the range. */
+  outOfRangeReceivedToSubmitted: number;
+  outOfRangeSubmittedToDecision: number;
+  /** Rows whose pair is missing, malformed or reversed — never counted as 0. */
+  notDocumentedReceivedToSubmitted: number;
+  notDocumentedSubmittedToDecision: number;
   avgReceivedToSubmittedDays: number | null;
   avgSubmittedToDecisionDays: number | null;
   approvedDecisions: number;
   deniedDecisions: number;
 }
+
+/** Optional day-range scope for the turnaround averages. */
+export interface TimelineRangeScope {
+  from: string;
+  to: string;
+}
+
+const withinScope = (day: string | null, scope?: TimelineRangeScope): boolean => {
+  if (!scope) return true;
+  if (!day) return false;
+  return inDayRange(day, scope.from, scope.to);
+};
 
 /** Non-negative day span between two valid dates, else null. */
 export function timelineDays(
@@ -404,6 +429,13 @@ const timelineDisplay = (days: number | null): string =>
 
 export function computeAuthorizationActionTimelines(
   actions: AuthorizationActionRow[],
+  /**
+   * When given, a documented pair only enters an average if the event that
+   * completes it falls inside the range: the real `submitted_date` for
+   * receipt -> submission, and the real decision date for submission ->
+   * decision. Existing unscoped callers keep their previous behaviour.
+   */
+  scope?: TimelineRangeScope,
 ): ActionTimelineMetrics {
   const rows: ActionTimelineRow[] = actions.map((a, i) => {
     const receivedDate = validDay(a.received_date);
@@ -432,15 +464,21 @@ export function computeAuthorizationActionTimelines(
       receivedToSubmittedDisplay: timelineDisplay(receivedToSubmittedDays),
       submittedToDecisionDays,
       submittedToDecisionDisplay: timelineDisplay(submittedToDecisionDays),
+      countsForReceivedToSubmitted:
+        receivedToSubmittedDays != null && withinScope(submittedDate, scope),
+      countsForSubmittedToDecision:
+        submittedToDecisionDays != null && withinScope(decisionDate, scope),
     };
   });
 
   const avg = (values: number[]): number | null =>
     values.length ? Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) / 10 : null;
   const rts = rows
+    .filter((r) => r.countsForReceivedToSubmitted)
     .map((r) => r.receivedToSubmittedDays)
     .filter((v): v is number => v != null);
   const std = rows
+    .filter((r) => r.countsForSubmittedToDecision)
     .map((r) => r.submittedToDecisionDays)
     .filter((v): v is number => v != null);
 
@@ -448,6 +486,14 @@ export function computeAuthorizationActionTimelines(
     rows,
     documentedReceivedToSubmitted: rts.length,
     documentedSubmittedToDecision: std.length,
+    outOfRangeReceivedToSubmitted: rows.filter(
+      (r) => r.receivedToSubmittedDays != null && !r.countsForReceivedToSubmitted,
+    ).length,
+    outOfRangeSubmittedToDecision: rows.filter(
+      (r) => r.submittedToDecisionDays != null && !r.countsForSubmittedToDecision,
+    ).length,
+    notDocumentedReceivedToSubmitted: rows.filter((r) => r.receivedToSubmittedDays == null).length,
+    notDocumentedSubmittedToDecision: rows.filter((r) => r.submittedToDecisionDays == null).length,
     avgReceivedToSubmittedDays: avg(rts),
     avgSubmittedToDecisionDays: avg(std),
     approvedDecisions: rows.filter((r) => r.decisionType === "approved").length,
