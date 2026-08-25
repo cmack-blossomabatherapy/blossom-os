@@ -4,7 +4,13 @@
  * Every read is RLS-safe (authenticated users only) and never throws — the
  * loaders return empty arrays plus an error message so pages can render an
  * exact empty state that points operators at the CentralReach Data Hub.
+ *
+ * Reads are ALL-OR-NOTHING. A transport error on any page, a thrown exception,
+ * a missing `.range(...)` paging capability, or safety-cap exhaustion all
+ * return `rows: []` plus the error. Partially paged rows are never returned,
+ * so a KPI total can never be computed from an incomplete result set.
  */
+
 import { supabase } from "@/integrations/supabase/client";
 import type {
   AuthorizationWeeklyEventRow,
