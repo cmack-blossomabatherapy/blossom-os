@@ -314,12 +314,13 @@ export function computeCancellationCenter(
           : rate != null && rate >= 20
             ? "watch"
             : "monitor";
+      const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
       const reasonLine =
         risk === "critical"
-          ? `${d.cancellations} cancellations across ${d.weeks.size} week(s) — ${rate}% of this client's scheduled sessions`
+          ? `${plural(d.cancellations, "cancellation")} across ${plural(d.weeks.size, "week")} — ${rate}% of this client's scheduled sessions`
           : d.undocumented > 0
-            ? `${d.undocumented} cancellation(s) have no documented reason`
-            : `${d.cancellations} cancellations · top reason ${topReason}`;
+            ? `${plural(d.undocumented, "cancellation")} without a documented reason`
+            : `${plural(d.cancellations, "cancellation")} · top reason ${topReason}`;
       return {
         key: d.client.toLowerCase(),
         client: d.client,
