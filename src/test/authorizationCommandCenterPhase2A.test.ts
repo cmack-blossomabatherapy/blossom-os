@@ -156,7 +156,7 @@ describe("staff-facing shell", () => {
     expect(shell).not.toMatch(/centralreach-data-hub/i);
     // No link, button, or copy pointing staff at the admin Data Hub.
     expect(shell).not.toMatch(/<Link[\s\S]{0,200}Data Hub/i);
-    expect(shell).not.toMatch(/Open Data Hub|Go to Data Hub|re-upload|Upload/);
+    expect(shell).not.toMatch(/Open Data Hub|Go to Data Hub|re-upload|Upload a|required export/i);
     expect(shell).not.toMatch(/useOSRoleSafe|super_admin/);
   });
 });
