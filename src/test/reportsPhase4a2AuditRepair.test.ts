@@ -120,10 +120,14 @@ describe("Phase 4A2 audit repair — row-level continuity matches client truth",
     const { metrics, covered } = agrees([row]);
     expect(covered).toBe(0);
     expect(metrics.active).toBe(0);
-    // The displayed end must be the pair that produced the state.
-    expect(metrics.rows[0].continuity).toBe("expired");
-    expect(metrics.rows[0].endDate).toBe("2026-08-20");
+    expect(metrics.expiringSoon).toBe(0);
+    // The future follow-up pair may never present itself as current coverage;
+    // the row is classified from that pair alone, awaiting its start.
+    expect(metrics.rows[0].continuity).toBe("not_started");
+    expect(metrics.rows[0].startDate).toBe("2026-10-01");
+    expect(metrics.rows[0].endDate).toBe("2026-12-31");
   });
+
 
   it("a real current pair drives expiring with its own end date", () => {
     const row = auth({
