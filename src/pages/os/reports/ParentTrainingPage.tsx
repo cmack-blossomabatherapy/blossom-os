@@ -49,6 +49,7 @@ import { CODE_PARENT_TRAINING, normalizeCode } from "@/lib/os/reports/crPrimary/
 import {
   NO_TARGET_LABEL,
   PT_STATUS_LABELS,
+  buildProvenClientProof,
   computeParentTrainingAnalysis,
   scopeParentTrainingToBcba,
   type PtClientRow,
