@@ -23,7 +23,7 @@ vi.mock("@/lib/os/centralreachUploads/supabaseStore", () => ({
   rowHashToIdentity: (h: string) => h,
 }));
 vi.mock("@/lib/os/centralreachUploads/legacyReprocess", () => ({
-  reprocessLegacySharedDatasets: () => reprocessLegacySharedDatasets(),
+  refreshReportsFromExistingUploads: () => reprocessLegacySharedDatasets(),
 }));
 vi.mock("@/lib/os/sharedReportDatasets", () => ({
   listSharedReportDatasets: (k: string) => listSharedReportDatasets(k),
