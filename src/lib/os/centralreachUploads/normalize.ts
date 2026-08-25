@@ -87,6 +87,31 @@ const num = (row: Record<string, unknown>, keys: string[]): number | null => {
 const date = (row: Record<string, unknown>, keys: string[]): string | null =>
   toIsoDate(pickText(row, keys));
 
+/**
+ * Tolerant boolean read. CentralReach exports booleans as 1/0, true/false, or
+ * Yes/No; anything else (including blanks) stays null so reports never invent a
+ * negative fact.
+ */
+export function crBool(row: Record<string, unknown>, keys: string[]): boolean | null {
+  const value = pickText(row, keys);
+  if (!value) return null;
+  const v = value.trim();
+  if (/^(1|y|yes|true|t)$/i.test(v)) return true;
+  if (/^(0|n|no|false|f)$/i.test(v)) return false;
+  return null;
+}
+
+/**
+ * CentralReach writes `0` / `false` into reason columns when there is no
+ * reason. Those are not reasons.
+ */
+export function crReason(value: string | null): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  if (!v || /^(0|false|no|n\/a|na|none|null)$/i.test(v)) return null;
+  return v;
+}
+
 const CLIENT = [
   "ClientName", "ClientFullName", "Client", "Patient", "PatientName", "Client Name",
 ];
@@ -162,10 +187,58 @@ function billingRow(row: Record<string, unknown>): NormalizedCrRow {
   };
 }
 
+/** Human-readable CPT/service names, preferred over the internal numeric code. */
+const HUMAN_CODE = [
+  "BillingCodeName", "Billing Code Name", "CodeName", "Code Name",
+  "ProcedureCode", "Procedure Code", "ServiceCode", "Service Code", "CPT",
+];
+const INTERNAL_CODE = ["BillingCode", "Billing Code", "Code", "BillingCodeId"];
+
+/** Resolve the reportable procedure code, preferring the human CPT/name. */
+export function resolveServiceCode(row: Record<string, unknown>): {
+  procedureCode: string | null;
+  billingCode: string | null;
+  billingCodeName: string | null;
+} {
+  const human = text(row, HUMAN_CODE);
+  const internal = text(row, INTERNAL_CODE);
+  const cpt = human?.match(/\b\d{5}\b/)?.[0] ?? internal?.match(/\b\d{5}\b/)?.[0] ?? null;
+  return {
+    procedureCode: cpt ?? human ?? internal,
+    billingCode: internal,
+    billingCodeName: human,
+  };
+}
+
+/** Attendance is exported as 1/0 — never let a 0 outrank an explicit status. */
+function attendanceLabel(raw: string | null): string | null {
+  if (!raw) return null;
+  const v = raw.trim();
+  if (/^(1|true|y|yes|attended|present)$/i.test(v)) return "Attended";
+  if (/^(0|false|n|no)$/i.test(v)) return "Not Attended";
+  return v;
+}
+
 function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
+  const code = resolveServiceCode(row);
+  const deleted = crBool(row, ["Deleted", "IsDeleted", "Is Deleted"]);
+  const cancelled = crBool(row, ["Cancelled", "Canceled", "IsCancelled", "IsCanceled"]);
+  const converted = crBool(row, [
+    "ConvertedToTimesheet", "Converted To Timesheet", "Converted", "HasTimesheet", "IsBilled",
+  ]);
+  const attendance = text(row, ["Attendance", "AttendanceStatus"]);
+  const explicitStatus = text(row, ["Status", "EventStatus", "AppointmentStatus"]);
+  const status =
+    deleted === true
+      ? "Deleted"
+      : cancelled === true
+        ? "Cancelled"
+        : explicitStatus ?? attendanceLabel(attendance);
   return {
     event_date: date(row, ["EventDate", "Date", "StartDate", "AppointmentDate", "DateOfService", "Start"]),
-    procedure_code: text(row, CODE),
+    procedure_code: code.procedureCode,
+    billing_code: code.billingCode,
+    billing_code_name: code.billingCodeName,
     scheduled_hours: num(row, [
       "ScheduledHours", "Scheduled Hours", "SegmentHours", "EventHours",
       "Hours", "Duration", "TimeScheduledInHours",
@@ -182,15 +255,54 @@ function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
       ["ProviderLastName", "Provider Last Name"],
       ["Provider", "ProviderName", "Principal2Name", "Principal 2 Name", "Employee", "EmployeeName", "StaffName", "Resource"],
     ),
-    status: text(row, ["Status", "Attendance", "EventStatus", "Cancelled"]),
-    cancellation_reason: text(row, [
-      "CancellationReason", "Cancellation Reason", "CancelledReason", "Cancelled Reason",
-      "CancelReason", "Reason",
+    status,
+    attendance,
+    deleted,
+    cancelled,
+    converted_to_timesheet: converted,
+    start_time: text(row, ["StartTime", "Start Time", "EventStartTime", "TimeStart"]),
+    end_time: text(row, ["EndTime", "End Time", "EventEndTime", "TimeEnd"]),
+    billing_creation_date: date(row, [
+      "BillingCreationDate", "Billing Creation Date", "CreationDate", "Creation Date", "CreatedDate",
     ]),
-    cancelled_by: text(row, ["CancelledBy", "Cancelled By", "CanceledBy"]),
+    cancellation_reason: crReason(
+      text(row, [
+        "CancellationReason", "Cancellation Reason", "CancelledReason", "Cancelled Reason",
+        "CancelReason", "Reason",
+      ]),
+    ),
+    cancelled_by: crReason(text(row, ["CancelledBy", "Cancelled By", "CanceledBy"])),
     state: text(row, STATE),
     location: text(row, LOCATION),
     payor: text(row, PAYOR),
+  };
+}
+
+/**
+ * Per-session billing documentation metadata. Lives in
+ * `cr_billing_session_status` (a mutable CURRENT table) so the immutable
+ * `cr_billing_sessions` fact used by BCBA Productivity V3 is never rewritten.
+ */
+export function billingStatusRow(row: Record<string, unknown>): Record<string, unknown> {
+  return {
+    authorization_id: text(row, ["AuthorizationId", "Authorization Id", "AuthId"]),
+    creation_date: date(row, ["CreationDate", "Creation Date", "CreatedDate", "DateCreated"]),
+    first_bill_date: date(row, ["FirstBillDate", "First Bill Date", "FirstBilledDate"]),
+    first_claim_date: date(row, ["FirstClaimDate", "First Claim Date"]),
+    claims_exported: crBool(row, ["ClaimsExported", "Claims Exported", "Exported"]),
+    is_void: crBool(row, ["IsVoid", "Is Void", "Void", "Voided"]),
+    deleted: crBool(row, ["Deleted", "IsDeleted", "Is Deleted"]),
+    signed_by_provider: crBool(row, [
+      "SignedByProvider", "Signed By Provider", "ProviderSigned", "IsSignedByProvider",
+    ]),
+    signed_by_client: crBool(row, [
+      "SignedByClient", "Signed By Client", "ClientSigned", "IsSignedByClient",
+    ]),
+    provider_role: text(row, ["ProviderRole", "Provider Role", "RenderingProviderRole", "Role"]),
+    billing_labels: text(row, ["BillingLabels", "Billing Labels", "ProviderContactLabels", "Labels"]),
+    location: text(row, LOCATION),
+    delivery_method: text(row, ["DeliveryMethod", "Delivery Method", "Modality", "Telehealth"]),
+    place_of_service: text(row, ["PlaceOfService", "Place of Service", "POS"]),
   };
 }
 
