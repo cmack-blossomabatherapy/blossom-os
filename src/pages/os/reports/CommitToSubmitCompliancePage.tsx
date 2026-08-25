@@ -4,10 +4,12 @@
  * Staff-facing surface for documentation timeliness. It is deliberately built
  * on two clearly labelled scopes:
  *
- * 1. **Documentation timeliness proxy** — global, client-free, de-identified
- *    date-of-service → documentation lag. The 7-day boundary is ON TIME. This
- *    scope is a *proxy only*: it can never create a formal violation and never
- *    assigns BCBA Category 1.
+ * 1. **Documentation timeliness proxy** — global, client-free provider-level
+ *    date-of-service → documentation lag. Provider names are visible, so this
+ *    is client-free provider-level data, not de-identified data. The 7-day
+ *    boundary is ON TIME. This scope is a *proxy only*: it can never create a
+ *    formal violation and never assigns BCBA Category 1.
+
  * 2. **Program records** — coaching, reviews, notices, disputes and exceptions,
  *    each limited by row-level security to yourself and the people you oversee.
  *    Seeing nothing here is normal and is not a data problem.
@@ -136,15 +138,36 @@ const PROXY_ROW_EXPORT_COLUMNS = [
   { key: "provenance", label: "Provenance" },
 ];
 
-const RECORD_EXPORT_COLUMNS = [
+/**
+ * Shown instead of a number when the staff-safe aggregate governance RPC could
+ * not be read. An unavailable sensitive aggregate must never look like a
+ * factual zero. A real authenticated zero-row aggregate still renders as 0.
+ */
+export const C2S_UNAVAILABLE = "Unavailable";
+
+const GOVERNANCE_UNAVAILABLE_HINT =
+  "This count could not be read right now, so it is shown as Unavailable rather than as zero.";
+
+/** Reviewed tab: one CSV across every visible-to-you activity record type. */
+const ACTIVITY_EXPORT_COLUMNS = [
+  { key: "recordType", label: "Record Type" },
   { key: "employee", label: "Employee" },
-  { key: "serviceDate", label: "Service Date" },
+  { key: "date", label: "Date" },
   { key: "roleGroup", label: "Role Group" },
   { key: "category", label: "Category" },
   { key: "lagDays", label: "Lag Days" },
   { key: "source", label: "Source" },
-  { key: "reviewStatus", label: "Review Status" },
-  { key: "formal", label: "Formal Violation Recorded" },
+  { key: "status", label: "Status" },
+  { key: "detail", label: "Detail" },
+];
+
+/** Disputes & Exceptions tab: one CSV across disputes, exceptions, notices. */
+const GOVERNANCE_EXPORT_COLUMNS = [
+  { key: "recordType", label: "Record Type" },
+  { key: "employee", label: "Employee" },
+  { key: "status", label: "Status" },
+  { key: "date", label: "Date" },
+  { key: "detail", label: "Detail" },
 ];
 
 const uniqueSorted = (values: (string | null | undefined)[]): string[] =>
@@ -264,31 +287,40 @@ export default function CommitToSubmitCompliancePage() {
       {
         id: "historical-formal",
         label: "Historical formal records",
-        value: fmtCount(counts.historicalFormalRecords),
-        hint: "Visible to you · recorded formal history, kept even when later excused",
+        value: counts ? fmtCount(counts.historicalFormalRecords) : C2S_UNAVAILABLE,
+        hint: counts
+          ? "Visible to you · recorded formal history, kept even when later excused"
+          : GOVERNANCE_UNAVAILABLE_HINT,
       },
       {
         id: "active-formal",
         label: "Active formal records",
-        value: fmtCount(counts.activeFormalRecords),
-        hint: "Visible to you · counted by the database, never inferred from documentation lag",
-        tone: counts.activeFormalRecords > 0 ? "bad" : "good",
+        value: counts ? fmtCount(counts.activeFormalRecords) : C2S_UNAVAILABLE,
+        hint: counts
+          ? "Visible to you · counted by the database, never inferred from documentation lag"
+          : GOVERNANCE_UNAVAILABLE_HINT,
+        tone: counts ? (counts.activeFormalRecords > 0 ? "bad" : "good") : "neutral",
       },
       {
         id: "open-disputes",
         label: "Open disputes",
-        value: fmtCount(counts.openDisputes),
-        hint: "Visible to you · filed and awaiting an HR decision",
-        tone: counts.openDisputes > 0 ? "warn" : "neutral",
+        value: counts ? fmtCount(counts.openDisputes) : C2S_UNAVAILABLE,
+        hint: counts
+          ? "Visible to you · filed and awaiting an HR decision"
+          : GOVERNANCE_UNAVAILABLE_HINT,
+        tone: counts ? (counts.openDisputes > 0 ? "warn" : "neutral") : "neutral",
       },
       {
         id: "active-exceptions",
         label: "Active approved exceptions",
-        value: fmtCount(counts.activeApprovedExceptions),
-        hint: "Visible to you · an approved exception removes a record from active formal counts",
+        value: counts ? fmtCount(counts.activeApprovedExceptions) : C2S_UNAVAILABLE,
+        hint: counts
+          ? "Visible to you · an approved exception removes a record from active formal counts"
+          : GOVERNANCE_UNAVAILABLE_HINT,
       },
     ];
   }, [summary, data.governanceCounts]);
+
 
   // --------------------------------------------------------------- dialogs
   const [coachingFor, setCoachingFor] = useState<{ id: string; name: string } | null>(null);
@@ -526,20 +558,89 @@ export default function CommitToSubmitCompliancePage() {
     [providerQueue],
   );
 
-  const recordExportRows = useMemo(
-    () =>
-      data.tracker.map((r) => ({
+  /**
+   * Reviewed tab export: every visible-to-you activity record — reviewed
+   * tracker rows, coaching, and program reviews — in one CSV. Nothing outside
+   * the caller's RLS scope can appear, and there is no client detail.
+   */
+  const activityExportRows = useMemo(() => {
+    const rows: Record<string, unknown>[] = [];
+    for (const r of data.tracker) {
+      rows.push({
+        recordType: "Reviewed tracker record",
         employee: c2sDisplayName(data.employeeNames, r.subjectEmployeeId),
-        serviceDate: r.serviceDate ?? "",
+        date: r.serviceDate ?? "",
         roleGroup: r.roleGroup,
         category: r.category,
         lagDays: r.lagDays ?? "",
         source: r.sourceKind,
-        reviewStatus: r.reviewStatus,
-        formal: r.isFormalViolation ? "Yes" : "No",
-      })),
-    [data.tracker, data.employeeNames],
-  );
+        status: r.reviewStatus,
+        detail: r.isFormalViolation ? "Formal violation recorded" : "No formal violation",
+      });
+    }
+    for (const c of data.coaching) {
+      rows.push({
+        recordType: "Coaching",
+        employee: c2sDisplayName(data.employeeNames, c.subjectEmployeeId),
+        date: c.coachingDate ?? "",
+        roleGroup: "",
+        category: "",
+        lagDays: "",
+        source: "",
+        status: "",
+        detail: [c.topic, c.summary].filter(Boolean).join(" — "),
+      });
+    }
+    for (const v of data.reviews) {
+      rows.push({
+        recordType: "Program review",
+        employee: c2sDisplayName(data.employeeNames, v.subjectEmployeeId),
+        date: v.windowStart ?? "",
+        roleGroup: "",
+        category: v.reviewKind ?? "",
+        lagDays: v.daysOnTime ?? "",
+        source: "",
+        status: v.hrApproved === true ? "HR approved" : v.hrApproved === false ? "Not approved" : "Pending HR",
+        detail: v.outcome ?? v.managerRecommendation ?? "",
+      });
+    }
+    return rows;
+  }, [data.tracker, data.coaching, data.reviews, data.employeeNames]);
+
+  /** Disputes & Exceptions tab export: disputes, exceptions, and notices. */
+  const governanceExportRows = useMemo(() => {
+    const rows: Record<string, unknown>[] = [];
+    for (const d of data.disputes) {
+      rows.push({
+        recordType: "Dispute",
+        employee: c2sDisplayName(data.employeeNames, d.subjectEmployeeId),
+        status: d.status,
+        date: d.filedAt ?? "",
+        detail: d.filingDeadline ? `Filing deadline ${d.filingDeadline}` : "",
+      });
+    }
+    for (const e of data.exceptions) {
+      rows.push({
+        recordType: "Exception",
+        employee: c2sDisplayName(data.employeeNames, e.subjectEmployeeId),
+        status: e.status,
+        date: e.approvedAt ?? e.appliesFrom ?? "",
+        detail: [e.exceptionType, e.appliesFrom && e.appliesTo ? `${e.appliesFrom} → ${e.appliesTo}` : null]
+          .filter(Boolean)
+          .join(" · "),
+      });
+    }
+    for (const n of data.notices) {
+      rows.push({
+        recordType: "Notice",
+        employee: c2sDisplayName(data.employeeNames, n.subjectEmployeeId),
+        status: n.acknowledgedAt ? "Acknowledged" : "Issued",
+        date: n.issuedAt ?? "",
+        detail: `Level ${n.noticeLevel}${n.hrReviewRequired ? " · HR review required" : ""}`,
+      });
+    }
+    return rows;
+  }, [data.disputes, data.exceptions, data.notices, data.employeeNames]);
 
   /** Row-level export for the Proxy Queue tab — same privacy boundary, every row. */
   const proxyRowExportRows = useMemo(
@@ -558,9 +659,21 @@ export default function CommitToSubmitCompliancePage() {
     [filteredProxy],
   );
 
+  /**
+   * Export follows the ACTIVE tab so the file always matches what is on screen,
+   * and never crosses the privacy boundary of that tab.
+   */
   const onExport = useCallback(() => {
-    if (activeTab === "reviewed" || activeTab === "disputes-exceptions") {
-      downloadCsv("commit-to-submit-program-records", recordExportRows, RECORD_EXPORT_COLUMNS);
+    if (activeTab === "reviewed") {
+      downloadCsv("commit-to-submit-visible-activity", activityExportRows, ACTIVITY_EXPORT_COLUMNS);
+      return;
+    }
+    if (activeTab === "disputes-exceptions") {
+      downloadCsv(
+        "commit-to-submit-visible-governance",
+        governanceExportRows,
+        GOVERNANCE_EXPORT_COLUMNS,
+      );
       return;
     }
     if (activeTab === "proxy-queue") {
@@ -568,7 +681,8 @@ export default function CommitToSubmitCompliancePage() {
       return;
     }
     downloadCsv("commit-to-submit-timeliness", providerExportRows, PROVIDER_EXPORT_COLUMNS);
-  }, [activeTab, providerExportRows, recordExportRows, proxyRowExportRows]);
+  }, [activeTab, providerExportRows, activityExportRows, governanceExportRows, proxyRowExportRows]);
+
 
   // --------------------------------------------------------------- warnings
   const warnings = useMemo(() => {
@@ -596,8 +710,24 @@ export default function CommitToSubmitCompliancePage() {
     if (filters.from && filters.to && data.invalidWindow) {
       out.push("The selected date range is not usable, so no timeliness data was loaded.");
     }
+    if (data.governanceError) {
+      out.push(
+        "The program governance totals (formal records, disputes, exceptions) could not be read, so they show as Unavailable instead of zero. Nothing here means those counts are zero.",
+      );
+    }
+    for (const w of data.sensitiveScopeWarnings) out.push(w);
     return out;
-  }, [data.status, data.stale, data.invalidWindow, summary, filters.from, filters.to]);
+  }, [
+    data.status,
+    data.stale,
+    data.invalidWindow,
+    data.governanceError,
+    data.sensitiveScopeWarnings,
+    summary,
+    filters.from,
+    filters.to,
+  ]);
+
 
   const activeFilterCount = [
     filters.state,
@@ -713,12 +843,22 @@ export default function CommitToSubmitCompliancePage() {
    * Four unit-honest charts. A percentage chart never carries counts, and a
    * count chart never carries percentages or hours.
    */
-  const onTimeTrendChart = summary.byMonth
-    .filter((row) => row.comparable > 0)
-    .map((row) => ({
-      label: row.key,
-      value: Number((((row.onTime / row.comparable) * 100)).toFixed(1)),
-    }));
+  /**
+   * The default window is a single month, so a month-bucketed trend collapses to
+   * one point and shows no movement. Bucket by ISO week whenever weekly buckets
+   * give more than one measurable point; fall back to months for long windows.
+   */
+  const weeklyTrendRows = summary.byWeek.filter(
+    (row) => row.comparable > 0 && row.key !== "Unknown week",
+  );
+  const monthlyTrendRows = summary.byMonth.filter((row) => row.comparable > 0);
+  const trendIsWeekly = monthlyTrendRows.length < 2 && weeklyTrendRows.length > 1;
+  const trendRows = trendIsWeekly ? weeklyTrendRows : monthlyTrendRows;
+  const onTimeTrendChart = trendRows.map((row) => ({
+    label: row.key,
+    value: Number(((row.onTime / row.comparable) * 100).toFixed(1)),
+  }));
+
   const lateByStateChart = summary.byState.map((row) => ({ label: row.key, value: row.late }));
   const statusByRoleChart = summary.byRoleGroup.map((row) => ({
     label: row.key,
@@ -776,11 +916,14 @@ export default function CommitToSubmitCompliancePage() {
 
         <ReportProvenance>
           Timeliness is computed from date of service to the documentation timestamp, with{" "}
-          {C2S_ON_TIME_MAX_LAG_DAYS} days or fewer counting as on time. This view is de-identified
-          at the provider level and contains no client, payor, service, or dollar detail. Program
-          records — coaching, reviews, notices, disputes, exceptions — are limited to yourself and
-          the people you oversee, so an empty list here is normal.
+          {C2S_ON_TIME_MAX_LAG_DAYS} days or fewer counting as on time. This view is client-free
+          provider-level data — provider names are shown, and there is no client, payor, service, or
+          dollar detail anywhere in it. Documentation lag proxy rows can never create a formal
+          violation, whether the program is active or inactive. Program records — coaching, reviews,
+          notices, disputes, exceptions — are limited to yourself and the people you oversee, so an
+          empty list here is normal.
         </ReportProvenance>
+
 
         <Tabs value={activeTab} onValueChange={setTab}>
           <TabsList>
@@ -806,11 +949,16 @@ export default function CommitToSubmitCompliancePage() {
                 <div className="grid gap-4 lg:grid-cols-2">
                   <PrimaryChart
                     title="On-time percentage trend"
-                    subtitle="Percent of eligible rows documented on time, by month of service"
+                    subtitle={
+                      trendIsWeekly
+                        ? "Percent of eligible rows documented on time, by week of service (week starting)"
+                        : "Percent of eligible rows documented on time, by month of service"
+                    }
                     type="line"
                     data={onTimeTrendChart}
                     valueLabel="On time %"
                   />
+
                   <PrimaryChart
                     title="Late rows by state"
                     subtitle="Counts only — where late documentation is concentrated"
@@ -842,7 +990,7 @@ export default function CommitToSubmitCompliancePage() {
               <div className="space-y-3">
                 <PrimaryTable
                   title="Provider action queue"
-                  subtitle="De-identified provider rows. Rows without a matched employee cannot be coached until identity is reconciled."
+                  subtitle="Client-free provider-level rows. Rows without a matched employee cannot be coached until identity is reconciled."
                   columns={providerColumns}
                   rows={providerQueue}
                   rowKey={(r, i) => r.employeeId ?? `unmapped-${i}`}
@@ -866,7 +1014,7 @@ export default function CommitToSubmitCompliancePage() {
             )}
 
             {activeTab === "reviewed" && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <PrimaryTable
                   title="Reviewed program records (Visible to you)"
                   subtitle="Reviewed documentation records you are permitted to see. A record only supports a formal step after review, with coaching first."
@@ -875,15 +1023,81 @@ export default function CommitToSubmitCompliancePage() {
                   rowKey={(r) => r.id}
                   emptyLabel="No program records are visible to you. That is expected unless you are the subject, their manager, or HR."
                 />
+                <PrimaryTable
+                  title="Coaching history (Visible to you)"
+                  subtitle="Coaching always precedes any formal step. This is the recorded coaching history within your permission scope."
+                  columns={[
+                    {
+                      key: "employee",
+                      label: "Employee",
+                      render: (r) => c2sDisplayName(data.employeeNames, r.subjectEmployeeId),
+                    },
+                    { key: "date", label: "Coaching date", render: (r) => fmtDate(r.coachingDate) },
+                    { key: "topic", label: "Topic", render: (r) => r.topic ?? "Not recorded" },
+                    { key: "summary", label: "Summary", render: (r) => r.summary ?? "—" },
+                  ]}
+                  rows={data.coaching}
+                  rowKey={(r) => r.id}
+                  emptyLabel="No coaching records are visible to you."
+                />
+                <PrimaryTable
+                  title="Program reviews (Visible to you)"
+                  subtitle="Manager recommendations and HR decisions for the review windows you can see."
+                  columns={[
+                    {
+                      key: "employee",
+                      label: "Employee",
+                      render: (r) => c2sDisplayName(data.employeeNames, r.subjectEmployeeId),
+                    },
+                    { key: "kind", label: "Review", render: (r) => (r.reviewKind ?? "—").replace(/_/g, " ") },
+                    {
+                      key: "window",
+                      label: "Window",
+                      render: (r) =>
+                        r.windowStart && r.windowEnd
+                          ? `${fmtDate(r.windowStart)} – ${fmtDate(r.windowEnd)}`
+                          : "No window recorded",
+                    },
+                    {
+                      key: "daysOnTime",
+                      label: "Days on time",
+                      align: "right",
+                      render: (r) => (r.daysOnTime == null ? "—" : fmtCount(r.daysOnTime)),
+                    },
+                    {
+                      key: "recommendation",
+                      label: "Manager recommendation",
+                      render: (r) => (r.managerRecommendation ?? "Not recorded").replace(/_/g, " "),
+                    },
+                    {
+                      key: "hr",
+                      label: "HR decision",
+                      render: (r) =>
+                        r.hrApproved === true
+                          ? "Approved"
+                          : r.hrApproved === false
+                            ? "Not approved"
+                            : "Pending",
+                    },
+                    { key: "outcome", label: "Outcome", render: (r) => (r.outcome ?? "—").replace(/_/g, " ") },
+                  ]}
+                  rows={data.reviews}
+                  rowKey={(r) => r.id}
+                  emptyLabel="No program reviews are visible to you."
+                />
                 <ReportProvenance>
-                  {fmtCount(governance.unreviewedRecords)} record(s) are unreviewed and{" "}
-                  {fmtCount(governance.upheldRecords)} are upheld. Only{" "}
-                  {fmtCount(governance.formalViolations)} count as an active formal violation today —
-                  an approved exception or an upheld dispute removes a record from that count
+                  {fmtCount(governance.unreviewedRecords)} record(s) visible to you are unreviewed and{" "}
+                  {fmtCount(governance.upheldRecords)} are upheld. Active formal records come only
+                  from the database aggregate, never from the rows above:{" "}
+                  {data.governanceCounts
+                    ? fmtCount(data.governanceCounts.activeFormalRecords)
+                    : C2S_UNAVAILABLE}
+                  . An approved exception or an upheld dispute removes a record from that count
                   without erasing its history.
                 </ReportProvenance>
               </div>
             )}
+
 
             {activeTab === "disputes-exceptions" && (
               <div className="space-y-4">
@@ -922,7 +1136,7 @@ export default function CommitToSubmitCompliancePage() {
                   emptyLabel="No exceptions are visible to you."
                 />
                 <PrimaryTable
-                  title="Notices"
+                  title="Notices (Visible to you)"
                   subtitle="Levels advance one at a time. A level 3 notice creates an HR review requirement only."
                   columns={[
                     {

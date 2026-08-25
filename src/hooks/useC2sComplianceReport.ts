@@ -26,7 +26,7 @@ import {
   fetchIsC2sHrAuthority,
   fetchViewerEmployeeId,
   isValidDateWindow,
-  C2S_EMPTY_GOVERNANCE_COUNTS,
+  
   type C2sGovernanceCounts,
   type C2sDisputeRow,
   type C2sExceptionRow,
@@ -64,8 +64,17 @@ export interface C2sReportData {
   /**
    * Aggregate governance counts from the staff-safe RPC. These are the ONLY
    * source for active formal records — never inferred from proxy rows.
+   * `null` means the aggregate could not be read, so the page must render
+   * "Unavailable" rather than a misleading zero.
    */
-  governanceCounts: C2sGovernanceCounts;
+  governanceCounts: C2sGovernanceCounts | null;
+  /** Populated when the aggregate governance RPC failed. */
+  governanceError: string | null;
+  /**
+   * Real transport failures on the RLS-limited sensitive tables. An RLS-empty
+   * table is NOT listed here — only a genuine read failure is.
+   */
+  sensitiveScopeWarnings: string[];
   freshness: FreshnessInfo;
   /** Proxy freshness is unknown or materially old. */
   stale: boolean;
@@ -77,6 +86,7 @@ export interface C2sReportData {
   invalidWindow: boolean;
   refresh: () => void;
 }
+
 
 const EMPTY_FRESHNESS: FreshnessInfo = {
   latestUpload: null,
@@ -126,9 +136,10 @@ export function useC2sComplianceReport(from: string, to: string): C2sReportData 
   const [employeeNames, setEmployeeNames] = useState<Record<string, string>>({});
   const [viewerEmployeeId, setViewerEmployeeId] = useState<string | null>(null);
   const [isHrAuthority, setIsHrAuthority] = useState(false);
-  const [governanceCounts, setGovernanceCounts] = useState<C2sGovernanceCounts>(
-    C2S_EMPTY_GOVERNANCE_COUNTS,
-  );
+  const [governanceCounts, setGovernanceCounts] = useState<C2sGovernanceCounts | null>(null);
+  const [governanceError, setGovernanceError] = useState<string | null>(null);
+  const [sensitiveScopeWarnings, setSensitiveScopeWarnings] = useState<string[]>([]);
+
 
   const invalidWindow = !isValidDateWindow(from, to);
 
@@ -173,12 +184,33 @@ export function useC2sComplianceReport(from: string, to: string): C2sReportData 
       setReviews(reviewResult.rows);
       setViewerEmployeeId(viewerId);
       setIsHrAuthority(hrAuthority);
-      setGovernanceCounts(counts);
+      setGovernanceCounts(counts.counts);
+      setGovernanceError(counts.error);
+      // A sensitive table that returns nothing under RLS is normal. A sensitive
+      // table that fails to read is not — name it without blanking the page.
+      setSensitiveScopeWarnings(
+        (
+          [
+            ["program records", trackerResult.error],
+            ["coaching history", coachingResult.error],
+            ["notices", noticeResult.error],
+            ["disputes", disputeResult.error],
+            ["exceptions", exceptionResult.error],
+            ["program reviews", reviewResult.error],
+          ] as const
+        )
+          .filter(([, err]) => Boolean(err))
+          .map(
+            ([label, err]) =>
+              `Your visible ${label} could not be loaded (${err}). Counts and tables for that section may be incomplete.`,
+          ),
+      );
       // Only global-scope failures are page-level errors. An RLS-limited table
       // returning nothing is a normal outcome and must not blank the report.
       setErrorMessage(
         invalidWindow ? null : (proxyResult.error ?? statusResult.error ?? null),
       );
+
 
       const subjectIds = [
         ...trackerResult.rows.map((r) => r.subjectEmployeeId),
@@ -234,6 +266,9 @@ export function useC2sComplianceReport(from: string, to: string): C2sReportData 
     viewerEmployeeId,
     isHrAuthority,
     governanceCounts,
+    governanceError,
+    sensitiveScopeWarnings,
+
     freshness,
     stale,
     loading,

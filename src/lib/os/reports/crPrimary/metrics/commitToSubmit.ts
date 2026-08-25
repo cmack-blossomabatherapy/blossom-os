@@ -42,7 +42,7 @@ export type C2sFormalCategory =
   | "bcba_category_2"
   | "unclassified";
 
-/** One de-identified proxy row as returned by report_c2s_documentation_proxy. */
+/** One client-free provider-level proxy row from report_c2s_documentation_proxy. */
 export interface C2sProxyRow {
   employeeId: string | null;
   providerDisplayName: string | null;
@@ -219,12 +219,32 @@ export interface C2sProxySummary extends C2sStatusCounts {
   byRoleGroup: C2sBreakdownRow[];
   byProxyCategory: C2sBreakdownRow[];
   byMonth: C2sBreakdownRow[];
+  /**
+   * Same status counts grouped by ISO week start (Monday, `YYYY-MM-DD`). A
+   * single-month default window collapses to one monthly point, which is not a
+   * trend — weekly buckets give the current month a usable shape.
+   */
+  byWeek: C2sBreakdownRow[];
   authoritativeRows: number;
   proxyRows: number;
   unmappedRows: number;
   /** Proxy output can never contain formal violations. Always zero. */
   formalViolationsFromProxy: 0;
 }
+
+/** Monday-start ISO week key (`YYYY-MM-DD`) for a `YYYY-MM-DD` service date. */
+export function isoWeekStart(dateOfService: string | null | undefined): string | null {
+  const raw = (dateOfService ?? "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const t = Date.parse(`${raw}T00:00:00Z`);
+  if (Number.isNaN(t)) return null;
+  const d = new Date(t);
+  // getUTCDay(): 0=Sunday. Shift so Monday is the start of the week.
+  const shift = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - shift);
+  return d.toISOString().slice(0, 10);
+}
+
 
 function emptyCounts(): C2sStatusCounts {
   return { total: 0, onTime: 0, late: 0, missing: 0, invalid: 0 };
@@ -264,6 +284,7 @@ export function summarizeProxyRows(rows: C2sProxyRow[]): C2sProxySummary {
   const byRole = new Map<string, C2sStatusCounts>();
   const byCategory = new Map<string, C2sStatusCounts>();
   const byMonth = new Map<string, C2sStatusCounts>();
+  const byWeek = new Map<string, C2sStatusCounts>();
   let authoritativeRows = 0;
   let proxyRows = 0;
   let unmappedRows = 0;
@@ -275,6 +296,7 @@ export function summarizeProxyRows(rows: C2sProxyRow[]): C2sProxySummary {
     bump(byRole, row.roleGroup, status);
     bump(byCategory, row.proxyCategory, status);
     bump(byMonth, (row.dateOfService ?? "").slice(0, 7) || "Unknown month", status);
+    bump(byWeek, isoWeekStart(row.dateOfService) ?? "Unknown week", status);
     if (row.usedAuthoritativeCompletion) authoritativeRows += 1;
     else if (row.lagDays !== null) proxyRows += 1;
     if (!row.employeeId) unmappedRows += 1;
@@ -289,6 +311,8 @@ export function summarizeProxyRows(rows: C2sProxyRow[]): C2sProxySummary {
     byRoleGroup: toBreakdown(byRole),
     byProxyCategory: toBreakdown(byCategory),
     byMonth: toBreakdown(byMonth).sort((a, b) => a.key.localeCompare(b.key)),
+    byWeek: toBreakdown(byWeek).sort((a, b) => a.key.localeCompare(b.key)),
+
     authoritativeRows,
     proxyRows,
     unmappedRows,

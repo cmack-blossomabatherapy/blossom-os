@@ -143,12 +143,17 @@ export function PrimaryChart({
                   name={valueLabel}
                   radius={[4, 4, 0, 0]}
                   cursor="pointer"
+                  fill={COLORS[0]}
                   onClick={(d) => handle(d as { label?: string })}
                 >
-                  {data.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
+                  {/* Categorical colours only make sense for a single series.
+                      With 2+ same-unit series, each series keeps ONE colour so
+                      the legend matches the bars. */}
+                  {!secondaryLabel &&
+                    !tertiaryLabel &&
+                    data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Bar>
+
                 {secondaryLabel && (
                   <Bar dataKey="secondary" name={secondaryLabel} fill={COLORS[1]} radius={[4, 4, 0, 0]} />
                 )}
