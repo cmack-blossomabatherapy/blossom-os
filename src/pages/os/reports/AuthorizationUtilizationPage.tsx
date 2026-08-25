@@ -34,6 +34,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
 import { useUrlFilterState } from "@/hooks/useUrlFilterState";
+import { useUrlState } from "@/hooks/useUrlState";
+import { withCurrentMonthDefault } from "@/lib/os/reports/crPrimary/reportWindow";
+import { computeAuthorizationTrend, type TrendGrain } from "@/lib/os/reports/crPrimary/metrics/authorizationTrends";
 import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
 import type {
@@ -65,8 +68,8 @@ const FILTER_LABELS: Record<string, string> = {
 
 const JOIN_LABEL: Record<ProratedUtilizationRow["joinBasis"], string> = {
   authorization_id: "Authorization id",
-  client_cr_id: "CR client id",
-  client_name: "Client name",
+  unique_fallback: "Client + code + date (single match)",
+  ambiguous: "Ambiguous — held back",
   none: "Not joined",
 };
 
@@ -139,21 +142,42 @@ const BAND_LABEL: Record<"under" | "on_track" | "over" | "unknown", string> = {
   unknown: "Cannot compute",
 };
 
-type TabKey = "utilization" | "reconciliation" | "gaps";
+type TabKey = "utilization" | "trends" | "reconciliation" | "gaps";
+
+/** Reports open on the current calendar month; Reset returns here. */
+const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function AuthorizationUtilizationPage() {
-  const data = useCrPrimaryReport(["authCurrent", "billing"]);
-  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(EMPTY_FILTERS);
-  const [tab, setTab] = useState<TabKey>("utilization");
+  const data = useCrPrimaryReport(["authCurrent", "billingFacts"]);
+  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  const [tabParam, setTabParam] = useUrlState("tab", "utilization");
+  const tab = tabParam as TabKey;
+  const setTab = (next: TabKey) => setTabParam(next);
+  const [scope, setScope] = useUrlState("scope", "active");
+  const [grain, setGrain] = useUrlState("grain", "week");
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
 
   useEffect(() => {
     pushRecent("authorization-utilization-hour-based");
   }, []);
 
+  const today = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+
+  const scopedAuths = useMemo(() => {
+    if (scope === "all") return data.authCurrent;
+    // Active = coverage window still open today (missing end date counts as open).
+    return data.authCurrent.filter((r) => {
+      const end = endDateOf(r);
+      return !end || end >= today;
+    });
+  }, [data.authCurrent, scope, today]);
+
   const auths = useMemo(
     () =>
-      applyFilters(data.authCurrent, filters, (r) => ({
+      applyFilters(scopedAuths, filters, (r) => ({
         date: startDateOf(r),
         endDate: endDateOf(r),
         state: r.state,
@@ -161,24 +185,43 @@ export default function AuthorizationUtilizationPage() {
         payor: r.payor,
         code: r.service_codes ?? r.procedure_code,
       })),
-    [data.authCurrent, filters],
+    [scopedAuths, filters],
   );
 
   const billing = useMemo(
     () =>
-      applyFilters(data.billing, filters, (r) => ({
+      applyFilters(data.billingFacts, filters, (r) => ({
         date: r.date_of_service,
         state: r.state,
         client: r.client_name,
         payor: r.payor,
         code: r.procedure_code,
       })),
-    [data.billing, filters],
+    [data.billingFacts, filters],
   );
 
   const result = useMemo(
-    () => computeProratedUtilization(auths, billing, { from: filters.from, to: filters.to }),
-    [auths, billing, filters.from, filters.to],
+    () =>
+      computeProratedUtilization(auths, billing, {
+        from: filters.from,
+        to: filters.to,
+        today,
+      }),
+    [auths, billing, filters.from, filters.to, today],
+  );
+
+  const trend = useMemo(
+    () =>
+      computeAuthorizationTrend(
+        auths.map((a) => ({
+          startDate: startDateOf(a),
+          endDate: endDateOf(a),
+          authorizedHours: Number(a.authorized_hours ?? 0),
+        })),
+        billing.map((b) => ({ date: b.date_of_service, hours: b.hours })),
+        { from: filters.from, to: filters.to, grain: grain as TrendGrain },
+      ),
+    [auths, billing, filters.from, filters.to, grain],
   );
 
   const filterFields = useMemo<FilterFieldConfig[]>(
@@ -186,7 +229,7 @@ export default function AuthorizationUtilizationPage() {
       FILTER_FIELDS.map((key) => ({
         key,
         label: FILTER_LABELS[key] ?? key,
-        options: optionsFor(data.authCurrent, (r: CrAuthorizationCurrentRow) =>
+        options: optionsFor(scopedAuths, (r: CrAuthorizationCurrentRow) =>
           key === "client"
             ? r.client_name
             : key === "code"
@@ -194,7 +237,7 @@ export default function AuthorizationUtilizationPage() {
               : (r[key as "state" | "payor"] as string | null),
         ),
       })),
-    [data.authCurrent],
+    [scopedAuths],
   );
 
   const totals = result.totals;
@@ -492,9 +535,32 @@ export default function AuthorizationUtilizationPage() {
                 Prorated to the selected date range
               </Badge>
             )}
+            <div className="flex items-center gap-1 rounded-full border border-border/60 p-0.5">
+              {(["active", "all"] as const).map((s) => (
+                <Button
+                  key={s}
+                  variant={scope === s ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 rounded-full px-3 text-[11px]"
+                  onClick={() => setScope(s)}
+                >
+                  {s === "active" ? "Active authorizations" : "All authorizations"}
+                </Button>
+              ))}
+            </div>
             <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
               <Link to="/reports/authorization-analysis">
                 Authorization Command Center <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+              <Link to="/reports/parent-training?code=97156">
+                Parent Training · 97156 <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+              <Link to="/reports/bcba-supervision?code=97155">
+                BCBA Supervision · 97155 <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </Button>
           </div>
@@ -502,7 +568,7 @@ export default function AuthorizationUtilizationPage() {
             filters={filters}
             fields={filterFields}
             onChange={(next) => setFilters(next)}
-            onReset={() => setFilters(EMPTY_FILTERS)}
+            onReset={() => setFilters(DEFAULT_FILTERS)}
           />
         </>
       }
@@ -515,6 +581,19 @@ export default function AuthorizationUtilizationPage() {
           and as recomputed from billing sessions matched authorization-id first, then CR client id,
           then client name — so a mismatch is visible rather than hidden.
         </ReportProvenance>
+
+        {(result.allocation.ambiguous > 0 || result.allocation.unjoined > 0) && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-[11px] text-amber-700">
+            <p className="font-semibold">Billing allocation notes</p>
+            <p>
+              {fmtCount(result.allocation.exact)} sessions matched on authorization id,{" "}
+              {fmtCount(result.allocation.uniqueFallback)} matched on client, code, and date.{" "}
+              {fmtCount(result.allocation.ambiguous)} could match more than one authorization and{" "}
+              {fmtCount(result.allocation.unjoined)} matched none, so their hours are held back
+              rather than counted against every authorization for that client.
+            </p>
+          </div>
+        )}
 
         <KpiScorecards kpis={kpis} onSelect={handleKpi} />
 
@@ -534,6 +613,9 @@ export default function AuthorizationUtilizationPage() {
           <TabsList className="h-9">
             <TabsTrigger value="utilization" className="text-xs">
               Utilization
+            </TabsTrigger>
+            <TabsTrigger value="trends" className="text-xs">
+              Hour Trends
             </TabsTrigger>
             <TabsTrigger value="reconciliation" className="text-xs">
               Reconciliation
@@ -578,6 +660,48 @@ export default function AuthorizationUtilizationPage() {
               emptyLabel="No authorizations match these filters."
               onRowClick={(r) => open(`${r.client} · ${r.authorizationNumber}`, r.note, [r], `authorization-${r.authorizationNumber.toLowerCase()}`)}
             />
+          </TabsContent>
+
+          <TabsContent value="trends" className="mt-3 space-y-4">
+            <div className="flex items-center gap-1 rounded-full border border-border/60 p-0.5 w-fit">
+              {(["week", "month"] as const).map((g) => (
+                <Button
+                  key={g}
+                  variant={grain === g ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 rounded-full px-3 text-[11px]"
+                  onClick={() => setGrain(g)}
+                >
+                  {g === "week" ? "Weekly" : "Monthly"}
+                </Button>
+              ))}
+            </div>
+            {trend.points.length === 0 ? (
+              <ReportInsufficientData
+                title="No authorized or worked hours to trend"
+                detail="A trend needs authorization coverage dates and billed sessions inside the selected range. Neither is present, so no line is drawn."
+              />
+            ) : (
+              <>
+                <PrimaryChart
+                  title={`Authorized vs used hours · ${trend.grain === "week" ? "weekly" : "monthly"}`}
+                  subtitle="Both series are hours, so they share one axis — used hours as bars, authorized hours as the line."
+                  type="bar"
+                  data={trend.hours}
+                  valueLabel="Used hours"
+                  secondaryLabel="Authorized hours"
+                  height={300}
+                />
+                <PrimaryChart
+                  title="Utilization pace"
+                  subtitle="Used hours as a percentage of the hours authorized for that period — shown separately so a percentage is never read as hours."
+                  type="line"
+                  data={trend.pace.map((p) => ({ label: p.label, value: p.value ?? 0 }))}
+                  valueLabel="Utilization %"
+                  height={240}
+                />
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="reconciliation" className="mt-3">
