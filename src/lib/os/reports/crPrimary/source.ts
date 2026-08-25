@@ -156,6 +156,18 @@ export function fetchReportBillingFacts(): Promise<CrLoadResult<ReportBillingFac
   return readRpc<ReportBillingFactRow>("report_billing_facts", "billing facts");
 }
 
+/**
+ * Curated BCBA productivity targets via `report_bcba_performance_targets`.
+ * Only real target rows exist here — an absent row means "No target".
+ */
+export function fetchReportBcbaTargets(): Promise<CrLoadResult<ReportBcbaTargetRow>> {
+  return readRpc<ReportBcbaTargetRow>(
+    "report_bcba_performance_targets",
+    "BCBA performance targets",
+  );
+}
+
+
 /** Authorization-team logged workflow events (submissions, denials, PRs, pauses). */
 export function fetchAuthorizationWeeklyEvents(): Promise<
   CrLoadResult<AuthorizationWeeklyEventRow>
