@@ -175,12 +175,12 @@ export interface CancellationCenterOptions {
 }
 
 function summarize(rows: CancellationCenterRow[]) {
-  const countable = rows.filter(isCountableEvent);
-  const cancelled = countable.filter(isCancelledEventStrict);
+  const active = rows.filter(isActiveScheduleEvent);
+  const cancelled = active.filter(isCancelledEventStrict);
   return {
-    countable: countable.length,
+    activeScheduleEvents: active.length,
     cancelled: cancelled.length,
-    rate: countable.length ? pct(cancelled.length, countable.length) : null,
+    rate: active.length ? pct(cancelled.length, active.length) : null,
   };
 }
 
@@ -190,9 +190,11 @@ export function computeCancellationCenter(
 ): CancellationCenterMetrics {
   const followUpThreshold = opts.followUpThreshold ?? 2;
   const deleted = rows.filter(isDeletedEvent);
-  const countable = rows.filter(isCountableEvent);
-  const cancelled = countable.filter(isCancelledEventStrict);
-  const active = countable.filter((r) => !isCancelledEventStrict(r));
+  // Active schedule events = every nondeleted event. This is the denominator.
+  const activeSchedule = rows.filter(isActiveScheduleEvent);
+  const cancelled = activeSchedule.filter(isCancelledEventStrict);
+  const kept = activeSchedule.filter((r) => !isCancelledEventStrict(r));
+
 
   const dims = {
     reason: new Map<string, Bucket>(),
