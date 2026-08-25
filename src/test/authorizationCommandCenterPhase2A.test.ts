@@ -103,7 +103,7 @@ describe("progress reports and pauses stay separate and honest", () => {
     ]);
     expect(ops.dueRows[0].dueSource).toBe("none");
     expect(ops.dueRows[0].overdue).toBe(false);
-    expect(ops.dueRows[0].dueLabel).toBe(NO_AUTHORITATIVE_DUE);
+    expect(ops.dueRows[0].note).toBe(NO_AUTHORITATIVE_DUE);
   });
 
   it("keeps confirmed pauses apart from coverage-gap candidates", () => {
