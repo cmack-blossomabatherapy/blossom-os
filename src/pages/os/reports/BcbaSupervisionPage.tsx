@@ -45,8 +45,11 @@ import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
 import { isActiveScheduleEvent, eventDurationHours } from "@/lib/os/reports/crPrimary/scheduleTruth";
 import { CODE_DIRECT, CODE_SUPERVISION, normalizeCode } from "@/lib/os/reports/crPrimary/metrics/codes";
 import {
+  SUPERVISION_BENCHMARK_LABEL,
+  SUPERVISION_BENCHMARK_PCT,
+  SUPERVISION_PROVENANCE_NOTE,
   SUPERVISION_STATUS_LABELS,
-  SUPERVISION_TARGET_PCT,
+  SUPERVISION_VIEW_LABELS,
   computeSupervisionAnalysis,
   type SupervisionGroupRow,
   type SupervisionGrouping,
@@ -79,11 +82,17 @@ const GROUPINGS: { key: SupervisionGrouping; label: string }[] = [
 const EXPORT_COLUMNS = [
   { key: "label", label: "Group" },
   { key: "bcba", label: "Owning BCBA" },
-  { key: "directHours", label: "Direct Hrs (97153)" },
-  { key: "supervisionHours", label: "Supervision Hrs (97155)" },
-  { key: "ratioPct", label: "Supervision Ratio %" },
+  { key: "completedDirectHours", label: "Completed Direct Hrs (97153)" },
+  { key: "completedSupervisionHours", label: "Completed Supervision Hrs (97155)" },
+  { key: "scheduledDirectHours", label: "Scheduled Direct Hrs" },
+  { key: "scheduledSupervisionHours", label: "Scheduled Supervision Hrs" },
+  { key: "projectedDirectHours", label: "Projected Direct Hrs" },
+  { key: "projectedSupervisionHours", label: "Projected Supervision Hrs" },
+  { key: "directHours", label: "Active View Direct Hrs" },
+  { key: "supervisionHours", label: "Active View Supervision Hrs" },
+  { key: "ratioPct", label: "Active View Ratio %" },
   { key: "status", label: "Status" },
-  { key: "hoursToTarget", label: "Hrs To 5% Target" },
+  { key: "hoursToTarget", label: "Hrs To 5% Benchmark" },
   { key: "clients", label: "Clients" },
   { key: "rbts", label: "RBTs" },
   { key: "states", label: "States" },
@@ -94,6 +103,12 @@ function projectGroups(rows: SupervisionGroupRow[]): Record<string, unknown>[] {
   return rows.map((r) => ({
     label: r.label,
     bcba: r.bcba,
+    completedDirectHours: r.completedDirectHours,
+    completedSupervisionHours: r.completedSupervisionHours,
+    scheduledDirectHours: r.scheduledDirectHours,
+    scheduledSupervisionHours: r.scheduledSupervisionHours,
+    projectedDirectHours: r.projectedDirectHours,
+    projectedSupervisionHours: r.projectedSupervisionHours,
     directHours: r.directHours,
     supervisionHours: r.supervisionHours,
     ratioPct: r.ratioPct ?? "Cannot compute",
@@ -213,13 +228,13 @@ export default function BcbaSupervisionPage() {
     () => [
       {
         id: "ratio",
-        label: view === "projected" ? "Projected supervision ratio" : "Supervision ratio",
+        label: `${SUPERVISION_VIEW_LABELS[view]} supervision ratio`,
         value: active.ratioPct == null ? "Insufficient data" : fmtPct(active.ratioPct),
-        hint: `97155 ÷ 97153 · ${SUPERVISION_TARGET_PCT}% expected`,
+        hint: `97155 ÷ 97153 · ${SUPERVISION_BENCHMARK_PCT}% ${SUPERVISION_BENCHMARK_LABEL}`,
         tone:
           active.ratioPct == null
             ? "neutral"
-            : active.ratioPct >= SUPERVISION_TARGET_PCT
+            : active.ratioPct >= SUPERVISION_BENCHMARK_PCT
               ? "good"
               : "bad",
       },
@@ -239,7 +254,7 @@ export default function BcbaSupervisionPage() {
         id: "below",
         label: "Groups below target",
         value: fmtCount(active.groupsBelowTarget),
-        hint: "At or approaching the 5% floor",
+        hint: `At or approaching the ${SUPERVISION_BENCHMARK_PCT}% ${SUPERVISION_BENCHMARK_LABEL}`,
         tone: active.groupsBelowTarget > 0 ? "bad" : "good",
       },
       {
@@ -271,7 +286,7 @@ export default function BcbaSupervisionPage() {
   const openGroups = (title: string, rows: SupervisionGroupRow[]) =>
     setDrilldown({
       title,
-      subtitle: `${rows.length.toLocaleString("en-US")} group(s) · ${view === "projected" ? "projected" : "past"} view`,
+      subtitle: `${rows.length.toLocaleString("en-US")} group(s) · ${SUPERVISION_VIEW_LABELS[view]}`,
       rows: projectGroups(rows),
       columns: EXPORT_COLUMNS,
       exportName: "bcba-supervision",
@@ -284,12 +299,26 @@ export default function BcbaSupervisionPage() {
     ...(grouping === "bcba"
       ? []
       : [{ key: "bcba", label: "Owning BCBA", render: (r: SupervisionGroupRow) => r.bcba }]),
-    { key: "direct", label: "Direct Hrs", align: "right" as const, render: (r) => fmtHours(r.directHours) },
     {
-      key: "supervision",
-      label: "Supervision Hrs",
+      key: "completed",
+      label: "Completed Direct / Supervision",
       align: "right" as const,
-      render: (r) => fmtHours(r.supervisionHours),
+      render: (r) =>
+        `${fmtHours(r.completedDirectHours)} / ${fmtHours(r.completedSupervisionHours)}`,
+    },
+    {
+      key: "scheduled",
+      label: "Scheduled Direct / Supervision",
+      align: "right" as const,
+      render: (r) =>
+        `${fmtHours(r.scheduledDirectHours)} / ${fmtHours(r.scheduledSupervisionHours)}`,
+    },
+    {
+      key: "projected",
+      label: "Projected Direct / Supervision",
+      align: "right" as const,
+      render: (r) =>
+        `${fmtHours(r.projectedDirectHours)} / ${fmtHours(r.projectedSupervisionHours)}`,
     },
     {
       key: "ratio",
@@ -309,7 +338,7 @@ export default function BcbaSupervisionPage() {
     },
     {
       key: "gap",
-      label: "Hrs To Target",
+      label: `Hrs To ${SUPERVISION_BENCHMARK_PCT}%`,
       align: "right" as const,
       render: (r) => (r.hoursToTarget == null ? "—" : fmtHours(r.hoursToTarget)),
     },
@@ -332,7 +361,7 @@ export default function BcbaSupervisionPage() {
   return (
     <PrimaryReportShell
       title="BCBA Supervision"
-      subtitle="97155 supervision hours as a percentage of 97153 direct hours, against a 5% expectation."
+      subtitle="97155 supervision hours as a percentage of 97153 direct hours, read against Blossom's 5% operational benchmark."
       freshness={data.freshness}
       loading={data.loading || ownership.isLoading}
       empty={data.empty}
@@ -363,16 +392,18 @@ export default function BcbaSupervisionPage() {
       }
     >
       <ReportProvenance>
-        Past hours come from billed CentralReach sessions. Projected hours add every session still on
-        the calendar that has not been cancelled — a scheduled session is never counted as delivered.
-        Ownership matches the BCBA Productivity report.
+        {SUPERVISION_VIEW_LABELS.past} uses completed, nonvoid, nondeleted billed 97153/97155.{" "}
+        {SUPERVISION_VIEW_LABELS.projected} adds every future active, nondeleted, noncancelled
+        scheduled session — a scheduled session is never counted as delivered. The{" "}
+        {SUPERVISION_BENCHMARK_PCT}% figure is the {SUPERVISION_BENCHMARK_LABEL}. Ownership matches
+        the BCBA Productivity report. {SUPERVISION_PROVENANCE_NOTE}
       </ReportProvenance>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs value={view} onValueChange={setViewParam}>
           <TabsList>
-            <TabsTrigger value="past">Past</TabsTrigger>
-            <TabsTrigger value="projected">Projected</TabsTrigger>
+            <TabsTrigger value="past">{SUPERVISION_VIEW_LABELS.past}</TabsTrigger>
+            <TabsTrigger value="projected">{SUPERVISION_VIEW_LABELS.projected}</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="flex items-center gap-1.5">
@@ -395,7 +426,7 @@ export default function BcbaSupervisionPage() {
         onSelect={(id) =>
           openGroups(
             id === "below"
-              ? "Groups below the 5% supervision target"
+              ? `Groups below the ${SUPERVISION_BENCHMARK_PCT}% ${SUPERVISION_BENCHMARK_LABEL}`
               : id === "insufficient"
                 ? "Groups with no direct hours"
                 : "Supervision groups",
