@@ -891,8 +891,11 @@ export default function BcbaPerformancePage() {
         and pause facts are attributed to the owner at each record's own relevant date (coverage end
         date, due date, or event date). An authorization lapse is counted once per client with no
         current coverage today — never once per historical authorization row — and only authorizations
-        classified as current (active or expiring) create a deadline. Progress-report deadlines come
-        only from a real recorded due date; resolved work is never overdue. Coverage-gap candidates
+        classified as current (active or expiring) create a deadline. Progress-report readiness comes
+        from the shared progress-report engine used across the reports — never a second local rule —
+        and only an unresolved record with a real recorded due date can be overdue or count toward the
+        14-day window. Every measurable dimension's status and reason is shown, and the overall status
+        is the worst measurable dimension. Coverage-gap candidates
         are never reported as a confirmed service pause: only a logged pause event is.
         {providerFilterActive ? (
           <>

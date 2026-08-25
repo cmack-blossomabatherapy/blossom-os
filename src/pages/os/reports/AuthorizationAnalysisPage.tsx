@@ -900,7 +900,9 @@ export default function AuthorizationCommandCenterPage() {
           submission, approval, denial, progress report, reassessment, or pause is never inferred
           from an authorization start date. Missing, malformed, or reversed timestamps read
           "{NOT_DOCUMENTED}" rather than zero, while a genuine same-day turnaround is 0 days.
-          Resolved work stays visible for history but never counts as pending or overdue, and a
+          Workflow records are never pre-filtered by a single fallback date, so an approval or denial
+          inside the range still counts when its submission happened earlier; the open queues are a
+          current backlog and the range never hides them. Resolved work stays visible for history but never counts as pending or overdue, and a
           denial with an open appeal or next-action requirement stays unresolved. Renewal readiness
           and coverage-gap candidates are always something to confirm, never a confirmed pause.
         </ReportProvenance>
