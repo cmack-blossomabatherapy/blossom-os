@@ -56,7 +56,8 @@ export interface CancellationGroupRow {
   name: string;
   cancellations: number;
   cancelledHours: number;
-  countableEvents: number;
+  /** Nondeleted events in this group — the rate denominator. */
+  activeScheduleEvents: number;
   cancellationRate: number | null;
   clients: number;
   share: number;
@@ -70,7 +71,7 @@ export interface CancellationFollowUpRow {
   provider: string;
   cancellations: number;
   cancelledHours: number;
-  countableEvents: number;
+  activeScheduleEvents: number;
   cancellationRate: number | null;
   weeksAffected: number;
   lastCancellation: string | null;
@@ -80,18 +81,43 @@ export interface CancellationFollowUpRow {
   reason: string;
 }
 
+/**
+ * One cancelled source event, with everything staff need to act on it without
+ * leaving the report. This is the queue operators asked for — the client-level
+ * summary above it answers "who is a pattern", this answers "what do I chase".
+ */
+export interface CancellationFollowUpEventRow {
+  key: string;
+  eventDate: string | null;
+  client: string;
+  provider: string;
+  cancelledHours: number;
+  reason: string;
+  /** Documented or not — drives the "needs documentation" action. */
+  reasonDocumented: boolean;
+  /** Whether CentralReach converted this event to a timesheet. */
+  conversionState: string;
+  state: string;
+  payor: string;
+  /** Human-readable service/billing code for the event. */
+  code: string;
+  followUpStatus: "Needs documentation" | "Repeat cancellation" | "Logged";
+  action: string;
+}
+
 export interface CancellationCenterMetrics {
   /** Rows loaded, before deletion filtering. */
   loadedEvents: number;
   deletedEvents: number;
-  /** Denominator: everything except deleted rows. */
-  countableEvents: number;
-  activeEvents: number;
+  /** Denominator: every nondeleted event, cancelled ones included. */
+  activeScheduleEvents: number;
+  /** Active schedule events minus cancellations. */
+  keptEvents: number;
   cancelledEvents: number;
   noShowEvents: number;
   cancellationRate: number | null;
   cancelledHours: number;
-  activeHours: number;
+  keptHours: number;
   affectedClients: number;
   affectedProviders: number;
   documentedReasons: number;
@@ -108,6 +134,8 @@ export interface CancellationCenterMetrics {
   byPayor: CancellationGroupRow[];
   byCode: CancellationGroupRow[];
   followUps: CancellationFollowUpRow[];
+  /** Event-level follow-up queue (one row per cancelled event). */
+  followUpEvents: CancellationFollowUpEventRow[];
   /** Prior-period comparison, only when a comparison set is supplied. */
   comparison: {
     previousCancellations: number;
@@ -116,6 +144,7 @@ export interface CancellationCenterMetrics {
     countDelta: number;
   } | null;
 }
+
 
 interface Bucket {
   cancellations: number;
