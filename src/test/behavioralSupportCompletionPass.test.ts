@@ -79,7 +79,7 @@ describe("Behavioral Support completion pass", () => {
     expect(ids).toContain("bcba-productivity-report-v3");
     expect(ids).toContain("cancellation-command-center");
     expect(ids).toContain("bcba-supervision");
-    expect(ids).toHaveLength(8);
+    expect(ids).toHaveLength(9);
   });
 
   it("Behavioral Support Supabase migration includes all six workflow tables", () => {

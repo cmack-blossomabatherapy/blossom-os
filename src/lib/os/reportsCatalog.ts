@@ -256,6 +256,31 @@ export const REPORTS: ReportDef[] = [
     tags: ["97153", "97155", "Supervision", "Operational Benchmark"],
     drilldownPath: "/reports/bcba-supervision",
   },
+  {
+    id: "commit-to-submit-compliance",
+    title: "Commit to Submit Compliance",
+    description:
+      "Documentation timeliness from date of service to documentation, with coaching, review, notice, dispute and exception history. Seven days or fewer counts as on time; lag alone is never a formal violation.",
+    category: "qa",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "QA / Compliance",
+    lastUpdated: "Live",
+    popularity: 93,
+    featured: true,
+    aiInsight:
+      "See where documentation is running late, and what coaching has already happened before any formal step.",
+    kpiPreviews: [
+      { label: "On time %", value: "Live", trend: "up" },
+      { label: "Late rows", value: "Live", trend: "down" },
+      { label: "Open disputes", value: "Live", trend: "down" },
+    ],
+    sparkline: [55, 58, 62, 60, 66, 70, 72, 76, 80],
+    tags: ["Documentation", "Timeliness", "Commit to Submit"],
+    drilldownPath: "/reports/commit-to-submit-compliance",
+  },
+
+
 
 
   // Leadership
@@ -365,7 +390,7 @@ export const REPORTS: ReportDef[] = [
 /**
  * Canonical Reports page catalog — identical for EVERY OS role.
  *
- * /reports surfaces exactly 17 cards: these 8 primary/shared reports plus the
+ * /reports surfaces exactly 18 cards: these 9 primary/shared reports plus the
  * 9 department dashboards. Legacy REPORTS entries stay in the array for
  * cross-linking/compatibility but are never surfaced on /reports.
  */
@@ -378,6 +403,7 @@ export const PRIMARY_REPORT_IDS = [
   "bcba-supervision",
   "bcba-performance",
   "progress-reports",
+  "commit-to-submit-compliance",
 ] as const;
 
 export function visibleReportsForRole(_role?: OSRole): ReportDef[] {

@@ -104,7 +104,7 @@ describe("Business Development — Completion Pass", () => {
     const ids = visibleReportsForRole("business_development").map((r) => r.id);
     expect(ids).toContain("bcba-productivity-report-v3");
     expect(ids).toContain("cancellation-command-center");
-    expect(ids).toHaveLength(8);
+    expect(ids).toHaveLength(9);
   });
 
   it("16. ROLE_AI_SUMMARY.business_development exists", () => {

@@ -82,6 +82,7 @@ import CrAuthorizationAnalysisPage from "./pages/os/reports/AuthorizationAnalysi
 import CrAuthorizationUtilizationPage from "./pages/os/reports/AuthorizationUtilizationPage";
 import CrBcbaSupervisionPage from "./pages/os/reports/BcbaSupervisionPage";
 import CrParentTrainingPage from "./pages/os/reports/ParentTrainingPage";
+import CrCommitToSubmitCompliancePage from "./pages/os/reports/CommitToSubmitCompliancePage";
 import CrBcbaPerformancePage from "./pages/os/reports/BcbaPerformancePage";
 
 import HrPayrollCommandCenter from "./pages/os/reports/HrPayrollCommandCenter";
@@ -1089,6 +1090,7 @@ const App = () => (
                   <Route path="/reports/authorization-analysis" element={<ReportRoleGuard reportId="authorization-analysis"><CrAuthorizationAnalysisPage /></ReportRoleGuard>} />
                   <Route path="/reports/authorization-utilization-hour-based" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><CrAuthorizationUtilizationPage /></ReportRoleGuard>} />
                   <Route path="/reports/parent-training" element={<ReportRoleGuard reportId="parent-training"><CrParentTrainingPage /></ReportRoleGuard>} />
+                  <Route path="/reports/commit-to-submit-compliance" element={<ReportRoleGuard reportId="commit-to-submit-compliance"><CrCommitToSubmitCompliancePage /></ReportRoleGuard>} />
                   <Route path="/reports/bcba-supervision" element={<ReportRoleGuard reportId="bcba-supervision"><CrBcbaSupervisionPage /></ReportRoleGuard>} />
                   <Route path="/reports/authorization-utilization-hour-based-legacy" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
                   <Route path="/reports/bcba-supervision-legacy" element={<ReportRoleGuard reportId="bcba-supervision"><QaSupervisionPtDashboard /></ReportRoleGuard>} />

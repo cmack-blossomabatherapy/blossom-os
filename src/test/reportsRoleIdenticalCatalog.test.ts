@@ -33,26 +33,26 @@ function idsFor(role: string) {
 describe("/reports catalog is identical for every OS role", () => {
   const baseline = idsFor("super_admin");
 
-  it("baseline is exactly the 8 primary + 9 department dashboards", () => {
+  it("baseline is exactly the 9 primary + 9 department dashboards", () => {
     expect(visibleReportsForRole("super_admin").map((r) => r.id)).toEqual(PRIMARY);
     expect(visibleDepartmentDashboardsForRole("super_admin").map((r) => r.id).sort())
       .toEqual([...DEPARTMENTS].sort());
-    expect(baseline).toHaveLength(17);
+    expect(baseline).toHaveLength(18);
   });
 
   for (const r of OS_ROLES) {
-    it(`${r.id} sees the identical 17-card catalog with no duplicates`, () => {
+    it(`${r.id} sees the identical 18-card catalog with no duplicates`, () => {
       const ids = idsFor(r.id);
       expect(ids).toEqual(baseline);
-      expect(ids).toHaveLength(17);
-      expect(new Set(ids).size).toBe(17);
+      expect(ids).toHaveLength(18);
+      expect(new Set(ids).size).toBe(18);
       for (const id of PRIMARY) expect(ids).toContain(id);
       for (const id of DEPARTMENTS) expect(ids).toContain(id);
     });
   }
 
   it("no role sees a legacy catalog of 81 / 85 reports", () => {
-    for (const r of OS_ROLES) expect(idsFor(r.id).length).toBe(17);
+    for (const r of OS_ROLES) expect(idsFor(r.id).length).toBe(18);
   });
 
   it("every visible card routes to a mounted page, never /coming-soon", () => {
