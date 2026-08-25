@@ -70,16 +70,23 @@ export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
   // Timesheet / documentation export. MUST be checked before the generic
   // billing detector: it shares DateOfService/ProcedureCode/TimeWorkedInHours
   // but is documentation status only and never a billing fact.
+  // Narrow evidence: timesheet-only session window columns PLUS a
+  // timesheet-only signature column. The full billing export also carries
+  // IsLocked/IsVoid/Tasks/TasksCompleted (and billing-only fields such as
+  // AmountOwed/Claims/Exported/SignedByProvider), so those alone are not proof.
+  const billingOnly = hasAny(set, [
+    "AmountOwed",
+    "Amount Owed",
+    "Claims",
+    "Exported",
+    "SignedByProvider",
+    "SignedByClient",
+  ]);
   if (
-    hasAny(set, ["TimeWorkedInHours", "Time Worked In Hours", "TimeWorkedInMins"]) &&
-    hasAny(set, [
-      "ClientSignature",
-      "ProviderSignature",
-      "IsLocked",
-      "IsVoid",
-      "TasksCompleted",
-      "Tasks",
-    ])
+    !billingOnly &&
+    hasAny(set, ["DateTimeFrom", "Date Time From"]) &&
+    hasAny(set, ["DateTimeTo", "Date Time To"]) &&
+    hasAny(set, ["ClientSignature", "Client Signature", "ProviderSignature", "Provider Signature"])
   ) {
     return {
       kind: "timesheet",
@@ -88,6 +95,7 @@ export function detectCentralReachUpload(headers: string[]): CRUploadDetection {
       targets: ["Documentation status (Commit to Submit readiness)"],
     };
   }
+
 
   // Authorization utilization export — hour-based utilization by week.
   if (
