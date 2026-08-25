@@ -14,7 +14,7 @@
  * "Incentive progress" is a separate tab that reports only the recorded target,
  * actual, and forecast — it never invents an eligible/not-eligible gate.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PrimaryReportShell } from "@/components/reports/crPrimary/PrimaryReportShell";
 import { KpiScorecards } from "@/components/reports/crPrimary/KpiScorecards";
 import { PrimaryChart } from "@/components/reports/crPrimary/PrimaryChart";
@@ -54,6 +54,26 @@ import {
   daysBetween,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
 import { isProgressReportAction } from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
+import { inDayRange } from "@/lib/os/reports/dateKey";
+
+/**
+ * A progress-report action only counts as overdue when nothing records it as
+ * finished. Any recorded completion/approval/closure — a status word or an
+ * approved date — takes it out of the overdue count.
+ */
+const RESOLVED_STATUS_RE = /(complete|completed|approved|closed|resolved)/i;
+function isActionResolved(action: {
+  status?: string | null;
+  workflow_stage?: string | null;
+  next_action?: string | null;
+  approved_date?: string | null;
+}): boolean {
+  if (action.approved_date) return true;
+  return [action.status, action.workflow_stage, action.next_action].some(
+    (v) => v && RESOLVED_STATUS_RE.test(String(v)),
+  );
+}
+
 import { classifyLifecycleEvent } from "@/lib/os/reports/crPrimary/metrics/authorizationLifecycle";
 import { computeParentTrainingAnalysis } from "@/lib/os/reports/crPrimary/metrics/parentTrainingV2";
 import {
@@ -65,7 +85,10 @@ import {
   SUPERVISION_BENCHMARK_PCT,
   computeBcbaPerformanceAnalysis,
   priorEqualWindow,
+  resolveIncentiveFigures,
   resolveTargetHours,
+  selectApplicableTargets,
+
   windowElapsedProportion,
   type BcbaPerformanceInput,
   type BcbaPerformanceRow,
@@ -223,6 +246,82 @@ export default function BcbaPerformancePage() {
       index?.resolve({ clientCrId: s.clientCrId, clientName: s.clientName, date: s.date }).bcba ?? null;
   }, [ownership.data]);
 
+  /**
+   * Filters must reach every source, not just billing. Auth current/action/event
+   * rows and target rows all carry state/client/payor, so a state filter can
+   * never leave unfiltered auth-only clients or readiness facts in the result.
+   * These sources carry no rendering provider, so a provider filter can only be
+   * honoured by constraining them to clients proven in the filtered billing set.
+   */
+  const providerFilterActive = Boolean((filters.provider ?? "").trim());
+  const eqLower = (a: string | null | undefined, b: string | null | undefined) =>
+    String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+
+  const filteredBillingClientKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of billing) {
+      if (r.is_void || r.deleted) continue;
+      const crId = String(r.client_cr_id ?? "").trim().toLowerCase();
+      if (crId) set.add(`cr:${crId}`);
+      const name = String(r.client_name ?? "").trim().toLowerCase();
+      if (name) set.add(`nm:${name}`);
+    }
+    return set;
+  }, [billing]);
+
+  const clientProvenInBilling = useCallback(
+    (clientCrId: string | null | undefined, clientName: string | null | undefined) => {
+      const crId = String(clientCrId ?? "").trim().toLowerCase();
+      if (crId && filteredBillingClientKeys.has(`cr:${crId}`)) return true;
+      const name = String(clientName ?? "").trim().toLowerCase();
+      return Boolean(name && filteredBillingClientKeys.has(`nm:${name}`));
+    },
+    [filteredBillingClientKeys],
+  );
+
+  const matchesNonDateFilters = useCallback(
+    (row: {
+      state?: string | null;
+      client_name?: string | null;
+      client_cr_id?: string | null;
+      payor?: string | null;
+    }) => {
+      if (filters.state && !eqLower(row.state, filters.state)) return false;
+      if (filters.client && !eqLower(row.client_name, filters.client)) return false;
+      if (filters.payor && !eqLower(row.payor, filters.payor)) return false;
+      // Provider-less sources are constrained to the filtered billing clients.
+      if (providerFilterActive && !clientProvenInBilling(row.client_cr_id, row.client_name)) {
+        return false;
+      }
+      return true;
+    },
+    [filters.state, filters.client, filters.payor, providerFilterActive, clientProvenInBilling],
+  );
+
+  const authCurrent = useMemo(
+    () => data.authCurrent.filter((a) => matchesNonDateFilters(a)),
+    [data.authCurrent, matchesNonDateFilters],
+  );
+  const authActions = useMemo(
+    () => data.authActions.filter((a) => matchesNonDateFilters(a)),
+    [data.authActions, matchesNonDateFilters],
+  );
+  const authEvents = useMemo(
+    () =>
+      data.authEvents.filter(
+        (e) =>
+          matchesNonDateFilters(e) &&
+          // Only pauses recorded inside the selected window count.
+          inDayRange(e.event_date, window.from, window.to),
+      ),
+    [data.authEvents, matchesNonDateFilters, window],
+  );
+  const bcbaTargets = useMemo(
+    () =>
+      data.bcbaTargets.filter((t) => !filters.state || eqLower(t.state, filters.state)),
+    [data.bcbaTargets, filters.state],
+  );
+
   const analysis = useMemo(() => {
     interface Acc {
       owned: number;
@@ -237,8 +336,6 @@ export default function BcbaPerformancePage() {
     }
     const acc = new Map<string, Acc>();
     const priorHours = new Map<string, number>();
-    // Owner per client *at the date of service* — never a current-billing map.
-    const clientOwners = new Map<string, Set<string>>();
 
     const ensure = (bcba: string): Acc => {
       if (!acc.has(bcba)) {
@@ -263,8 +360,6 @@ export default function BcbaPerformancePage() {
       const owner =
         resolveOwner({ clientName: client, clientCrId: r.client_cr_id, date: r.date_of_service }) ??
         "Unassigned";
-      if (!clientOwners.has(client.toLowerCase())) clientOwners.set(client.toLowerCase(), new Set());
-      clientOwners.get(client.toLowerCase())!.add(owner);
       const a = ensure(owner);
       const code = normalizeCode(r.procedure_code);
       const hours = hoursOf(r.hours);
@@ -301,68 +396,99 @@ export default function BcbaPerformancePage() {
       priorHours.set(owner, (priorHours.get(owner) ?? 0) + hoursOf(r.hours));
     }
 
-    const ownersOf = (client: string): string[] => [
-      ...(clientOwners.get(client.trim().toLowerCase()) ?? []),
-    ];
+    /**
+     * Ownership for every readiness record is resolved independently at that
+     * record's own relevant date through the canonical V3 adapter, so mid-month
+     * ownership changes are preserved. A current-billing owner map would have
+     * attributed a March lapse to whoever bills the client today.
+     */
+    const ownerAt = (
+      clientName: string | null | undefined,
+      clientCrId: string | null | undefined,
+      date: string | null | undefined,
+    ): { owner: string | null; fallbackDate: boolean } => {
+      const applicable = date ? String(date).slice(0, 10) : null;
+      const owner = resolveOwner({
+        clientName,
+        clientCrId,
+        date: applicable ?? window.to,
+      });
+      return { owner, fallbackDate: !applicable };
+    };
 
     // Authorization readiness: real coverage end dates only.
     const lapses = new Map<string, number>();
     const nearestDeadline = new Map<string, { days: number; basis: string }>();
     const measurable = new Set<string>();
-    for (const auth of data.authCurrent) {
+    for (const auth of authCurrent) {
       const client = String(auth.client_name ?? "").trim();
       if (!client) continue;
       const end = endDateOf(auth);
       if (!end) continue;
+      const { owner, fallbackDate } = ownerAt(client, auth.client_cr_id, end);
+      if (!owner) continue;
+      measurable.add(owner);
       const days = daysBetween(today, end);
-      for (const owner of ownersOf(client)) {
-        measurable.add(owner);
-        if (days < 0) lapses.set(owner, (lapses.get(owner) ?? 0) + 1);
-        else {
-          const prev = nearestDeadline.get(owner);
-          if (!prev || days < prev.days) {
-            nearestDeadline.set(owner, {
-              days,
-              basis: `${client} authorization ends ${end}`,
-            });
-          }
+      const suffix = fallbackDate ? " (ownership resolved at window end — fallback)" : "";
+      if (days < 0) lapses.set(owner, (lapses.get(owner) ?? 0) + 1);
+      else {
+        const prev = nearestDeadline.get(owner);
+        if (!prev || days < prev.days) {
+          nearestDeadline.set(owner, {
+            days,
+            basis: `${client} authorization ends ${end}${suffix}`,
+          });
         }
       }
     }
 
     // Progress reports: true PR records with a real due date.
     const prOverdue = new Map<string, number>();
-    for (const action of data.authActions) {
+    for (const action of authActions) {
       if (!isProgressReportAction(action)) continue;
       const client = String(action.client_name ?? "").trim();
       if (!client) continue;
       const due = action.next_action_due_date
         ? String(action.next_action_due_date).slice(0, 10)
         : null;
-      for (const owner of ownersOf(client)) {
-        measurable.add(owner);
-        if (due && due < today) prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
-        else if (due) {
-          const days = daysBetween(today, due);
-          const prev = nearestDeadline.get(owner);
-          if (!prev || days < prev.days) {
-            nearestDeadline.set(owner, { days, basis: `${client} progress report due ${due}` });
-          }
+      // Ownership date: the due date, else the recorded lifecycle date.
+      const recorded =
+        action.submitted_date ??
+        action.approved_date ??
+        action.denied_date ??
+        action.received_date ??
+        action.updated_at ??
+        null;
+      const { owner, fallbackDate } = ownerAt(client, action.client_cr_id, due ?? recorded);
+      if (!owner) continue;
+      measurable.add(owner);
+      const suffix = fallbackDate ? " (ownership resolved at window end — fallback)" : "";
+      // Only a real due date in the past, with no completion recorded, is overdue.
+      if (due && due < today && !isActionResolved(action)) {
+        prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
+      } else if (due && due >= today) {
+        const days = daysBetween(today, due);
+        const prev = nearestDeadline.get(owner);
+        if (!prev || days < prev.days) {
+          nearestDeadline.set(owner, {
+            days,
+            basis: `${client} progress report due ${due}${suffix}`,
+          });
         }
       }
     }
 
     // Confirmed pauses only — a logged pause event, never an inferred gap.
     const pauses = new Map<string, number>();
-    for (const e of data.authEvents) {
+    for (const e of authEvents) {
       const { action } = classifyLifecycleEvent(e.event_type, e.lifecycle_kind ?? e.auth_type);
       if (action !== "paused") continue;
       const client = String(e.client_name ?? "").trim();
       if (!client) continue;
-      for (const owner of ownersOf(client)) {
-        measurable.add(owner);
-        pauses.set(owner, (pauses.get(owner) ?? 0) + 1);
-      }
+      const { owner } = ownerAt(client, e.client_cr_id, e.event_date);
+      if (!owner) continue;
+      measurable.add(owner);
+      pauses.set(owner, (pauses.get(owner) ?? 0) + 1);
     }
 
     // Parent-training cadence uses the source-driven client target model.
@@ -380,7 +506,7 @@ export default function BcbaPerformancePage() {
           state: r.state,
         })),
       scheduled: [],
-      authorizations: data.authCurrent.map((a) => ({
+      authorizations: authCurrent.map((a) => ({
         clientName: a.client_name,
         clientCrId: a.client_cr_id,
         payor: a.payor,
@@ -406,35 +532,33 @@ export default function BcbaPerformancePage() {
       if (!c.belowTarget) ptAtPace.set(c.bcba, (ptAtPace.get(c.bcba) ?? 0) + 1);
     }
 
-    const incentiveByBcba = new Map<
-      string,
-      { actual: number | null; target: number | null; forecast: number | null }
-    >();
-    for (const t of data.bcbaTargets) {
+    /**
+     * Population = union of current-window owners, prior-window owners, BCBAs
+     * with an applicable target row, and owners resolved for readiness records.
+     * A BCBA with a target or prior hours but no current hours stays visible.
+     */
+    const population = new Set<string>([...acc.keys(), ...priorHours.keys(), ...measurable]);
+    for (const t of selectApplicableTargets(bcbaTargets, window)) {
       const name = String(t.bcba_name ?? "").trim();
-      if (!name) continue;
-      // Recorded incentive fields only — no derivation from billing.
-      incentiveByBcba.set(name, {
-        actual: t.mtd_actual_hours ?? null,
-        target: t.mtd_target_hours ?? null,
-        forecast: t.forecast_hours ?? null,
-      });
+      if (name) population.add(name);
     }
+    for (const name of ptWithTarget.keys()) population.add(name);
 
-    const inputs: BcbaPerformanceInput[] = [...acc.entries()].map(([bcba, a]) => {
-      const incentive = incentiveByBcba.get(bcba);
+    const inputs: BcbaPerformanceInput[] = [...population].map((bcba) => {
+      const a = acc.get(bcba);
       const deadline = nearestDeadline.get(bcba);
+      const incentive = resolveIncentiveFigures(bcbaTargets, bcba, window);
       return {
         bcba,
-        states: [...a.states].sort(),
-        clients: a.clients.size,
-        rbts: a.rbts.size,
-        currentHours: Math.round(a.owned * 10) / 10,
+        states: a ? [...a.states].sort() : [],
+        clients: a?.clients.size ?? 0,
+        rbts: a?.rbts.size ?? 0,
+        currentHours: Math.round((a?.owned ?? 0) * 10) / 10,
         priorHours: Math.round((priorHours.get(bcba) ?? 0) * 10) / 10,
-        targetHours: resolveTargetHours(data.bcbaTargets, bcba, window),
+        targetHours: resolveTargetHours(bcbaTargets, bcba, window),
         elapsedProportion: elapsed,
-        directHours: Math.round(a.direct * 10) / 10,
-        supervisionHours: Math.round(a.supervision * 10) / 10,
+        directHours: Math.round((a?.direct ?? 0) * 10) / 10,
+        supervisionHours: Math.round((a?.supervision ?? 0) * 10) / 10,
         ptClientsWithTarget: ptWithTarget.get(bcba) ?? 0,
         ptClientsAtPace: ptAtPace.get(bcba) ?? 0,
         readinessMeasurable: measurable.has(bcba),
@@ -443,12 +567,12 @@ export default function BcbaPerformancePage() {
         authLapses: lapses.get(bcba) ?? 0,
         overdueProgressReports: prOverdue.get(bcba) ?? 0,
         confirmedPauses: pauses.get(bcba) ?? 0,
-        documentedBillingRows: a.documentedRows,
-        lateBillingRows: a.lateRows,
-        missingCreationRows: a.missingCreation,
-        incentiveActualHours: incentive?.actual ?? null,
-        incentiveTargetHours: incentive?.target ?? null,
-        incentiveForecastHours: incentive?.forecast ?? null,
+        documentedBillingRows: a?.documentedRows ?? 0,
+        lateBillingRows: a?.lateRows ?? 0,
+        missingCreationRows: a?.missingCreation ?? 0,
+        incentiveActualHours: incentive.actualHours,
+        incentiveTargetHours: incentive.targetHours,
+        incentiveForecastHours: incentive.forecastHours,
       };
     });
 
@@ -456,15 +580,16 @@ export default function BcbaPerformancePage() {
   }, [
     billing,
     priorBilling,
-    data.authCurrent,
-    data.authActions,
-    data.authEvents,
-    data.bcbaTargets,
+    authCurrent,
+    authActions,
+    authEvents,
+    bcbaTargets,
     resolveOwner,
     window,
     elapsed,
     today,
   ]);
+
 
   const filterFields = useMemo<FilterFieldConfig[]>(
     () =>
@@ -689,8 +814,19 @@ export default function BcbaPerformancePage() {
         {SUPERVISION_BENCHMARK_PCT}% {SUPERVISION_BENCHMARK_LABEL}. Documentation timeliness is a{" "}
         {DOCUMENTATION_PROXY_LABEL} — date of service to billing creation, late beyond{" "}
         {DOCUMENTATION_LATE_DAYS} calendar days — and is not a formal Commit to Submit finding.
-        Fewer than three measurable dimensions reads Insufficient Data.
+        Fewer than three measurable dimensions reads Insufficient Data. Authorization, progress-report,
+        and pause facts are attributed to the owner at each record's own relevant date (coverage end
+        date, due date, or event date).
+        {providerFilterActive ? (
+          <>
+            {" "}
+            <strong>Provider filter limitation:</strong> authorization, progress-report, and pause
+            records carry no rendering provider, so while a provider filter is active they are shown
+            only for clients proven in the filtered billing rows.
+          </>
+        ) : null}
       </ReportProvenance>
+
 
       <Tabs value={tab} onValueChange={setTabParam}>
         <TabsList>

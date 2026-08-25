@@ -238,16 +238,45 @@ export function windowElapsedProportion(window: DateWindow, today = localIsoDate
 // Target selection
 // ---------------------------------------------------------------------------
 
+/**
+ * Shape of a row from `report_bcba_performance_targets()`. The RPC reports
+ * `mtd_target_hours` / `mtd_actual_hours` / `forecast_hours`; reading a
+ * non-existent `target_hours` turned every real target into "No target", so the
+ * MTD fields are authoritative here. The legacy aliases are still accepted so
+ * older fixtures and any alternate snapshot source keep working.
+ */
 export interface PerformanceTargetRow {
   bcba_name?: string | null;
   state?: string | null;
   period_start?: string | null;
   period_end?: string | null;
   period_label?: string | null;
+  mtd_target_hours?: number | null;
+  mtd_actual_hours?: number | null;
+  forecast_hours?: number | null;
+  /** Compatibility aliases only — never the primary contract. */
   target_hours?: number | null;
   actual_hours?: number | null;
-  forecast_hours?: number | null;
   updated_at?: string | null;
+}
+
+const numOrNull = (v: unknown): number | null => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** MTD target hours from the real RPC contract, with a legacy alias fallback. */
+export function targetHoursOf(row: PerformanceTargetRow): number | null {
+  return numOrNull(row.mtd_target_hours) ?? numOrNull(row.target_hours);
+}
+
+/** MTD actual hours from the real RPC contract, with a legacy alias fallback. */
+export function actualHoursOf(row: PerformanceTargetRow): number | null {
+  return numOrNull(row.mtd_actual_hours) ?? numOrNull(row.actual_hours);
+}
+
+export function forecastHoursOf(row: PerformanceTargetRow): number | null {
+  return numOrNull(row.forecast_hours);
 }
 
 /**
@@ -277,21 +306,52 @@ export function selectApplicableTargets(
   return [...latest.values()];
 }
 
+/** The latest applicable target rows for one BCBA in the selected window. */
+export function selectBcbaTargets(
+  rows: PerformanceTargetRow[],
+  bcba: string,
+  window: DateWindow,
+): PerformanceTargetRow[] {
+  return selectApplicableTargets(rows, window).filter(
+    (r) => String(r.bcba_name ?? "").trim().toLowerCase() === bcba.trim().toLowerCase(),
+  );
+}
+
 /** Sum of the latest applicable target rows for one BCBA. Null when none. */
 export function resolveTargetHours(
   rows: PerformanceTargetRow[],
   bcba: string,
   window: DateWindow,
 ): number | null {
-  const applicable = selectApplicableTargets(rows, window).filter(
-    (r) => String(r.bcba_name ?? "").trim().toLowerCase() === bcba.trim().toLowerCase(),
-  );
-  const values = applicable
-    .map((r) => Number(r.target_hours))
-    .filter((n) => Number.isFinite(n) && n > 0);
+  const values = selectBcbaTargets(rows, bcba, window)
+    .map((r) => targetHoursOf(r))
+    .filter((n): n is number => n != null && n > 0);
   if (!values.length) return null;
   return round1(values.reduce((s, v) => s + v, 0));
 }
+
+/**
+ * Incentive target/actual/forecast for one BCBA, summed over the *same*
+ * selected/latest snapshot set as the productivity target — never whichever row
+ * happened to be last in an unfiltered array, and never an unrelated period.
+ */
+export function resolveIncentiveFigures(
+  rows: PerformanceTargetRow[],
+  bcba: string,
+  window: DateWindow,
+): { targetHours: number | null; actualHours: number | null; forecastHours: number | null } {
+  const applicable = selectBcbaTargets(rows, bcba, window);
+  const sum = (pick: (r: PerformanceTargetRow) => number | null): number | null => {
+    const values = applicable.map(pick).filter((n): n is number => n != null);
+    return values.length ? round1(values.reduce((s, v) => s + v, 0)) : null;
+  };
+  return {
+    targetHours: sum(targetHoursOf),
+    actualHours: sum(actualHoursOf),
+    forecastHours: sum(forecastHoursOf),
+  };
+}
+
 
 // ---------------------------------------------------------------------------
 // Dimensions

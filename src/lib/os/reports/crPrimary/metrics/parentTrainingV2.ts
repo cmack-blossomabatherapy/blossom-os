@@ -113,6 +113,30 @@ export interface PtAuthorizationInput {
   isActive?: boolean | null;
 }
 
+/**
+ * Pure date-scope rule for a parent-training target authorization.
+ *
+ * A target may only come from a 97156 authorization that the source has not
+ * marked inactive and whose coverage overlaps the applicable scope — the
+ * selected window when one is given, otherwise today. A future authorization
+ * (starts after the scope) and an expired one (ended before the scope) can
+ * never set the current target.
+ */
+export function isAuthTargetInScope(
+  auth: Pick<PtAuthorizationInput, "startDate" | "endDate" | "isActive">,
+  scope: { from?: string | null; to?: string | null },
+  today: string,
+): boolean {
+  if (auth.isActive === false) return false;
+  const start = auth.startDate ? String(auth.startDate).slice(0, 10) : null;
+  const end = auth.endDate ? String(auth.endDate).slice(0, 10) : null;
+  const from = scope.from ? String(scope.from).slice(0, 10) : today;
+  const to = scope.to ? String(scope.to).slice(0, 10) : today;
+  if (end && end < from) return false; // expired before the scope
+  if (start && start > to) return false; // starts after the scope
+  return true;
+}
+
 /** Prefer documented authorized monthly hours; fall back to a clear cadence. */
 export function resolveClientTarget(auths: PtAuthorizationInput[]): PtClientTarget {
   let best: PtClientTarget = NO_TARGET;
@@ -136,6 +160,7 @@ export function resolveClientTarget(auths: PtAuthorizationInput[]): PtClientTarg
   return best;
 }
 
+
 export interface PtSessionInput {
   date: string | null | undefined;
   procedureCode: string | null | undefined;
@@ -156,9 +181,11 @@ export interface PtEventRow {
   key: string;
   bucket: PtBucket;
   date: string | null;
+  clientKey: string;
   client: string;
   clientCrId: string;
   bcba: string;
+
   provider: string;
   payor: string;
   state: string;
@@ -182,9 +209,12 @@ export const PT_STATUS_LABELS: Record<PtClientStatus, string> = {
 };
 
 export interface PtClientRow {
+  /** Stable identity key: CR client id when known, else normalized name. */
+  clientKey: string;
   client: string;
   clientCrId: string;
   bcba: string;
+
   payor: string;
   state: string;
   completedHours: number;
@@ -320,9 +350,28 @@ export function computeParentTrainingAnalysis({
 
   const clients = new Map<string, PtClientRow>();
   const events: PtEventRow[] = [];
-  const trend = new Map<string, number>();
 
-  // Targets are grouped per client from the authorization snapshot.
+  /**
+   * Client identity. A CR client id always wins, so two different clients that
+   * happen to share a name are never merged. A row with no id falls back to the
+   * normalized name, and only adopts an id-bearing identity when exactly one
+   * id-bearing client carries that name (an unambiguous alias).
+   */
+  const idKeyByName = new Map<string, string | null>();
+  const identityKey = (crId: string | null | undefined, client: string): string => {
+    const id = String(crId ?? "").trim();
+    const name = client.toLowerCase();
+    if (id) {
+      const key = `cr:${id}`;
+      const prev = idKeyByName.get(name);
+      if (prev === undefined) idKeyByName.set(name, key);
+      else if (prev !== key) idKeyByName.set(name, null); // ambiguous name
+      return key;
+    }
+    return idKeyByName.get(name) || `nm:${name}`;
+  };
+
+  // Targets are grouped per client identity from the authorization snapshot.
   const authsByClient = new Map<string, PtAuthorizationInput[]>();
   for (const a of authorizations) {
     const name = String(a.clientName ?? "").trim();
@@ -330,8 +379,10 @@ export function computeParentTrainingAnalysis({
     const code = `${a.procedureCode ?? ""} ${a.serviceCodes ?? ""}`;
     // 97156 authorizations only; an unrelated code can never set a PT target.
     if (!/97156/.test(code)) continue;
-    if (a.isActive === false) continue;
-    const key = name.toLowerCase();
+    // Only an in-scope authorization may set a target: never inactive, never
+    // future, never already expired relative to the applicable scope.
+    if (!isAuthTargetInScope(a, { from: window?.from, to: window?.to }, today)) continue;
+    const key = identityKey(a.clientCrId, name);
     if (!authsByClient.has(key)) authsByClient.set(key, []);
     authsByClient.get(key)!.push(a);
   }
@@ -344,7 +395,7 @@ export function computeParentTrainingAnalysis({
     date?: string | null;
   }): PtClientRow => {
     const client = String(input.client ?? "").trim() || "Unknown client";
-    const key = client.toLowerCase();
+    const key = identityKey(input.clientCrId, client);
     if (!clients.has(key)) {
       const target = resolveClientTarget(authsByClient.get(key) ?? []);
       const owner = resolveOwner({
@@ -353,6 +404,7 @@ export function computeParentTrainingAnalysis({
         date: input.date,
       });
       clients.set(key, {
+        clientKey: key,
         client,
         clientCrId: String(input.clientCrId ?? "").trim(),
         bcba: owner ?? "Unassigned",
@@ -387,6 +439,7 @@ export function computeParentTrainingAnalysis({
     return row;
   };
 
+
   for (const c of activeClients) ensure(c);
   // Auth-only clients must appear even with no billing or schedule activity.
   for (const [, list] of authsByClient) {
@@ -414,11 +467,11 @@ export function computeParentTrainingAnalysis({
     row.completedHours = round1(row.completedHours + hours);
     row.completedSessions += 1;
     if (date && (!row.lastCompleted || date > row.lastCompleted)) row.lastCompleted = date;
-    if (date) trend.set(date.slice(0, 7), round1((trend.get(date.slice(0, 7)) ?? 0) + hours));
     events.push({
       key: `billed-${i}`,
       bucket: "completed",
       date,
+      clientKey: row.clientKey,
       client: row.client,
       clientCrId: row.clientCrId,
       bcba: row.bcba,
@@ -445,7 +498,7 @@ export function computeParentTrainingAnalysis({
     const hours = hoursOf(s.hours);
     if (s.cancelled) {
       row.cancelledSessions += 1;
-      const key = row.client.toLowerCase();
+      const key = row.clientKey;
       const prev = lastCancelled.get(key) ?? null;
       if (date && (!prev || date > prev)) lastCancelled.set(key, date);
       else if (!lastCancelled.has(key)) lastCancelled.set(key, date);
@@ -453,6 +506,7 @@ export function computeParentTrainingAnalysis({
         key: `sched-${i}`,
         bucket: "cancelled",
         date,
+        clientKey: row.clientKey,
         client: row.client,
         clientCrId: row.clientCrId,
         bcba: row.bcba,
@@ -474,6 +528,7 @@ export function computeParentTrainingAnalysis({
         key: `sched-${i}`,
         bucket: "upcoming",
         date,
+        clientKey: row.clientKey,
         client: row.client,
         clientCrId: row.clientCrId,
         bcba: row.bcba,
@@ -500,7 +555,7 @@ export function computeParentTrainingAnalysis({
     r.noUpcoming = r.upcomingSessions === 0;
     r.belowTarget = r.hasTarget && r.pacePct != null && r.pacePct < 100;
 
-    const cancelledOn = lastCancelled.get(r.client.toLowerCase()) ?? null;
+    const cancelledOn = lastCancelled.get(r.clientKey) ?? null;
     r.needsReschedule =
       r.cancelledSessions > 0 &&
       (r.nextScheduled == null || (cancelledOn != null && r.nextScheduled <= cancelledOn));
@@ -527,6 +582,19 @@ export function computeParentTrainingAnalysis({
     return r;
   });
 
+  return summarizeParentTraining(clientRows, events, months);
+}
+
+/**
+ * Build the full analysis (KPIs, groups, queues, trend) from a set of client
+ * and event rows. Selecting a BCBA rescopes every number through this function,
+ * so no KPI, chart, queue, or export can keep describing the unfiltered set.
+ */
+export function summarizeParentTraining(
+  clientRows: PtClientRow[],
+  events: PtEventRow[],
+  months: number,
+): ParentTrainingAnalysis {
   const group = (pick: (r: PtClientRow) => string): PtGroupRow[] => {
     const map = new Map<string, PtGroupRow>();
     for (const r of clientRows) {
@@ -561,6 +629,13 @@ export function computeParentTrainingAnalysis({
   const withCompleted = clientRows.filter((r) => r.completedSessions > 0).length;
   const denom = completedSessions + cancelledSessions;
 
+  const trend = new Map<string, number>();
+  for (const e of events) {
+    if (e.bucket !== "completed" || !e.date) continue;
+    const month = e.date.slice(0, 7);
+    trend.set(month, round1((trend.get(month) ?? 0) + e.hours));
+  }
+
   return {
     completedHours: round1(clientRows.reduce((s, r) => s + r.completedHours, 0)),
     completedSessions,
@@ -578,8 +653,8 @@ export function computeParentTrainingAnalysis({
     byBcba: group((r) => r.bcba),
     byPayor: group((r) => r.payor),
     byState: group((r) => r.state),
-    clientRows: clientRows.sort((a, b) => b.completedHours - a.completedHours),
-    events: events.sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? ""))),
+    clientRows: [...clientRows].sort((a, b) => b.completedHours - a.completedHours),
+    events: [...events].sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? ""))),
     noUpcomingQueue: clientRows.filter((r) => r.noUpcoming),
     belowTargetQueue: clientRows.filter((r) => r.belowTarget),
     needsRescheduleQueue: clientRows.filter((r) => r.needsReschedule),
@@ -588,4 +663,16 @@ export function computeParentTrainingAnalysis({
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([label, value]) => ({ label, value })),
   };
+}
+
+/** Rescope a computed analysis to one BCBA — every KPI, queue, and group. */
+export function scopeParentTrainingToBcba(
+  analysis: ParentTrainingAnalysis,
+  bcba: string,
+): ParentTrainingAnalysis {
+  if (!bcba) return analysis;
+  const clientRows = analysis.clientRows.filter((r) => r.bcba === bcba);
+  const keys = new Set(clientRows.map((r) => r.clientKey));
+  const events = analysis.events.filter((e) => keys.has(e.clientKey));
+  return summarizeParentTraining(clientRows, events, analysis.monthsInWindow);
 }

@@ -50,6 +50,7 @@ import {
   NO_TARGET_LABEL,
   PT_STATUS_LABELS,
   computeParentTrainingAnalysis,
+  scopeParentTrainingToBcba,
   type PtClientRow,
   type PtEventRow,
 } from "@/lib/os/reports/crPrimary/metrics/parentTrainingV2";
@@ -195,15 +196,51 @@ export default function ParentTrainingPage() {
     [data.scheduleCurrent, filters],
   );
 
+  /**
+   * Clients proven by the provider-filtered activity. When a provider filter is
+   * on, auth-only clients are constrained to this set: an authorization row has
+   * no provider, so keeping all of them would leak unfiltered clients into a
+   * provider-scoped view.
+   */
+  const provenClientKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const r of billing) {
+      const id = String(r.client_cr_id ?? "").trim();
+      if (id) keys.add(`cr:${id}`);
+      const name = String(r.client_name ?? "").trim().toLowerCase();
+      if (name) keys.add(`nm:${name}`);
+    }
+    for (const r of schedule) {
+      const name = String(r.client_name ?? "").trim().toLowerCase();
+      if (name) keys.add(`nm:${name}`);
+    }
+    return keys;
+  }, [billing, schedule]);
+
+  const providerFiltered = filters.provider.length > 0;
+
   const authRows = useMemo(
     () =>
       data.authCurrent.filter((a) => {
         if (filters.state.length && !filters.state.includes(String(a.state ?? ""))) return false;
         if (filters.payor.length && !filters.payor.includes(String(a.payor ?? ""))) return false;
         if (filters.client.length && !filters.client.includes(String(a.client_name ?? ""))) return false;
+        if (providerFiltered) {
+          const id = String(a.client_cr_id ?? "").trim();
+          const name = String(a.client_name ?? "").trim().toLowerCase();
+          if (!(id && provenClientKeys.has(`cr:${id}`)) && !(name && provenClientKeys.has(`nm:${name}`)))
+            return false;
+        }
         return true;
       }),
-    [data.authCurrent, filters.state, filters.payor, filters.client],
+    [
+      data.authCurrent,
+      filters.state,
+      filters.payor,
+      filters.client,
+      providerFiltered,
+      provenClientKeys,
+    ],
   );
 
   const resolveOwner = useMemo(() => {
@@ -212,7 +249,8 @@ export default function ParentTrainingPage() {
       index?.resolve({ clientCrId: s.clientCrId, clientName: s.clientName, date: s.date }).bcba ?? null;
   }, [ownership.data]);
 
-  const analysis = useMemo(() => {
+
+  const fullAnalysis = useMemo(() => {
     const billed = billing
       .filter((r) => !r.is_void && !r.deleted)
       .map((r: ReportBillingFactRow) => ({
@@ -288,18 +326,22 @@ export default function ParentTrainingPage() {
   }, [billing, schedule, authRows, resolveOwner, filters.from, filters.to, today]);
 
   const bcbaOptions = useMemo(
-    () => [...new Set(analysis.clientRows.map((r) => r.bcba))].sort((a, b) => a.localeCompare(b)),
-    [analysis.clientRows],
+    () => [...new Set(fullAnalysis.clientRows.map((r) => r.bcba))].sort((a, b) => a.localeCompare(b)),
+    [fullAnalysis.clientRows],
   );
 
-  const clientRows = useMemo(
-    () => (bcbaParam ? analysis.clientRows.filter((r) => r.bcba === bcbaParam) : analysis.clientRows),
-    [analysis.clientRows, bcbaParam],
+  /**
+   * The BCBA selection rescopes the entire analysis — KPIs, chart, queues,
+   * drilldowns, and exports — not only the visible table rows.
+   */
+  const analysis = useMemo(
+    () => scopeParentTrainingToBcba(fullAnalysis, bcbaParam),
+    [fullAnalysis, bcbaParam],
   );
-  const eventRows = useMemo(
-    () => (bcbaParam ? analysis.events.filter((r) => r.bcba === bcbaParam) : analysis.events),
-    [analysis.events, bcbaParam],
-  );
+
+  const clientRows = analysis.clientRows;
+  const eventRows = analysis.events;
+
 
   const filterFields = useMemo<FilterFieldConfig[]>(
     () =>
@@ -480,6 +522,10 @@ export default function ParentTrainingPage() {
         billing.some((r) => normalizeCode(r.procedure_code) === CODE_PARENT_TRAINING)
           ? ""
           : "No billed 97156 hours for the selected filters — completed parent training will read zero.",
+        providerFiltered
+          ? "A provider filter is active. Authorizations carry no rendering provider, so authorization-only clients are limited to clients proven by the filtered activity."
+          : "",
+
       ].filter(Boolean)}
       onRefresh={() => {
         data.refresh();

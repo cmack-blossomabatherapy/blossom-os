@@ -404,9 +404,17 @@ export interface ProratedUtilizationTotals {
   expiringWithin60: number;
   varianceHours: number | null;
   variancePct: number | null;
+  /** Overall utilization, built ONLY from paired comparable rows. */
   utilizationPct: number | null;
+  /** Rows that have both a usable denominator and a chosen numerator. */
+  comparableAuthorizations: number;
+  /** Denominator hours from comparable rows only. */
+  comparableAuthorizedHours: number | null;
+  /** Used hours from those same comparable rows only. */
+  comparableUsedHours: number | null;
   complete: number;
   incomplete: number;
+
 }
 
 export interface ProratedUtilizationResult {
@@ -476,6 +484,11 @@ export function computeProratedUtilization(
    * that happened to have no clean allocation.
    */
   let chosenUsedTotal: number | null = null;
+  /** Paired comparable accumulators — see the pairing rule in the row loop. */
+  let comparableAuthorizedTotal: number | null = null;
+  let comparableUsedTotal: number | null = null;
+  let comparableCount = 0;
+
   let prorationApplied = false;
 
   auths.forEach((auth, index) => {
@@ -563,7 +576,19 @@ export function computeProratedUtilization(
       if (sourceUsed != null) sourceUsedTotal = (sourceUsedTotal ?? 0) + sourceUsed;
       if (recomputed != null) recomputedTotal = (recomputedTotal ?? 0) + recomputed;
       if (numerator != null) chosenUsedTotal = (chosenUsedTotal ?? 0) + numerator;
+      /**
+       * Paired comparable rows only: a row contributes to the overall
+       * percentage only when it has BOTH a usable denominator (> 0) and its own
+       * chosen numerator. A no-authorized-hours or no-coverage-dates row can
+       * therefore never add used hours to a denominator built from other rows.
+       */
+      if (denominator != null && denominator > 0 && numerator != null) {
+        comparableAuthorizedTotal = (comparableAuthorizedTotal ?? 0) + denominator;
+        comparableUsedTotal = (comparableUsedTotal ?? 0) + numerator;
+        comparableCount += 1;
+      }
     }
+
 
     rows.push({
       key: `${auth.authorization_id ?? auth.authorization_number ?? auth.id ?? "auth"}-${index}`,
@@ -614,10 +639,6 @@ export function computeProratedUtilization(
     });
   });
 
-  // Prorated totals of exactly 0 are real; only an absent prorated basis
-  // (no authorization had usable coverage dates) falls back to raw authorized.
-  const proratedDenominator =
-    dataStateCounts.no_coverage_dates === auths.length ? authorizedTotal : proratedTotal;
   const usedNumerator = chosenUsedTotal;
   const demandParts = [usedNumerator, scheduledTotal, pendingTotal].filter(
     (v): v is number => v != null,
@@ -654,13 +675,21 @@ export function computeProratedUtilization(
         varianceHours != null && sourceUsedTotal
           ? Math.round((varianceHours / sourceUsedTotal) * 1000) / 10
           : null,
+      // Paired comparable rows only — an incomplete row cannot inflate this.
       utilizationPct:
-        proratedDenominator != null && proratedDenominator > 0 && usedNumerator != null
-          ? Math.round((usedNumerator / proratedDenominator) * 1000) / 10
+        comparableAuthorizedTotal != null &&
+        comparableAuthorizedTotal > 0 &&
+        comparableUsedTotal != null
+          ? Math.round((comparableUsedTotal / comparableAuthorizedTotal) * 1000) / 10
           : null,
+      comparableAuthorizations: comparableCount,
+      comparableAuthorizedHours:
+        comparableAuthorizedTotal != null ? round1(comparableAuthorizedTotal) : null,
+      comparableUsedHours: comparableUsedTotal != null ? round1(comparableUsedTotal) : null,
       complete: dataStateCounts.ok,
       incomplete: auths.length - dataStateCounts.ok,
     },
+
     dataStateCounts,
     joinBasisCounts,
     allocation: allocation.counts,

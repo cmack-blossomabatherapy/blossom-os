@@ -159,18 +159,15 @@ function buildView(
     const supervisedProvider = String(s.supervisedProviderName ?? "").trim();
 
     // In the provider/RBT view, a 97155 row only belongs to an RBT when the
-    // source explicitly links it. Otherwise the supervision hour is left out
-    // rather than spread across a caseload it may not describe.
+    // source explicitly links it. An unlinked supervision row is discarded
+    // *before* any accumulator exists, so it can never create a pseudo row for
+    // the supervising BCBA inside the RBT table.
     let key: string;
-    let linkable = true;
     if (grouping === "bcba") key = bcba;
     else if (grouping === "client") key = client;
     else if (code === CODE_DIRECT) key = provider || "Unknown provider";
     else if (supervisedProvider) key = supervisedProvider;
-    else {
-      key = provider || "Unknown provider";
-      linkable = false;
-    }
+    else return; // unlinked 97155 in the RBT view — never fabricate the link
 
     if (!acc.has(key)) {
       acc.set(key, {
@@ -197,13 +194,13 @@ function buildView(
       return;
     }
 
-    // Supervision row.
-    if (grouping === "rbt" && !linkable) return; // never fabricate the link
+    // Supervision row — explicitly linked whenever it reaches this point.
     if (grouping === "rbt") a.supervisionLinkable = true;
     a.clients.add(client);
     if (bucket === "completed") a.completedSupervision += hours;
     else a.scheduledSupervision += hours;
   };
+
 
   for (const s of completed) ingest(s, "completed");
   for (const s of scheduled) ingest(s, "scheduled");
@@ -256,8 +253,23 @@ function buildView(
     return rank(a.status) - rank(b.status) || b.directHours - a.directHours;
   });
 
-  const direct = rows.reduce((s, r) => s + r.directHours, 0);
-  const supervision = rows.reduce((s, r) => s + r.supervisionHours, 0);
+  /**
+   * Overall totals come from the raw 97153/97155 facts, never from the grouped
+   * rows. Grouping decides how hours are *attributed*, not how many were
+   * worked, so the top-line ratio stays identical across BCBA / client / RBT
+   * groupings — and missing RBT linkage can never turn it into 0%.
+   */
+  let direct = 0;
+  let supervision = 0;
+  const tally = (list: SupervisionSessionInput[]) => {
+    for (const s of list) {
+      const code = normalizeCode(s.procedureCode);
+      if (code === CODE_DIRECT) direct += hoursOf(s.hours);
+      else if (code === CODE_SUPERVISION) supervision += hoursOf(s.hours);
+    }
+  };
+  tally(completed);
+  if (view === "projected") tally(scheduled);
 
   return {
     view,
@@ -270,6 +282,7 @@ function buildView(
     groupsInsufficientData: rows.filter((r) => r.status === "insufficient_data").length,
     rows,
   };
+
 }
 
 export interface SupervisionAnalysisInput {

@@ -206,10 +206,12 @@ describe("BCBA supervision ratio", () => {
     expect(r.ratioDeltaPct).toBe(2);
   });
 
-  it("groups by client and by RBT", () => {
+  it("groups by RBT with no pseudo row for the supervising provider", () => {
     const byRbt = computeSupervisionAnalysis({ past, projected: [], grouping: "rbt", resolveOwner });
-    expect(byRbt.past.rows.map((r) => r.label).sort()).toEqual(["Dr. Reed", "RBT 1"]);
+    // Repair C: an unlinked 97155 row no longer fabricates a "Dr. Reed" RBT row.
+    expect(byRbt.past.rows.map((r) => r.label).sort()).toEqual(["RBT 1"]);
   });
+
 });
 
 describe("parent training", () => {
