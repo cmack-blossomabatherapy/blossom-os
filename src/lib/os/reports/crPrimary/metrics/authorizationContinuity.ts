@@ -169,6 +169,75 @@ export function latestEndOf(row: ContinuityAuthRow): string | null {
   return latest;
 }
 
+export interface RowContinuityClassification {
+  continuity: ContinuityState;
+  /** Start/end of the matched pair that produced the state — never mixed. */
+  startDate: string | null;
+  endDate: string | null;
+  daysToExpiry: number | null;
+}
+
+/**
+ * Row-level continuity, classified from matched date pairs only and from the
+ * same conservative truth as `hasCurrentCoverage`, so the active/expiring
+ * counts can never disagree with client-level coverage. `is_active === false`
+ * can never be active or expiring.
+ */
+export function classifyContinuityRow(
+  row: ContinuityAuthRow,
+  today: string,
+): RowContinuityClassification {
+  const pairs = datePairs(row);
+  const inactive = row.is_active === false;
+
+  const currentPair = inactive
+    ? undefined
+    : pairs.find((p) => p.end && p.end >= today && !(p.start && p.start > today));
+
+  if (currentPair?.end) {
+    const daysToExpiry = strictDaysBetween(today, currentPair.end);
+    return {
+      continuity: daysToExpiry != null && daysToExpiry <= 60 ? "expiring" : "active",
+      startDate: currentPair.start,
+      endDate: currentPair.end,
+      daysToExpiry,
+    };
+  }
+
+  const latestEnd = latestEndOf(row);
+  if (latestEnd && latestEnd < today) {
+    const pair = pairs.find((p) => p.end === latestEnd);
+    return {
+      continuity: "expired",
+      startDate: pair?.start ?? null,
+      endDate: latestEnd,
+      daysToExpiry: strictDaysBetween(today, latestEnd),
+    };
+  }
+
+  const futurePair = pairs
+    .filter((p) => p.start && p.start > today)
+    .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""))[0];
+  if (futurePair && !inactive) {
+    return {
+      continuity: "not_started",
+      startDate: futurePair.start,
+      endDate: futurePair.end,
+      daysToExpiry: futurePair.end ? strictDaysBetween(today, futurePair.end) : null,
+    };
+  }
+
+  // Inactive rows that still overlap today, and rows with no usable pair, are a
+  // data gap — not coverage.
+  return {
+    continuity: "unknown_dates",
+    startDate: futurePair?.start ?? pairs.find((p) => p.start)?.start ?? null,
+    endDate: inactive ? latestEnd : null,
+    daysToExpiry: null,
+  };
+}
+
+
 export function computeAuthorizationContinuity(
   rows: ContinuityAuthRow[],
   today = localIsoDate(),
