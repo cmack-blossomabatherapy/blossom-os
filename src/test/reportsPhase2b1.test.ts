@@ -16,8 +16,6 @@ import {
   worstStatus,
   type BcbaPerformanceInput,
 } from "@/lib/os/reports/crPrimary/metrics/bcbaPerformanceV2";
-import { buildCanonicalOwnershipIndex } from "@/lib/os/reports/crPrimary/ownership/v3Ownership";
-import type { OwnershipResult } from "@/lib/os/bcbaProductivityV3/engine";
 
 const action = (over: Record<string, unknown> = {}) =>
   ({
