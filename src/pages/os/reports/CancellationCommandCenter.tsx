@@ -523,6 +523,71 @@ export default function CancellationCommandCenter() {
     },
   ];
 
+  const followUpEventColumns: PrimaryTableColumn<CancellationFollowUpEventRow>[] = [
+    {
+      key: "eventDate",
+      label: "Event date",
+      render: (r) => <span className="tabular-nums">{fmtDate(r.eventDate)}</span>,
+    },
+    {
+      key: "client",
+      label: "Client",
+      render: (r) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium">{r.client}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{r.provider}</p>
+        </div>
+      ),
+    },
+    {
+      key: "hours",
+      label: "Cancelled hrs",
+      align: "right",
+      render: (r) => <span className="tabular-nums">{fmtHours(r.cancelledHours)}</span>,
+    },
+    {
+      key: "reason",
+      label: "Reason",
+      render: (r) => (
+        <span className={r.reasonDocumented ? "" : "text-amber-600"}>{r.reason}</span>
+      ),
+    },
+    { key: "conversion", label: "Conversion", render: (r) => r.conversionState },
+    { key: "state", label: "State", render: (r) => r.state },
+    { key: "payor", label: "Payor", render: (r) => r.payor },
+    { key: "code", label: "Service code", render: (r) => r.code },
+    {
+      key: "followUpStatus",
+      label: "Follow-up",
+      render: (r) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium">{r.followUpStatus}</p>
+          <p className="truncate text-[10px] text-muted-foreground">{r.action}</p>
+        </div>
+      ),
+    },
+    {
+      key: "action",
+      label: "Status",
+      align: "right",
+      render: (r) => {
+        const status = followUps[followUpKey("event", r.key)] ?? "todo";
+        return (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              cycleFollowUp("event", r.key);
+            }}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${FOLLOWUP_TONE[status]}`}
+          >
+            {status}
+          </button>
+        );
+      },
+    },
+  ];
+
   const exportView = () => {
     downloadCsv(
       "cancellation-command-center",
@@ -699,6 +764,15 @@ export default function CancellationCommandCenter() {
               [{ label: "Client", value: r.client }],
             )
           }
+        />
+
+        <PrimaryTable
+          title="Cancellation follow-up queue"
+          subtitle="Every cancelled source event in the current filters, with the reason, conversion state, and the action staff should take."
+          rows={metrics.followUpEvents}
+          rowKey={(r) => r.key}
+          columns={followUpEventColumns}
+          emptyLabel="No cancelled events in this range."
         />
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as BreakdownKey)}>
