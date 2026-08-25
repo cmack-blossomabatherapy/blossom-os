@@ -121,3 +121,52 @@ describe("Phase 4B4 stays inside its boundary", () => {
     expect(allSql).toContain("Phase 4A1 audit repair (1): raw payload access lockdown");
   });
 });
+
+/**
+ * Follow-up: the initial hardening revoked an explicit privilege list from
+ * `authenticated`, which left PG17's MAINTAIN privilege in place on the four
+ * legacy views. The follow-up migration revokes ALL then re-grants SELECT so
+ * `authenticated` ends with read-only access on every curated view.
+ */
+const residualMigration = (() => {
+  const hit = files
+    .slice()
+    .reverse()
+    .find((f) => {
+      const sql = readFileSync(join(DIR, f), "utf8");
+      return (
+        sql.includes("REVOKE ALL ON public.%I FROM authenticated") &&
+        sql.includes("GRANT SELECT ON public.%I TO authenticated")
+      );
+    });
+  expect(hit, "residual authenticated-privilege migration exists").toBeTruthy();
+  return readFileSync(join(DIR, hit!), "utf8");
+})();
+
+describe("Phase 4B4 follow-up: authenticated keeps SELECT only", () => {
+  it("covers all six curated views", () => {
+    for (const view of VIEWS) expect(residualMigration).toContain(view);
+  });
+
+  it("revokes every privilege from PUBLIC, anon and authenticated, then re-grants SELECT only", () => {
+    expect(residualMigration).toContain("REVOKE ALL ON public.%I FROM PUBLIC");
+    expect(residualMigration).toContain("REVOKE ALL ON public.%I FROM anon");
+    expect(residualMigration).toContain("REVOKE ALL ON public.%I FROM authenticated");
+    expect(residualMigration).toContain("GRANT SELECT ON public.%I TO authenticated");
+    expect(residualMigration).not.toMatch(/GRANT\s+(INSERT|UPDATE|DELETE|ALL)[^\n]*TO (anon|authenticated)/i);
+  });
+
+  it("preserves service_role operation", () => {
+    expect(residualMigration).toContain("GRANT ALL ON public.%I TO service_role");
+  });
+
+  it("is catalog-guarded, additive and leaves protected surfaces alone", () => {
+    expect(residualMigration).toMatch(/FROM pg_class c/);
+    expect(residualMigration).not.toMatch(/CREATE (OR REPLACE )?(VIEW|FUNCTION)/i);
+    expect(residualMigration).not.toMatch(/ALTER (TABLE|FUNCTION)/i);
+    expect(residualMigration).not.toMatch(/\b(INSERT INTO|DELETE FROM|TRUNCATE\s+public\.)/i);
+    for (const token of ["bcbaProductivityV3", "commit_to_submit"]) {
+      expect(residualMigration).not.toContain(token);
+    }
+  });
+});
