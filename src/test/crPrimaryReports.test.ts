@@ -87,13 +87,15 @@ describe("primary report page requirements", () => {
     }
   });
 
-  it("shared shell renders the Data Hub empty state and a freshness indicator", () => {
+  it("shared shell renders a staff-facing empty state and a freshness indicator", () => {
     const shell = read("src/components/reports/crPrimary/PrimaryReportShell.tsx");
     expect(shell).toContain("data-testid=\"report-empty-state\"");
     expect(shell).toContain("data-testid=\"data-freshness\"");
-    expect(shell).toContain("/system/centralreach-data-hub");
+    // Report pages are staff surfaces for every role: no admin Data Hub CTA.
+    expect(shell).not.toContain("/system/centralreach-data-hub");
     expect(shell).not.toMatch(/type="file"/);
   });
+
 });
 
 describe("executive formatting", () => {
