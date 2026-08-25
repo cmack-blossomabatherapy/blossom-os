@@ -11,9 +11,12 @@ import {
   REPORTS,
   visibleReportsForRole,
 } from "@/lib/os/reportsCatalog";
-import { computeCancellationMetrics } from "@/lib/os/reports/crPrimary/metrics/cancellationCenter";
+import {
+  computeCancellationCenter,
+  type CancellationCenterRow,
+} from "@/lib/os/reports/crPrimary/metrics/cancellationCenter";
 import { summarizeDocumentationReadiness } from "@/lib/os/reports/crPrimary/c2s/documentationReadiness";
-import type { CrScheduleRow } from "@/lib/os/reports/crPrimary/types";
+import type { OSRole } from "@/lib/os/permissions";
 
 const MIGRATION = fs.readFileSync(
   path.join(
@@ -39,9 +42,9 @@ describe("report discoverability", () => {
       expect(def, id).toBeTruthy();
       expect(Array.isArray(def?.visibleTo)).toBe(true);
       expect(def?.visibleTo?.length).toBeGreaterThan(0);
-      const role = def!.visibleTo![0];
+      const role = def!.visibleTo![0] as OSRole;
       expect(visibleReportsForRole(role).map((r) => r.id)).toContain(id);
-      expect(visibleReportsForRole("rbt").map((r) => r.id)).not.toContain(id);
+      expect(visibleReportsForRole("rbt" as OSRole).map((r) => r.id)).not.toContain(id);
     }
   });
 });
@@ -110,10 +113,10 @@ describe("curated report RPC access contract", () => {
   });
 });
 
-function ev(over: Partial<CrScheduleRow>): CrScheduleRow {
+function ev(over: Partial<CancellationCenterRow>): CancellationCenterRow {
   return {
-    source_row_id: "1",
-    date_of_service: "2026-08-10",
+    id: "1",
+    event_date: "2026-08-10",
     client_name: "Client A",
     client_cr_id: "c1",
     provider_name: "Prov A",
@@ -124,22 +127,19 @@ function ev(over: Partial<CrScheduleRow>): CrScheduleRow {
     deleted: false,
     converted_to_timesheet: null,
     cancellation_reason: null,
-    ...(over as CrScheduleRow),
-  } as CrScheduleRow;
+    ...over,
+  };
 }
 
 describe("conversion metrics", () => {
   const rows = [
-    ev({ source_row_id: "a", converted_to_timesheet: true }),
-    ev({ source_row_id: "b", converted_to_timesheet: true }),
-    ev({ source_row_id: "c", converted_to_timesheet: false }),
-    ev({ source_row_id: "d", converted_to_timesheet: null }),
-    ev({ source_row_id: "e", converted_to_timesheet: false, deleted: true }),
+    ev({ id: "a", converted_to_timesheet: true }),
+    ev({ id: "b", converted_to_timesheet: true }),
+    ev({ id: "c", converted_to_timesheet: false }),
+    ev({ id: "d", converted_to_timesheet: null }),
+    ev({ id: "e", converted_to_timesheet: false, deleted: true }),
   ];
-  const metrics = computeCancellationMetrics(rows, {
-    start: "2026-08-01",
-    end: "2026-08-31",
-  } as never);
+  const metrics = computeCancellationCenter(rows);
 
   it("excludes deleted events and unknown state from the denominator", () => {
     expect(metrics.conversion.converted).toBe(2);
