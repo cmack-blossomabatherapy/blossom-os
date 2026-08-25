@@ -44,14 +44,14 @@ describe("scheduleTruth — explicit flags win", () => {
     expect(isCancelledEventStrict(row({ cancelled: false, status: "Cancelled" }))).toBe(false);
   });
 
-  it("infers from attendance, then status, then documented reason", () => {
+  it("falls back to attendance, then status, and never to reason text", () => {
     expect(cancellationTruth(row({ attendance: "No Show" })).source).toBe("attendance_text");
     expect(cancellationTruth(row({ status: "Cancelled" })).source).toBe("status_text");
-    expect(cancellationTruth(row({ cancellation_reason: "Client sick" })).source).toBe(
-      "reason_text",
-    );
+    expect(cancellationTruth(row({ cancellation_reason: "Client sick" })).source).toBe("none");
+    expect(cancellationTruth(row({ cancellation_reason: "Client sick" })).cancelled).toBe(false);
     expect(cancellationTruth(row()).cancelled).toBe(false);
   });
+
 
   it("never counts a deleted event as cancelled, active, or countable", () => {
     const deleted = row({ deleted: true, cancelled: true });
