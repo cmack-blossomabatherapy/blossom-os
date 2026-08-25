@@ -12,6 +12,7 @@ import { cleanReasonText } from "../scheduleTruth";
 import { localIsoDate } from "../reportWindow";
 import { buildClientIdentityResolver } from "./clientIdentity";
 import { finiteNumberOrNull } from "./numeric";
+import { strictDay, strictDaysBetween } from "./calendarDate";
 
 export interface ContinuityAuthRow {
   id?: string;
@@ -102,27 +103,25 @@ export interface CoverageGapRow {
   note: string;
 }
 
+/**
+ * Legacy helpers kept for compatibility. They now only ever return a real
+ * calendar date; row classification no longer relies on them, because mixing
+ * a follow-up end with an unrelated base start manufactures coverage.
+ */
 export function endDateOf(row: ContinuityAuthRow): string | null {
-  const candidate =
-    cleanReasonText(row.followup_end_date) ??
-    cleanReasonText(row.actual_end_date) ??
-    cleanReasonText(row.end_date);
-  return candidate ? candidate.slice(0, 10) : null;
+  return (
+    validDay(row.followup_end_date) ?? validDay(row.actual_end_date) ?? validDay(row.end_date)
+  );
 }
 
 export function startDateOf(row: ContinuityAuthRow): string | null {
-  const candidate =
-    cleanReasonText(row.actual_start_date) ??
-    cleanReasonText(row.start_date) ??
-    cleanReasonText(row.followup_start_date);
-  return candidate ? candidate.slice(0, 10) : null;
+  return (
+    validDay(row.actual_start_date) ?? validDay(row.start_date) ?? validDay(row.followup_start_date)
+  );
 }
 
 export function daysBetween(from: string, to: string): number | null {
-  const a = new Date(`${from}T00:00:00Z`).getTime();
-  const b = new Date(`${to}T00:00:00Z`).getTime();
-  if (Number.isNaN(a) || Number.isNaN(b)) return null;
-  return Math.round((b - a) / 86_400_000);
+  return strictDaysBetween(from, to);
 }
 
 /** Strict: a blank/boolean/invalid hour value stays missing, never zero. */
@@ -130,14 +129,12 @@ function num(v: unknown): number | null {
   return finiteNumberOrNull(v);
 }
 
-const validDay = (v: unknown): string | null => {
-  const raw = cleanReasonText(v as string | null | undefined);
-  if (!raw) return null;
-  const day = raw.slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(day) && !Number.isNaN(new Date(`${day}T00:00:00Z`).getTime())
-    ? day
-    : null;
-};
+/**
+ * Strict day read: a blank, malformed or impossible source date (2026-02-31)
+ * is not a date, so it can never create coverage or a day count.
+ */
+const validDay = (v: unknown): string | null =>
+  strictDay(cleanReasonText(v as string | null | undefined));
 
 /**
  * Matched start/end pairs only. Combining a follow-up future end date with an
@@ -172,6 +169,75 @@ export function latestEndOf(row: ContinuityAuthRow): string | null {
   return latest;
 }
 
+export interface RowContinuityClassification {
+  continuity: ContinuityState;
+  /** Start/end of the matched pair that produced the state — never mixed. */
+  startDate: string | null;
+  endDate: string | null;
+  daysToExpiry: number | null;
+}
+
+/**
+ * Row-level continuity, classified from matched date pairs only and from the
+ * same conservative truth as `hasCurrentCoverage`, so the active/expiring
+ * counts can never disagree with client-level coverage. `is_active === false`
+ * can never be active or expiring.
+ */
+export function classifyContinuityRow(
+  row: ContinuityAuthRow,
+  today: string,
+): RowContinuityClassification {
+  const pairs = datePairs(row);
+  const inactive = row.is_active === false;
+
+  const currentPair = inactive
+    ? undefined
+    : pairs.find((p) => p.end && p.end >= today && !(p.start && p.start > today));
+
+  if (currentPair?.end) {
+    const daysToExpiry = strictDaysBetween(today, currentPair.end);
+    return {
+      continuity: daysToExpiry != null && daysToExpiry <= 60 ? "expiring" : "active",
+      startDate: currentPair.start,
+      endDate: currentPair.end,
+      daysToExpiry,
+    };
+  }
+
+  const latestEnd = latestEndOf(row);
+  if (latestEnd && latestEnd < today) {
+    const pair = pairs.find((p) => p.end === latestEnd);
+    return {
+      continuity: "expired",
+      startDate: pair?.start ?? null,
+      endDate: latestEnd,
+      daysToExpiry: strictDaysBetween(today, latestEnd),
+    };
+  }
+
+  const futurePair = pairs
+    .filter((p) => p.start && p.start > today)
+    .sort((a, b) => (a.start ?? "").localeCompare(b.start ?? ""))[0];
+  if (futurePair && !inactive) {
+    return {
+      continuity: "not_started",
+      startDate: futurePair.start,
+      endDate: futurePair.end,
+      daysToExpiry: futurePair.end ? strictDaysBetween(today, futurePair.end) : null,
+    };
+  }
+
+  // Inactive rows that still overlap today, and rows with no usable pair, are a
+  // data gap — not coverage.
+  return {
+    continuity: "unknown_dates",
+    startDate: futurePair?.start ?? pairs.find((p) => p.start)?.start ?? null,
+    endDate: inactive ? latestEnd : null,
+    daysToExpiry: null,
+  };
+}
+
+
 export function computeAuthorizationContinuity(
   rows: ContinuityAuthRow[],
   today = localIsoDate(),
@@ -204,8 +270,9 @@ export function computeAuthorizationContinuity(
   >();
 
   rows.forEach((row, index) => {
-    const start = startDateOf(row);
-    const end = endDateOf(row);
+    const classification = classifyContinuityRow(row, today);
+    const start = classification.startDate;
+    const end = classification.endDate;
     const authorized = num(row.authorized_hours);
     const used = num(row.worked_hours);
     const remaining =
@@ -215,24 +282,15 @@ export function computeAuthorizationContinuity(
     if (used != null) usedHours += used;
     if (remaining != null) remainingHours += remaining;
 
-    const daysToExpiry = end ? daysBetween(today, end) : null;
-    let continuity: ContinuityState;
-    if (!end) {
-      continuity = "unknown_dates";
-      unknown += 1;
-    } else if (daysToExpiry != null && daysToExpiry < 0) {
-      continuity = "expired";
-      expired += 1;
-    } else if (start && daysBetween(today, start) != null && daysBetween(today, start)! > 0) {
-      continuity = "not_started";
-    } else if (daysToExpiry != null && daysToExpiry <= 60) {
-      continuity = "expiring";
+    const daysToExpiry = classification.daysToExpiry;
+    const continuity = classification.continuity;
+    if (continuity === "unknown_dates") unknown += 1;
+    else if (continuity === "expired") expired += 1;
+    else if (continuity === "expiring") {
       expiring += 1;
       active += 1;
-    } else {
-      continuity = "active";
-      active += 1;
-    }
+    } else if (continuity === "active") active += 1;
+
 
     const window =
       continuity === "expiring" && daysToExpiry != null
@@ -289,12 +347,17 @@ export function computeAuthorizationContinuity(
       renewal,
       note:
         continuity === "unknown_dates"
-          ? "No end date on the CentralReach snapshot — confirm coverage in CentralReach."
+          ? row.is_active === false
+            ? "Marked inactive on the CentralReach snapshot — not counted as coverage. Confirm in CentralReach."
+            : "No usable start/end pair on the CentralReach snapshot — confirm coverage in CentralReach."
           : continuity === "expired"
             ? `Coverage ended ${end}. Confirm whether a renewal was submitted.`
-            : continuity === "expiring"
-              ? `Coverage ends ${end}${daysToExpiry != null ? ` (${daysToExpiry} days)` : ""}.`
-              : "Coverage active on the latest snapshot.",
+            : continuity === "not_started"
+              ? `Coverage has not started yet${start ? ` (starts ${start})` : ""}.`
+              : continuity === "expiring"
+                ? `Coverage ends ${end}${daysToExpiry != null ? ` (${daysToExpiry} days)` : ""}.`
+                : "Coverage active on the latest snapshot.",
+
     });
   });
 
