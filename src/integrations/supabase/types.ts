@@ -34285,6 +34285,27 @@ export type Database = {
         }
         Relationships: []
       }
+      v_cr_external_record_keys: {
+        Row: {
+          external_id: string | null
+          first_seen_at: string | null
+          last_seen_at: string | null
+          type_key: Database["public"]["Enums"]["cr_sync_type_key"] | null
+        }
+        Insert: {
+          external_id?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          type_key?: Database["public"]["Enums"]["cr_sync_type_key"] | null
+        }
+        Update: {
+          external_id?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          type_key?: Database["public"]["Enums"]["cr_sync_type_key"] | null
+        }
+        Relationships: []
+      }
       v_cr_provider_mapping: {
         Row: {
           ambiguity_reason: string | null
