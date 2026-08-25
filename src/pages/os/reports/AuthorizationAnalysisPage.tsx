@@ -505,6 +505,14 @@ export default function AuthorizationCommandCenterPage() {
                 {fmtCount(lifecycle.totalEvents)} logged events
               </Badge>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setLogOpen(true)}
+            >
+              Log authorization event
+            </Button>
             <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
               <Link to="/reports/authorization-utilization-hour-based">
                 Hour-based utilization <ArrowUpRight className="h-3.5 w-3.5" />
@@ -619,6 +627,32 @@ export default function AuthorizationCommandCenterPage() {
                   />
                 </div>
                 <PrimaryTable
+                  title="Logged authorization events"
+                  subtitle="Every event behind the lifecycle numbers, with where it was logged from."
+                  rows={events.slice(0, 500).map((e, i) => {
+                    const c = classifyLifecycleEvent(e.event_type);
+                    return {
+                      key: `${e.record_id ?? i}`,
+                      eventDate: asText(e.event_date).slice(0, 10),
+                      eventType: asText(e.event_type, "Not documented"),
+                      kind: LIFECYCLE_KIND_LABELS[c.kind],
+                      action: c.action,
+                      client: asText(e.client_name, "Unknown client"),
+                      source: asText(e.source, "Not documented"),
+                    };
+                  })}
+                  rowKey={(r) => r.key}
+                  columns={[
+                    { key: "eventDate", label: "Event date", render: (r) => fmtDate(r.eventDate) },
+                    { key: "client", label: "Client", render: (r) => r.client },
+                    { key: "eventType", label: "Event type", render: (r) => r.eventType },
+                    { key: "kind", label: "Authorization kind", render: (r) => r.kind },
+                    { key: "action", label: "Outcome", render: (r) => r.action },
+                    { key: "source", label: "Source", render: (r) => r.source },
+                  ]}
+                  emptyLabel="No logged authorization events for these filters."
+                />
+                <PrimaryTable
                   title="Lifecycle by authorization kind"
                   subtitle="Initial, reauthorization, assessment, and amendment activity side by side."
                   rows={lifecycle.byKind}
@@ -668,7 +702,7 @@ export default function AuthorizationCommandCenterPage() {
                     openLifecycle(
                       `Lifecycle · ${k.label}`,
                       "Logged events for this authorization kind.",
-                      (e) => classifyLifecycleEvent(e.event_type, e.auth_type).kind === k.kind,
+                      (e) => classifyLifecycleEvent(e.event_type).kind === k.kind,
                       `authorization-lifecycle-${k.kind}`,
                     )
                   }
@@ -834,6 +868,18 @@ export default function AuthorizationCommandCenterPage() {
 
         </Tabs>
       </div>
+
+      <LogAuthEventDialog
+        open={logOpen}
+        onOpenChange={setLogOpen}
+        onSubmit={async (input) => {
+          const err = await logEvent(input);
+          if (!err) data.refresh();
+          return err;
+        }}
+        clients={filterFields.find((f) => f.key === "client")?.options ?? []}
+        payors={filterFields.find((f) => f.key === "payor")?.options ?? []}
+      />
 
       <DrilldownDrawer request={drilldown} onClose={() => setDrilldown(null)} />
     </PrimaryReportShell>
