@@ -888,8 +888,62 @@ export default function AuthorizationCommandCenterPage() {
             </div>
 
             <PrimaryTable
+              title="Turnaround averages — what is actually counted"
+              subtitle="Each average has its own denominator. A pair only counts when the event that completes it happened inside the selected range; missing, malformed and reversed dates read Not documented and are never counted as zero. A genuine same-day turnaround is 0 days."
+              rows={TIMELINE_DENOMINATOR_ROWS}
+              rowKey={(r) => r.key}
+              columns={[
+                { key: "label", label: "Measure", render: (r) => r.label },
+                {
+                  key: "average",
+                  label: "Average",
+                  align: "right",
+                  render: (r) => {
+                    const avg = r.average(timelines);
+                    return avg == null ? (
+                      <span className="text-[10px] text-muted-foreground">{NOT_DOCUMENTED}</span>
+                    ) : (
+                      <span className="tabular-nums">{avg} day(s)</span>
+                    );
+                  },
+                },
+                {
+                  key: "counted",
+                  label: "Counted (denominator)",
+                  align: "right",
+                  render: (r) => <span className="tabular-nums">{fmtCount(r.counted(timelines))}</span>,
+                },
+                {
+                  key: "outOfRange",
+                  label: "Documented, outside range",
+                  align: "right",
+                  render: (r) => (
+                    <span className="tabular-nums">{fmtCount(r.outOfRange(timelines))}</span>
+                  ),
+                },
+                {
+                  key: "notDocumented",
+                  label: NOT_DOCUMENTED,
+                  align: "right",
+                  render: (r) => (
+                    <span className="tabular-nums">{fmtCount(r.notDocumented(timelines))}</span>
+                  ),
+                },
+              ]}
+              onRowClick={(r) =>
+                setDrilldown({
+                  title: r.label,
+                  subtitle: r.drilldownSubtitle,
+                  rows: projectTimelineRows(timelines.rows),
+                  columns: TIMELINE_DRILLDOWN_COLUMNS,
+                  exportName: `authorization-${r.key}`,
+                })
+              }
+            />
+
+            <PrimaryTable
               title="Open authorization work"
-              subtitle="Pending submissions, pending decisions, overdue actions, and reassessment work. Resolved records stay visible in the drilldowns for history but never count as pending."
+              subtitle={`Pending submissions, pending decisions, overdue actions, and reassessment work. Current open work; ${OPEN_WORK_SCOPE_HINT.charAt(0).toLowerCase()}${OPEN_WORK_SCOPE_HINT.slice(1)} Resolved records stay visible in the drilldowns for history but never count as pending or overdue.`}
               rows={QUEUE_SUMMARY_ROWS.map((q) => ({
                 key: q.key,
                 label: q.label,
