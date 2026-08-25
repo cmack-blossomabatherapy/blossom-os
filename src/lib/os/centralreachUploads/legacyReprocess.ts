@@ -1,8 +1,11 @@
 /**
- * Reprocess legacy `shared_report_datasets` uploads into the normalized `cr_*`
- * tables. Needed for files that landed in the old upload path before the Data
- * Hub wrote normalized rows. Uses the same append/dedupe logic, so running it
- * twice never duplicates facts.
+ * Refresh the Scheduling + Authorization report tables from files that are
+ * ALREADY uploaded. Nothing is uploaded, deleted or mutated here: the newest
+ * ACTIVE shared dataset per report key is read in place and pushed through the
+ * same append/dedupe importer, so running it twice never duplicates facts.
+ *
+ * Billing is deliberately excluded from this safe path — `cr_billing_sessions`
+ * and BCBA Productivity V3 must never be touched by a report repair.
  */
 
 import {
@@ -13,11 +16,19 @@ import {
 } from "@/lib/os/sharedReportDatasets";
 import { importCentralReachFiles, type CrFileImportOutcome } from "./importService";
 
-const LEGACY_KEYS: SharedReportKey[] = [
-  "cancellation-scheduling",
-  "cancellation-billing",
-  "cancellation-authorization",
+/** Scheduling key used by the safe active-snapshot refresh. */
+export const SAFE_SCHEDULING_KEYS: SharedReportKey[] = ["cancellation-scheduling"];
+
+/** Authorization keys (aliases of the same export) used by the safe refresh. */
+export const SAFE_AUTHORIZATION_KEYS: SharedReportKey[] = [
   "authorization",
+  "cancellation-authorization",
+];
+
+/** Keys eligible for the safe report refresh. `cancellation-billing` is excluded. */
+export const SAFE_REPORT_REFRESH_KEYS: SharedReportKey[] = [
+  ...SAFE_SCHEDULING_KEYS,
+  ...SAFE_AUTHORIZATION_KEYS,
 ];
 
 export interface LegacyReprocessResult {
@@ -26,26 +37,70 @@ export interface LegacyReprocessResult {
   errors: string[];
 }
 
-/** Collect the distinct legacy dataset files worth reprocessing. */
-export async function listLegacyReprocessCandidates(limitPerKey = 3): Promise<SharedReportDataset[]> {
-  const all = await Promise.all(LEGACY_KEYS.map((key) => listSharedReportDatasets(key).catch(() => [])));
-  const seen = new Set<string>();
-  const out: SharedReportDataset[] = [];
-  for (const list of all) {
-    for (const dataset of list.slice(0, limitPerKey)) {
-      const dedupeKey = `${dataset.fileName}:${dataset.fileSize ?? 0}`;
-      if (seen.has(dedupeKey)) continue;
-      seen.add(dedupeKey);
-      out.push(dataset);
-    }
-  }
-  return out.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+function uploadedAtMs(dataset: SharedReportDataset): number {
+  const ms = new Date(dataset.uploadedAt).getTime();
+  return Number.isFinite(ms) ? ms : 0;
 }
 
-export async function reprocessLegacySharedDatasets(
-  options: { limitPerKey?: number; onProgress?: (fileName: string) => void } = {},
+function dedupeKeyOf(dataset: SharedReportDataset): string {
+  const name = (dataset.fileName ?? "").trim().toLowerCase();
+  const size = dataset.fileSize ?? null;
+  if (name) return `name:${name}|size:${size ?? "unknown"}`;
+  // Stable fallback when the file name is missing.
+  return `path:${dataset.storagePath ?? dataset.id}`;
+}
+
+/**
+ * Pure selector: newest ACTIVE dataset per safe key, de-duplicated across the
+ * authorization aliases, returned oldest → newest.
+ */
+export function selectActiveReportSnapshotDatasets(
+  byKey: Partial<Record<SharedReportKey, SharedReportDataset[]>>,
+): SharedReportDataset[] {
+  const picked: SharedReportDataset[] = [];
+  for (const key of SAFE_REPORT_REFRESH_KEYS) {
+    const active = (byKey[key] ?? [])
+      .filter((d) => d && d.isActive === true && d.reportKey === key)
+      .sort((a, b) => uploadedAtMs(b) - uploadedAtMs(a));
+    const newest = active[0];
+    if (newest) picked.push(newest);
+  }
+
+  const seen = new Set<string>();
+  const unique: SharedReportDataset[] = [];
+  for (const dataset of picked) {
+    const dedupeKey = dedupeKeyOf(dataset);
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    unique.push(dataset);
+  }
+
+  return unique.sort(
+    (a, b) => uploadedAtMs(a) - uploadedAtMs(b) || a.fileName.localeCompare(b.fileName),
+  );
+}
+
+/** Read the active scheduling + authorization datasets already stored. */
+export async function listActiveReportSnapshotDatasets(): Promise<SharedReportDataset[]> {
+  const lists = await Promise.all(
+    SAFE_REPORT_REFRESH_KEYS.map((key) => listSharedReportDatasets(key).catch(() => [])),
+  );
+  const byKey: Partial<Record<SharedReportKey, SharedReportDataset[]>> = {};
+  SAFE_REPORT_REFRESH_KEYS.forEach((key, i) => {
+    byKey[key] = lists[i] ?? [];
+  });
+  return selectActiveReportSnapshotDatasets(byKey);
+}
+
+/**
+ * Safe refresh: re-read the already-uploaded active Scheduling + Authorization
+ * exports and re-run them through the normalized importer. No uploads, no
+ * deletes, no billing.
+ */
+export async function refreshReportsFromExistingUploads(
+  options: { onProgress?: (fileName: string) => void } = {},
 ): Promise<LegacyReprocessResult> {
-  const candidates = await listLegacyReprocessCandidates(options.limitPerKey ?? 3);
+  const candidates = await listActiveReportSnapshotDatasets();
   const outcomes: CrFileImportOutcome[] = [];
   const errors: string[] = [];
 
@@ -61,3 +116,9 @@ export async function reprocessLegacySharedDatasets(
 
   return { datasets: candidates.length, outcomes, errors };
 }
+
+/** @deprecated Compatibility alias — delegates to the safe active-snapshot refresh. */
+export const reprocessLegacySharedDatasets = refreshReportsFromExistingUploads;
+
+/** @deprecated Compatibility alias — use `listActiveReportSnapshotDatasets`. */
+export const listLegacyReprocessCandidates = listActiveReportSnapshotDatasets;

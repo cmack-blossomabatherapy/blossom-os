@@ -37,7 +37,7 @@ import {
   crUploadPreflight, listCrSyncRuns,
   type CrSyncRunRecord, type CrUploadPreflight,
 } from "@/lib/os/centralreachUploads/syncRun";
-import { reprocessLegacySharedDatasets } from "@/lib/os/centralreachUploads/legacyReprocess";
+import { refreshReportsFromExistingUploads } from "@/lib/os/centralreachUploads/legacyReprocess";
 import {
   needsLegacyNormalization, summarizeLegacyReprocess,
   hasAutoNormalizeAttempted, markAutoNormalizeAttempted,
@@ -459,7 +459,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   async function runLegacyReprocess(options: { silent?: boolean } = {}) {
     setReprocessing(true);
     try {
-      const result = await reprocessLegacySharedDatasets();
+      const result = await refreshReportsFromExistingUploads();
       const report = summarizeLegacyReprocess(result);
       setReprocessReport(report);
       if (report.issues.length && !options.silent) {
@@ -467,7 +467,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
       }
       if (!options.silent) {
         toast.success(
-          `Normalized ${report.filesProcessed} legacy file(s) — ${report.appendedRowCount.toLocaleString()} rows appended, ${report.duplicateRowCount.toLocaleString()} duplicates skipped.`,
+          `Refreshed Scheduling & Authorization reports from ${report.filesProcessed} already-uploaded file(s) — ${report.appendedRowCount.toLocaleString()} rows added, ${report.duplicateRowCount.toLocaleString()} duplicates skipped.`,
         );
       }
       await refresh();
@@ -484,7 +484,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
   }
 
   async function handleReprocessLegacy() {
-    if (!confirm("Reprocess recent legacy uploads into the normalized report tables? Duplicates are skipped automatically.")) return;
+    if (!confirm("Refresh Scheduling and Authorization reports from the files already uploaded? Nothing new is uploaded and duplicates are skipped automatically.")) return;
     await runLegacyReprocess();
   }
 
@@ -564,7 +564,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
             </Button>
             <Button size="sm" variant="outline" disabled={reprocessing} onClick={handleReprocessLegacy}>
               <RefreshCw className={`mr-2 h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
-              {reprocessing ? "Reprocessing…" : "Reprocess legacy uploads"}
+              {reprocessing ? "Refreshing…" : "Refresh Scheduling & Authorization reports from existing uploads"}
             </Button>
             <Button size="sm" asChild variant="outline">
               <Link to="/reports">Open Reports <ExternalLink className="ml-1 h-3 w-3" /></Link>
@@ -581,8 +581,8 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
                   <div className="text-[15px] font-semibold text-amber-900">Legacy uploads need normalization</div>
                   <p className="mt-1 max-w-2xl text-[12.5px] text-amber-900/80">
                     {legacyDatasetCount.toLocaleString()} file(s) uploaded before the normalized importer went live are
-                    stored, but none of them are powering reports yet. Normalize them now to populate the CentralReach
-                    report tables. Duplicate rows are skipped automatically.
+                    stored, but none of them are powering reports yet. Refresh the Scheduling and Authorization reports
+                    from those already-uploaded files. Nothing new is uploaded and duplicate rows are skipped.
                   </p>
                 </div>
               </div>
@@ -592,7 +592,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
                 data-testid="normalize-existing-uploads"
               >
                 <RefreshCw className={`mr-2 h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
-                {reprocessing ? "Normalizing…" : "Normalize existing uploads"}
+                {reprocessing ? "Refreshing…" : "Refresh reports from existing uploads"}
               </Button>
             </div>
           </Card>
@@ -954,7 +954,7 @@ export default function CentralReachUploads({ embedded = false }: { embedded?: b
               <tbody>
                 {crBatches.length === 0 ? (
                   <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
-                    No normalized imports yet. Drop a CentralReach export above, or reprocess legacy uploads.
+                    No normalized imports yet. Drop a CentralReach export above, or refresh reports from existing uploads.
                   </td></tr>
                 ) : crBatches.map((b) => (
                   <tr key={b.id} className="border-t border-border/50">
