@@ -65,6 +65,15 @@ export function resolveActiveScope(
         reason: `Marked active by the source, but coverage has not started yet (starts ${start}).`,
       };
     }
+    // A known end date in the past also loses: a stale `is_active = true` flag
+    // cannot make an expired authorization current.
+    if (end && today > end) {
+      return {
+        active: false,
+        datesMissing: false,
+        reason: `Marked active by the source, but coverage ended ${end}.`,
+      };
+    }
     if (!start || !end) {
       return {
         active: true,
@@ -72,6 +81,7 @@ export function resolveActiveScope(
         reason: "Marked active by the source, but coverage dates are missing.",
       };
     }
+
     return { active: true, datesMissing: false, reason: "Marked active by the source." };
   }
   if (!start && !end) {

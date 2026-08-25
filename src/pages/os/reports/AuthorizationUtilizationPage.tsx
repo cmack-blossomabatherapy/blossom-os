@@ -316,7 +316,7 @@ export default function AuthorizationUtilizationPage() {
         id: "utilization",
         label: "Utilization",
         value: fmtPct(totals.utilizationPct),
-        hint: `${hrsOrNotDocumented(totals.sourceUsedHours)} used per CentralReach · ${hrsOrNotDocumented(totals.recomputedUsedHours)} recomputed from billing`,
+        hint: `${fmtCount(totals.comparableAuthorizations)} comparable authorization(s) with both authorized and used hours · ${hrsOrNotDocumented(totals.comparableUsedHours)} used of ${hrsOrNotDocumented(totals.comparableAuthorizedHours)} authorized`,
         tone:
           totals.utilizationPct == null
             ? ("neutral" as const)

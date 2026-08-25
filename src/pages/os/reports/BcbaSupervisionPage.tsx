@@ -228,9 +228,15 @@ export default function BcbaSupervisionPage() {
     () => [
       {
         id: "ratio",
-        label: `${SUPERVISION_VIEW_LABELS[view]} supervision ratio`,
+        label:
+          grouping === "rbt"
+            ? `${SUPERVISION_VIEW_LABELS[view]} overall operational ratio`
+            : `${SUPERVISION_VIEW_LABELS[view]} supervision ratio`,
         value: active.ratioPct == null ? "Insufficient data" : fmtPct(active.ratioPct),
-        hint: `97155 ÷ 97153 · ${SUPERVISION_BENCHMARK_PCT}% ${SUPERVISION_BENCHMARK_LABEL}`,
+        hint:
+          grouping === "rbt"
+            ? `97155 ÷ 97153 across all rows · ${SUPERVISION_BENCHMARK_PCT}% ${SUPERVISION_BENCHMARK_LABEL} · per-RBT ratios need an explicit source link`
+            : `97155 ÷ 97153 · ${SUPERVISION_BENCHMARK_PCT}% ${SUPERVISION_BENCHMARK_LABEL}`,
         tone:
           active.ratioPct == null
             ? "neutral"
@@ -238,6 +244,7 @@ export default function BcbaSupervisionPage() {
               ? "good"
               : "bad",
       },
+
       {
         id: "direct",
         label: "Direct hours (97153)",
@@ -280,7 +287,7 @@ export default function BcbaSupervisionPage() {
               : "warn",
       },
     ],
-    [active, analysis.ratioDeltaPct, view],
+    [active, analysis.ratioDeltaPct, view, grouping],
   );
 
   const openGroups = (title: string, rows: SupervisionGroupRow[]) =>
