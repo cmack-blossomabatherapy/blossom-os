@@ -329,7 +329,7 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
     }
     const identities = identitiesByTable.get(table)!;
 
-    const plan = planImportRows<T>(identities, file.rows, strategy);
+    const plan = planImportRows<T>(identities, file.rows, strategy, file.exportType);
     plan.identities.forEach((id) => identities.add(id));
 
     const descriptor: CRBatchDescriptor = {
@@ -346,8 +346,8 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
     const batchId = await store.createBatch(descriptor);
     const stamp = (row: T) => ({
       ...row,
-      row_hash: crImportRowHash(row),
-      source_row_id: crSourceRowId(row),
+      row_hash: crImportRowHash(row, file.exportType),
+      source_row_id: crSourceRowId(row, file.exportType),
       batch_id: batchId,
       last_seen_batch_id: batchId,
       last_seen_at: new Date().toISOString(),
@@ -367,7 +367,7 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
       const seen = new Set<string>();
       const sideRows: Array<Record<string, unknown> & { row_hash: string }> = [];
       for (const row of file.rows) {
-        const hash = crImportRowHash(row);
+        const hash = crImportRowHash(row, file.exportType);
         if (seen.has(hash)) continue;
         seen.add(hash);
         const mapped = options.sideRowFor(file.exportType, rawPayloadOf(row) ?? row);
@@ -375,7 +375,7 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
         sideRows.push({
           ...mapped,
           row_hash: hash,
-          source_row_id: crSourceRowId(row),
+          source_row_id: crSourceRowId(row, file.exportType),
           batch_id: batchId,
           last_seen_batch_id: batchId,
           last_seen_at: new Date().toISOString(),
@@ -390,12 +390,12 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
       const byHash = new Map<string, CrRawRowRecord>();
       for (const row of file.rows) {
         const payload = rawPayloadOf(row) ?? (row as Record<string, unknown>);
-        const hash = crImportRowHash(row);
+        const hash = crImportRowHash(row, file.exportType);
         byHash.set(hash, {
           batch_id: batchId,
           export_type: String(file.exportType),
           row_hash: hash,
-          cr_row_id: crSourceRowId(row),
+          cr_row_id: crSourceRowId(row, file.exportType),
           payload,
         });
       }
