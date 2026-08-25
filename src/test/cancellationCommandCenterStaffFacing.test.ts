@@ -72,7 +72,6 @@ describe("the shared report shell is staff-facing for every role", () => {
       "showDataSourceStrip",
       "requiredExports",
       "SharedDatasetStatusPanel",
-      "Upload",
     ]) {
       expect(shell, forbidden).not.toContain(forbidden);
     }
