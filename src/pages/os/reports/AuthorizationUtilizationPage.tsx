@@ -56,6 +56,11 @@ import {
   endDateOf,
   startDateOf,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
+import {
+  UTILIZATION_RISK_LABELS,
+  resolveActiveScope,
+  snapshotWindowMode,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationUtilizationScope";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 
 const FILTER_FIELDS = ["state", "client", "payor", "code"] as const;
@@ -168,11 +173,15 @@ export default function AuthorizationUtilizationPage() {
 
   const scopedAuths = useMemo(() => {
     if (scope === "all") return data.authCurrent;
-    // Active = coverage window still open today (missing end date counts as open).
-    return data.authCurrent.filter((r) => {
-      const end = endDateOf(r);
-      return !end || end >= today;
-    });
+    // Active never includes a future-dated authorization: it has no hours to
+    // utilize yet. An explicit inactive flag always wins over the dates.
+    return data.authCurrent.filter(
+      (r) =>
+        resolveActiveScope(
+          { is_active: r.is_active, startDate: startDateOf(r), endDate: endDateOf(r) },
+          today,
+        ).active,
+    );
   }, [data.authCurrent, scope, today]);
 
   const auths = useMemo(
@@ -206,6 +215,11 @@ export default function AuthorizationUtilizationPage() {
         from: filters.from,
         to: filters.to,
         today,
+        snapshotWindow: snapshotWindowMode(
+          { from: filters.from, to: filters.to },
+          today,
+          !filters.from && !filters.to,
+        ),
       }),
     [auths, billing, filters.from, filters.to, today],
   );
@@ -218,10 +232,14 @@ export default function AuthorizationUtilizationPage() {
           endDate: endDateOf(a),
           authorizedHours: Number(a.authorized_hours ?? 0),
         })),
-        billing.map((b) => ({ date: b.date_of_service, hours: b.hours })),
+        // Only cleanly allocated billing rows feed the trend: an ambiguous or
+        // unjoined row cannot be proven to belong to any authorization.
+        result.allocation.allocations
+          .filter((a) => a.basis === "authorization_id" || a.basis === "unique_fallback")
+          .map((a) => ({ date: a.date, hours: a.hours })),
         { from: filters.from, to: filters.to, grain: grain as TrendGrain },
       ),
-    [auths, billing, filters.from, filters.to, grain],
+    [auths, result.allocation, filters.from, filters.to, grain],
   );
 
   const filterFields = useMemo<FilterFieldConfig[]>(
