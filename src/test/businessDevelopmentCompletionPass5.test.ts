@@ -33,7 +33,7 @@ describe("Business Development — Completion Pass 5 (Reports hardening)", () =>
     for (const id of ["bcba-productivity-report-v3", "cancellation-command-center"]) {
       expect(ids).toContain(id);
     }
-    expect(ids).toHaveLength(8);
+    expect(ids).toHaveLength(9);
   });
 
   it("BD visible reports exclude HR-only, QA-only, Finance-only, Credentialing-only reports", () => {
