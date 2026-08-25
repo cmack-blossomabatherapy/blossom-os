@@ -14,7 +14,7 @@
  *    "Needs Confirmation" list — they are a question, not a pause.
  */
 import type { LifecycleEventRow } from "./authorizationLifecycle";
-import { classifyLifecycleEvent } from "./authorizationLifecycle";
+import { classifyLifecycleEvent, classifyLifecycleKind } from "./authorizationLifecycle";
 import { cleanReasonText } from "../scheduleTruth";
 
 export interface AuthorizationActionRow {
@@ -146,7 +146,9 @@ export function computeProgressReportOps(
     });
   }
 
-  const dueRows: ProgressReportDueRow[] = actions.map((a, i) => {
+  // Only true progress-report records enter the due queue.
+  const prActions = actions.filter(isProgressReportAction);
+  const dueRows: ProgressReportDueRow[] = prActions.map((a, i) => {
     const nextDue = String(a.next_action_due_date ?? "").slice(0, 10) || null;
     const appealDue = String(a.appeal_due_date ?? "").slice(0, 10) || null;
     const dueDate = nextDue ?? appealDue;
