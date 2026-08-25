@@ -13,10 +13,21 @@ const page = read("src/pages/os/reports/CancellationCommandCenter.tsx");
 const shell = read("src/components/reports/crPrimary/PrimaryReportShell.tsx");
 
 describe("Cancellation Command Center is Data Hub backed", () => {
-  it("loads schedule facts through the shared primary-report loader", () => {
-    expect(page).toMatch(/useCrPrimaryReport\(\["schedule"\]\)/);
-    expect(page).toContain("computeCancellationMetrics");
+  it("loads the curated scheduling truth view through the shared loader", () => {
+    expect(page).toMatch(/useCrPrimaryReport\(\["scheduleCurrent"\]\)/);
+    expect(page).toContain("computeCancellationCenter");
   });
+
+  it("reports undocumented cancellation reasons instead of bucketing them as Other", () => {
+    expect(page).toContain("NOT_DOCUMENTED");
+    expect(page).toMatch(/Undocumented reasons/);
+  });
+
+  it("shows a plain-language provenance line and no revenue estimates", () => {
+    expect(page).toContain("ReportProvenance");
+    expect(page).not.toMatch(/revenue at risk|estimatedRevenue|\$\{?fmtCurrency/i);
+  });
+
 
   it("uses the shared staff-facing report chrome", () => {
     for (const piece of [

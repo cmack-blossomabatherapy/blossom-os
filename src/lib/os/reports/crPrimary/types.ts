@@ -33,6 +33,92 @@ export interface CrScheduleEventRow {
   payor: string | null;
 }
 
+/**
+ * Phase 1 curated scheduling view (`v_cr_schedule_current`): one row per
+ * CentralReach event, carrying the explicit cancellation / deletion truth
+ * columns. Staff-facing scheduling reports read this, not the raw table.
+ */
+export interface CrScheduleCurrentRow {
+  id: string;
+  event_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  service_code: string | null;
+  procedure_code: string | null;
+  billing_code: string | null;
+  billing_code_name: string | null;
+  scheduled_hours: number | null;
+  client_name: string | null;
+  provider_name: string | null;
+  status: string | null;
+  attendance: string | null;
+  cancelled: boolean | null;
+  deleted: boolean | null;
+  converted_to_timesheet: boolean | null;
+  cancellation_reason: string | null;
+  cancelled_by: string | null;
+  state: string | null;
+  location: string | null;
+  payor: string | null;
+  billing_creation_date: string | null;
+  last_seen_at: string | null;
+}
+
+/**
+ * Phase 1 curated authorization snapshot (`v_cr_authorization_current`): the
+ * latest state of every authorization, including the month / range hour
+ * variants CentralReach reports.
+ */
+export interface CrAuthorizationCurrentRow {
+  id: string;
+  authorization_id: string | null;
+  authorization_number: string | null;
+  followup_authorization_number: string | null;
+  client_name: string | null;
+  client_cr_id: string | null;
+  payor: string | null;
+  state: string | null;
+  procedure_code: string | null;
+  service_codes: string | null;
+  frequency: string | null;
+  manager: string | null;
+  implementer: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  actual_start_date: string | null;
+  actual_end_date: string | null;
+  followup_start_date: string | null;
+  followup_end_date: string | null;
+  is_active: boolean | null;
+  status: string | null;
+  authorized_hours: number | null;
+  worked_hours: number | null;
+  remaining_hours: number | null;
+  authorized_hours_month: number | null;
+  worked_hours_month: number | null;
+  utilization_percent_all: number | null;
+  utilization_percent_month: number | null;
+  last_seen_at: string | null;
+}
+
+/**
+ * Curated authorization lifecycle event from the `report_authorization_events`
+ * SECURITY DEFINER RPC. No PHI beyond the client name, no financial fields.
+ */
+export interface ReportAuthorizationEventRow {
+  record_id: string;
+  source: string | null;
+  event_type: string;
+  event_date: string | null;
+  client_name: string | null;
+  client_cr_id: string | null;
+  authorization_number: string | null;
+  payor: string | null;
+  state: string | null;
+  reason: string | null;
+  created_at: string | null;
+}
+
 export interface CrAuthorizationRow {
   id: string;
   batch_id: string | null;
