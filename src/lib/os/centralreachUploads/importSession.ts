@@ -159,6 +159,7 @@ export function planImportRows<T extends Record<string, unknown>>(
   existingIdentities: Iterable<string>,
   rows: T[],
   strategy: CrImportStrategy = "append_fact",
+  kind?: CRUploadKind,
 ): CrImportPlan<T> {
   const existing = new Set<string>(existingIdentities);
   const insertByIdentity = new Map<string, T>();
@@ -167,7 +168,8 @@ export function planImportRows<T extends Record<string, unknown>>(
   let unchanged = 0;
 
   for (const row of rows ?? []) {
-    const identity = crImportRowIdentity(row);
+    const identity = crImportRowIdentity(row, kind);
+
     if (strategy === "append_fact") {
       if (existing.has(identity) || insertByIdentity.has(identity)) {
         duplicates.push(row);
