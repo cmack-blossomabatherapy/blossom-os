@@ -295,24 +295,26 @@ export default function AuthorizationCommandCenterPage() {
   );
 
   /**
-   * Current coverage is a **current snapshot**. Provider/client/state/payor and
-   * service-code filters apply to it, but the selected lifecycle date range does
-   * NOT — narrowing a snapshot by an event window would hide live coverage.
+   * Every non-date filter (state, client, payor, service code, status) with the
+   * selected range stripped out. Used for the two things that are a *current*
+   * picture rather than dated activity: the current authorization snapshot and
+   * the open workflow backlog. Narrowing either by an event window would hide
+   * live coverage and live open work.
    */
-  const snapshotFilters = useMemo(
+  const nonDateFilters = useMemo(
     () => ({ ...filters, from: "", to: "" }),
     [filters],
   );
 
   const auths = useMemo(
     () =>
-      applyFilters(data.authCurrent, snapshotFilters, (r) => ({
+      applyFilters(data.authCurrent, nonDateFilters, (r) => ({
         state: r.state,
         client: r.client_name,
         payor: r.payor,
         code: r.service_codes ?? r.procedure_code,
       })),
-    [data.authCurrent, snapshotFilters],
+    [data.authCurrent, nonDateFilters],
   );
 
   const events = useMemo(
@@ -339,14 +341,14 @@ export default function AuthorizationCommandCenterPage() {
    */
   const actions = useMemo(
     () =>
-      applyFilters(data.authActions, snapshotFilters, (r) => ({
+      applyFilters(data.authActions, nonDateFilters, (r) => ({
         state: r.state,
         client: r.client_name,
         payor: r.payor,
         code: r.service_code,
         status: r.status,
       })),
-    [data.authActions, snapshotFilters],
+    [data.authActions, nonDateFilters],
   );
 
   const progressReports = useMemo(
