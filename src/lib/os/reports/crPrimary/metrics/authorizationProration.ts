@@ -342,7 +342,14 @@ export interface ProratedUtilizationRow {
   code: string;
   startDate: string | null;
   endDate: string | null;
+  /** Authorized hours for the FULL authorization range — the proration base. */
   authorizedHours: number | null;
+  /**
+   * Authorized hours the snapshot itself reports for the selected window
+   * (`*_month` for the exact current calendar month, `*_auth_range` for a true
+   * full-range view). Null for any other window — it is never prorated.
+   */
+  sourceWindowAuthorizedHours: number | null;
   proratedAuthorizedHours: number | null;
   prorationFactor: number | null;
   overlapDays: number;
@@ -379,10 +386,11 @@ export interface ProratedUtilizationRow {
 
 export interface ProratedUtilizationTotals {
   authorizations: number;
-  authorizedHours: number;
-  proratedAuthorizedHours: number;
-  sourceUsedHours: number;
-  recomputedUsedHours: number;
+  /** Null — not 0 — when no contributing authorization documented the field. */
+  authorizedHours: number | null;
+  proratedAuthorizedHours: number | null;
+  sourceUsedHours: number | null;
+  recomputedUsedHours: number | null;
   sourceRemainingHours: number | null;
   scheduledHours: number | null;
   pendingHours: number | null;
@@ -391,7 +399,7 @@ export interface ProratedUtilizationTotals {
   exhaustionRisk: number;
   expiringWithin30: number;
   expiringWithin60: number;
-  varianceHours: number;
+  varianceHours: number | null;
   variancePct: number | null;
   utilizationPct: number | null;
   complete: number;
@@ -449,10 +457,10 @@ export function computeProratedUtilization(
     none: 0,
   };
 
-  let authorizedTotal = 0;
-  let proratedTotal = 0;
-  let sourceUsedTotal = 0;
-  let recomputedTotal = 0;
+  let authorizedTotal: number | null = null;
+  let proratedTotal: number | null = null;
+  let sourceUsedTotal: number | null = null;
+  let recomputedTotal: number | null = null;
   let remainingTotal: number | null = null;
   let scheduledTotal: number | null = null;
   let pendingTotal: number | null = null;
@@ -471,9 +479,24 @@ export function computeProratedUtilization(
     const windowField = (base: string): number | null =>
       suffix ? numOrNull(row[`${base}${suffix}`]) : null;
 
-    const authorized = windowField("authorized_hours") ?? numOrNull(auth.authorized_hours);
-    const sourceUsed = windowField("worked_hours") ?? numOrNull(auth.worked_hours);
-    const sourceRemaining = windowField("remaining_hours") ?? numOrNull(auth.remaining_hours);
+    /**
+     * The proration BASE is always full-authorization-range authorized hours.
+     * Prorating `authorized_hours_month` would double-prorate the denominator:
+     * that column is already scoped to one month.
+     */
+    const usable = (value: number | null): number | null =>
+      value != null && value > 0 ? value : null;
+    const authorized =
+      usable(numOrNull(row["authorized_hours_auth_range"])) ??
+      usable(numOrNull(row["authorized_hours_all"])) ??
+      numOrNull(auth.authorized_hours);
+
+    // Source-window figures only exist for the two windows CentralReach
+    // exports. For any other range they are unavailable — never substituted
+    // with an "all" total that does not align with the selected window.
+    const sourceWindowAuthorized = windowField("authorized_hours");
+    const sourceUsed = windowField("worked_hours");
+    const sourceRemaining = windowField("remaining_hours");
     const scheduled = windowField("scheduled_hours");
     const pending = windowField("pending_hours");
 
@@ -519,13 +542,13 @@ export function computeProratedUtilization(
     });
 
     if (dataState !== "outside_range") {
-      if (authorized != null) authorizedTotal += authorized;
+      if (authorized != null) authorizedTotal = (authorizedTotal ?? 0) + authorized;
       if (sourceRemaining != null) remainingTotal = (remainingTotal ?? 0) + sourceRemaining;
       if (scheduled != null) scheduledTotal = (scheduledTotal ?? 0) + scheduled;
       if (pending != null) pendingTotal = (pendingTotal ?? 0) + pending;
-      if (prorated != null) proratedTotal += prorated;
-      if (sourceUsed != null) sourceUsedTotal += sourceUsed;
-      if (recomputed != null) recomputedTotal += recomputed;
+      if (prorated != null) proratedTotal = (proratedTotal ?? 0) + prorated;
+      if (sourceUsed != null) sourceUsedTotal = (sourceUsedTotal ?? 0) + sourceUsed;
+      if (recomputed != null) recomputedTotal = (recomputedTotal ?? 0) + recomputed;
     }
 
     rows.push({
@@ -540,6 +563,8 @@ export function computeProratedUtilization(
       startDate: start,
       endDate: end,
       authorizedHours: authorized != null ? round1(authorized) : null,
+      sourceWindowAuthorizedHours:
+        sourceWindowAuthorized != null ? round1(sourceWindowAuthorized) : null,
       proratedAuthorizedHours: prorated,
       prorationFactor: window.factor,
       overlapDays: window.overlapDays,
@@ -577,12 +602,17 @@ export function computeProratedUtilization(
 
   // Prorated totals of exactly 0 are real; only an absent prorated basis
   // (no authorization had usable coverage dates) falls back to raw authorized.
-  const proratedDenominator = dataStateCounts.no_coverage_dates === auths.length
-    ? authorizedTotal
-    : proratedTotal;
-  const usedNumerator = allocation.counts.exact + allocation.counts.uniqueFallback > 0
-    ? recomputedTotal
-    : sourceUsedTotal;
+  const proratedDenominator =
+    dataStateCounts.no_coverage_dates === auths.length ? authorizedTotal : proratedTotal;
+  const cleanlyAllocated = allocation.counts.exact + allocation.counts.uniqueFallback > 0;
+  const usedNumerator = cleanlyAllocated ? recomputedTotal : sourceUsedTotal;
+  const demandParts = [usedNumerator, scheduledTotal, pendingTotal].filter(
+    (v): v is number => v != null,
+  );
+  const varianceHours =
+    recomputedTotal != null && sourceUsedTotal != null
+      ? round1(recomputedTotal - sourceUsedTotal)
+      : null;
 
   return {
     rows: rows.sort(
@@ -592,26 +622,26 @@ export function computeProratedUtilization(
     ),
     totals: {
       authorizations: auths.length,
-      authorizedHours: round1(authorizedTotal),
-      proratedAuthorizedHours: round1(proratedTotal),
-      sourceUsedHours: round1(sourceUsedTotal),
-      recomputedUsedHours: round1(recomputedTotal),
+      authorizedHours: authorizedTotal != null ? round1(authorizedTotal) : null,
+      proratedAuthorizedHours: proratedTotal != null ? round1(proratedTotal) : null,
+      sourceUsedHours: sourceUsedTotal != null ? round1(sourceUsedTotal) : null,
+      recomputedUsedHours: recomputedTotal != null ? round1(recomputedTotal) : null,
       sourceRemainingHours: remainingTotal != null ? round1(remainingTotal) : null,
       scheduledHours: scheduledTotal != null ? round1(scheduledTotal) : null,
       pendingHours: pendingTotal != null ? round1(pendingTotal) : null,
-      projectedDemandHours: round1(
-        usedNumerator + (scheduledTotal ?? 0) + (pendingTotal ?? 0),
-      ),
+      projectedDemandHours:
+        demandParts.length > 0 ? round1(demandParts.reduce((sum, v) => sum + v, 0)) : null,
       exhausted: rows.filter((r) => r.riskLevel === "exhausted").length,
       exhaustionRisk: rows.filter((r) => r.riskLevel === "at_risk").length,
       expiringWithin30: rows.filter((r) => r.expiringWithin30).length,
       expiringWithin60: rows.filter((r) => r.expiringWithin60).length,
-      varianceHours: round1(recomputedTotal - sourceUsedTotal),
-      variancePct: sourceUsedTotal
-        ? Math.round(((recomputedTotal - sourceUsedTotal) / sourceUsedTotal) * 1000) / 10
-        : null,
+      varianceHours,
+      variancePct:
+        varianceHours != null && sourceUsedTotal
+          ? Math.round((varianceHours / sourceUsedTotal) * 1000) / 10
+          : null,
       utilizationPct:
-        proratedDenominator > 0
+        proratedDenominator != null && proratedDenominator > 0 && usedNumerator != null
           ? Math.round((usedNumerator / proratedDenominator) * 1000) / 10
           : null,
       complete: dataStateCounts.ok,
