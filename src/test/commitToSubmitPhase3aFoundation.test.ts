@@ -366,10 +366,14 @@ describe("C2S migration policy contract", () => {
     expect(c2sSql).toMatch(/FUNCTION public\.c2s_can_read_subject/);
     expect(c2sSql).toMatch(/FUNCTION public\.c2s_is_direct_manager/);
     expect(c2sSql).toMatch(/subject\.manager_id/);
-    expect(c2sSql).not.toMatch(/is_people_manager/);
-    expect(c2sSql).not.toMatch(/manages_employee/);
-    expect(c2sSql).not.toMatch(/is_hr_operator/);
+    // Strip SQL comments so documentation of what we deliberately avoided does
+    // not satisfy the assertion.
+    const code = c2sSql.replace(/--.*$/gm, "");
+    expect(code).not.toMatch(/is_people_manager/);
+    expect(code).not.toMatch(/manages_employee/);
+    expect(code).not.toMatch(/is_hr_operator/);
   });
+
 
   it("gives every helper a fixed search_path", () => {
     const helpers = c2sSql.match(/CREATE OR REPLACE FUNCTION public\.c2s_[\s\S]*?\$\$;/g) ?? [];
