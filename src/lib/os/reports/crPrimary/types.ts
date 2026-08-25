@@ -24,9 +24,9 @@ export interface CrScheduleEventRow {
   procedure_code: string | null;
   scheduled_hours: number | null;
   client_name: string | null;
-  client_cr_id: string | null;
+  client_cr_id?: string | null;
   provider_name: string | null;
-  provider_cr_id: string | null;
+  provider_cr_id?: string | null;
   status: string | null;
   cancellation_reason: string | null;
   cancelled_by: string | null;
@@ -51,9 +51,9 @@ export interface CrScheduleCurrentRow {
   billing_code_name: string | null;
   scheduled_hours: number | null;
   client_name: string | null;
-  client_cr_id: string | null;
+  client_cr_id?: string | null;
   provider_name: string | null;
-  provider_cr_id: string | null;
+  provider_cr_id?: string | null;
   status: string | null;
   attendance: string | null;
   cancelled: boolean | null;
@@ -165,9 +165,9 @@ export interface ReportBillingFactRow {
   procedure_code: string | null;
   hours: number | null;
   client_name: string | null;
-  client_cr_id: string | null;
+  client_cr_id?: string | null;
   provider_name: string | null;
-  provider_cr_id: string | null;
+  provider_cr_id?: string | null;
   payor: string | null;
   state: string | null;
   location: string | null;
