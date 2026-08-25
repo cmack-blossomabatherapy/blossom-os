@@ -289,8 +289,13 @@ function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
     deleted,
     cancelled,
     converted_to_timesheet: converted,
-    start_time: text(row, ["StartTime", "Start Time", "EventStartTime", "TimeStart"]),
-    end_time: text(row, ["EndTime", "End Time", "EventEndTime", "TimeEnd"]),
+    start_time:
+      crClockTime(pickText(row, EVENT_START)) ??
+      text(row, ["StartTime", "Start Time", "EventStartTime", "TimeStart"]),
+    end_time:
+      crClockTime(pickText(row, EVENT_END)) ??
+      text(row, ["EndTime", "End Time", "EventEndTime", "TimeEnd"]),
+
     billing_creation_date: date(row, [
       "BillingCreationDate", "Billing Creation Date", "CreationDate", "Creation Date", "CreatedDate",
     ]),
