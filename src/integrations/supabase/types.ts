@@ -6156,6 +6156,1501 @@ export type Database = {
         }
         Relationships: []
       }
+      c2s_coaching_records: {
+        Row: {
+          acknowledged_at: string | null
+          coached_by: string | null
+          coaching_date: string
+          created_at: string
+          created_by: string | null
+          id: string
+          subject_employee_id: string
+          summary: string | null
+          topic: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          coached_by?: string | null
+          coaching_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          subject_employee_id: string
+          summary?: string | null
+          topic?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          coached_by?: string | null
+          coaching_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          subject_employee_id?: string
+          summary?: string | null
+          topic?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "c2s_coaching_records_coached_by_fkey"
+            columns: ["coached_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_coached_by_fkey"
+            columns: ["coached_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_coached_by_fkey"
+            columns: ["coached_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_coached_by_fkey"
+            columns: ["coached_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_coached_by_fkey"
+            columns: ["coached_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_coaching_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      c2s_disputes: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          filed_at: string
+          filed_by: string | null
+          filing_deadline: string | null
+          id: string
+          notice_id: string | null
+          statement: string | null
+          status: string
+          subject_employee_id: string
+          tracker_record_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          filed_at?: string
+          filed_by?: string | null
+          filing_deadline?: string | null
+          id?: string
+          notice_id?: string | null
+          statement?: string | null
+          status?: string
+          subject_employee_id: string
+          tracker_record_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          filed_at?: string
+          filed_by?: string | null
+          filing_deadline?: string | null
+          id?: string
+          notice_id?: string | null
+          statement?: string | null
+          status?: string
+          subject_employee_id?: string
+          tracker_record_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "c2s_disputes_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_filed_by_fkey"
+            columns: ["filed_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_filed_by_fkey"
+            columns: ["filed_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_filed_by_fkey"
+            columns: ["filed_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_filed_by_fkey"
+            columns: ["filed_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_filed_by_fkey"
+            columns: ["filed_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "c2s_notices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_disputes_tracker_record_id_fkey"
+            columns: ["tracker_record_id"]
+            isOneToOne: false
+            referencedRelation: "c2s_tracker_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      c2s_exceptions: {
+        Row: {
+          applies_from: string | null
+          applies_to: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          exception_type: string
+          id: string
+          reason: string | null
+          status: string
+          subject_employee_id: string
+          tracker_record_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          applies_from?: string | null
+          applies_to?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          exception_type: string
+          id?: string
+          reason?: string | null
+          status?: string
+          subject_employee_id: string
+          tracker_record_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          applies_from?: string | null
+          applies_to?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          exception_type?: string
+          id?: string
+          reason?: string | null
+          status?: string
+          subject_employee_id?: string
+          tracker_record_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "c2s_exceptions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_tracker_record_id_fkey"
+            columns: ["tracker_record_id"]
+            isOneToOne: false
+            referencedRelation: "c2s_tracker_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_exceptions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      c2s_notices: {
+        Row: {
+          acknowledged_at: string | null
+          config_id: string
+          created_at: string
+          created_by: string | null
+          hr_review_id: string | null
+          hr_review_required: boolean
+          id: string
+          issued_at: string
+          issued_by: string | null
+          notice_level: number
+          prior_coaching_id: string
+          subject_employee_id: string
+          tracker_record_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          config_id: string
+          created_at?: string
+          created_by?: string | null
+          hr_review_id?: string | null
+          hr_review_required?: boolean
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          notice_level: number
+          prior_coaching_id: string
+          subject_employee_id: string
+          tracker_record_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          config_id?: string
+          created_at?: string
+          created_by?: string | null
+          hr_review_id?: string | null
+          hr_review_required?: boolean
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          notice_level?: number
+          prior_coaching_id?: string
+          subject_employee_id?: string
+          tracker_record_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "c2s_notice_hr_review_fk"
+            columns: ["hr_review_id"]
+            isOneToOne: false
+            referencedRelation: "c2s_program_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "c2s_program_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_prior_coaching_id_fkey"
+            columns: ["prior_coaching_id"]
+            isOneToOne: false
+            referencedRelation: "c2s_coaching_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_tracker_record_id_fkey"
+            columns: ["tracker_record_id"]
+            isOneToOne: false
+            referencedRelation: "c2s_tracker_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_notices_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      c2s_program_config: {
+        Row: {
+          category1_qa_criteria: string | null
+          created_at: string
+          created_by: string | null
+          dispute_window_business_days: number
+          effective_from: string
+          effective_to: string | null
+          hr_approved_at: string | null
+          hr_approved_by: string | null
+          id: string
+          is_enabled: boolean
+          legal_approved_at: string | null
+          legal_approved_by: string | null
+          new_hire_grace_days: number | null
+          notes: string | null
+          on_time_max_lag_days: number
+          policy_version: string
+          prior_history_counts: boolean | null
+          tracking_start_date: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category1_qa_criteria?: string | null
+          created_at?: string
+          created_by?: string | null
+          dispute_window_business_days?: number
+          effective_from: string
+          effective_to?: string | null
+          hr_approved_at?: string | null
+          hr_approved_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          legal_approved_at?: string | null
+          legal_approved_by?: string | null
+          new_hire_grace_days?: number | null
+          notes?: string | null
+          on_time_max_lag_days?: number
+          policy_version: string
+          prior_history_counts?: boolean | null
+          tracking_start_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category1_qa_criteria?: string | null
+          created_at?: string
+          created_by?: string | null
+          dispute_window_business_days?: number
+          effective_from?: string
+          effective_to?: string | null
+          hr_approved_at?: string | null
+          hr_approved_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          legal_approved_at?: string | null
+          legal_approved_by?: string | null
+          new_hire_grace_days?: number | null
+          notes?: string | null
+          on_time_max_lag_days?: number
+          policy_version?: string
+          prior_history_counts?: boolean | null
+          tracking_start_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "c2s_program_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_legal_approved_by_fkey"
+            columns: ["legal_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_legal_approved_by_fkey"
+            columns: ["legal_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_legal_approved_by_fkey"
+            columns: ["legal_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_legal_approved_by_fkey"
+            columns: ["legal_approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_legal_approved_by_fkey"
+            columns: ["legal_approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      c2s_program_reviews: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          days_on_time: number | null
+          has_upheld_disputes: boolean | null
+          hr_approved: boolean | null
+          hr_approved_at: string | null
+          hr_approved_by: string | null
+          id: string
+          manager_id: string | null
+          manager_recommendation: string | null
+          manager_recommended_at: string | null
+          notes: string | null
+          outcome: string | null
+          qa_quality_summary: string | null
+          review_kind: string
+          subject_employee_id: string
+          updated_at: string
+          updated_by: string | null
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          days_on_time?: number | null
+          has_upheld_disputes?: boolean | null
+          hr_approved?: boolean | null
+          hr_approved_at?: string | null
+          hr_approved_by?: string | null
+          id?: string
+          manager_id?: string | null
+          manager_recommendation?: string | null
+          manager_recommended_at?: string | null
+          notes?: string | null
+          outcome?: string | null
+          qa_quality_summary?: string | null
+          review_kind?: string
+          subject_employee_id: string
+          updated_at?: string
+          updated_by?: string | null
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          days_on_time?: number | null
+          has_upheld_disputes?: boolean | null
+          hr_approved?: boolean | null
+          hr_approved_at?: string | null
+          hr_approved_by?: string | null
+          id?: string
+          manager_id?: string | null
+          manager_recommendation?: string | null
+          manager_recommended_at?: string | null
+          notes?: string | null
+          outcome?: string | null
+          qa_quality_summary?: string | null
+          review_kind?: string
+          subject_employee_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "c2s_program_reviews_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_program_reviews_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      c2s_tracker_records: {
+        Row: {
+          authoritative_completed_at: string | null
+          category: string
+          category1_criteria_reference: string | null
+          config_id: string | null
+          created_at: string
+          created_by: string | null
+          documentation_due_date: string | null
+          formal_violation_recorded_at: string | null
+          formal_violation_recorded_by: string | null
+          id: string
+          is_formal_violation: boolean
+          lag_days: number | null
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          role_group: string
+          service_date: string
+          source_kind: string
+          source_reference: string | null
+          state: string | null
+          subject_employee_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          authoritative_completed_at?: string | null
+          category?: string
+          category1_criteria_reference?: string | null
+          config_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          documentation_due_date?: string | null
+          formal_violation_recorded_at?: string | null
+          formal_violation_recorded_by?: string | null
+          id?: string
+          is_formal_violation?: boolean
+          lag_days?: number | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role_group?: string
+          service_date: string
+          source_kind: string
+          source_reference?: string | null
+          state?: string | null
+          subject_employee_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          authoritative_completed_at?: string | null
+          category?: string
+          category1_criteria_reference?: string | null
+          config_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          documentation_due_date?: string | null
+          formal_violation_recorded_at?: string | null
+          formal_violation_recorded_by?: string | null
+          id?: string
+          is_formal_violation?: boolean
+          lag_days?: number | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role_group?: string
+          service_date?: string
+          source_kind?: string
+          source_reference?: string | null
+          state?: string | null
+          subject_employee_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "c2s_tracker_records_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "c2s_program_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_formal_violation_recorded_by_fkey"
+            columns: ["formal_violation_recorded_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_formal_violation_recorded_by_fkey"
+            columns: ["formal_violation_recorded_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_formal_violation_recorded_by_fkey"
+            columns: ["formal_violation_recorded_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_formal_violation_recorded_by_fkey"
+            columns: ["formal_violation_recorded_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_formal_violation_recorded_by_fkey"
+            columns: ["formal_violation_recorded_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_subject_employee_id_fkey"
+            columns: ["subject_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_clinician_cr_mapping"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "c2s_tracker_records_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_manager_assignments: {
         Row: {
           active: boolean
@@ -33413,6 +34908,19 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      c2s_can_read_subject: {
+        Args: { _subject_employee_id: string; _user_id?: string }
+        Returns: boolean
+      }
+      c2s_is_direct_manager: {
+        Args: { _subject_employee_id: string; _user_id?: string }
+        Returns: boolean
+      }
+      c2s_is_hr_authority: { Args: { _user_id?: string }; Returns: boolean }
+      c2s_is_subject: {
+        Args: { _subject_employee_id: string; _user_id?: string }
+        Returns: boolean
+      }
       can_access_growth_source_visibility: {
         Args: { _uid: string }
         Returns: boolean
@@ -34241,6 +35749,24 @@ export type Database = {
           source_row_id: string
           state: string
           status: string
+        }[]
+      }
+      report_c2s_documentation_proxy: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          date_of_service: string
+          documentation_date: string
+          employee_id: string
+          lag_days: number
+          last_seen_at: string
+          provenance: string
+          provider_display_name: string
+          proxy_category: string
+          role_group: string
+          source_quality: string
+          state: string
+          timeliness_status: string
+          used_authoritative_completion: boolean
         }[]
       }
       report_source_coverage: { Args: never; Returns: Json }
