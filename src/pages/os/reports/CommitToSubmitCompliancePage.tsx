@@ -75,14 +75,22 @@ import type { KpiDefinition } from "@/lib/os/reports/crPrimary/types";
 
 const REPORT_ID = "commit-to-submit-compliance";
 
-type TabKey = "overview" | "providers" | "records" | "governance";
+type TabKey = "overview" | "proxy-queue" | "reviewed" | "disputes-exceptions";
+
+/** The four canonical tabs. URL values and visible labels never drift apart. */
+export const C2S_TABS: { value: TabKey; label: string }[] = [
+  { value: "overview", label: "Overview" },
+  { value: "proxy-queue", label: "Proxy Queue" },
+  { value: "reviewed", label: "Reviewed" },
+  { value: "disputes-exceptions", label: "Disputes & Exceptions" },
+];
 
 const EMPTY_FILTERS = {
   from: "",
   to: "",
   state: "",
   roleGroup: "",
-  timeliness: "",
+  status: "",
   category: "",
 };
 
@@ -116,6 +124,18 @@ const PROVIDER_EXPORT_COLUMNS = [
   { key: "mapped", label: "Mapped To Employee" },
 ];
 
+const PROXY_ROW_EXPORT_COLUMNS = [
+  { key: "provider", label: "Provider" },
+  { key: "roleGroup", label: "Role" },
+  { key: "state", label: "State" },
+  { key: "serviceDate", label: "Date Of Service" },
+  { key: "documentationDate", label: "Documentation Timestamp" },
+  { key: "lagDays", label: "Lag Days" },
+  { key: "status", label: "Status" },
+  { key: "proxyCategory", label: "Proxy Category" },
+  { key: "provenance", label: "Provenance" },
+];
+
 const RECORD_EXPORT_COLUMNS = [
   { key: "employee", label: "Employee" },
   { key: "serviceDate", label: "Service Date" },
@@ -136,9 +156,7 @@ export default function CommitToSubmitCompliancePage() {
   const defaults = useMemo(() => withCurrentMonthDefault(EMPTY_FILTERS), []);
   const [filters, setFilters] = useUrlFilterState(defaults);
   const [tab, setTab] = useUrlState("tab", "overview");
-  const activeTab = (["overview", "providers", "records", "governance"] as const).includes(
-    tab as TabKey,
-  )
+  const activeTab = C2S_TABS.some((t) => t.value === tab)
     ? (tab as TabKey)
     : "overview";
 
@@ -165,16 +183,22 @@ export default function CommitToSubmitCompliancePage() {
     };
   }, [data.isHrAuthority]);
 
+  /**
+   * Formal review / exception / notice workflows exist only once the program is
+   * enabled AND fully approved. Coaching and employee disputes stay available.
+   */
+  const programActive = data.status.enabled && data.status.activationReady;
+
   // ------------------------------------------------------------ proxy scope
   const filteredProxy = useMemo<C2sProxyRow[]>(() => {
     return data.proxyRows.filter((row) => {
       if (filters.state && (row.state ?? "Unknown state") !== filters.state) return false;
       if (filters.roleGroup && row.roleGroup !== filters.roleGroup) return false;
-      if (filters.timeliness && row.timelinessStatus !== filters.timeliness) return false;
+      if (filters.status && row.timelinessStatus !== filters.status) return false;
       if (filters.category && row.proxyCategory !== filters.category) return false;
       return true;
     });
-  }, [data.proxyRows, filters.state, filters.roleGroup, filters.timeliness, filters.category]);
+  }, [data.proxyRows, filters.state, filters.roleGroup, filters.status, filters.category]);
 
   const summary = useMemo(() => summarizeProxyRows(filteredProxy), [filteredProxy]);
   const providerQueue = useMemo(() => buildProviderQueue(filteredProxy), [filteredProxy]);
@@ -195,7 +219,7 @@ export default function CommitToSubmitCompliancePage() {
     () => ({
       state: uniqueSorted(data.proxyRows.map((r) => r.state ?? "Unknown state")),
       roleGroup: uniqueSorted(data.proxyRows.map((r) => r.roleGroup)),
-      timeliness: uniqueSorted(data.proxyRows.map((r) => r.timelinessStatus)),
+      status: uniqueSorted(data.proxyRows.map((r) => r.timelinessStatus)),
       category: uniqueSorted(data.proxyRows.map((r) => r.proxyCategory)),
     }),
     [data.proxyRows],
@@ -204,68 +228,67 @@ export default function CommitToSubmitCompliancePage() {
   const kpis = useMemo<KpiDefinition[]>(() => {
     const onTimePct =
       summary.comparable > 0 ? (summary.onTime / summary.comparable) * 100 : null;
+    const counts = data.governanceCounts;
     return [
       {
-        id: "rows",
-        label: "Documentation rows",
-        value: fmtCount(summary.total),
-        hint: `Service dates in the selected window · ${fmtCount(summary.authoritativeRows)} from an authoritative completion time`,
+        id: "eligible-rows",
+        label: "Eligible proxy rows",
+        value: fmtCount(summary.comparable),
+        hint: `Rows with a usable lag — the honest denominator · ${fmtCount(summary.total)} row(s) in the window · ${fmtCount(summary.authoritativeRows)} from an authoritative completion time`,
       },
       {
-        id: "on-time",
-        label: "On time",
-        value: onTimePct == null ? "Not comparable" : fmtPct(onTimePct),
+        id: "on-time-rate",
+        label: "On-time rate",
+        value: onTimePct == null ? "Not measurable" : fmtPct(onTimePct),
         hint:
           summary.comparable > 0
-            ? `${fmtCount(summary.onTime)} of ${fmtCount(summary.comparable)} rows with a usable lag · ${C2S_ON_TIME_MAX_LAG_DAYS} days or fewer counts as on time`
+            ? `${fmtCount(summary.onTime)} of ${fmtCount(summary.comparable)} eligible rows · exactly ${C2S_ON_TIME_MAX_LAG_DAYS} days counts as on time`
             : "No rows have both a service date and a documentation date",
         tone:
           onTimePct == null ? "neutral" : onTimePct >= 90 ? "good" : onTimePct >= 75 ? "warn" : "bad",
       },
       {
-        id: "late",
-        label: "Late",
+        id: "late-rows",
+        label: "Late rows",
         value: fmtCount(summary.late),
         hint: `More than ${C2S_ON_TIME_MAX_LAG_DAYS} days from service date to documentation`,
         tone: summary.late > 0 ? "warn" : "good",
       },
       {
-        id: "unusable",
-        label: "Not measurable",
+        id: "missing-invalid",
+        label: "Missing / invalid timestamps",
         value: fmtCount(summary.missing + summary.invalid),
-        hint: `${fmtCount(summary.missing)} with no documentation date · ${fmtCount(summary.invalid)} with unusable dates · ${fmtCount(summary.unmappedRows)} row(s) not matched to an employee`,
+        hint: `${fmtCount(summary.missing)} with no documentation date · ${fmtCount(summary.invalid)} unusable · never counted as on time · ${fmtCount(summary.unmappedRows)} row(s) not matched to an employee`,
         tone: summary.missing + summary.invalid > 0 ? "warn" : "neutral",
       },
       {
-        id: "formal-from-proxy",
-        label: "Formal violations from this proxy",
-        value: "0",
-        hint: "By policy, documentation lag alone is never a formal violation",
+        id: "historical-formal",
+        label: "Historical formal records",
+        value: fmtCount(counts.historicalFormalRecords),
+        hint: "Visible to you · recorded formal history, kept even when later excused",
       },
       {
         id: "active-formal",
-        label: "Active formal violations",
-        value: fmtCount(governance.formalViolations),
-        hint: data.tracker.length
-          ? `${fmtCount(governance.recordedFormalViolations)} recorded historically · reviewed records only`
-          : "No reviewed program records are visible to you",
-        tone: governance.formalViolations > 0 ? "bad" : "good",
+        label: "Active formal records",
+        value: fmtCount(counts.activeFormalRecords),
+        hint: "Visible to you · counted by the database, never inferred from documentation lag",
+        tone: counts.activeFormalRecords > 0 ? "bad" : "good",
       },
       {
-        id: "coaching",
-        label: "Coaching recorded",
-        value: fmtCount(data.coaching.length),
-        hint: "Coaching always precedes any formal step",
-      },
-      {
-        id: "disputes",
+        id: "open-disputes",
         label: "Open disputes",
-        value: fmtCount(governance.disputesPending),
-        hint: `${fmtCount(governance.disputesUpheld)} upheld · ${fmtCount(governance.disputesDenied)} denied · ${fmtCount(governance.approvedExceptions)} approved exception(s)`,
-        tone: governance.disputesPending > 0 ? "warn" : "neutral",
+        value: fmtCount(counts.openDisputes),
+        hint: "Visible to you · filed and awaiting an HR decision",
+        tone: counts.openDisputes > 0 ? "warn" : "neutral",
+      },
+      {
+        id: "active-exceptions",
+        label: "Active approved exceptions",
+        value: fmtCount(counts.activeApprovedExceptions),
+        hint: "Visible to you · an approved exception removes a record from active formal counts",
       },
     ];
-  }, [summary, governance, data.tracker.length, data.coaching.length]);
+  }, [summary, data.governanceCounts]);
 
   // --------------------------------------------------------------- dialogs
   const [coachingFor, setCoachingFor] = useState<{ id: string; name: string } | null>(null);
@@ -423,7 +446,7 @@ export default function CommitToSubmitCompliancePage() {
               Dispute
             </Button>
           )}
-          {data.isHrAuthority && (
+          {data.isHrAuthority && programActive && (
             <>
               <Button
                 size="sm"
@@ -518,13 +541,34 @@ export default function CommitToSubmitCompliancePage() {
     [data.tracker, data.employeeNames],
   );
 
+  /** Row-level export for the Proxy Queue tab — same privacy boundary, every row. */
+  const proxyRowExportRows = useMemo(
+    () =>
+      filteredProxy.map((r) => ({
+        provider: r.providerDisplayName ?? "Unmatched provider",
+        roleGroup: r.roleGroup,
+        state: r.state ?? "Unknown state",
+        serviceDate: r.dateOfService ?? "",
+        documentationDate: r.documentationDate ?? "",
+        lagDays: r.lagDays ?? "",
+        status: TIMELINESS_LABEL[r.timelinessStatus] ?? r.timelinessStatus,
+        proxyCategory: r.proxyCategory,
+        provenance: r.provenance ?? (r.usedAuthoritativeCompletion ? "Authoritative completion time" : "Proxy timestamp"),
+      })),
+    [filteredProxy],
+  );
+
   const onExport = useCallback(() => {
-    if (activeTab === "records" || activeTab === "governance") {
+    if (activeTab === "reviewed" || activeTab === "disputes-exceptions") {
       downloadCsv("commit-to-submit-program-records", recordExportRows, RECORD_EXPORT_COLUMNS);
       return;
     }
+    if (activeTab === "proxy-queue") {
+      downloadCsv("commit-to-submit-documentation-rows", proxyRowExportRows, PROXY_ROW_EXPORT_COLUMNS);
+      return;
+    }
     downloadCsv("commit-to-submit-timeliness", providerExportRows, PROVIDER_EXPORT_COLUMNS);
-  }, [activeTab, providerExportRows, recordExportRows]);
+  }, [activeTab, providerExportRows, recordExportRows, proxyRowExportRows]);
 
   // --------------------------------------------------------------- warnings
   const warnings = useMemo(() => {
@@ -558,7 +602,7 @@ export default function CommitToSubmitCompliancePage() {
   const activeFilterCount = [
     filters.state,
     filters.roleGroup,
-    filters.timeliness,
+    filters.status,
     filters.category,
   ].filter(Boolean).length;
 
@@ -597,7 +641,7 @@ export default function CommitToSubmitCompliancePage() {
           [
             { key: "state", label: "State", options: options.state },
             { key: "roleGroup", label: "Role group", options: options.roleGroup },
-            { key: "timeliness", label: "Timeliness", options: options.timeliness },
+            { key: "status", label: "Status", options: options.status },
             { key: "category", label: "Proxy category", options: options.category },
           ] as const
         ).map((field) => (
@@ -618,13 +662,74 @@ export default function CommitToSubmitCompliancePage() {
     </section>
   );
 
-  const monthChart = summary.byMonth.map((row) => ({
+  /** Row-level drilldown, capped for rendering only — exports carry every row. */
+  const visibleProxyRows = useMemo(
+    () =>
+      [...filteredProxy]
+        .sort((a, b) => (b.lagDays ?? -1) - (a.lagDays ?? -1))
+        .slice(0, 300),
+    [filteredProxy],
+  );
+
+  const proxyRowColumns = useMemo<PrimaryTableColumn<C2sProxyRow>[]>(
+    () => [
+      {
+        key: "provider",
+        label: "Provider",
+        render: (r) => r.providerDisplayName ?? "Unmatched provider",
+      },
+      { key: "roleGroup", label: "Role", render: (r) => r.roleGroup },
+      { key: "state", label: "State", render: (r) => r.state ?? "Unknown state" },
+      {
+        key: "dos",
+        label: "Date of service",
+        render: (r) => (r.dateOfService ? fmtDate(r.dateOfService) : "—"),
+      },
+      {
+        key: "documented",
+        label: "Documented",
+        render: (r) => (r.documentationDate ? fmtDate(r.documentationDate) : "No date"),
+      },
+      { key: "lag", label: "Lag (days)", align: "right", render: (r) => r.lagDays ?? "—" },
+      {
+        key: "status",
+        label: "Status",
+        render: (r) => TIMELINESS_LABEL[r.timelinessStatus] ?? r.timelinessStatus,
+      },
+      { key: "category", label: "Proxy category", render: (r) => r.proxyCategory },
+      {
+        key: "provenance",
+        label: "Provenance",
+        render: (r) =>
+          r.usedAuthoritativeCompletion
+            ? (r.provenance ?? "Authoritative completion time")
+            : (r.provenance ?? "Proxy timestamp"),
+      },
+    ],
+    [],
+  );
+
+  /**
+   * Four unit-honest charts. A percentage chart never carries counts, and a
+   * count chart never carries percentages or hours.
+   */
+  const onTimeTrendChart = summary.byMonth
+    .filter((row) => row.comparable > 0)
+    .map((row) => ({
+      label: row.key,
+      value: Number((((row.onTime / row.comparable) * 100)).toFixed(1)),
+    }));
+  const lateByStateChart = summary.byState.map((row) => ({ label: row.key, value: row.late }));
+  const statusByRoleChart = summary.byRoleGroup.map((row) => ({
+    label: row.key,
+    value: row.onTime,
+    secondary: row.late,
+    tertiary: row.missing + row.invalid,
+  }));
+  const lateByCategoryChart = summary.byProxyCategory.map((row) => ({
     label: row.key,
     value: row.late,
-    secondary: row.onTime,
   }));
-  const stateChart = summary.byState.map((row) => ({ label: row.key, value: row.late }));
-  const roleChart = summary.byRoleGroup.map((row) => ({ label: row.key, value: row.total }));
 
   return (
     <PrimaryReportShell
@@ -653,7 +758,8 @@ export default function CommitToSubmitCompliancePage() {
                 Commit to Submit is in measurement mode. Timeliness below is a documentation lag
                 proxy only — it is never a formal violation, never assigns BCBA Category 1, and
                 cannot trigger a notice, a pay change, or any employment action. Coaching stays
-                available and always comes first.
+                available and always comes first. Formal violations from this proxy: never — not
+                one, in any window, for any provider.
               </p>
               <p className="mt-1.5 text-muted-foreground">
                 {data.status.configured
@@ -678,16 +784,11 @@ export default function CommitToSubmitCompliancePage() {
 
         <Tabs value={activeTab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="providers">
-              Timeliness by provider ({fmtCount(providerQueue.length)})
-            </TabsTrigger>
-            <TabsTrigger value="records">
-              Program records ({fmtCount(data.tracker.length)})
-            </TabsTrigger>
-            <TabsTrigger value="governance">
-              Disputes &amp; exceptions ({fmtCount(data.disputes.length + data.exceptions.length)})
-            </TabsTrigger>
+            {C2S_TABS.map((t) => (
+              <TabsTrigger key={t.value} value={t.value}>
+                {t.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
 
@@ -698,52 +799,76 @@ export default function CommitToSubmitCompliancePage() {
           />
         ) : (
           <>
-            <KpiScorecards kpis={kpis} onSelect={() => setTab("providers")} />
+            <KpiScorecards kpis={kpis} onSelect={() => setTab("proxy-queue")} />
 
             {activeTab === "overview" && (
               <div className="space-y-4">
                 <div className="grid gap-4 lg:grid-cols-2">
                   <PrimaryChart
-                    title="Late documentation by month"
-                    subtitle="Late rows against on-time rows, by month of service"
-                    type="bar"
-                    data={monthChart}
-                    valueLabel="Late"
-                    secondaryLabel="On time"
+                    title="On-time percentage trend"
+                    subtitle="Percent of eligible rows documented on time, by month of service"
+                    type="line"
+                    data={onTimeTrendChart}
+                    valueLabel="On time %"
                   />
                   <PrimaryChart
-                    title="Late documentation by state"
-                    subtitle="Where late documentation is concentrated"
+                    title="Late rows by state"
+                    subtitle="Counts only — where late documentation is concentrated"
                     type="bar"
-                    data={stateChart}
-                    valueLabel="Late"
+                    data={lateByStateChart}
+                    valueLabel="Late rows"
+                  />
+                  <PrimaryChart
+                    title="Status counts by role"
+                    subtitle="On-time, late, and not-measurable row counts — no percentages"
+                    type="bar"
+                    data={statusByRoleChart}
+                    valueLabel="On time"
+                    secondaryLabel="Late"
+                    tertiaryLabel="Not measurable"
+                  />
+                  <PrimaryChart
+                    title="Late rows by proxy category"
+                    subtitle="Counts only — which documentation category is running late"
+                    type="bar"
+                    data={lateByCategoryChart}
+                    valueLabel="Late rows"
                   />
                 </div>
-                <PrimaryChart
-                  title="Rows by role group"
-                  subtitle="RBT and BCBA documentation volume in this window"
-                  type="pie"
-                  data={roleChart}
-                  valueLabel="Rows"
-                />
               </div>
             )}
 
-            {activeTab === "providers" && (
-              <PrimaryTable
-                title="Timeliness by provider"
-                subtitle="De-identified provider rows. Rows without a matched employee cannot be coached until identity is reconciled."
-                columns={providerColumns}
-                rows={providerQueue}
-                rowKey={(r, i) => r.employeeId ?? `unmapped-${i}`}
-                emptyLabel="No documentation rows match the current filters."
-              />
-            )}
-
-            {activeTab === "records" && (
+            {activeTab === "proxy-queue" && (
               <div className="space-y-3">
                 <PrimaryTable
-                  title="Program records"
+                  title="Provider action queue"
+                  subtitle="De-identified provider rows. Rows without a matched employee cannot be coached until identity is reconciled."
+                  columns={providerColumns}
+                  rows={providerQueue}
+                  rowKey={(r, i) => r.employeeId ?? `unmapped-${i}`}
+                  emptyLabel="No documentation rows match the current filters."
+                />
+                <PrimaryTable
+                  title="Documentation rows behind these numbers"
+                  subtitle="Client-free drilldown: provider, role, state, date of service, documentation timestamp, lag, status, category, and provenance. No client, payor, service code, hours, or dollar detail exists in this view."
+                  columns={proxyRowColumns}
+                  rows={visibleProxyRows}
+                  rowKey={(r, i) => `${r.employeeId ?? "unmapped"}-${r.dateOfService ?? "no-dos"}-${i}`}
+                  emptyLabel="No documentation rows match the current filters."
+                />
+                {filteredProxy.length > visibleProxyRows.length && (
+                  <ReportProvenance>
+                    Showing the {fmtCount(visibleProxyRows.length)} rows with the longest lag out of{" "}
+                    {fmtCount(filteredProxy.length)} matching rows. Export the tab to get every row.
+                  </ReportProvenance>
+                )}
+              </div>
+            )}
+
+            {activeTab === "reviewed" && (
+              <div className="space-y-3">
+                <PrimaryTable
+                  title="Reviewed program records (Visible to you)"
                   subtitle="Reviewed documentation records you are permitted to see. A record only supports a formal step after review, with coaching first."
                   columns={recordColumns}
                   rows={data.tracker}
@@ -760,10 +885,10 @@ export default function CommitToSubmitCompliancePage() {
               </div>
             )}
 
-            {activeTab === "governance" && (
+            {activeTab === "disputes-exceptions" && (
               <div className="space-y-4">
                 <PrimaryTable
-                  title="Disputes"
+                  title="Disputes (Visible to you)"
                   subtitle="Employees file a dispute; the system records the filing date and deadline."
                   columns={disputeColumns}
                   rows={data.disputes}
@@ -771,7 +896,7 @@ export default function CommitToSubmitCompliancePage() {
                   emptyLabel="No disputes are visible to you."
                 />
                 <PrimaryTable
-                  title="Exceptions"
+                  title="Exceptions (Visible to you)"
                   subtitle="Approved exceptions remove a record from active formal counts."
                   columns={[
                     {

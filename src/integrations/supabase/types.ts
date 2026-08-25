@@ -34941,7 +34941,9 @@ export type Database = {
         Args: { _subject_employee_id: string; _user_id?: string }
         Returns: boolean
       }
-      c2s_is_hr_authority: { Args: { _user_id?: string }; Returns: boolean }
+      c2s_is_hr_authority:
+        | { Args: never; Returns: boolean }
+        | { Args: { _user_id?: string }; Returns: boolean }
       c2s_is_subject: {
         Args: { _subject_employee_id: string; _user_id?: string }
         Returns: boolean
@@ -35792,6 +35794,38 @@ export type Database = {
           state: string
           timeliness_status: string
           used_authoritative_completion: boolean
+        }[]
+      }
+      report_c2s_documentation_proxy_page: {
+        Args: {
+          p_from: string
+          p_limit?: number
+          p_offset?: number
+          p_to: string
+        }
+        Returns: {
+          date_of_service: string
+          documentation_date: string
+          employee_id: string
+          lag_days: number
+          last_seen_at: string
+          provenance: string
+          provider_display_name: string
+          proxy_category: string
+          role_group: string
+          source_quality: string
+          state: string
+          timeliness_status: string
+          used_authoritative_completion: boolean
+        }[]
+      }
+      report_c2s_governance_counts: {
+        Args: never
+        Returns: {
+          active_approved_exceptions: number
+          active_formal_records: number
+          historical_formal_records: number
+          open_disputes: number
         }[]
       }
       report_c2s_program_status: {

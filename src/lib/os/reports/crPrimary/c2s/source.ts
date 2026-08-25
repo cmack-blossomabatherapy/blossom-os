@@ -127,25 +127,46 @@ export function isValidDateWindow(from: string, to: string): boolean {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => supabase as any;
 
+/**
+ * Page size for every C2S read. PostgREST caps a single response at 1,000 rows,
+ * so every read here walks pages until a short page arrives. Nothing is ever
+ * silently truncated.
+ */
+export const C2S_PAGE_SIZE = 1000;
+/** Chunk size for employee display-name lookups. Names are never truncated. */
+export const C2S_NAME_CHUNK_SIZE = 200;
+/** Absolute safety ceiling so a runaway loop cannot hang the page. */
+export const C2S_MAX_PAGES = 500;
+
 async function readC2sTable<T>(
   table: string,
   columns: string,
   map: (row: Record<string, unknown>) => T,
 ): Promise<C2sReadResult<T>> {
+  const rows: T[] = [];
   try {
-    const { data, error } = await db()
-      .from(table)
-      .select(columns)
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    // A permission/RLS restriction yields zero rows, not an error. Only a real
-    // transport error is surfaced, and even then only for this table.
-    if (error) return { rows: [], error: error.message };
-    return { rows: ((data ?? []) as Record<string, unknown>[]).map(map), error: null };
+    for (let page = 0; page < C2S_MAX_PAGES; page += 1) {
+      const from = page * C2S_PAGE_SIZE;
+      const { data, error } = await db()
+        .from(table)
+        .select(columns)
+        // Deterministic total order, so paging can never skip or repeat a row.
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, from + C2S_PAGE_SIZE - 1);
+      // A permission/RLS restriction yields zero rows, not an error. Only a real
+      // transport error is surfaced, and even then only for this table.
+      if (error) return { rows: [], error: error.message };
+      const batch = (data ?? []) as Record<string, unknown>[];
+      for (const row of batch) rows.push(map(row));
+      if (batch.length < C2S_PAGE_SIZE) break;
+    }
+    return { rows, error: null };
   } catch (err) {
     return { rows: [], error: err instanceof Error ? err.message : `Failed to read ${table}` };
   }
 }
+
 
 /** Staff-safe program status. A missing row means "not configured". */
 export async function fetchC2sProgramStatus(): Promise<{
@@ -186,7 +207,14 @@ export async function fetchC2sProgramStatus(): Promise<{
   }
 }
 
-/** Global client-free proxy rows for the window. Always normalized here. */
+/**
+ * Global client-free proxy rows for the window, loaded COMPLETELY.
+ *
+ * `report_c2s_documentation_proxy_page` is deterministically ordered in the
+ * database, so we walk fixed-size pages until a short page arrives. A single
+ * unpaged call would silently stop at the PostgREST 1,000-row cap, which would
+ * understate a normal month (the August billing control alone is 3,916 rows).
+ */
 export async function fetchC2sProxyRows(
   from: string,
   to: string,
@@ -194,16 +222,21 @@ export async function fetchC2sProxyRows(
   if (!isValidDateWindow(from, to)) {
     return { rows: [], error: null };
   }
+  const rows: C2sProxyRow[] = [];
   try {
-    const { data, error } = await db().rpc("report_c2s_documentation_proxy", {
-      p_from: from,
-      p_to: to,
-    });
-    if (error) return { rows: [], error: error.message };
-    return {
-      rows: ((data ?? []) as Record<string, unknown>[]).map(normalizeProxyRow),
-      error: null,
-    };
+    for (let page = 0; page < C2S_MAX_PAGES; page += 1) {
+      const { data, error } = await db().rpc("report_c2s_documentation_proxy_page", {
+        p_from: from,
+        p_to: to,
+        p_limit: C2S_PAGE_SIZE,
+        p_offset: page * C2S_PAGE_SIZE,
+      });
+      if (error) return { rows: [], error: error.message };
+      const batch = (data ?? []) as Record<string, unknown>[];
+      for (const raw of batch) rows.push(normalizeProxyRow(raw));
+      if (batch.length < C2S_PAGE_SIZE) break;
+    }
+    return { rows, error: null };
   } catch (err) {
     return {
       rows: [],
@@ -211,6 +244,45 @@ export async function fetchC2sProxyRows(
     };
   }
 }
+
+/**
+ * Aggregate governance counts the viewer is permitted to see, straight from the
+ * staff-safe `report_c2s_governance_counts()` RPC. The RPC constrains every
+ * counted row with `c2s_can_read_subject`, exposes no subject or record detail,
+ * and returns zero active formal records while the program is inactive. Active
+ * formal counts are NEVER inferred from proxy rows.
+ */
+export interface C2sGovernanceCounts {
+  historicalFormalRecords: number;
+  activeFormalRecords: number;
+  openDisputes: number;
+  activeApprovedExceptions: number;
+}
+
+export const C2S_EMPTY_GOVERNANCE_COUNTS: C2sGovernanceCounts = {
+  historicalFormalRecords: 0,
+  activeFormalRecords: 0,
+  openDisputes: 0,
+  activeApprovedExceptions: 0,
+};
+
+export async function fetchC2sGovernanceCounts(): Promise<C2sGovernanceCounts> {
+  try {
+    const { data, error } = await db().rpc("report_c2s_governance_counts");
+    if (error) return C2S_EMPTY_GOVERNANCE_COUNTS;
+    const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | undefined;
+    if (!row) return C2S_EMPTY_GOVERNANCE_COUNTS;
+    return {
+      historicalFormalRecords: num(row.historical_formal_records) ?? 0,
+      activeFormalRecords: num(row.active_formal_records) ?? 0,
+      openDisputes: num(row.open_disputes) ?? 0,
+      activeApprovedExceptions: num(row.active_approved_exceptions) ?? 0,
+    };
+  } catch {
+    return C2S_EMPTY_GOVERNANCE_COUNTS;
+  }
+}
+
 
 export function fetchC2sTrackerRecords(): Promise<C2sReadResult<C2sTrackerRecord>> {
   return readC2sTable<C2sTrackerRecord>(
@@ -333,22 +405,28 @@ export async function fetchC2sEmployeeNames(
 ): Promise<Record<string, string>> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return {};
+  const out: Record<string, string> = {};
   try {
-    const { data, error } = await db()
-      .from("employees")
-      .select("id,first_name,last_name")
-      .in("id", unique.slice(0, 500));
-    if (error) return {};
-    const out: Record<string, string> = {};
-    for (const row of (data ?? []) as Record<string, unknown>[]) {
-      const name = [text(row.first_name), text(row.last_name)].filter(Boolean).join(" ").trim();
-      if (row.id) out[String(row.id)] = name || C2S_EMPLOYEE_FALLBACK_NAME;
+    // Every id is looked up, in safe chunks. Nothing is dropped, so no subject
+    // silently degrades to the "Employee" fallback just because the list is long.
+    for (let i = 0; i < unique.length; i += C2S_NAME_CHUNK_SIZE) {
+      const chunk = unique.slice(i, i + C2S_NAME_CHUNK_SIZE);
+      const { data, error } = await db()
+        .from("employees")
+        .select("id,first_name,last_name")
+        .in("id", chunk);
+      if (error) continue;
+      for (const row of (data ?? []) as Record<string, unknown>[]) {
+        const name = [text(row.first_name), text(row.last_name)].filter(Boolean).join(" ").trim();
+        if (row.id) out[String(row.id)] = name || C2S_EMPLOYEE_FALLBACK_NAME;
+      }
     }
     return out;
   } catch {
-    return {};
+    return out;
   }
 }
+
 
 /** The signed-in user's own employee id, when one is readable under RLS. */
 export async function fetchViewerEmployeeId(): Promise<string | null> {
@@ -370,22 +448,22 @@ export async function fetchViewerEmployeeId(): Promise<string | null> {
 }
 
 /**
- * Does the signed-in user hold one of the roles encoded in the database helper
- * `c2s_is_hr_authority`? Read from `user_roles` under normal RLS.
+ * Does the database consider this viewer an HR authority? Answered ONLY by the
+ * database function `c2s_is_hr_authority()` under the caller's own session —
+ * never by reading `user_roles` and re-deciding role membership in the browser.
+ * The role set below documents what that function encodes; it is not consulted
+ * for the decision.
  */
 export async function fetchIsC2sHrAuthority(): Promise<boolean> {
   try {
-    const { data: auth } = await supabase.auth.getUser();
-    const userId = auth?.user?.id;
-    if (!userId) return false;
-    const { data, error } = await db().from("user_roles").select("role").eq("user_id", userId);
+    const { data, error } = await db().rpc("c2s_is_hr_authority");
     if (error) return false;
-    const roles = ((data ?? []) as Record<string, unknown>[]).map((r) => String(r.role));
-    return roles.some((r) => (C2S_HR_AUTHORITY_ROLES as readonly string[]).includes(r));
+    return Boolean(Array.isArray(data) ? data[0] : data);
   } catch {
     return false;
   }
 }
+
 
 /** Does the database consider this viewer the subject's direct manager? */
 export async function fetchIsDirectManager(subjectEmployeeId: string): Promise<boolean> {

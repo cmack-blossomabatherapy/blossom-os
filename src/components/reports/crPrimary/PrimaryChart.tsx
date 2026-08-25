@@ -32,6 +32,8 @@ export interface PrimaryChartProps {
   data: ChartDatum[];
   valueLabel: string;
   secondaryLabel?: string;
+  /** Optional third count series. Only ever used with same-unit counts. */
+  tertiaryLabel?: string;
   /** Clicking a bar/point/slice opens the matching drilldown. */
   onSelect?: (label: string) => void;
   height?: number;
@@ -46,6 +48,7 @@ export function PrimaryChart({
   data,
   valueLabel,
   secondaryLabel,
+  tertiaryLabel,
   onSelect,
   height = 260,
   className,
@@ -148,6 +151,9 @@ export function PrimaryChart({
                 </Bar>
                 {secondaryLabel && (
                   <Bar dataKey="secondary" name={secondaryLabel} fill={COLORS[1]} radius={[4, 4, 0, 0]} />
+                )}
+                {tertiaryLabel && (
+                  <Bar dataKey="tertiary" name={tertiaryLabel} fill={COLORS[3]} radius={[4, 4, 0, 0]} />
                 )}
               </BarChart>
             )}
