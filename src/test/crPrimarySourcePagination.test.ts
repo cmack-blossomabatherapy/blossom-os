@@ -10,6 +10,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: () => ({
       select: () => ({
+        order: () => ({
         range: (from: number, to: number) => {
           state.calls.push([from, to]);
           // The Data API caps every response at 1,000 rows.
@@ -20,6 +21,7 @@ vi.mock("@/integrations/supabase/client", () => ({
             error: state.error ? { message: state.error } : null,
           });
         },
+        }),
       }),
     }),
   },
@@ -46,7 +48,7 @@ describe("crPrimary source pagination", () => {
     expect(res.error).toBeNull();
     expect(res.rows).toHaveLength(total);
     expect(res.rows[total - 1].id).toBe(total - 1);
-    expect(state.calls.length).toBe(5);
+    expect(state.calls.length).toBe(4);
     expect(state.calls[0]).toEqual([0, CR_PAGE_SIZE - 1]);
   });
 
@@ -56,10 +58,10 @@ describe("crPrimary source pagination", () => {
     expect(res.rows).toHaveLength(56936);
   });
 
-  it("stops only on an empty page and returns no error", async () => {
+  it("stops on the first short page and returns no error", async () => {
     state.pages = [makeRows(10)];
     const res = await readTable("cr_schedule_events", "id");
-    expect(state.calls.length).toBe(2);
+    expect(state.calls.length).toBe(1);
     expect(res.rows).toHaveLength(10);
     expect(res.error).toBeNull();
   });

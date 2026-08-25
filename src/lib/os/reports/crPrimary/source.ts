@@ -30,31 +30,44 @@ import type {
 export const CR_PAGE_SIZE = 1000;
 /** Hard safety cap; high enough for current + future production volume. */
 export const CR_SAFETY_CAP = 250000;
+/** Explicit, visible error when a read hits the safety cap. */
+export const CR_SAFETY_CAP_ERROR =
+  `Result exceeded the ${CR_SAFETY_CAP.toLocaleString()} row safety cap — totals would be incomplete`;
 
 export interface CrLoadResult<T> {
   rows: T[];
   error: string | null;
 }
 
+/**
+ * Complete, deterministic paging over a normalized table or curated view.
+ *
+ * The Data API silently caps every response at 1,000 rows, so a single read
+ * would present a partial total as if it were complete. Rows are ordered by a
+ * stable unique column before `.range(...)` so pages never overlap or skip, and
+ * paging stops on the first short page.
+ */
 export async function readTable<T>(
   table: string,
   columns: string,
+  orderColumn = "id",
 ): Promise<CrLoadResult<T>> {
   const rows: T[] = [];
   try {
     for (let from = 0; from < CR_SAFETY_CAP; from += CR_PAGE_SIZE) {
       const to = Math.min(from + CR_PAGE_SIZE, CR_SAFETY_CAP) - 1;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from(table)
-        .select(columns)
-        .range(from, to);
+      let query = (supabase as any).from(table).select(columns);
+      if (typeof query.order === "function") {
+        query = query.order(orderColumn, { ascending: true });
+      }
+      const { data, error } = await query.range(from, to);
       if (error) return { rows: rows as T[], error: error.message };
       const page = (data ?? []) as T[];
-      if (page.length === 0) return { rows, error: null };
       rows.push(...page);
+      if (page.length < to - from + 1) return { rows, error: null };
     }
-    return { rows, error: "Result exceeded safety cap" };
+    return { rows, error: CR_SAFETY_CAP_ERROR };
   } catch (err) {
     return {
       rows,
@@ -62,6 +75,36 @@ export async function readTable<T>(
     };
   }
 }
+
+/**
+ * Complete, deterministic paging over a curated SECURITY DEFINER report RPC.
+ * The functions carry their own `ORDER BY` over stable unique fields, so range
+ * requests are stable across calls.
+ */
+export async function readRpcPaged<T>(
+  name: string,
+  label: string,
+): Promise<CrLoadResult<T>> {
+  const rows: T[] = [];
+  try {
+    for (let from = 0; from < CR_SAFETY_CAP; from += CR_PAGE_SIZE) {
+      const to = Math.min(from + CR_PAGE_SIZE, CR_SAFETY_CAP) - 1;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const query = (supabase as any).rpc(name);
+      const { data, error } =
+        typeof query?.range === "function" ? await query.range(from, to) : await query;
+      if (error) return { rows, error: error.message };
+      const page = (data ?? []) as T[];
+      rows.push(...page);
+      if (typeof query?.range !== "function") return { rows, error: null };
+      if (page.length < to - from + 1) return { rows, error: null };
+    }
+    return { rows, error: CR_SAFETY_CAP_ERROR };
+  } catch (err) {
+    return { rows, error: err instanceof Error ? err.message : `Failed to read ${label}` };
+  }
+}
+
 
 export function fetchCrBillingSessions(): Promise<CrLoadResult<CrBillingSessionRow>> {
   return readTable<CrBillingSessionRow>(
@@ -73,7 +116,7 @@ export function fetchCrBillingSessions(): Promise<CrLoadResult<CrBillingSessionR
 export function fetchCrScheduleEvents(): Promise<CrLoadResult<CrScheduleEventRow>> {
   return readTable<CrScheduleEventRow>(
     "cr_schedule_events",
-    "id,batch_id,event_date,procedure_code,scheduled_hours,client_name,provider_name,status,cancellation_reason,cancelled_by,state,location,payor",
+    "id,batch_id,event_date,procedure_code,scheduled_hours,client_name,client_cr_id,provider_name,provider_cr_id,status,cancellation_reason,cancelled_by,state,location,payor",
   );
 }
 
@@ -92,7 +135,7 @@ export function fetchCrAuthorizations(): Promise<CrLoadResult<CrAuthorizationRow
 export function fetchCrScheduleCurrent(): Promise<CrLoadResult<CrScheduleCurrentRow>> {
   return readTable<CrScheduleCurrentRow>(
     "v_cr_schedule_current",
-    "id,event_date,start_time,end_time,service_code,procedure_code,billing_code,billing_code_name,scheduled_hours,client_name,provider_name,status,attendance,cancelled,deleted,converted_to_timesheet,cancellation_reason,cancelled_by,state,location,payor,billing_creation_date,last_seen_at",
+    "id,event_date,start_time,end_time,service_code,procedure_code,billing_code,billing_code_name,scheduled_hours,client_name,client_cr_id,provider_name,provider_cr_id,status,attendance,cancelled,deleted,converted_to_timesheet,cancellation_reason,cancelled_by,state,location,payor,billing_creation_date,last_seen_at",
   );
 }
 
@@ -108,36 +151,21 @@ export function fetchCrAuthorizationCurrent(): Promise<
 
 /**
  * Curated authorization lifecycle events via the `report_authorization_events`
- * SECURITY DEFINER RPC — cross-state, no PHI beyond the client name.
+ * SECURITY DEFINER RPC — cross-state, no PHI beyond the client name. Paged so a
+ * busy authorization history is never silently truncated at 1,000 rows.
  */
-export async function fetchReportAuthorizationEvents(): Promise<
+export function fetchReportAuthorizationEvents(): Promise<
   CrLoadResult<ReportAuthorizationEventRow>
 > {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc("report_authorization_events");
-    if (error) return { rows: [], error: error.message };
-    return { rows: (data ?? []) as ReportAuthorizationEventRow[], error: null };
-  } catch (err) {
-    return {
-      rows: [],
-      error:
-        err instanceof Error ? err.message : "Failed to read authorization lifecycle events",
-    };
-  }
+  return readRpcPaged<ReportAuthorizationEventRow>(
+    "report_authorization_events",
+    "authorization lifecycle events",
+  );
 }
 
-/** Generic curated-RPC reader: never throws, returns rows plus an error. */
-async function readRpc<T>(name: string, label: string): Promise<CrLoadResult<T>> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).rpc(name);
-    if (error) return { rows: [], error: error.message };
-    return { rows: (data ?? []) as T[], error: null };
-  } catch (err) {
-    return { rows: [], error: err instanceof Error ? err.message : `Failed to read ${label}` };
-  }
-}
+/** Generic curated-RPC reader: complete paging, never throws. */
+const readRpc = readRpcPaged;
+
 
 /**
  * Curated authorization operational actions via `report_authorization_actions`.

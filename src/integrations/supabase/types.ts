@@ -10716,6 +10716,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled: boolean | null
           cancelled_by: string | null
+          client_cr_id: string | null
           client_name: string | null
           converted_to_timesheet: boolean | null
           created_at: string
@@ -10728,6 +10729,7 @@ export type Database = {
           location: string | null
           payor: string | null
           procedure_code: string | null
+          provider_cr_id: string | null
           provider_name: string | null
           row_hash: string
           scheduled_hours: number | null
@@ -10746,6 +10748,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled?: boolean | null
           cancelled_by?: string | null
+          client_cr_id?: string | null
           client_name?: string | null
           converted_to_timesheet?: boolean | null
           created_at?: string
@@ -10758,6 +10761,7 @@ export type Database = {
           location?: string | null
           payor?: string | null
           procedure_code?: string | null
+          provider_cr_id?: string | null
           provider_name?: string | null
           row_hash: string
           scheduled_hours?: number | null
@@ -10776,6 +10780,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled?: boolean | null
           cancelled_by?: string | null
+          client_cr_id?: string | null
           client_name?: string | null
           converted_to_timesheet?: boolean | null
           created_at?: string
@@ -10788,6 +10793,7 @@ export type Database = {
           location?: string | null
           payor?: string | null
           procedure_code?: string | null
+          provider_cr_id?: string | null
           provider_name?: string | null
           row_hash?: string
           scheduled_hours?: number | null
@@ -34302,6 +34308,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled: boolean | null
           cancelled_by: string | null
+          client_cr_id: string | null
           client_name: string | null
           converted_to_timesheet: boolean | null
           deleted: boolean | null
@@ -34312,6 +34319,7 @@ export type Database = {
           location: string | null
           payor: string | null
           procedure_code: string | null
+          provider_cr_id: string | null
           provider_name: string | null
           scheduled_hours: number | null
           service_code: string | null
@@ -34328,6 +34336,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled?: boolean | null
           cancelled_by?: string | null
+          client_cr_id?: string | null
           client_name?: string | null
           converted_to_timesheet?: boolean | null
           deleted?: boolean | null
@@ -34338,6 +34347,7 @@ export type Database = {
           location?: string | null
           payor?: string | null
           procedure_code?: string | null
+          provider_cr_id?: string | null
           provider_name?: string | null
           scheduled_hours?: number | null
           service_code?: never
@@ -34354,6 +34364,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled?: boolean | null
           cancelled_by?: string | null
+          client_cr_id?: string | null
           client_name?: string | null
           converted_to_timesheet?: boolean | null
           deleted?: boolean | null
@@ -34364,6 +34375,7 @@ export type Database = {
           location?: string | null
           payor?: string | null
           procedure_code?: string | null
+          provider_cr_id?: string | null
           provider_name?: string | null
           scheduled_hours?: number | null
           service_code?: never

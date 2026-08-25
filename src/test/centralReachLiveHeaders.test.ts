@@ -37,8 +37,9 @@ describe("CentralReach live export headers", () => {
       Event: "E1",
       Cancelled: "Yes",
       EventDate: "2026-06-02",
-      Principal1Name: "John Smith",
-      Principal2Name: "Jane BCBA",
+      // Principal1 = provider, Principal2 = client (audited CR export).
+      Principal1Name: "Jane BCBA",
+      Principal2Name: "John Smith",
       SegmentHours: "3",
       CancelledReason: "Client illness",
       LocationStateProvince: "NC",
