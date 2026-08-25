@@ -1,10 +1,11 @@
 /**
- * Authorization Command Center (`authorization-analysis`) — Phase 2A.
+ * Authorization Command Center (`authorization-analysis`) — Phase 2A repair.
  *
- * Three operational questions, three tabs:
- *   1. Lifecycle    — what happened to submissions (logged events only).
- *   2. Continuity    — who is expiring, expired, or has no coverage.
- *   3. Coverage gaps — clients with no active authorization today.
+ * Four URL-addressable tabs (`?tab=`):
+ *   1. lifecycle        — true logged event counts, with provenance.
+ *   2. continuity       — active / expired / expiring, renewals, gap candidates.
+ *   3. progress-reports — real PR events plus authoritative due dates only.
+ *   4. pauses           — confirmed pauses, separated from gap candidates.
  *
  * Rules enforced here:
  * - Lifecycle numbers come only from logged authorization events. When no
@@ -37,6 +38,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
 import { useUrlFilterState } from "@/hooks/useUrlFilterState";
+import { useUrlState } from "@/hooks/useUrlState";
+import { useAuthorizationWeeklyEvents } from "@/hooks/useAuthorizationWeeklyEvents";
+import { LogAuthEventDialog } from "@/components/reports/crPrimary/LogAuthEventDialog";
+import { withCurrentMonthDefault } from "@/lib/os/reports/crPrimary/reportWindow";
 import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
 import type {
@@ -57,6 +62,12 @@ import {
   startDateOf,
   type ContinuityRow,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
+import {
+  NO_AUTHORITATIVE_DUE,
+  computePauseOps,
+  computeProgressReportOps,
+  type ProgressReportDueRow,
+} from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 
 const FILTER_FIELDS = ["state", "client", "payor", "code"] as const;
@@ -142,13 +153,28 @@ function projectContinuityRows(rows: ContinuityRow[]): Record<string, unknown>[]
   }));
 }
 
-type TabKey = "lifecycle" | "continuity" | "gaps";
+/** Exactly four tabs, in this order, addressable via `?tab=`. */
+const TABS = [
+  { key: "lifecycle", label: "Lifecycle" },
+  { key: "continuity", label: "Continuity & Renewals" },
+  { key: "progress-reports", label: "Progress Reports" },
+  { key: "pauses", label: "Pauses" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
+/** Reports open on the current calendar month; Reset returns here. */
+const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function AuthorizationCommandCenterPage() {
-  const data = useCrPrimaryReport(["authCurrent", "authEvents"]);
-  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(EMPTY_FILTERS);
-  const [tab, setTab] = useState<TabKey>("continuity");
+  const data = useCrPrimaryReport(["authCurrent", "authEvents", "authActions"]);
+  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  const [tabParam, setTabParam] = useUrlState("tab", "continuity");
+  const tab = (TABS.some((t) => t.key === tabParam) ? tabParam : "continuity") as TabKey;
+  const setTab = (next: TabKey) => setTabParam(next);
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
+  const [logOpen, setLogOpen] = useState(false);
+  const { logEvent } = useAuthorizationWeeklyEvents();
 
   useEffect(() => {
     pushRecent("authorization-analysis");
@@ -180,6 +206,39 @@ export default function AuthorizationCommandCenterPage() {
 
   const lifecycle = useMemo(() => computeAuthorizationLifecycle(events), [events]);
   const continuity = useMemo(() => computeAuthorizationContinuity(auths), [auths]);
+
+  const actions = useMemo(
+    () =>
+      applyFilters(data.authActions, filters, (r) => ({
+        date: r.submitted_date ?? r.received_date ?? r.next_action_due_date,
+        state: r.state,
+        client: r.client_name,
+        payor: r.payor,
+        code: r.service_code,
+        status: r.status,
+      })),
+    [data.authActions, filters],
+  );
+
+  const progressReports = useMemo(
+    () => computeProgressReportOps(events, actions),
+    [events, actions],
+  );
+
+  const pauses = useMemo(
+    () =>
+      computePauseOps(
+        events,
+        continuity.clientsWithoutCoverage.map((c) => ({
+          client: c.client,
+          state: c.state,
+          payor: c.payor,
+          lastEnd: c.lastEnd,
+          note: c.note,
+        })),
+      ),
+    [events, continuity.clientsWithoutCoverage],
+  );
 
   const filterFields = useMemo<FilterFieldConfig[]>(
     () =>
@@ -319,7 +378,7 @@ export default function AuthorizationCommandCenterPage() {
       );
     }
     if (id === "gaps") {
-      setTab("gaps");
+      setTab("pauses");
       return;
     }
     setTab("continuity");
@@ -456,7 +515,7 @@ export default function AuthorizationCommandCenterPage() {
             filters={filters}
             fields={filterFields}
             onChange={(next) => setFilters(next)}
-            onReset={() => setFilters(EMPTY_FILTERS)}
+            onReset={() => setFilters(DEFAULT_FILTERS)}
           />
         </>
       }
@@ -474,15 +533,11 @@ export default function AuthorizationCommandCenterPage() {
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
           <TabsList className="h-9">
-            <TabsTrigger value="continuity" className="text-xs">
-              Coverage &amp; renewals
-            </TabsTrigger>
-            <TabsTrigger value="lifecycle" className="text-xs">
-              Lifecycle
-            </TabsTrigger>
-            <TabsTrigger value="gaps" className="text-xs">
-              Coverage gaps
-            </TabsTrigger>
+            {TABS.map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="text-xs">
+                {t.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <TabsContent value="continuity" className="mt-3 space-y-4">
@@ -613,7 +668,7 @@ export default function AuthorizationCommandCenterPage() {
                     openLifecycle(
                       `Lifecycle · ${k.label}`,
                       "Logged events for this authorization kind.",
-                      (e) => classifyLifecycleEvent(e.event_type).kind === k.kind,
+                      (e) => classifyLifecycleEvent(e.event_type, e.auth_type).kind === k.kind,
                       `authorization-lifecycle-${k.kind}`,
                     )
                   }
