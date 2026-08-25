@@ -29,6 +29,7 @@
  * signals is not a performance judgement.
  */
 import { localIsoDate } from "../reportWindow";
+import { finiteNumberOrNull } from "./numeric";
 
 export type PerformanceStatus =
   | "strong"
@@ -260,10 +261,8 @@ export interface PerformanceTargetRow {
   updated_at?: string | null;
 }
 
-const numOrNull = (v: unknown): number | null => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-};
+/** Strict: blank/boolean/invalid stays missing, a real 0 stays 0. */
+const numOrNull = (v: unknown): number | null => finiteNumberOrNull(v);
 
 /** MTD target hours from the real RPC contract, with a legacy alias fallback. */
 export function targetHoursOf(row: PerformanceTargetRow): number | null {

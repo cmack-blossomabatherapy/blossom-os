@@ -10,6 +10,8 @@
 import { cleanReasonText } from "../scheduleTruth";
 
 import { localIsoDate } from "../reportWindow";
+import { buildClientIdentityResolver } from "./clientIdentity";
+import { finiteNumberOrNull } from "./numeric";
 
 export interface ContinuityAuthRow {
   id?: string;
@@ -82,13 +84,22 @@ export interface ContinuityMetrics {
   byWindow: { key: ExpiringWindowKey; label: string; value: number }[];
   rows: ContinuityRow[];
   /** Clients with zero active coverage today — needs confirmation, not a fact. */
-  clientsWithoutCoverage: {
-    client: string;
-    state: string;
-    payor: string;
-    lastEnd: string | null;
-    note: string;
-  }[];
+  clientsWithoutCoverage: CoverageGapRow[];
+}
+
+/**
+ * One row per resolved client identity. A gap exists only when the client has
+ * no current coverage anywhere in the snapshot AND the latest known valid end
+ * date is strictly before today.
+ */
+export interface CoverageGapRow {
+  clientKey: string;
+  client: string;
+  clientCrId: string;
+  state: string;
+  payor: string;
+  lastEnd: string | null;
+  note: string;
 }
 
 export function endDateOf(row: ContinuityAuthRow): string | null {
@@ -114,9 +125,51 @@ export function daysBetween(from: string, to: string): number | null {
   return Math.round((b - a) / 86_400_000);
 }
 
-function num(v: number | null | undefined): number | null {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
+/** Strict: a blank/boolean/invalid hour value stays missing, never zero. */
+function num(v: unknown): number | null {
+  return finiteNumberOrNull(v);
+}
+
+const validDay = (v: unknown): string | null => {
+  const raw = cleanReasonText(v as string | null | undefined);
+  if (!raw) return null;
+  const day = raw.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) && !Number.isNaN(new Date(`${day}T00:00:00Z`).getTime())
+    ? day
+    : null;
+};
+
+/**
+ * Matched start/end pairs only. Combining a follow-up future end date with an
+ * unrelated current start date would manufacture coverage that no single
+ * authorization actually provides.
+ */
+function datePairs(row: ContinuityAuthRow): { start: string | null; end: string | null }[] {
+  return [
+    { start: validDay(row.actual_start_date), end: validDay(row.actual_end_date) },
+    { start: validDay(row.start_date), end: validDay(row.end_date) },
+    { start: validDay(row.followup_start_date), end: validDay(row.followup_end_date) },
+  ].filter((p) => p.start || p.end);
+}
+
+/** Conservative current-coverage test for a single authorization row. */
+export function hasCurrentCoverage(row: ContinuityAuthRow, today: string): boolean {
+  if (row.is_active === false) return false;
+  return datePairs(row).some((p) => {
+    if (!p.end) return false;
+    if (p.end < today) return false;
+    if (p.start && p.start > today) return false;
+    return true;
+  });
+}
+
+/** Latest valid end date documented anywhere on the row. */
+export function latestEndOf(row: ContinuityAuthRow): string | null {
+  let latest: string | null = null;
+  for (const p of datePairs(row)) {
+    if (p.end && (!latest || p.end > latest)) latest = p.end;
+  }
+  return latest;
 }
 
 export function computeAuthorizationContinuity(
@@ -133,9 +186,21 @@ export function computeAuthorizationContinuity(
   let expired = 0;
   let unknown = 0;
 
+  // Client identity is resolved across the FULL snapshot before grouping, so
+  // gap output never depends on row order and id-less rows never split.
+  const identity = buildClientIdentityResolver(rows);
+
   const clientCoverage = new Map<
     string,
-    { client: string; state: string; payor: string; anyActive: boolean; lastEnd: string | null }
+    {
+      clientKey: string;
+      client: string;
+      clientCrId: string;
+      state: string;
+      payor: string;
+      anyCurrent: boolean;
+      lastEnd: string | null;
+    }
   >();
 
   rows.forEach((row, index) => {
@@ -176,19 +241,26 @@ export function computeAuthorizationContinuity(
     if (window) windowCounts.set(window, (windowCounts.get(window) ?? 0) + 1);
 
     const client = (row.client_name ?? "").trim() || "Unknown client";
-    const clientKey = (row.client_cr_id ?? client).toLowerCase();
+    const clientCrId = (row.client_cr_id ?? "").trim();
+    const clientKey = identity.keyFor(clientCrId, client);
     if (!clientCoverage.has(clientKey)) {
       clientCoverage.set(clientKey, {
+        clientKey,
         client,
+        clientCrId,
         state: (row.state ?? "").trim() || "Unknown",
         payor: (row.payor ?? "").trim() || "Unknown",
-        anyActive: false,
+        anyCurrent: false,
         lastEnd: null,
       });
     }
     const coverage = clientCoverage.get(clientKey)!;
-    if (continuity === "active" || continuity === "expiring") coverage.anyActive = true;
-    if (end && (!coverage.lastEnd || end > coverage.lastEnd)) coverage.lastEnd = end;
+    if (!coverage.clientCrId && clientCrId) coverage.clientCrId = clientCrId;
+    if (hasCurrentCoverage(row, today)) coverage.anyCurrent = true;
+    const rowLatestEnd = latestEndOf(row);
+    if (rowLatestEnd && (!coverage.lastEnd || rowLatestEnd > coverage.lastEnd)) {
+      coverage.lastEnd = rowLatestEnd;
+    }
 
     const renewal: ContinuityRow["renewal"] =
       continuity === "expired"
@@ -226,10 +298,14 @@ export function computeAuthorizationContinuity(
     });
   });
 
-  const clientsWithoutCoverage = [...clientCoverage.values()]
-    .filter((c) => !c.anyActive)
+  const clientsWithoutCoverage: CoverageGapRow[] = [...clientCoverage.values()]
+    // Not-started/future-only rows, unknown dates and an end date of today are
+    // never gap candidates: the latest known end must be strictly in the past.
+    .filter((c) => !c.anyCurrent && c.lastEnd != null && c.lastEnd < today)
     .map((c) => ({
+      clientKey: c.clientKey,
       client: c.client,
+      clientCrId: c.clientCrId,
       state: c.state,
       payor: c.payor,
       lastEnd: c.lastEnd,

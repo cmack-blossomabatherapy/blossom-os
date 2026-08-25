@@ -17,6 +17,7 @@
  */
 import { CODE_PARENT_TRAINING, hoursOf, normalizeCode } from "./codes";
 import { localIsoDate } from "../reportWindow";
+import { buildClientIdentityResolver } from "./clientIdentity";
 
 export const NO_TARGET_LABEL = "No target";
 
@@ -352,24 +353,18 @@ export function computeParentTrainingAnalysis({
   const events: PtEventRow[] = [];
 
   /**
-   * Client identity. A CR client id always wins, so two different clients that
-   * happen to share a name are never merged. A row with no id falls back to the
-   * normalized name, and only adopts an id-bearing identity when exactly one
-   * id-bearing client carries that name (an unambiguous alias).
+   * Client identity is resolved from the COMPLETE input before any grouping,
+   * so output never depends on row order. A CR client id always wins; an
+   * id-less row adopts an id only when that name maps to exactly one id.
    */
-  const idKeyByName = new Map<string, string | null>();
-  const identityKey = (crId: string | null | undefined, client: string): string => {
-    const id = String(crId ?? "").trim();
-    const name = client.toLowerCase();
-    if (id) {
-      const key = `cr:${id}`;
-      const prev = idKeyByName.get(name);
-      if (prev === undefined) idKeyByName.set(name, key);
-      else if (prev !== key) idKeyByName.set(name, null); // ambiguous name
-      return key;
-    }
-    return idKeyByName.get(name) || `nm:${name}`;
-  };
+  const identity = buildClientIdentityResolver(
+    authorizations.map((a) => ({ client: a.clientName, clientCrId: a.clientCrId })),
+    billed,
+    scheduled,
+    activeClients,
+  );
+  const identityKey = (crId: string | null | undefined, client: string): string =>
+    identity.keyFor(crId, client);
 
   // Targets are grouped per client identity from the authorization snapshot.
   const authsByClient = new Map<string, PtAuthorizationInput[]>();
