@@ -17,7 +17,7 @@ import {
   dayOfWeekLabel,
   eventDurationHours,
   isCancelledEventStrict,
-  isCountableEvent,
+  isActiveScheduleEvent,
   isDeletedEvent,
   isNoShow,
   scheduleTruthCoverage,
@@ -241,7 +241,7 @@ export function computeCancellationCenter(
   const clientSet = new Set<string>();
   const providerSet = new Set<string>();
 
-  for (const row of countable) {
+  for (const row of activeSchedule) {
     const isCancelled = isCancelledEventStrict(row);
     const hours = eventDurationHours(row);
     const client = text(row.client_name, "Unknown client");
@@ -324,7 +324,7 @@ export function computeCancellationCenter(
         name,
         cancellations: b.cancellations,
         cancelledHours: Math.round(b.hours * 10) / 10,
-        countableEvents: b.countable,
+        activeScheduleEvents: b.countable,
         cancellationRate: b.countable ? pct(b.cancellations, b.countable) : null,
         clients: b.clients.size,
         share: totalCancellations ? pct(b.cancellations, totalCancellations) : 0,
@@ -360,7 +360,7 @@ export function computeCancellationCenter(
         provider,
         cancellations: d.cancellations,
         cancelledHours: Math.round(d.hours * 10) / 10,
-        countableEvents: d.countable,
+        activeScheduleEvents: d.countable,
         cancellationRate: rate,
         weeksAffected: d.weeks.size,
         lastCancellation: d.last,
