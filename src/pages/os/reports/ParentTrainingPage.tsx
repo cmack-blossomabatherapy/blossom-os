@@ -677,7 +677,7 @@ export default function ParentTrainingPage() {
                 ? "Below documented target pace"
                 : tab === "needs-reschedule"
                   ? "Cancelled and not yet rescheduled"
-                  : "Ownership or identity gaps"
+                  : "Data gaps"
           }
           subtitle={
             tab === "no-upcoming"
@@ -686,7 +686,7 @@ export default function ParentTrainingPage() {
                 ? "Behind the pace their documented authorized hours or cadence requires."
                 : tab === "needs-reschedule"
                   ? "A cancelled 97156 session with no later replacement on the calendar."
-                  : "No canonical BCBA owner could be resolved for the client at these dates."
+                  : "No canonical BCBA owner could be resolved at these dates, or the snapshot documents conflicting 97156 target requirements. Clients with simply no documented requirement stay No target and are not listed here."
           }
           columns={clientColumns}
           rows={
