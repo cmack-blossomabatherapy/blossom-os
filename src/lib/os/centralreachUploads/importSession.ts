@@ -133,8 +133,8 @@ export function crImportRowHash(row: Record<string, unknown>, kind?: CRUploadKin
 
 /** The CentralReach source row id, persisted explicitly as `source_row_id`. */
 export function crSourceRowId(row: Record<string, unknown>, kind?: CRUploadKind): string | null {
+  const identity = crImportRowIdentity(row, kind);
 
-  const identity = crImportRowIdentity(row);
   return identity.startsWith("id:") ? identity.slice(3) : null;
 }
 
