@@ -8007,9 +8007,13 @@ export type Database = {
           client_name: string | null
           created_at: string
           id: string
+          last_seen_at: string | null
+          last_seen_batch_id: string | null
           payor: string | null
           procedure_code: string | null
           row_hash: string
+          source_quality: Json | null
+          source_row_id: string | null
           state: string | null
           used_hours: number | null
           utilization_percent: number | null
@@ -8023,9 +8027,13 @@ export type Database = {
           client_name?: string | null
           created_at?: string
           id?: string
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           payor?: string | null
           procedure_code?: string | null
           row_hash: string
+          source_quality?: Json | null
+          source_row_id?: string | null
           state?: string | null
           used_hours?: number | null
           utilization_percent?: number | null
@@ -8039,9 +8047,13 @@ export type Database = {
           client_name?: string | null
           created_at?: string
           id?: string
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           payor?: string | null
           procedure_code?: string | null
           row_hash?: string
+          source_quality?: Json | null
+          source_row_id?: string | null
           state?: string | null
           used_hours?: number | null
           utilization_percent?: number | null
@@ -8062,77 +8074,161 @@ export type Database = {
         Row: {
           actual_end_date: string | null
           actual_start_date: string | null
+          authorization_id: string | null
           authorization_number: string | null
           authorized_hours: number | null
+          authorized_hours_all: number | null
+          authorized_hours_auth_range: number | null
+          authorized_hours_month: number | null
           batch_id: string
           client_cr_id: string | null
           client_labels: string | null
           client_name: string | null
           created_at: string
           end_date: string | null
+          followup_authorization_number: string | null
           followup_end_date: string | null
+          followup_service_codes: string | null
           followup_start_date: string | null
+          frequency: string | null
           id: string
+          implementer: string | null
           is_active: boolean | null
+          last_seen_at: string | null
+          last_seen_batch_id: string | null
+          manager: string | null
           payor: string | null
+          pending_hours_all: number | null
+          pending_hours_auth_range: number | null
+          pending_hours_month: number | null
           procedure_code: string | null
           remaining_hours: number | null
+          remaining_hours_all: number | null
+          remaining_hours_auth_range: number | null
+          remaining_hours_month: number | null
           row_hash: string
+          scheduled_hours_all: number | null
+          scheduled_hours_auth_range: number | null
+          scheduled_hours_month: number | null
           service_codes: string | null
+          source_quality: Json | null
+          source_row_id: string | null
           start_date: string | null
           state: string | null
           status: string | null
+          utilization_percent_all: number | null
+          utilization_percent_auth_range: number | null
+          utilization_percent_month: number | null
           worked_hours: number | null
+          worked_hours_all: number | null
+          worked_hours_auth_range: number | null
+          worked_hours_month: number | null
         }
         Insert: {
           actual_end_date?: string | null
           actual_start_date?: string | null
+          authorization_id?: string | null
           authorization_number?: string | null
           authorized_hours?: number | null
+          authorized_hours_all?: number | null
+          authorized_hours_auth_range?: number | null
+          authorized_hours_month?: number | null
           batch_id: string
           client_cr_id?: string | null
           client_labels?: string | null
           client_name?: string | null
           created_at?: string
           end_date?: string | null
+          followup_authorization_number?: string | null
           followup_end_date?: string | null
+          followup_service_codes?: string | null
           followup_start_date?: string | null
+          frequency?: string | null
           id?: string
+          implementer?: string | null
           is_active?: boolean | null
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
+          manager?: string | null
           payor?: string | null
+          pending_hours_all?: number | null
+          pending_hours_auth_range?: number | null
+          pending_hours_month?: number | null
           procedure_code?: string | null
           remaining_hours?: number | null
+          remaining_hours_all?: number | null
+          remaining_hours_auth_range?: number | null
+          remaining_hours_month?: number | null
           row_hash: string
+          scheduled_hours_all?: number | null
+          scheduled_hours_auth_range?: number | null
+          scheduled_hours_month?: number | null
           service_codes?: string | null
+          source_quality?: Json | null
+          source_row_id?: string | null
           start_date?: string | null
           state?: string | null
           status?: string | null
+          utilization_percent_all?: number | null
+          utilization_percent_auth_range?: number | null
+          utilization_percent_month?: number | null
           worked_hours?: number | null
+          worked_hours_all?: number | null
+          worked_hours_auth_range?: number | null
+          worked_hours_month?: number | null
         }
         Update: {
           actual_end_date?: string | null
           actual_start_date?: string | null
+          authorization_id?: string | null
           authorization_number?: string | null
           authorized_hours?: number | null
+          authorized_hours_all?: number | null
+          authorized_hours_auth_range?: number | null
+          authorized_hours_month?: number | null
           batch_id?: string
           client_cr_id?: string | null
           client_labels?: string | null
           client_name?: string | null
           created_at?: string
           end_date?: string | null
+          followup_authorization_number?: string | null
           followup_end_date?: string | null
+          followup_service_codes?: string | null
           followup_start_date?: string | null
+          frequency?: string | null
           id?: string
+          implementer?: string | null
           is_active?: boolean | null
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
+          manager?: string | null
           payor?: string | null
+          pending_hours_all?: number | null
+          pending_hours_auth_range?: number | null
+          pending_hours_month?: number | null
           procedure_code?: string | null
           remaining_hours?: number | null
+          remaining_hours_all?: number | null
+          remaining_hours_auth_range?: number | null
+          remaining_hours_month?: number | null
           row_hash?: string
+          scheduled_hours_all?: number | null
+          scheduled_hours_auth_range?: number | null
+          scheduled_hours_month?: number | null
           service_codes?: string | null
+          source_quality?: Json | null
+          source_row_id?: string | null
           start_date?: string | null
           state?: string | null
           status?: string | null
+          utilization_percent_all?: number | null
+          utilization_percent_auth_range?: number | null
+          utilization_percent_month?: number | null
           worked_hours?: number | null
+          worked_hours_all?: number | null
+          worked_hours_auth_range?: number | null
+          worked_hours_month?: number | null
         }
         Relationships: [
           {
@@ -8186,6 +8282,84 @@ export type Database = {
         }
         Relationships: []
       }
+      cr_billing_session_status: {
+        Row: {
+          authorization_id: string | null
+          batch_id: string | null
+          billing_labels: string | null
+          claims_exported: boolean | null
+          created_at: string
+          creation_date: string | null
+          deleted: boolean | null
+          delivery_method: string | null
+          first_bill_date: string | null
+          first_claim_date: string | null
+          id: string
+          is_void: boolean | null
+          last_seen_at: string
+          last_seen_batch_id: string | null
+          location: string | null
+          place_of_service: string | null
+          provider_role: string | null
+          row_hash: string
+          signed_by_client: boolean | null
+          signed_by_provider: boolean | null
+          source_quality: Json
+          source_row_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          authorization_id?: string | null
+          batch_id?: string | null
+          billing_labels?: string | null
+          claims_exported?: boolean | null
+          created_at?: string
+          creation_date?: string | null
+          deleted?: boolean | null
+          delivery_method?: string | null
+          first_bill_date?: string | null
+          first_claim_date?: string | null
+          id?: string
+          is_void?: boolean | null
+          last_seen_at?: string
+          last_seen_batch_id?: string | null
+          location?: string | null
+          place_of_service?: string | null
+          provider_role?: string | null
+          row_hash: string
+          signed_by_client?: boolean | null
+          signed_by_provider?: boolean | null
+          source_quality?: Json
+          source_row_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authorization_id?: string | null
+          batch_id?: string | null
+          billing_labels?: string | null
+          claims_exported?: boolean | null
+          created_at?: string
+          creation_date?: string | null
+          deleted?: boolean | null
+          delivery_method?: string | null
+          first_bill_date?: string | null
+          first_claim_date?: string | null
+          id?: string
+          is_void?: boolean | null
+          last_seen_at?: string
+          last_seen_batch_id?: string | null
+          location?: string | null
+          place_of_service?: string | null
+          provider_role?: string | null
+          row_hash?: string
+          signed_by_client?: boolean | null
+          signed_by_provider?: boolean | null
+          source_quality?: Json
+          source_row_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cr_billing_sessions: {
         Row: {
           batch_id: string
@@ -8195,6 +8369,8 @@ export type Database = {
           date_of_service: string | null
           hours: number | null
           id: string
+          last_seen_at: string | null
+          last_seen_batch_id: string | null
           location: string | null
           payor: string | null
           procedure_code: string | null
@@ -8202,6 +8378,8 @@ export type Database = {
           rendering_provider_cr_id: string | null
           rendering_provider_name: string | null
           row_hash: string
+          source_quality: Json | null
+          source_row_id: string | null
           state: string | null
           status: string | null
         }
@@ -8213,6 +8391,8 @@ export type Database = {
           date_of_service?: string | null
           hours?: number | null
           id?: string
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           location?: string | null
           payor?: string | null
           procedure_code?: string | null
@@ -8220,6 +8400,8 @@ export type Database = {
           rendering_provider_cr_id?: string | null
           rendering_provider_name?: string | null
           row_hash: string
+          source_quality?: Json | null
+          source_row_id?: string | null
           state?: string | null
           status?: string | null
         }
@@ -8231,6 +8413,8 @@ export type Database = {
           date_of_service?: string | null
           hours?: number | null
           id?: string
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           location?: string | null
           payor?: string | null
           procedure_code?: string | null
@@ -8238,6 +8422,8 @@ export type Database = {
           rendering_provider_cr_id?: string | null
           rendering_provider_name?: string | null
           row_hash?: string
+          source_quality?: Json | null
+          source_row_id?: string | null
           state?: string | null
           status?: string | null
         }
@@ -8253,49 +8439,88 @@ export type Database = {
       }
       cr_claims: {
         Row: {
+          action_by: string | null
+          action_date: string | null
+          amount_raw: number | null
+          amount_unit: string
           batch_id: string
           billed_amount: number | null
           claim_number: string | null
           client_name: string | null
           created_at: string
           date_of_service: string | null
+          error_count: number | null
+          exported: boolean | null
           id: string
+          last_seen_at: string | null
+          last_seen_batch_id: string | null
           paid_amount: number | null
+          paid_amount_raw: number | null
           payor: string | null
           procedure_code: string | null
+          responses_status: string | null
           row_hash: string
+          source_quality: Json | null
+          source_row_id: string | null
           state: string | null
           status: string | null
+          submit_reason: string | null
         }
         Insert: {
+          action_by?: string | null
+          action_date?: string | null
+          amount_raw?: number | null
+          amount_unit?: string
           batch_id: string
           billed_amount?: number | null
           claim_number?: string | null
           client_name?: string | null
           created_at?: string
           date_of_service?: string | null
+          error_count?: number | null
+          exported?: boolean | null
           id?: string
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           paid_amount?: number | null
+          paid_amount_raw?: number | null
           payor?: string | null
           procedure_code?: string | null
+          responses_status?: string | null
           row_hash: string
+          source_quality?: Json | null
+          source_row_id?: string | null
           state?: string | null
           status?: string | null
+          submit_reason?: string | null
         }
         Update: {
+          action_by?: string | null
+          action_date?: string | null
+          amount_raw?: number | null
+          amount_unit?: string
           batch_id?: string
           billed_amount?: number | null
           claim_number?: string | null
           client_name?: string | null
           created_at?: string
           date_of_service?: string | null
+          error_count?: number | null
+          exported?: boolean | null
           id?: string
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           paid_amount?: number | null
+          paid_amount_raw?: number | null
           payor?: string | null
           procedure_code?: string | null
+          responses_status?: string | null
           row_hash?: string
+          source_quality?: Json | null
+          source_row_id?: string | null
           state?: string | null
           status?: string | null
+          submit_reason?: string | null
         }
         Relationships: [
           {
@@ -8359,7 +8584,11 @@ export type Database = {
           email: string | null
           id: string
           labels: string | null
+          last_seen_at: string | null
+          last_seen_batch_id: string | null
           row_hash: string
+          source_quality: Json | null
+          source_row_id: string | null
           state: string | null
         }
         Insert: {
@@ -8371,7 +8600,11 @@ export type Database = {
           email?: string | null
           id?: string
           labels?: string | null
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           row_hash: string
+          source_quality?: Json | null
+          source_row_id?: string | null
           state?: string | null
         }
         Update: {
@@ -8383,7 +8616,11 @@ export type Database = {
           email?: string | null
           id?: string
           labels?: string | null
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           row_hash?: string
+          source_quality?: Json | null
+          source_row_id?: string | null
           state?: string | null
         }
         Relationships: [
@@ -8745,12 +8982,15 @@ export type Database = {
           file_hash: string
           file_name: string
           id: string
+          import_strategy: string
           is_active: boolean
           notes: string | null
           parsed_row_count: number
           row_count: number
           status: string
+          unchanged_row_count: number
           updated_at: string
+          updated_row_count: number
           uploaded_by: string | null
           warnings: Json
         }
@@ -8765,12 +9005,15 @@ export type Database = {
           file_hash: string
           file_name: string
           id?: string
+          import_strategy?: string
           is_active?: boolean
           notes?: string | null
           parsed_row_count?: number
           row_count?: number
           status?: string
+          unchanged_row_count?: number
           updated_at?: string
+          updated_row_count?: number
           uploaded_by?: string | null
           warnings?: Json
         }
@@ -8785,12 +9028,15 @@ export type Database = {
           file_hash?: string
           file_name?: string
           id?: string
+          import_strategy?: string
           is_active?: boolean
           notes?: string | null
           parsed_row_count?: number
           row_count?: number
           status?: string
+          unchanged_row_count?: number
           updated_at?: string
+          updated_row_count?: number
           uploaded_by?: string | null
           warnings?: Json
         }
@@ -8967,53 +9213,92 @@ export type Database = {
       }
       cr_schedule_events: {
         Row: {
+          attendance: string | null
           batch_id: string
+          billing_code: string | null
+          billing_code_name: string | null
+          billing_creation_date: string | null
           cancellation_reason: string | null
+          cancelled: boolean | null
           cancelled_by: string | null
           client_name: string | null
+          converted_to_timesheet: boolean | null
           created_at: string
+          deleted: boolean | null
+          end_time: string | null
           event_date: string | null
           id: string
+          last_seen_at: string | null
+          last_seen_batch_id: string | null
           location: string | null
           payor: string | null
           procedure_code: string | null
           provider_name: string | null
           row_hash: string
           scheduled_hours: number | null
+          source_quality: Json | null
+          source_row_id: string | null
+          start_time: string | null
           state: string | null
           status: string | null
         }
         Insert: {
+          attendance?: string | null
           batch_id: string
+          billing_code?: string | null
+          billing_code_name?: string | null
+          billing_creation_date?: string | null
           cancellation_reason?: string | null
+          cancelled?: boolean | null
           cancelled_by?: string | null
           client_name?: string | null
+          converted_to_timesheet?: boolean | null
           created_at?: string
+          deleted?: boolean | null
+          end_time?: string | null
           event_date?: string | null
           id?: string
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           location?: string | null
           payor?: string | null
           procedure_code?: string | null
           provider_name?: string | null
           row_hash: string
           scheduled_hours?: number | null
+          source_quality?: Json | null
+          source_row_id?: string | null
+          start_time?: string | null
           state?: string | null
           status?: string | null
         }
         Update: {
+          attendance?: string | null
           batch_id?: string
+          billing_code?: string | null
+          billing_code_name?: string | null
+          billing_creation_date?: string | null
           cancellation_reason?: string | null
+          cancelled?: boolean | null
           cancelled_by?: string | null
           client_name?: string | null
+          converted_to_timesheet?: boolean | null
           created_at?: string
+          deleted?: boolean | null
+          end_time?: string | null
           event_date?: string | null
           id?: string
+          last_seen_at?: string | null
+          last_seen_batch_id?: string | null
           location?: string | null
           payor?: string | null
           procedure_code?: string | null
           provider_name?: string | null
           row_hash?: string
           scheduled_hours?: number | null
+          source_quality?: Json | null
+          source_row_id?: string | null
+          start_time?: string | null
           state?: string | null
           status?: string | null
         }
@@ -31873,6 +32158,22 @@ export type Database = {
           },
         ]
       }
+      v_authorization_operational_events: {
+        Row: {
+          authorization_number: string | null
+          client_cr_id: string | null
+          client_name: string | null
+          created_at: string | null
+          event_date: string | null
+          event_type: string | null
+          id: string | null
+          pause_reason: string | null
+          payor: string | null
+          source: string | null
+          state: string | null
+        }
+        Relationships: []
+      }
       v_bcba_authorization_deadlines: {
         Row: {
           auth_status: string | null
@@ -32172,6 +32473,213 @@ export type Database = {
         }
         Relationships: []
       }
+      v_cr_authorization_current: {
+        Row: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          authorization_id: string | null
+          authorization_number: string | null
+          authorized_hours: number | null
+          authorized_hours_all: number | null
+          authorized_hours_auth_range: number | null
+          authorized_hours_month: number | null
+          client_cr_id: string | null
+          client_name: string | null
+          end_date: string | null
+          followup_authorization_number: string | null
+          followup_end_date: string | null
+          followup_service_codes: string | null
+          followup_start_date: string | null
+          frequency: string | null
+          id: string | null
+          implementer: string | null
+          is_active: boolean | null
+          last_seen_at: string | null
+          manager: string | null
+          payor: string | null
+          pending_hours_all: number | null
+          pending_hours_auth_range: number | null
+          pending_hours_month: number | null
+          procedure_code: string | null
+          remaining_hours: number | null
+          remaining_hours_all: number | null
+          remaining_hours_auth_range: number | null
+          remaining_hours_month: number | null
+          scheduled_hours_all: number | null
+          scheduled_hours_auth_range: number | null
+          scheduled_hours_month: number | null
+          service_codes: string | null
+          source_row_id: string | null
+          start_date: string | null
+          state: string | null
+          status: string | null
+          utilization_percent_all: number | null
+          utilization_percent_auth_range: number | null
+          utilization_percent_month: number | null
+          worked_hours: number | null
+          worked_hours_all: number | null
+          worked_hours_auth_range: number | null
+          worked_hours_month: number | null
+        }
+        Insert: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          authorization_id?: string | null
+          authorization_number?: string | null
+          authorized_hours?: number | null
+          authorized_hours_all?: number | null
+          authorized_hours_auth_range?: number | null
+          authorized_hours_month?: number | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          end_date?: string | null
+          followup_authorization_number?: string | null
+          followup_end_date?: string | null
+          followup_service_codes?: string | null
+          followup_start_date?: string | null
+          frequency?: string | null
+          id?: string | null
+          implementer?: string | null
+          is_active?: boolean | null
+          last_seen_at?: string | null
+          manager?: string | null
+          payor?: string | null
+          pending_hours_all?: number | null
+          pending_hours_auth_range?: number | null
+          pending_hours_month?: number | null
+          procedure_code?: string | null
+          remaining_hours?: number | null
+          remaining_hours_all?: number | null
+          remaining_hours_auth_range?: number | null
+          remaining_hours_month?: number | null
+          scheduled_hours_all?: number | null
+          scheduled_hours_auth_range?: number | null
+          scheduled_hours_month?: number | null
+          service_codes?: string | null
+          source_row_id?: string | null
+          start_date?: string | null
+          state?: string | null
+          status?: string | null
+          utilization_percent_all?: number | null
+          utilization_percent_auth_range?: number | null
+          utilization_percent_month?: number | null
+          worked_hours?: number | null
+          worked_hours_all?: number | null
+          worked_hours_auth_range?: number | null
+          worked_hours_month?: number | null
+        }
+        Update: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          authorization_id?: string | null
+          authorization_number?: string | null
+          authorized_hours?: number | null
+          authorized_hours_all?: number | null
+          authorized_hours_auth_range?: number | null
+          authorized_hours_month?: number | null
+          client_cr_id?: string | null
+          client_name?: string | null
+          end_date?: string | null
+          followup_authorization_number?: string | null
+          followup_end_date?: string | null
+          followup_service_codes?: string | null
+          followup_start_date?: string | null
+          frequency?: string | null
+          id?: string | null
+          implementer?: string | null
+          is_active?: boolean | null
+          last_seen_at?: string | null
+          manager?: string | null
+          payor?: string | null
+          pending_hours_all?: number | null
+          pending_hours_auth_range?: number | null
+          pending_hours_month?: number | null
+          procedure_code?: string | null
+          remaining_hours?: number | null
+          remaining_hours_all?: number | null
+          remaining_hours_auth_range?: number | null
+          remaining_hours_month?: number | null
+          scheduled_hours_all?: number | null
+          scheduled_hours_auth_range?: number | null
+          scheduled_hours_month?: number | null
+          service_codes?: string | null
+          source_row_id?: string | null
+          start_date?: string | null
+          state?: string | null
+          status?: string | null
+          utilization_percent_all?: number | null
+          utilization_percent_auth_range?: number | null
+          utilization_percent_month?: number | null
+          worked_hours?: number | null
+          worked_hours_all?: number | null
+          worked_hours_auth_range?: number | null
+          worked_hours_month?: number | null
+        }
+        Relationships: []
+      }
+      v_cr_billing_documentation_status: {
+        Row: {
+          authorization_id: string | null
+          billing_labels: string | null
+          claims_exported: boolean | null
+          creation_date: string | null
+          deleted: boolean | null
+          delivery_method: string | null
+          first_bill_date: string | null
+          first_claim_date: string | null
+          id: string | null
+          is_void: boolean | null
+          last_seen_at: string | null
+          location: string | null
+          place_of_service: string | null
+          provider_role: string | null
+          row_hash: string | null
+          signed_by_client: boolean | null
+          signed_by_provider: boolean | null
+          source_row_id: string | null
+        }
+        Insert: {
+          authorization_id?: string | null
+          billing_labels?: string | null
+          claims_exported?: boolean | null
+          creation_date?: string | null
+          deleted?: boolean | null
+          delivery_method?: string | null
+          first_bill_date?: string | null
+          first_claim_date?: string | null
+          id?: string | null
+          is_void?: boolean | null
+          last_seen_at?: string | null
+          location?: string | null
+          place_of_service?: string | null
+          provider_role?: string | null
+          row_hash?: string | null
+          signed_by_client?: boolean | null
+          signed_by_provider?: boolean | null
+          source_row_id?: string | null
+        }
+        Update: {
+          authorization_id?: string | null
+          billing_labels?: string | null
+          claims_exported?: boolean | null
+          creation_date?: string | null
+          deleted?: boolean | null
+          delivery_method?: string | null
+          first_bill_date?: string | null
+          first_claim_date?: string | null
+          id?: string | null
+          is_void?: boolean | null
+          last_seen_at?: string | null
+          location?: string | null
+          place_of_service?: string | null
+          provider_role?: string | null
+          row_hash?: string | null
+          signed_by_client?: boolean | null
+          signed_by_provider?: boolean | null
+          source_row_id?: string | null
+        }
+        Relationships: []
+      }
       v_cr_canonical_sessions: {
         Row: {
           active: boolean | null
@@ -32210,6 +32718,72 @@ export type Database = {
           },
         ]
       }
+      v_cr_claims_status: {
+        Row: {
+          action_by: string | null
+          action_date: string | null
+          amount_raw: number | null
+          amount_unit: string | null
+          claim_number: string | null
+          client_name: string | null
+          date_of_service: string | null
+          error_count: number | null
+          exported: boolean | null
+          id: string | null
+          last_seen_at: string | null
+          paid_amount_raw: number | null
+          payor: string | null
+          procedure_code: string | null
+          responses_status: string | null
+          source_row_id: string | null
+          state: string | null
+          status: string | null
+          submit_reason: string | null
+        }
+        Insert: {
+          action_by?: string | null
+          action_date?: string | null
+          amount_raw?: number | null
+          amount_unit?: string | null
+          claim_number?: string | null
+          client_name?: string | null
+          date_of_service?: string | null
+          error_count?: number | null
+          exported?: boolean | null
+          id?: string | null
+          last_seen_at?: string | null
+          paid_amount_raw?: number | null
+          payor?: string | null
+          procedure_code?: string | null
+          responses_status?: string | null
+          source_row_id?: string | null
+          state?: string | null
+          status?: string | null
+          submit_reason?: string | null
+        }
+        Update: {
+          action_by?: string | null
+          action_date?: string | null
+          amount_raw?: number | null
+          amount_unit?: string | null
+          claim_number?: string | null
+          client_name?: string | null
+          date_of_service?: string | null
+          error_count?: number | null
+          exported?: boolean | null
+          id?: string | null
+          last_seen_at?: string | null
+          paid_amount_raw?: number | null
+          payor?: string | null
+          procedure_code?: string | null
+          responses_status?: string | null
+          source_row_id?: string | null
+          state?: string | null
+          status?: string | null
+          submit_reason?: string | null
+        }
+        Relationships: []
+      }
       v_cr_provider_mapping: {
         Row: {
           ambiguity_reason: string | null
@@ -32221,6 +32795,87 @@ export type Database = {
           provider_id: string | null
           provider_name: string | null
           provider_name_key: string | null
+        }
+        Relationships: []
+      }
+      v_cr_schedule_current: {
+        Row: {
+          attendance: string | null
+          billing_code: string | null
+          billing_code_name: string | null
+          billing_creation_date: string | null
+          cancellation_reason: string | null
+          cancelled: boolean | null
+          cancelled_by: string | null
+          client_name: string | null
+          converted_to_timesheet: boolean | null
+          deleted: boolean | null
+          end_time: string | null
+          event_date: string | null
+          id: string | null
+          last_seen_at: string | null
+          location: string | null
+          payor: string | null
+          procedure_code: string | null
+          provider_name: string | null
+          scheduled_hours: number | null
+          service_code: string | null
+          source_row_id: string | null
+          start_time: string | null
+          state: string | null
+          status: string | null
+        }
+        Insert: {
+          attendance?: string | null
+          billing_code?: string | null
+          billing_code_name?: string | null
+          billing_creation_date?: string | null
+          cancellation_reason?: string | null
+          cancelled?: boolean | null
+          cancelled_by?: string | null
+          client_name?: string | null
+          converted_to_timesheet?: boolean | null
+          deleted?: boolean | null
+          end_time?: string | null
+          event_date?: string | null
+          id?: string | null
+          last_seen_at?: string | null
+          location?: string | null
+          payor?: string | null
+          procedure_code?: string | null
+          provider_name?: string | null
+          scheduled_hours?: number | null
+          service_code?: never
+          source_row_id?: string | null
+          start_time?: string | null
+          state?: string | null
+          status?: string | null
+        }
+        Update: {
+          attendance?: string | null
+          billing_code?: string | null
+          billing_code_name?: string | null
+          billing_creation_date?: string | null
+          cancellation_reason?: string | null
+          cancelled?: boolean | null
+          cancelled_by?: string | null
+          client_name?: string | null
+          converted_to_timesheet?: boolean | null
+          deleted?: boolean | null
+          end_time?: string | null
+          event_date?: string | null
+          id?: string | null
+          last_seen_at?: string | null
+          location?: string | null
+          payor?: string | null
+          procedure_code?: string | null
+          provider_name?: string | null
+          scheduled_hours?: number | null
+          service_code?: never
+          source_row_id?: string | null
+          start_time?: string | null
+          state?: string | null
+          status?: string | null
         }
         Relationships: []
       }
