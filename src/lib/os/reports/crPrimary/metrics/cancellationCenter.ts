@@ -235,7 +235,7 @@ export function computeCancellationCenter(
   };
 
   let cancelledHours = 0;
-  let activeHours = 0;
+  let keptHours = 0;
   let documented = 0;
   let undocumented = 0;
   const clientSet = new Set<string>();
@@ -259,7 +259,7 @@ export function computeCancellationCenter(
       else documented += 1;
       bump(dims.reason, reason, client, hours, true);
     } else {
-      activeHours += hours;
+      keptHours += hours;
     }
 
     bump(dims.provider, provider, client, hours, isCancelled);
@@ -466,6 +466,7 @@ export function computeCancellationCenter(
     byPayor: toGroups(dims.payor),
     byCode: toGroups(dims.code),
     followUps,
+    followUpEvents,
     comparison: previous
       ? {
           previousCancellations: previous.cancelled,
