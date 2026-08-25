@@ -25,7 +25,7 @@ import {
   fetchCrEraReconciliation,
   fetchCrPaymentsCurrent,
   fetchCrScheduleEvents,
-  fetchCrTimesheetDocumentation,
+  fetchReportTimesheetDocumentationSummary,
   fetchCrUtilization,
   fetchReportAuthorizationActions,
   fetchReportAuthorizationEvents,
@@ -43,7 +43,7 @@ import type {
   CrPaymentCurrentRow,
   CrScheduleCurrentRow,
   CrScheduleEventRow,
-  CrTimesheetDocRow,
+  CrTimesheetDocSummaryRow,
   CrUtilizationRow,
   ReportAuthorizationActionRow,
   ReportAuthorizationEventRow,
@@ -100,7 +100,7 @@ export interface CrPrimaryReportData {
   claimsStatus: CrClaimsStatusRow[];
   payments: CrPaymentCurrentRow[];
   eraPayments: CrEraReconciliationRow[];
-  timesheetDocs: CrTimesheetDocRow[];
+  timesheetDocs: CrTimesheetDocSummaryRow[];
   batches: CrBatchSummary[];
   freshness: FreshnessInfo;
   loading: boolean;
@@ -129,7 +129,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
   const [claimsStatus, setClaimsStatus] = useState<CrClaimsStatusRow[]>([]);
   const [payments, setPayments] = useState<CrPaymentCurrentRow[]>([]);
   const [eraPayments, setEraPayments] = useState<CrEraReconciliationRow[]>([]);
-  const [timesheetDocs, setTimesheetDocs] = useState<CrTimesheetDocRow[]>([]);
+  const [timesheetDocs, setTimesheetDocs] = useState<CrTimesheetDocSummaryRow[]>([]);
   const [batches, setBatches] = useState<CrBatchSummary[]>([]);
   const [nonce, setNonce] = useState(0);
 
@@ -163,7 +163,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
         wanted.has("payments") ? fetchCrPaymentsCurrent() : Promise.resolve(EMPTY_RESULT),
         wanted.has("eraPayments") ? fetchCrEraReconciliation() : Promise.resolve(EMPTY_RESULT),
         wanted.has("timesheetDocs")
-          ? fetchCrTimesheetDocumentation()
+          ? fetchReportTimesheetDocumentationSummary()
           : Promise.resolve(EMPTY_RESULT),
         fetchCrBatches(batchTypes),
       ]);
@@ -185,7 +185,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       setClaimsStatus(cs.rows as CrClaimsStatusRow[]);
       setPayments(pay.rows as CrPaymentCurrentRow[]);
       setEraPayments(era.rows as CrEraReconciliationRow[]);
-      setTimesheetDocs(tsd.rows as CrTimesheetDocRow[]);
+      setTimesheetDocs(tsd.rows as CrTimesheetDocSummaryRow[]);
       setBatches(batchRes.rows);
       setErrorMessage(errors.length ? errors[0] : null);
       setLoading(false);

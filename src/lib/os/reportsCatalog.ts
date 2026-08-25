@@ -104,12 +104,14 @@ export const REPORTS: ReportDef[] = [
   }),
 
   /* ============================================================
-   * Reports Consolidation — Canonical Eight
+   * Reports Consolidation — Canonical Primary Reports
    * ----------------------------------------------------------------
-   * The Reports page surfaces exactly eight primary report cards for
-   * every Blossom OS user (see PRIMARY_REPORT_IDS below). These
-   * entries own the canonical id/title/route for each.
+   * The Reports page surfaces ten primary report cards (see
+   * PRIMARY_REPORT_IDS below). Eight are shared with every Blossom OS
+   * user; the two finance reports keep their own role restriction.
+   * These entries own the canonical id/title/route for each.
    *
+
    * Card copy is staff-facing only: it describes what the report
    * answers, never where the data came from, never any operational
    * plumbing, and never a dollar/revenue claim the report does not
@@ -449,11 +451,15 @@ export const REPORTS: ReportDef[] = [
 ];
 
 /**
- * Canonical Reports page catalog — identical for EVERY OS role.
+ * Canonical Reports page catalog.
  *
- * /reports surfaces exactly 17 cards: these 8 primary/shared reports plus the
- * 9 department dashboards. Legacy REPORTS entries stay in the array for
- * cross-linking/compatibility but are never surfaced on /reports.
+ * /reports surfaces these 10 primary/shared reports plus the 9 department
+ * dashboards. Eight of the primary reports are shared with every OS role; the
+ * two finance reports (claims submission, payment reconciliation) keep their
+ * own role restriction, so a role outside their `visibleTo` list sees 17 cards
+ * and an eligible finance/leadership role sees up to 19. Legacy REPORTS
+ * entries stay in the array for cross-linking/compatibility but are never
+ * surfaced on /reports.
  */
 export const PRIMARY_REPORT_IDS = [
   "bcba-productivity-report-v3",
@@ -464,20 +470,37 @@ export const PRIMARY_REPORT_IDS = [
   "bcba-supervision",
   "bcba-performance",
   "commit-to-submit-compliance",
+  "claims-submission-queue",
+  "payment-reconciliation",
 ] as const;
 
-export function visibleReportsForRole(_role?: OSRole): ReportDef[] {
+/**
+ * Primary reports whose catalog entry carries an explicit `visibleTo` role
+ * list. These are the only primary cards that are NOT role-identical.
+ */
+export const ROLE_RESTRICTED_PRIMARY_REPORT_IDS: ReadonlySet<string> = new Set([
+  "claims-submission-queue",
+  "payment-reconciliation",
+]);
+
+export function visibleReportsForRole(role?: OSRole): ReportDef[] {
   const seen = new Set<string>();
   const out: ReportDef[] = [];
   for (const id of PRIMARY_REPORT_IDS) {
     if (seen.has(id)) continue;
     const def = REPORTS.find((r) => r.id === id);
     if (!def) continue;
+    // Role-restricted cards honour their catalog visibleTo list; every other
+    // primary card stays identical for every role.
+    if (ROLE_RESTRICTED_PRIMARY_REPORT_IDS.has(id) && Array.isArray(def.visibleTo)) {
+      if (!role || !def.visibleTo.includes(role)) continue;
+    }
     seen.add(id);
     out.push(def);
   }
   return out;
 }
+
 
 /**
  * Department dashboards visible to a given role. Kept OUT of

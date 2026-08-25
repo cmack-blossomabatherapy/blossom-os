@@ -74,6 +74,12 @@ import {
   C2sReviewRecordDialog,
 } from "@/components/reports/c2s/C2sActionDialogs";
 import type { KpiDefinition } from "@/lib/os/reports/crPrimary/types";
+import type { CrTimesheetDocSummaryRow } from "@/lib/os/reports/crPrimary/types";
+import { fetchReportTimesheetDocumentationSummary } from "@/lib/os/reports/crPrimary/source";
+import {
+  DOCUMENTATION_READINESS_NOTE,
+  summarizeDocumentationReadiness,
+} from "@/lib/os/reports/crPrimary/c2s/documentationReadiness";
 
 const REPORT_ID = "commit-to-submit-compliance";
 
@@ -663,6 +669,30 @@ export default function CommitToSubmitCompliancePage() {
    * Export follows the ACTIVE tab so the file always matches what is on screen,
    * and never crosses the privacy boundary of that tab.
    */
+  /**
+   * Provider-level documentation readiness. Informational only: it is loaded
+   * separately, is never merged into the timeliness proxy, and is never an
+   * input to a formal violation, coaching record, notice, dispute or exception.
+   */
+  const [readinessRows, setReadinessRows] = useState<CrTimesheetDocSummaryRow[]>([]);
+  const [readinessError, setReadinessError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await fetchReportTimesheetDocumentationSummary();
+      if (cancelled) return;
+      setReadinessRows(res.rows);
+      setReadinessError(res.error);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const readiness = useMemo(
+    () => summarizeDocumentationReadiness(readinessRows),
+    [readinessRows],
+  );
+
   const onExport = useCallback(() => {
     if (activeTab === "reviewed") {
       downloadCsv("commit-to-submit-visible-activity", activityExportRows, ACTIVITY_EXPORT_COLUMNS);
@@ -926,6 +956,72 @@ export default function CommitToSubmitCompliancePage() {
           notices, disputes, exceptions — are limited to yourself and the people you oversee, so an
           empty list here is normal.
         </ReportProvenance>
+
+        <section className="rounded-xl border border-border/60 bg-card/40 p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-xs font-semibold">Documentation readiness (informational)</p>
+            <Badge variant="outline" className="text-[10px]">
+              Never a violation
+            </Badge>
+          </div>
+          <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+            {DOCUMENTATION_READINESS_NOTE}
+          </p>
+          {readinessError ? (
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              Documentation readiness is unavailable right now, so it shows as unavailable rather
+              than zero.
+            </p>
+          ) : readiness.providers.length === 0 ? (
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              No documentation readiness rows are available yet.
+            </p>
+          ) : (
+            <>
+              <dl className="mt-3 grid gap-2 text-[11px] sm:grid-cols-5">
+                <div>
+                  <dt className="text-muted-foreground">Locked</dt>
+                  <dd className="tabular-nums font-medium">{fmtCount(readiness.locked)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Unlocked</dt>
+                  <dd className="tabular-nums font-medium">{fmtCount(readiness.unlocked)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Missing provider signature</dt>
+                  <dd className="tabular-nums font-medium">
+                    {fmtCount(readiness.missingProviderSignature)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Incomplete tasks</dt>
+                  <dd className="tabular-nums font-medium">{fmtCount(readiness.incompleteTasks)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Latest seen date</dt>
+                  <dd className="tabular-nums font-medium">
+                    {readiness.latestDateOfService
+                      ? fmtDate(readiness.latestDateOfService)
+                      : "Not documented"}
+                  </dd>
+                </div>
+              </dl>
+              <ul className="mt-3 divide-y divide-border/60 text-[11px]">
+                {readiness.providers.slice(0, 8).map((p) => (
+                  <li key={p.key} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                    <span className="min-w-0 truncate font-medium">{p.provider}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {fmtCount(p.locked ?? 0)} locked · {fmtCount(p.unlocked ?? 0)} unlocked ·{" "}
+                      {fmtCount(p.missingProviderSignature ?? 0)} unsigned ·{" "}
+                      {fmtCount(p.incompleteTasks ?? 0)} incomplete tasks ·{" "}
+                      {p.latestDateOfService ? fmtDate(p.latestDateOfService) : "Not documented"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
 
 
         <Tabs value={activeTab} onValueChange={setTab}>

@@ -442,7 +442,27 @@ export interface CrEraReconciliationRow {
  * Documentation status only — never a billing fact and never an input to BCBA
  * Productivity V3.
  */
+/**
+ * Provider-level documentation readiness summary (RPC
+ * `report_timesheet_documentation_summary`). Aggregate only — no client
+ * identity, hours, rates, amounts, references, notes or check fields — and
+ * informational only: it can never create or alter a formal violation.
+ */
+export interface CrTimesheetDocSummaryRow {
+  provider_key: string;
+  provider_name: string | null;
+  provider_cr_id: string | null;
+  rows_total: number | null;
+  locked_rows: number | null;
+  unlocked_rows: number | null;
+  missing_provider_signature: number | null;
+  incomplete_tasks: number | null;
+  latest_date_of_service: string | null;
+  latest_seen_at: string | null;
+}
+
 export interface CrTimesheetDocRow {
+
   id: string;
   source_row_id: string | null;
   date_of_service: string | null;
