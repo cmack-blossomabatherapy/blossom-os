@@ -296,6 +296,19 @@ export default function AuthorizationUtilizationPage() {
     [scopedAuths],
   );
 
+  /**
+   * Trend pace points that actually have a percentage. An incomplete period is
+   * reported as a count, never drawn as a 0% point.
+   */
+  const pacePoints = useMemo(
+    () =>
+      trend.pace
+        .filter((p) => p.value != null)
+        .map((p) => ({ label: p.label, value: p.value as number })),
+    [trend.pace],
+  );
+  const incompletePacePeriods = trend.pace.length - pacePoints.length;
+
   const totals = result.totals;
   const computable = result.rows.filter((r) => r.dataState === "ok");
   const overUtilized = computable.filter((r) => bandOf(r.utilizationPct) === "over");
@@ -843,13 +856,13 @@ export default function AuthorizationUtilizationPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               <PrimaryChart
                 title="Utilization by client · percent"
-                subtitle="Percent only — hours are charted separately so the two units are never mixed on one axis."
+                subtitle="Percent only, and only rows that actually have a percentage — a missing utilization is omitted rather than drawn as 0%."
                 type="bar"
                 data={computable
-                  .slice()
-                  .sort((a, b) => (b.utilizationPct ?? -1) - (a.utilizationPct ?? -1))
+                  .filter((r) => r.utilizationPct != null)
+                  .sort((a, b) => (b.utilizationPct as number) - (a.utilizationPct as number))
                   .slice(0, 12)
-                  .map((r) => ({ label: r.client, value: r.utilizationPct ?? 0 }))}
+                  .map((r) => ({ label: r.client, value: r.utilizationPct as number }))}
                 valueLabel="Utilization %"
                 height={300}
                 onSelect={(label) =>
@@ -863,21 +876,20 @@ export default function AuthorizationUtilizationPage() {
               />
               <PrimaryChart
                 title="Hours by client · authorized vs used"
-                subtitle="Hours only — prorated authorized hours against the used hours for the window."
+                subtitle="Hours only, and only authorizations where both values are real — a missing side is omitted rather than charted as 0 hours."
                 type="bar"
                 data={computable
-                  .slice()
-                  .sort(
-                    (a, b) =>
-                      (b.proratedAuthorizedHours ?? b.authorizedHours ?? 0) -
-                      (a.proratedAuthorizedHours ?? a.authorizedHours ?? 0),
-                  )
-                  .slice(0, 12)
                   .map((r) => ({
                     label: r.client,
-                    value: r.proratedAuthorizedHours ?? r.authorizedHours ?? 0,
-                    secondary: r.recomputedUsedHours ?? r.sourceUsedHours ?? 0,
-                  }))}
+                    value: r.proratedAuthorizedHours ?? r.authorizedHours,
+                    secondary: r.recomputedUsedHours ?? r.sourceUsedHours,
+                  }))
+                  .filter(
+                    (d): d is { label: string; value: number; secondary: number } =>
+                      d.value != null && d.secondary != null,
+                  )
+                  .sort((a, b) => b.value - a.value)
+                  .slice(0, 12)}
                 valueLabel="Authorized hours"
                 secondaryLabel="Used hours"
                 height={300}
@@ -892,17 +904,20 @@ export default function AuthorizationUtilizationPage() {
               />
               <PrimaryChart
                 title="Hours by client · authorized vs projected demand"
-                subtitle="Hours only — projected demand is used plus scheduled plus pending for the window."
+                subtitle="Hours only. Projected demand is used plus scheduled plus pending; rows missing either side are omitted rather than charted as 0 hours."
                 type="bar"
                 data={computable
-                  .slice()
-                  .sort((a, b) => (b.projectedDemandHours ?? 0) - (a.projectedDemandHours ?? 0))
-                  .slice(0, 12)
                   .map((r) => ({
                     label: r.client,
-                    value: r.proratedAuthorizedHours ?? r.authorizedHours ?? 0,
-                    secondary: r.projectedDemandHours ?? 0,
-                  }))}
+                    value: r.proratedAuthorizedHours ?? r.authorizedHours,
+                    secondary: r.projectedDemandHours,
+                  }))
+                  .filter(
+                    (d): d is { label: string; value: number; secondary: number } =>
+                      d.value != null && d.secondary != null,
+                  )
+                  .sort((a, b) => b.secondary - a.secondary)
+                  .slice(0, 12)}
                 valueLabel="Authorized hours"
                 secondaryLabel="Projected demand hours"
                 height={300}
@@ -959,9 +974,9 @@ export default function AuthorizationUtilizationPage() {
                 />
                 <PrimaryChart
                   title="Utilization pace"
-                  subtitle="Used hours as a percentage of the hours authorized for that period — shown separately so a percentage is never read as hours."
+                  subtitle={`Percent only. ${pacePoints.length} of ${trend.pace.length} periods have a real pace; ${incompletePacePeriods} period${incompletePacePeriods === 1 ? "" : "s"} could not be calculated and ${incompletePacePeriods === 1 ? "is" : "are"} left off the line rather than drawn as 0%.`}
                   type="line"
-                  data={trend.pace.map((p) => ({ label: p.label, value: p.value ?? 0 }))}
+                  data={pacePoints}
                   valueLabel="Utilization %"
                   height={240}
                 />
