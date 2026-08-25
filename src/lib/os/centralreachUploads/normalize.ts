@@ -261,7 +261,10 @@ function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
         ? "Cancelled"
         : explicitStatus ?? attendanceLabel(attendance);
   return {
-    event_date: date(row, ["EventDate", "Date", "StartDate", "AppointmentDate", "DateOfService", "Start"]),
+    event_date:
+      date(row, EVENT_START) ??
+      date(row, ["EventDate", "Date", "StartDate", "AppointmentDate", "DateOfService", "Start"]),
+
     procedure_code: code.procedureCode,
     billing_code: code.billingCode,
     billing_code_name: code.billingCodeName,
