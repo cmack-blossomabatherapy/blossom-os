@@ -16,6 +16,7 @@
 import type { LifecycleEventRow } from "./authorizationLifecycle";
 import { classifyLifecycleEvent, classifyLifecycleKind } from "./authorizationLifecycle";
 import { cleanReasonText } from "../scheduleTruth";
+import { strictDay, strictDaysBetween } from "./calendarDate";
 
 export interface AuthorizationActionRow {
   record_id: string;
@@ -138,12 +139,8 @@ export interface ProgressReportOps {
 
 const text = (v: unknown, fallback: string) => String(v ?? "").trim() || fallback;
 
-const daysBetween = (from: string, to: string): number | null => {
-  const a = new Date(`${from}T00:00:00`).getTime();
-  const b = new Date(`${to}T00:00:00`).getTime();
-  if (Number.isNaN(a) || Number.isNaN(b)) return null;
-  return Math.round((b - a) / 86_400_000);
-};
+const daysBetween = (from: string, to: string): number | null =>
+  strictDaysBetween(from, to);
 
 /**
  * True only for authorization records that are actually progress-report work.

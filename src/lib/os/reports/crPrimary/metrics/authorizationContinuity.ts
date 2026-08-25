@@ -12,6 +12,7 @@ import { cleanReasonText } from "../scheduleTruth";
 import { localIsoDate } from "../reportWindow";
 import { buildClientIdentityResolver } from "./clientIdentity";
 import { finiteNumberOrNull } from "./numeric";
+import { strictDay, strictDaysBetween } from "./calendarDate";
 
 export interface ContinuityAuthRow {
   id?: string;
@@ -102,27 +103,25 @@ export interface CoverageGapRow {
   note: string;
 }
 
+/**
+ * Legacy helpers kept for compatibility. They now only ever return a real
+ * calendar date; row classification no longer relies on them, because mixing
+ * a follow-up end with an unrelated base start manufactures coverage.
+ */
 export function endDateOf(row: ContinuityAuthRow): string | null {
-  const candidate =
-    cleanReasonText(row.followup_end_date) ??
-    cleanReasonText(row.actual_end_date) ??
-    cleanReasonText(row.end_date);
-  return candidate ? candidate.slice(0, 10) : null;
+  return (
+    validDay(row.followup_end_date) ?? validDay(row.actual_end_date) ?? validDay(row.end_date)
+  );
 }
 
 export function startDateOf(row: ContinuityAuthRow): string | null {
-  const candidate =
-    cleanReasonText(row.actual_start_date) ??
-    cleanReasonText(row.start_date) ??
-    cleanReasonText(row.followup_start_date);
-  return candidate ? candidate.slice(0, 10) : null;
+  return (
+    validDay(row.actual_start_date) ?? validDay(row.start_date) ?? validDay(row.followup_start_date)
+  );
 }
 
 export function daysBetween(from: string, to: string): number | null {
-  const a = new Date(`${from}T00:00:00Z`).getTime();
-  const b = new Date(`${to}T00:00:00Z`).getTime();
-  if (Number.isNaN(a) || Number.isNaN(b)) return null;
-  return Math.round((b - a) / 86_400_000);
+  return strictDaysBetween(from, to);
 }
 
 /** Strict: a blank/boolean/invalid hour value stays missing, never zero. */
@@ -130,14 +129,12 @@ function num(v: unknown): number | null {
   return finiteNumberOrNull(v);
 }
 
-const validDay = (v: unknown): string | null => {
-  const raw = cleanReasonText(v as string | null | undefined);
-  if (!raw) return null;
-  const day = raw.slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(day) && !Number.isNaN(new Date(`${day}T00:00:00Z`).getTime())
-    ? day
-    : null;
-};
+/**
+ * Strict day read: a blank, malformed or impossible source date (2026-02-31)
+ * is not a date, so it can never create coverage or a day count.
+ */
+const validDay = (v: unknown): string | null =>
+  strictDay(cleanReasonText(v as string | null | undefined));
 
 /**
  * Matched start/end pairs only. Combining a follow-up future end date with an
