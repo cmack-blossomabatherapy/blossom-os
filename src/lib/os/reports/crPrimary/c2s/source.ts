@@ -2,8 +2,9 @@
  * Commit to Submit (C2S) Compliance — data access layer (Phase 3B).
  *
  * TRUSTED SOURCES ONLY:
- * - `report_c2s_documentation_proxy(p_from, p_to)` — global, client-free,
- *   de-identified DOS→documentation proxy rows.
+ * - `report_c2s_documentation_proxy(p_from, p_to)` — global, client-free
+ *   provider-level DOS→documentation proxy rows.
+
  * - `report_c2s_program_status()` — staff-safe activation status (never exposes
  *   approver identities, notes, or configuration internals).
  * - The six RLS-protected operational tables for sensitive records. Every read
@@ -138,6 +139,13 @@ export const C2S_NAME_CHUNK_SIZE = 200;
 /** Absolute safety ceiling so a runaway loop cannot hang the page. */
 export const C2S_MAX_PAGES = 500;
 
+/**
+ * Message used whenever a paging loop hits the absolute page ceiling. A capped
+ * result is never returned silently — an incomplete read is an error.
+ */
+export const C2S_PAGE_LIMIT_ERROR =
+  "This report could not be loaded completely (page limit reached). Narrow the date range and try again.";
+
 async function readC2sTable<T>(
   table: string,
   columns: string,
@@ -159,13 +167,16 @@ async function readC2sTable<T>(
       if (error) return { rows: [], error: error.message };
       const batch = (data ?? []) as Record<string, unknown>[];
       for (const row of batch) rows.push(map(row));
-      if (batch.length < C2S_PAGE_SIZE) break;
+      if (batch.length < C2S_PAGE_SIZE) return { rows, error: null };
     }
-    return { rows, error: null };
+    // Ceiling reached without a short page: the read is incomplete, so say so
+    // rather than handing back a silently capped list.
+    return { rows, error: C2S_PAGE_LIMIT_ERROR };
   } catch (err) {
     return { rows: [], error: err instanceof Error ? err.message : `Failed to read ${table}` };
   }
 }
+
 
 
 /** Staff-safe program status. A missing row means "not configured". */
@@ -234,9 +245,11 @@ export async function fetchC2sProxyRows(
       if (error) return { rows: [], error: error.message };
       const batch = (data ?? []) as Record<string, unknown>[];
       for (const raw of batch) rows.push(normalizeProxyRow(raw));
-      if (batch.length < C2S_PAGE_SIZE) break;
+      if (batch.length < C2S_PAGE_SIZE) return { rows, error: null };
     }
-    return { rows, error: null };
+    // Ceiling reached without a short page — the window is incomplete. Report
+    // it instead of presenting a truncated month as if it were the whole month.
+    return { rows, error: C2S_PAGE_LIMIT_ERROR };
   } catch (err) {
     return {
       rows: [],
@@ -266,22 +279,44 @@ export const C2S_EMPTY_GOVERNANCE_COUNTS: C2sGovernanceCounts = {
   activeApprovedExceptions: 0,
 };
 
-export async function fetchC2sGovernanceCounts(): Promise<C2sGovernanceCounts> {
+/**
+ * Result of the aggregate governance read.
+ *
+ * `counts` is null ONLY when the aggregate could not be read. An unreadable
+ * aggregate must never be rendered as a factual zero, so the caller shows
+ * "Unavailable" instead. A legitimate authenticated zero-row aggregate returns
+ * real zeroes with `error: null`.
+ */
+export interface C2sGovernanceCountsResult {
+  counts: C2sGovernanceCounts | null;
+  error: string | null;
+}
+
+export async function fetchC2sGovernanceCounts(): Promise<C2sGovernanceCountsResult> {
   try {
     const { data, error } = await db().rpc("report_c2s_governance_counts");
-    if (error) return C2S_EMPTY_GOVERNANCE_COUNTS;
+    if (error) return { counts: null, error: error.message };
     const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | undefined;
-    if (!row) return C2S_EMPTY_GOVERNANCE_COUNTS;
+    // No row at all means the aggregate produced nothing for this session; that
+    // is an unavailable aggregate, not a factual zero.
+    if (!row) return { counts: null, error: "Governance counts are unavailable for this session." };
     return {
-      historicalFormalRecords: num(row.historical_formal_records) ?? 0,
-      activeFormalRecords: num(row.active_formal_records) ?? 0,
-      openDisputes: num(row.open_disputes) ?? 0,
-      activeApprovedExceptions: num(row.active_approved_exceptions) ?? 0,
+      counts: {
+        historicalFormalRecords: num(row.historical_formal_records) ?? 0,
+        activeFormalRecords: num(row.active_formal_records) ?? 0,
+        openDisputes: num(row.open_disputes) ?? 0,
+        activeApprovedExceptions: num(row.active_approved_exceptions) ?? 0,
+      },
+      error: null,
     };
-  } catch {
-    return C2S_EMPTY_GOVERNANCE_COUNTS;
+  } catch (err) {
+    return {
+      counts: null,
+      error: err instanceof Error ? err.message : "Failed to read governance counts",
+    };
   }
 }
+
 
 
 export function fetchC2sTrackerRecords(): Promise<C2sReadResult<C2sTrackerRecord>> {
