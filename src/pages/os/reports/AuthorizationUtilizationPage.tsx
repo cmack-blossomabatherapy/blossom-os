@@ -234,12 +234,12 @@ export default function AuthorizationUtilizationPage() {
         })),
         // Only cleanly allocated billing rows feed the trend: an ambiguous or
         // unjoined row cannot be proven to belong to any authorization.
-        result.allocation.allocations
+        result.allocations
           .filter((a) => a.basis === "authorization_id" || a.basis === "unique_fallback")
           .map((a) => ({ date: a.date, hours: a.hours })),
         { from: filters.from, to: filters.to, grain: grain as TrendGrain },
       ),
-    [auths, result.allocation, filters.from, filters.to, grain],
+    [auths, result.allocations, filters.from, filters.to, grain],
   );
 
   const filterFields = useMemo<FilterFieldConfig[]>(

@@ -405,6 +405,11 @@ export interface ProratedUtilizationResult {
   joinBasisCounts: Record<JoinBasis, number>;
   /** Billing-row allocation provenance, surfaced as data-quality warnings. */
   allocation: AllocationCounts;
+  /**
+   * Per-billing-row allocation results. Trends read only the cleanly allocated
+   * rows so ambiguous hours never distort a period.
+   */
+  allocations: BillingAllocationRow[];
   /** True when the selected range narrows at least one authorization window. */
   prorationApplied: boolean;
 }
@@ -615,6 +620,7 @@ export function computeProratedUtilization(
     dataStateCounts,
     joinBasisCounts,
     allocation: allocation.counts,
+    allocations: allocation.allocations,
     prorationApplied,
   };
 }
