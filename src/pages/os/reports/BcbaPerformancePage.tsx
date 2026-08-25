@@ -248,7 +248,9 @@ export default function BcbaPerformancePage() {
       const client = String(action.client_name ?? "").trim();
       const owner = clientOwner.get(client.toLowerCase());
       if (!owner) continue;
-      const due = action.due_date ? String(action.due_date).slice(0, 10) : null;
+      const due = action.next_action_due_date
+        ? String(action.next_action_due_date).slice(0, 10)
+        : null;
       prDue.set(owner, (prDue.get(owner) ?? 0) + 1);
       if (due && due < today) prOverdue.set(owner, (prOverdue.get(owner) ?? 0) + 1);
     }
@@ -258,8 +260,14 @@ export default function BcbaPerformancePage() {
       const name = String(t.bcba_name ?? "").trim();
       if (!name) continue;
       const existing = targetByBcba.get(name);
+      // Sum only real target rows; when none exist the value stays null so the
+      // report says "No target" instead of scoring against a fabricated zero.
+      const summed =
+        t.mtd_target_hours == null
+          ? existing?.target ?? null
+          : (existing?.target ?? 0) + t.mtd_target_hours;
       targetByBcba.set(name, {
-        target: (existing?.target ?? 0) + (t.mtd_target_hours ?? 0) || t.mtd_target_hours ?? null,
+        target: summed,
         forecast: t.forecast_hours ?? existing?.forecast ?? null,
       });
     }
