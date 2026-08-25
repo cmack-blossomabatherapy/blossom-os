@@ -8,6 +8,7 @@ import {
 } from "@/lib/os/reportsCatalog";
 
 import { OS_ROLES } from "@/lib/os/permissions";
+import { ROLE_RESTRICTED_PRIMARY_REPORT_IDS } from "@/lib/os/reportsCatalog";
 
 const appSrc = fs.readFileSync("src/App.tsx", "utf8");
 const genericRoute = /path="\/reports\/:reportId"/.test(appSrc);
@@ -32,29 +33,44 @@ function idsFor(role: string) {
   ];
 }
 
-describe("/reports catalog is identical for every OS role", () => {
-  const baseline = idsFor("super_admin");
+const SHARED_PRIMARY = PRIMARY.filter((id) => !ROLE_RESTRICTED_PRIMARY_REPORT_IDS.has(id));
 
-  it("baseline is exactly the 8 primary + 9 department dashboards", () => {
-    expect(visibleReportsForRole("super_admin").map((r) => r.id)).toEqual(PRIMARY);
+/**
+ * The shared catalog is identical for every OS role: 8 shared primary cards +
+ * 9 department dashboards = 17. The two finance reports (claims submission,
+ * payment reconciliation) keep their own catalog `visibleTo` restriction, so an
+ * eligible finance/leadership role sees up to 19 cards.
+ */
+describe("/reports catalog", () => {
+  const baseline = idsFor("super_admin").filter(
+    (id) => !ROLE_RESTRICTED_PRIMARY_REPORT_IDS.has(id),
+  );
+
+  it("shared baseline is exactly the 8 shared primary + 9 department dashboards", () => {
+    expect(SHARED_PRIMARY).toHaveLength(8);
     expect(visibleDepartmentDashboardsForRole("super_admin").map((r) => r.id).sort())
       .toEqual([...DEPARTMENTS].sort());
     expect(baseline).toHaveLength(17);
   });
 
   for (const r of OS_ROLES) {
-    it(`${r.id} sees the identical 17-card catalog with no duplicates`, () => {
-      const ids = idsFor(r.id);
-      expect(ids).toEqual(baseline);
-      expect(ids).toHaveLength(17);
-      expect(new Set(ids).size).toBe(17);
-      for (const id of PRIMARY) expect(ids).toContain(id);
-      for (const id of DEPARTMENTS) expect(ids).toContain(id);
+    it(`${r.id} sees the identical 17-card shared catalog with no duplicates`, () => {
+      const all = idsFor(r.id);
+      const shared = all.filter((id) => !ROLE_RESTRICTED_PRIMARY_REPORT_IDS.has(id));
+      expect(shared).toEqual(baseline);
+      expect(shared).toHaveLength(17);
+      expect(new Set(all).size).toBe(all.length);
+      for (const id of SHARED_PRIMARY) expect(shared).toContain(id);
+      for (const id of DEPARTMENTS) expect(shared).toContain(id);
+      expect(all.length).toBeLessThanOrEqual(19);
     });
   }
 
   it("no role sees a legacy catalog of 81 / 85 reports", () => {
-    for (const r of OS_ROLES) expect(idsFor(r.id).length).toBe(17);
+    for (const r of OS_ROLES) {
+      expect(idsFor(r.id).length).toBeGreaterThanOrEqual(17);
+      expect(idsFor(r.id).length).toBeLessThanOrEqual(19);
+    }
   });
 
   it("every visible card routes to a mounted page, never /coming-soon", () => {

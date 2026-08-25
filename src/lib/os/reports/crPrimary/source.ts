@@ -23,7 +23,7 @@ import type {
   CrPaymentCurrentRow,
   CrScheduleCurrentRow,
   CrScheduleEventRow,
-  CrTimesheetDocRow,
+  CrTimesheetDocSummaryRow,
   CrUtilizationRow,
   ReportAuthorizationActionRow,
   ReportAuthorizationEventRow,
@@ -303,37 +303,39 @@ export function summarizeFreshness(batches: CrBatchSummary[]) {
   };
 }
 /**
- * Curated claims status rows (`v_cr_claims_status`). Amount columns are
- * deliberately NOT selected: their unit is unconfirmed, so no staff-facing
- * claims report may display or estimate a dollar value.
+ * Curated claims status rows via the role-checked `report_claims_status` RPC.
+ * The underlying table stays admin-only; this RPC is the staff-facing read
+ * path. Amount columns are deliberately NOT returned: their unit is
+ * unconfirmed, so no staff-facing claims report may display or estimate a
+ * dollar value.
  */
 export function fetchCrClaimsStatus(): Promise<CrLoadResult<CrClaimsStatusRow>> {
-  return readTable<CrClaimsStatusRow>(
-    "v_cr_claims_status",
-    "id,claim_number,client_name,payor,state,date_of_service,procedure_code,status,responses_status,action_date,action_by,submit_reason,error_count,exported,amount_unit,source_row_id,last_seen_at",
-  );
+  return readRpcPaged<CrClaimsStatusRow>("report_claims_status", "claims submission status");
 }
 
-/** Curated payments snapshot (`v_cr_payments_current`) — no references, notes or amounts. */
+/** Curated payments snapshot RPC — no references, notes, check numbers or amounts. */
 export function fetchCrPaymentsCurrent(): Promise<CrLoadResult<CrPaymentCurrentRow>> {
-  return readTable<CrPaymentCurrentRow>(
-    "v_cr_payments_current",
-    "id,record_date,creation_date,date_of_service,first_billed,client_name,client_cr_id,department,payor,payment_type,is_copay,payment_labels,primary_location,applied_to_billing_entry,is_voided,amount_unit,source_row_id,last_seen_at",
-  );
+  return readRpcPaged<CrPaymentCurrentRow>("report_payments_current", "payments");
 }
 
-/** Curated ERA remittance reconciliation (`v_cr_era_reconciliation`) — no check numbers. */
+/** Curated ERA remittance reconciliation RPC — no check numbers, no amounts. */
 export function fetchCrEraReconciliation(): Promise<CrLoadResult<CrEraReconciliationRow>> {
-  return readTable<CrEraReconciliationRow>(
-    "v_cr_era_reconciliation",
-    "id,era_labels,received_date,payor,claim_count,client_count,reconcile_status,amount_unit,source_row_id,last_seen_at",
+  return readRpcPaged<CrEraReconciliationRow>(
+    "report_era_reconciliation",
+    "ERA remittance reconciliation",
   );
 }
 
-/** Curated timesheet documentation status (`v_cr_timesheet_documentation`). */
-export function fetchCrTimesheetDocumentation(): Promise<CrLoadResult<CrTimesheetDocRow>> {
-  return readTable<CrTimesheetDocRow>(
-    "v_cr_timesheet_documentation",
-    "id,source_row_id,date_of_service,client_name,client_cr_id,provider_name,provider_cr_id,authorization_id,procedure_code,time_worked_hours,billing_labels,client_signature,provider_signature,is_void,is_locked,tasks_total,tasks_completed,last_seen_at",
+/**
+ * Provider-level documentation readiness summary. Aggregate only: no client
+ * name/id, no hours, rates, amounts, references, notes or check fields.
+ */
+export function fetchReportTimesheetDocumentationSummary(): Promise<
+  CrLoadResult<CrTimesheetDocSummaryRow>
+> {
+  return readRpcPaged<CrTimesheetDocSummaryRow>(
+    "report_timesheet_documentation_summary",
+    "documentation readiness",
   );
 }
+

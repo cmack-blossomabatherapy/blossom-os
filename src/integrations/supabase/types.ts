@@ -35315,6 +35315,11 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_read_claims_report: { Args: { _user_id: string }; Returns: boolean }
+      can_read_payment_reconciliation_report: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       can_reconcile_cr_identity: { Args: { _uid: string }; Returns: boolean }
       can_report_canonical_wide: { Args: { _uid: string }; Returns: boolean }
       can_view_clinical_work: { Args: { _user_id: string }; Returns: boolean }
@@ -36176,7 +36181,82 @@ export type Database = {
           tracking_start_date: string
         }[]
       }
+      report_claims_status: {
+        Args: never
+        Returns: {
+          action_by: string
+          action_date: string
+          amount_unit: string
+          claim_number: string
+          client_name: string
+          date_of_service: string
+          error_count: number
+          exported: boolean
+          id: string
+          last_seen_at: string
+          payor: string
+          procedure_code: string
+          responses_status: string
+          source_row_id: string
+          state: string
+          status: string
+          submit_reason: string
+        }[]
+      }
+      report_era_reconciliation: {
+        Args: never
+        Returns: {
+          amount_unit: string
+          claim_count: number
+          client_count: number
+          era_labels: string
+          id: string
+          last_seen_at: string
+          payor: string
+          received_date: string
+          reconcile_status: string
+          source_row_id: string
+        }[]
+      }
+      report_payments_current: {
+        Args: never
+        Returns: {
+          amount_unit: string
+          applied_to_billing_entry: boolean
+          client_cr_id: string
+          client_name: string
+          creation_date: string
+          date_of_service: string
+          department: string
+          first_billed: string
+          id: string
+          is_copay: boolean
+          is_voided: boolean
+          last_seen_at: string
+          payment_labels: string
+          payment_type: string
+          payor: string
+          primary_location: string
+          record_date: string
+          source_row_id: string
+        }[]
+      }
       report_source_coverage: { Args: never; Returns: Json }
+      report_timesheet_documentation_summary: {
+        Args: never
+        Returns: {
+          incomplete_tasks: number
+          latest_date_of_service: string
+          latest_seen_at: string
+          locked_rows: number
+          missing_provider_signature: number
+          provider_cr_id: string
+          provider_key: string
+          provider_name: string
+          rows_total: number
+          unlocked_rows: number
+        }[]
+      }
       resolve_alert_sla: {
         Args: { _alert_type: string; _payor: string; _state: string }
         Returns: {

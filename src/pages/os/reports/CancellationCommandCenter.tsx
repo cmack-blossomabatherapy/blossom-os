@@ -134,6 +134,14 @@ export default function CancellationCommandCenter() {
   const tab = (BREAKDOWNS.some((b) => b.key === tabParam) ? tabParam : "reason") as BreakdownKey;
   const setTab = (next: BreakdownKey) => setTabParam(next);
   const [followUps, setFollowUps] = useState<Record<string, FollowUpStatus>>({});
+  /**
+   * Top-level segmented view. Cancellations keeps every existing cancellation
+   * KPI, chart, breakdown and follow-up queue; Conversion is the source-proven
+   * timesheet conversion tab.
+   */
+  const [viewParam, setViewParam] = useUrlState("view", "cancellations");
+  const view: "cancellations" | "conversion" =
+    viewParam === "conversion" ? "conversion" : "cancellations";
 
   useEffect(() => {
     pushRecent("cancellation-command-center");
@@ -362,6 +370,18 @@ export default function CancellationCommandCenter() {
         hint: "2+ cancellations in the selected range",
         tone: metrics.followUps.length > 0 ? ("warn" as const) : ("good" as const),
       },
+    ],
+    [metrics, comparisonHint],
+  );
+
+  /**
+   * Conversion KPIs live on the Conversion tab. Events with no reported
+   * conversion state are shown separately and excluded from the rate
+   * denominator, and nothing here is ever labelled "converted late" because
+   * the source carries no conversion timestamp.
+   */
+  const conversionKpis = useMemo(
+    () => [
       {
         id: "conversion-rate",
         label: "Timesheet conversion",
@@ -377,8 +397,15 @@ export default function CancellationCommandCenter() {
                 : ("bad" as const),
       },
       {
+        id: "converted",
+        label: "Converted",
+        value: fmtCount(metrics.conversion.converted),
+        hint: "Active nondeleted events the source reports as converted to a timesheet",
+        tone: "good" as const,
+      },
+      {
         id: "not-converted",
-        label: "Not converted",
+        label: "Unconverted",
         value: fmtCount(metrics.conversion.unconverted),
         hint: "Active events the source reports as not converted to a timesheet",
         tone: metrics.conversion.unconverted > 0 ? ("warn" as const) : ("good" as const),
@@ -387,12 +414,13 @@ export default function CancellationCommandCenter() {
         id: "conversion-unknown",
         label: "Conversion not reported",
         value: fmtCount(metrics.conversion.unknown),
-        hint: "No conversion flag on the source event — excluded from the rate",
+        hint: "No conversion flag on the source event — excluded from the rate denominator",
         tone: metrics.conversion.unknown > 0 ? ("warn" as const) : ("good" as const),
       },
     ],
-    [metrics, comparisonHint],
+    [metrics],
   );
+
 
   const openDrilldown = (
     title: string,
@@ -448,7 +476,7 @@ export default function CancellationCommandCenter() {
         "events-conversion-not-reported",
       );
     }
-    if (id === "conversion-rate") {
+    if (id === "conversion-rate" || id === "converted") {
       return openDrilldown(
         "Active events converted to a timesheet",
         "Converted ÷ (converted + not converted). Events with no reported state are excluded from the denominator.",
@@ -817,230 +845,254 @@ export default function CancellationCommandCenter() {
           revenue estimates because the scheduling data carries no rate. {CONVERSION_TIMING_NOTE}
         </ReportProvenance>
 
-        <KpiScorecards kpis={kpis} onSelect={handleKpi} />
+        <Tabs value={view} onValueChange={(v) => setViewParam(v)}>
+          <TabsList className="h-9">
+            <TabsTrigger value="cancellations" className="text-xs">
+              Cancellations
+            </TabsTrigger>
+            <TabsTrigger value="conversion" className="text-xs">
+              Conversion
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <PrimaryChart
-            title="Timesheet conversion of active events"
-            subtitle="Counts only — converted, not converted, and events with no reported state."
-            type="bar"
-            data={[
-              { label: "Converted", value: metrics.conversion.converted },
-              { label: "Not converted", value: metrics.conversion.unconverted },
-              { label: "Not reported", value: metrics.conversion.unknown },
-            ].filter((d) => d.value > 0)}
-            valueLabel="Active schedule events"
-            onSelect={(label) =>
-              openDrilldown(
-                `Conversion · ${label}`,
-                "Active nondeleted events in this conversion state.",
-                rows.filter(
-                  (r) =>
-                    isActiveScheduleEvent(r) &&
-                    (label === "Converted"
-                      ? r.converted_to_timesheet === true
-                      : label === "Not converted"
-                        ? r.converted_to_timesheet === false
-                        : r.converted_to_timesheet == null),
-                ),
-                `events-conversion-${label.toLowerCase().replace(/\s+/g, "-")}`,
-                [{ label: "Conversion", value: label }],
-              )
-            }
-            height={240}
-          />
-          <div className="rounded-xl border border-border/60 bg-card/40 p-4">
-            <p className="text-xs font-semibold">Conversion, stated honestly</p>
-            <dl className="mt-3 space-y-1.5 text-[11px]">
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">Converted to timesheet</dt>
-                <dd className="tabular-nums font-medium">{fmtCount(metrics.conversion.converted)}</dd>
+        {view === "conversion" ? (
+          <div className="space-y-5">
+            <ReportProvenance>
+              Conversion counts only active nondeleted sessions whose conversion state the source
+              actually reports. Deleted events are excluded entirely, events with no conversion flag
+              are shown as an explicit unknown state and are excluded from the rate denominator, and
+              nothing here is ever labelled converted late. {CONVERSION_TIMING_NOTE}
+            </ReportProvenance>
+
+            <KpiScorecards kpis={conversionKpis} onSelect={handleKpi} />
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <PrimaryChart
+                title="Timesheet conversion of active events"
+                subtitle="Counts only — converted, not converted, and events with no reported state."
+                type="bar"
+                data={[
+                  { label: "Converted", value: metrics.conversion.converted },
+                  { label: "Not converted", value: metrics.conversion.unconverted },
+                  { label: "Not reported", value: metrics.conversion.unknown },
+                ].filter((d) => d.value > 0)}
+                valueLabel="Active schedule events"
+                onSelect={(label) =>
+                  openDrilldown(
+                    `Conversion · ${label}`,
+                    "Active nondeleted events in this conversion state.",
+                    rows.filter(
+                      (r) =>
+                        isActiveScheduleEvent(r) &&
+                        (label === "Converted"
+                          ? r.converted_to_timesheet === true
+                          : label === "Not converted"
+                            ? r.converted_to_timesheet === false
+                            : r.converted_to_timesheet == null),
+                    ),
+                    `events-conversion-${label.toLowerCase().replace(/\s+/g, "-")}`,
+                    [{ label: "Conversion", value: label }],
+                  )
+                }
+                height={240}
+              />
+              <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                <p className="text-xs font-semibold">Conversion, stated honestly</p>
+                <dl className="mt-3 space-y-1.5 text-[11px]">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Converted to timesheet</dt>
+                    <dd className="tabular-nums font-medium">{fmtCount(metrics.conversion.converted)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Not converted</dt>
+                    <dd className="tabular-nums font-medium">
+                      {fmtCount(metrics.conversion.unconverted)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">
+                      Not reported (excluded from the rate)
+                    </dt>
+                    <dd className="tabular-nums font-medium">{fmtCount(metrics.conversion.unknown)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-1.5">
+                    <dt className="font-medium">
+                      Conversion rate · {fmtCount(metrics.conversion.knownStates)} known states
+                    </dt>
+                    <dd className="tabular-nums font-semibold">
+                      {fmtPct(metrics.conversion.conversionRate)}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
+                  {CONVERSION_TIMING_NOTE}
+                </p>
               </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">Not converted</dt>
-                <dd className="tabular-nums font-medium">
-                  {fmtCount(metrics.conversion.unconverted)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">
-                  Not reported (excluded from the rate)
-                </dt>
-                <dd className="tabular-nums font-medium">{fmtCount(metrics.conversion.unknown)}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-1.5">
-                <dt className="font-medium">
-                  Conversion rate · {fmtCount(metrics.conversion.knownStates)} known states
-                </dt>
-                <dd className="tabular-nums font-semibold">
-                  {fmtPct(metrics.conversion.conversionRate)}
-                </dd>
-              </div>
-            </dl>
-            <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
-              {CONVERSION_TIMING_NOTE}
-            </p>
+            </div>
+
+            <PrimaryTable
+              title="Timesheet conversion queue"
+              subtitle="Active nondeleted sessions the source states were not converted to a timesheet. The source records whether an event converted, never when, so nothing here is ever labelled converted late."
+              rows={unconvertedQueue}
+              rowKey={(r) => r.id}
+              columns={unconvertedColumns}
+              emptyLabel="Every active session with a reported conversion state is converted."
+              onRowClick={(r) =>
+                openDrilldown(
+                  `Unconverted session · ${r.client_name ?? "Unknown client"}`,
+                  "Source schedule event that the source states is not converted to a timesheet.",
+                  [r],
+                  "unconverted-session",
+                  [{ label: "Conversion", value: "Not converted" }],
+                )
+              }
+            />
           </div>
-        </div>
+        ) : (
+          <div className="space-y-5">
+          <KpiScorecards kpis={kpis} onSelect={handleKpi} />
 
-        {/*
-          Three separate weekly series. Counts, hours and percentages never share
-          an axis, and a week with no active events has no rate point at all
-          rather than a misleading 0%.
-        */}
-        <div className="grid gap-4 lg:grid-cols-2">
+          {/*
+            Three separate weekly series. Counts, hours and percentages never share
+            an axis, and a week with no active events has no rate point at all
+            rather than a misleading 0%.
+          */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <PrimaryChart
+              title="Cancelled sessions by week"
+              subtitle="Counts only — cancelled sessions per ISO week."
+              type="line"
+              data={metrics.weeklyCancellations}
+              valueLabel="Cancelled sessions"
+              onSelect={(label) => openWeek(label)}
+              height={260}
+            />
+            <PrimaryChart
+              title="Cancelled hours by week"
+              subtitle="Hours only — the scheduled hours lost in each ISO week."
+              type="line"
+              data={metrics.weeklyCancelledHours}
+              valueLabel="Cancelled hours"
+              onSelect={(label) => openWeek(label)}
+              height={260}
+            />
+          </div>
+
           <PrimaryChart
-            title="Cancelled sessions by week"
-            subtitle="Counts only — cancelled sessions per ISO week."
+            title="Cancellation rate by week"
+            subtitle="Percent only — each week's cancellations divided by that week's active nondeleted events. Weeks with no active events are omitted rather than drawn as 0%."
             type="line"
-            data={metrics.weeklyCancellations}
-            valueLabel="Cancelled sessions"
-            onSelect={(label) => openWeek(label)}
-            height={260}
-          />
-          <PrimaryChart
-            title="Cancelled hours by week"
-            subtitle="Hours only — the scheduled hours lost in each ISO week."
-            type="line"
-            data={metrics.weeklyCancelledHours}
-            valueLabel="Cancelled hours"
-            onSelect={(label) => openWeek(label)}
-            height={260}
-          />
-        </div>
-
-        <PrimaryChart
-          title="Cancellation rate by week"
-          subtitle="Percent only — each week's cancellations divided by that week's active nondeleted events. Weeks with no active events are omitted rather than drawn as 0%."
-          type="line"
-          data={metrics.weeklyCancellationRate
-            .filter((p) => p.value != null)
-            .map((p) => ({ label: p.label, value: p.value as number }))}
-          valueLabel="Cancel rate %"
-          onSelect={(label) => openWeek(label)}
-          height={240}
-        />
-
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <PrimaryChart
-            title="Cancelled sessions by weekday"
-            subtitle="Counts only — where in the week sessions are lost."
-            type="bar"
-            data={metrics.byDayOfWeek}
-            valueLabel="Cancelled sessions"
-            onSelect={(label) => openWeekday(label)}
-          />
-          <PrimaryChart
-            title="Cancellation rate by weekday"
-            subtitle="Percent only — that weekday's cancellations over its active nondeleted events. Weekdays with no active events are omitted."
-            type="bar"
-            data={metrics.byDayOfWeekRate
+            data={metrics.weeklyCancellationRate
               .filter((p) => p.value != null)
               .map((p) => ({ label: p.label, value: p.value as number }))}
             valueLabel="Cancel rate %"
-            onSelect={(label) => openWeekday(label)}
+            onSelect={(label) => openWeek(label)}
+            height={240}
           />
-        </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <PrimaryChart
-            title="Cancellations by reason"
-            subtitle="Counts only — the reason table below carries cancellations, rate and hours in separate columns."
-            type="bar"
-            data={metrics.byReason.slice(0, 8).map((g) => ({
-              label: g.name,
-              value: g.cancellations,
-            }))}
-            valueLabel="Cancellations"
-            onSelect={(label) =>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <PrimaryChart
+              title="Cancelled sessions by weekday"
+              subtitle="Counts only — where in the week sessions are lost."
+              type="bar"
+              data={metrics.byDayOfWeek}
+              valueLabel="Cancelled sessions"
+              onSelect={(label) => openWeekday(label)}
+            />
+            <PrimaryChart
+              title="Cancellation rate by weekday"
+              subtitle="Percent only — that weekday's cancellations over its active nondeleted events. Weekdays with no active events are omitted."
+              type="bar"
+              data={metrics.byDayOfWeekRate
+                .filter((p) => p.value != null)
+                .map((p) => ({ label: p.label, value: p.value as number }))}
+              valueLabel="Cancel rate %"
+              onSelect={(label) => openWeekday(label)}
+            />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <PrimaryChart
+              title="Cancellations by reason"
+              subtitle="Counts only — the reason table below carries cancellations, rate and hours in separate columns."
+              type="bar"
+              data={metrics.byReason.slice(0, 8).map((g) => ({
+                label: g.name,
+                value: g.cancellations,
+              }))}
+              valueLabel="Cancellations"
+              onSelect={(label) =>
+                openDrilldown(
+                  `Reason · ${label}`,
+                  "Cancellations mapped to this reason bucket.",
+                  cancelledRows.filter((r) => cancellationReasonBucket(r) === label),
+                  `cancellations-reason-${label.toLowerCase().replace(/\s+/g, "-")}`,
+                  [{ label: "Reason", value: label }],
+                )
+              }
+            />
+          </div>
+
+          <PrimaryTable
+            title="Follow-up queue"
+            subtitle="Clients with repeat cancellations in the selected range, ranked by operational impact. Click a row for the source sessions."
+            rows={metrics.followUps}
+            rowKey={(r) => r.key}
+            columns={followUpColumns}
+            emptyLabel="No client has more than one cancellation in this range."
+            onRowClick={(r) =>
               openDrilldown(
-                `Reason · ${label}`,
-                "Cancellations mapped to this reason bucket.",
-                cancelledRows.filter((r) => cancellationReasonBucket(r) === label),
-                `cancellations-reason-${label.toLowerCase().replace(/\s+/g, "-")}`,
-                [{ label: "Reason", value: label }],
+                `Client · ${r.client}`,
+                "Every cancelled session for this client in the current filters.",
+                cancelledRows.filter((row) => identity.clientKeyOf(row) === r.key),
+                `cancellations-client-${r.client.toLowerCase().replace(/\s+/g, "-")}`,
+                [{ label: "Client", value: r.client }],
               )
             }
           />
-        </div>
 
-        <PrimaryTable
-          title="Follow-up queue"
-          subtitle="Clients with repeat cancellations in the selected range, ranked by operational impact. Click a row for the source sessions."
-          rows={metrics.followUps}
-          rowKey={(r) => r.key}
-          columns={followUpColumns}
-          emptyLabel="No client has more than one cancellation in this range."
-          onRowClick={(r) =>
-            openDrilldown(
-              `Client · ${r.client}`,
-              "Every cancelled session for this client in the current filters.",
-              cancelledRows.filter((row) => identity.clientKeyOf(row) === r.key),
-              `cancellations-client-${r.client.toLowerCase().replace(/\s+/g, "-")}`,
-              [{ label: "Client", value: r.client }],
-            )
-          }
-        />
+          <PrimaryTable
+            title="Cancellation follow-up queue"
+            subtitle="Every cancelled source event in the current filters, with the reason, conversion state, and the action staff should take."
+            rows={metrics.followUpEvents}
+            rowKey={(r) => r.key}
+            columns={followUpEventColumns}
+            emptyLabel="No cancelled events in this range."
+          />
 
-        <PrimaryTable
-          title="Cancellation follow-up queue"
-          subtitle="Every cancelled source event in the current filters, with the reason, conversion state, and the action staff should take."
-          rows={metrics.followUpEvents}
-          rowKey={(r) => r.key}
-          columns={followUpEventColumns}
-          emptyLabel="No cancelled events in this range."
-        />
-
-        <PrimaryTable
-          title="Timesheet conversion queue"
-          subtitle="Active nondeleted sessions the source states were not converted to a timesheet. The source records whether an event converted, never when, so nothing here is ever labelled converted late."
-          rows={unconvertedQueue}
-          rowKey={(r) => r.id}
-          columns={unconvertedColumns}
-          emptyLabel="Every active session with a reported conversion state is converted."
-          onRowClick={(r) =>
-            openDrilldown(
-              `Unconverted session · ${r.client_name ?? "Unknown client"}`,
-              "Source schedule event that the source states is not converted to a timesheet.",
-              [r],
-              "unconverted-session",
-              [{ label: "Conversion", value: "Not converted" }],
-            )
-          }
-        />
-
-
-
-        <Tabs value={tab} onValueChange={(v) => setTab(v as BreakdownKey)}>
-          <TabsList className="h-9">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as BreakdownKey)}>
+            <TabsList className="h-9">
+              {BREAKDOWNS.map((b) => (
+                <TabsTrigger key={b.key} value={b.key} className="text-xs">
+                  {b.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
             {BREAKDOWNS.map((b) => (
-              <TabsTrigger key={b.key} value={b.key} className="text-xs">
-                {b.label}
-              </TabsTrigger>
+              <TabsContent key={b.key} value={b.key} className="mt-3">
+                <PrimaryTable
+                  title={`Cancellations by ${b.label.toLowerCase()}`}
+                  subtitle="Click a row to open the exact CentralReach source events behind it."
+                  rows={groupsFor(b.key)}
+                  rowKey={(g) => g.key}
+                  columns={breakdownColumns(b.key)}
+                  onRowClick={(g) =>
+                    openDrilldown(
+                      `${b.label} · ${g.name}`,
+                      "Cancelled CentralReach events behind this row.",
+                      cancelledRows.filter((r) => groupValue(r, b.key) === g.key),
+                      `cancellations-${b.key}-${g.name.toLowerCase().replace(/\s+/g, "-")}`,
+                      [{ label: b.label, value: g.name }],
+                    )
+                  }
+                />
+              </TabsContent>
             ))}
-          </TabsList>
-          {BREAKDOWNS.map((b) => (
-            <TabsContent key={b.key} value={b.key} className="mt-3">
-              <PrimaryTable
-                title={`Cancellations by ${b.label.toLowerCase()}`}
-                subtitle="Click a row to open the exact CentralReach source events behind it."
-                rows={groupsFor(b.key)}
-                rowKey={(g) => g.key}
-                columns={breakdownColumns(b.key)}
-                onRowClick={(g) =>
-                  openDrilldown(
-                    `${b.label} · ${g.name}`,
-                    "Cancelled CentralReach events behind this row.",
-                    cancelledRows.filter((r) => groupValue(r, b.key) === g.key),
-                    `cancellations-${b.key}-${g.name.toLowerCase().replace(/\s+/g, "-")}`,
-                    [{ label: b.label, value: g.name }],
-                  )
-                }
-              />
-            </TabsContent>
-          ))}
-        </Tabs>
+          </Tabs>
+          </div>
+        )}
       </div>
 
       <DrilldownDrawer request={drilldown} onClose={() => setDrilldown(null)} />
