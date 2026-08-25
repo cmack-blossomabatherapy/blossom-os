@@ -329,17 +329,24 @@ export default function AuthorizationCommandCenterPage() {
   const lifecycle = useMemo(() => computeAuthorizationLifecycle(events), [events]);
   const continuity = useMemo(() => computeAuthorizationContinuity(auths, today), [auths, today]);
 
+  /**
+   * Authorization workflow records are NEVER pre-filtered by one fallback date.
+   * A single `date` field would collapse received / submitted / approved /
+   * denied / due into one column and silently drop an approval that landed in
+   * the selected range because its submission happened earlier. State, client,
+   * payor, service code and status still apply; the selected range is applied
+   * downstream, per real recorded date, by each helper that needs it.
+   */
   const actions = useMemo(
     () =>
-      applyFilters(data.authActions, filters, (r) => ({
-        date: r.submitted_date ?? r.received_date ?? r.next_action_due_date,
+      applyFilters(data.authActions, snapshotFilters, (r) => ({
         state: r.state,
         client: r.client_name,
         payor: r.payor,
         code: r.service_code,
         status: r.status,
       })),
-    [data.authActions, filters],
+    [data.authActions, snapshotFilters],
   );
 
   const progressReports = useMemo(
@@ -352,7 +359,15 @@ export default function AuthorizationCommandCenterPage() {
     [actions, range, today],
   );
 
-  const timelines = useMemo(() => computeAuthorizationActionTimelines(actions), [actions]);
+  /**
+   * Turnaround averages are range-scoped on the completing event: a documented
+   * receipt -> submission pair counts when its real submitted date is in range,
+   * and a submission -> decision pair when its real decision date is in range.
+   */
+  const timelines = useMemo(
+    () => computeAuthorizationActionTimelines(actions, range),
+    [actions, range],
+  );
 
   const codeCounts = useMemo(
     () => computeCodeEventCounts(actions, ["97151", "97153"], range),
