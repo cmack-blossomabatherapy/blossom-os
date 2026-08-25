@@ -18,6 +18,8 @@ import {
   type CrRunTracker,
 } from "./syncRun";
 import { createSupabaseCrSupportRefresher, type CrSupportRefresher } from "./supportTables";
+import { billingStatusRow } from "./normalize";
+import { crImportStrategyFor, type CrImportStrategy } from "./strategy";
 import {
   CR_RAW_PAYLOAD,
   crCoverage,
@@ -33,8 +35,11 @@ export interface CrFileImportOutcome {
   table: string | null;
   batchId: string | null;
   runId: string | null;
+  importStrategy: CrImportStrategy;
   parsedRowCount: number;
   appendedRowCount: number;
+  updatedRowCount: number;
+  unchangedRowCount: number;
   duplicateRowCount: number;
   rejectedRowCount: number;
   coverageStart: string | null;
@@ -173,23 +178,31 @@ export async function importCentralReachFiles(
             coverageStart: coverage.start,
             coverageEnd: coverage.end,
           }],
+          { sideRowFor: (_kind, raw) => billingStatusRow(raw) },
         );
         const result = session.files[0];
-        const accounted = (result?.appendedRowCount ?? 0) + (result?.duplicateRowCount ?? 0);
+        const accounted =
+          (result?.appendedRowCount ?? 0) +
+          (result?.updatedRowCount ?? 0) +
+          (result?.unchangedRowCount ?? 0) +
+          (result?.duplicateRowCount ?? 0);
         const parsed = result?.parsedRowCount ?? 0;
         const appended = result?.appendedRowCount ?? 0;
         const duplicates = result?.duplicateRowCount ?? 0;
+        const updated = result?.updatedRowCount ?? 0;
+        const unchanged = result?.unchangedRowCount ?? 0;
+        const strategy = result?.importStrategy ?? crImportStrategyFor(kind);
         const ok = !result?.skipped && (result?.errors?.length ?? 0) === 0 && accounted > 0;
         const warnings = [...(result?.warnings ?? [])];
 
-        if (ok && appended > 0) {
+        if (ok && appended + updated > 0) {
           try {
             warnings.push(
               ...(await support.refresh({
                 kind,
                 table: crTableForKind(kind),
                 batchId: result?.batchId || null,
-                rowCount: appended,
+                rowCount: appended + updated,
                 coverageStart: coverage.start,
                 coverageEnd: coverage.end,
                 rows: normalized as Record<string, unknown>[],
@@ -200,28 +213,35 @@ export async function importCentralReachFiles(
           }
         }
 
-        const archived = ok && appended === 0 && duplicates > 0;
+        // Only an append-fact reupload with nothing new is a no-change batch.
+        // A snapshot import that only refreshed existing rows is real work.
+        const archived =
+          ok && strategy === "append_fact" && appended === 0 && updated === 0 && duplicates > 0;
         const duplicateNote = `Already loaded: no report totals changed — all ${duplicates.toLocaleString()} rows were already imported.`;
         const statusReason = !ok
           ? "No normalized rows were written."
           : archived
             ? duplicateNote
-            : `Active — ${appended.toLocaleString()} new rows appended${duplicates ? `, ${duplicates.toLocaleString()} duplicates skipped` : ""}.`;
+            : `Active — ${appended.toLocaleString()} new rows${updated ? `, ${updated.toLocaleString()} updated` : ""}${duplicates ? `, ${duplicates.toLocaleString()} duplicates skipped` : ""}${unchanged ? `, ${unchanged.toLocaleString()} unchanged` : ""}.`;
 
         if (ok) {
           try {
             await tracker.commit(runId, {
               rowCountTotal: parsed,
               rowsAdded: appended,
-              rowsUnchanged: duplicates,
-              rowsRejected: Math.max(parsed - appended - duplicates, 0),
+              rowsUpdated: updated,
+              rowsUnchanged: duplicates + unchanged,
+              rowsRejected: Math.max(parsed - appended - updated - unchanged - duplicates, 0),
               notes: archived ? duplicateNote : options.notes ?? null,
             });
             await tracker.audit(runId, archived ? "duplicate_no_change" : "upload_committed", {
               batchId: result?.batchId ?? null,
               table: crTableForKind(kind),
               appended,
+              updated,
+              unchanged,
               duplicates,
+              strategy,
               ...(archived ? { note: duplicateNote } : {}),
             });
           } catch {
@@ -237,10 +257,13 @@ export async function importCentralReachFiles(
           table: crTableForKind(kind),
           batchId: result?.batchId || null,
           runId,
+          importStrategy: strategy,
           parsedRowCount: parsed,
           appendedRowCount: appended,
+          updatedRowCount: updated,
+          unchangedRowCount: unchanged,
           duplicateRowCount: duplicates,
-          rejectedRowCount: Math.max(parsed - appended - duplicates, 0),
+          rejectedRowCount: Math.max(parsed - appended - updated - unchanged - duplicates, 0),
           coverageStart: coverage.start ?? null,
           coverageEnd: coverage.end ?? null,
           batchStatus: ok ? (archived ? "archived" : "active") : "failed",
