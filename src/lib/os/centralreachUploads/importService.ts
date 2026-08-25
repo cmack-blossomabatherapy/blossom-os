@@ -157,7 +157,7 @@ export async function importCentralReachFiles(
         const payload = (row as Record<symbol, unknown>)[CR_RAW_PAYLOAD] as
           | Record<string, unknown>
           | undefined;
-        if (payload) rawByHash.set(identityToRowHash(row), payload);
+        if (payload) rawByHash.set(identityToRowHash(row, kind), payload);
       }
 
       const coverage = crCoverage(kind, normalized);

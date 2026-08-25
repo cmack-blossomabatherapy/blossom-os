@@ -54,12 +54,42 @@ const RAW_ID_KEYS = [
   "resourceid",
 ];
 
+/**
+ * Report-type-specific identity headers, checked BEFORE the generic list.
+ *
+ * Scheduling exports carry no Id/AppointmentId/EventId — the stable identifier
+ * is the raw `Event` column (e.g. 1375558467). It is scoped to scheduling so an
+ * unrelated generic `Event` field in another export can never become its key.
+ */
+const RAW_ID_KEYS_BY_KIND: Partial<Record<CRUploadKind, string[]>> = {
+  scheduling: ["eventid", "appointmentid", "scheduleid", "event"],
+};
+
 function normKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function findRawId(source: Record<string, unknown> | undefined): string | null {
+function findRawIdIn(source: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    for (const candidate of Object.keys(source)) {
+      if (normKey(candidate) !== key) continue;
+      const value = String(source[candidate] ?? "").trim();
+      if (value) return value;
+    }
+  }
+  return null;
+}
+
+function findRawId(
+  source: Record<string, unknown> | undefined,
+  kind?: CRUploadKind,
+): string | null {
   if (!source) return null;
+  const scoped = kind ? RAW_ID_KEYS_BY_KIND[kind] : undefined;
+  if (scoped) {
+    const hit = findRawIdIn(source, scoped);
+    if (hit) return hit;
+  }
   for (const key of Object.keys(source)) {
     if (RAW_ID_KEYS.includes(normKey(key))) {
       const value = String(source[key] ?? "").trim();
@@ -74,26 +104,37 @@ export function rawPayloadOf(row: Record<string, unknown>): Record<string, unkno
 }
 
 /**
- * Import-time identity: direct id-like column, else the CentralReach raw
- * payload's id, else a deterministic hash of the normalized fields.
+ * Import-time identity: report-type-specific id column, else a direct id-like
+ * column, else the CentralReach raw payload's id, else a deterministic hash of
+ * the normalized fields.
  */
-export function crImportRowIdentity(row: Record<string, unknown>): string {
+export function crImportRowIdentity(
+  row: Record<string, unknown>,
+  kind?: CRUploadKind,
+): string {
+  const scoped = kind ? RAW_ID_KEYS_BY_KIND[kind] : undefined;
+  if (scoped) {
+    const raw = rawPayloadOf(row);
+    const scopedId = (raw && findRawIdIn(raw, scoped)) || findRawIdIn(row, scoped);
+    if (scopedId) return `id:${scopedId}`;
+  }
   const direct = crRowIdentity(row);
   if (direct.startsWith("id:")) return direct;
-  const rawId = findRawId(rawPayloadOf(row));
+  const rawId = findRawId(rawPayloadOf(row), kind);
   if (rawId) return `id:${rawId}`;
   return direct;
 }
 
 /** Persisted row_hash for a row (matches the identity used for dedupe). */
-export function crImportRowHash(row: Record<string, unknown>): string {
-  const identity = crImportRowIdentity(row);
+export function crImportRowHash(row: Record<string, unknown>, kind?: CRUploadKind): string {
+  const identity = crImportRowIdentity(row, kind);
   return identity.startsWith("id:") ? identity : crRowHash(row);
 }
 
 /** The CentralReach source row id, persisted explicitly as `source_row_id`. */
-export function crSourceRowId(row: Record<string, unknown>): string | null {
-  const identity = crImportRowIdentity(row);
+export function crSourceRowId(row: Record<string, unknown>, kind?: CRUploadKind): string | null {
+  const identity = crImportRowIdentity(row, kind);
+
   return identity.startsWith("id:") ? identity.slice(3) : null;
 }
 
@@ -118,6 +159,7 @@ export function planImportRows<T extends Record<string, unknown>>(
   existingIdentities: Iterable<string>,
   rows: T[],
   strategy: CrImportStrategy = "append_fact",
+  kind?: CRUploadKind,
 ): CrImportPlan<T> {
   const existing = new Set<string>(existingIdentities);
   const insertByIdentity = new Map<string, T>();
@@ -126,7 +168,8 @@ export function planImportRows<T extends Record<string, unknown>>(
   let unchanged = 0;
 
   for (const row of rows ?? []) {
-    const identity = crImportRowIdentity(row);
+    const identity = crImportRowIdentity(row, kind);
+
     if (strategy === "append_fact") {
       if (existing.has(identity) || insertByIdentity.has(identity)) {
         duplicates.push(row);
@@ -286,7 +329,7 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
     }
     const identities = identitiesByTable.get(table)!;
 
-    const plan = planImportRows<T>(identities, file.rows, strategy);
+    const plan = planImportRows<T>(identities, file.rows, strategy, file.exportType);
     plan.identities.forEach((id) => identities.add(id));
 
     const descriptor: CRBatchDescriptor = {
@@ -303,8 +346,8 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
     const batchId = await store.createBatch(descriptor);
     const stamp = (row: T) => ({
       ...row,
-      row_hash: crImportRowHash(row),
-      source_row_id: crSourceRowId(row),
+      row_hash: crImportRowHash(row, file.exportType),
+      source_row_id: crSourceRowId(row, file.exportType),
       batch_id: batchId,
       last_seen_batch_id: batchId,
       last_seen_at: new Date().toISOString(),
@@ -324,7 +367,7 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
       const seen = new Set<string>();
       const sideRows: Array<Record<string, unknown> & { row_hash: string }> = [];
       for (const row of file.rows) {
-        const hash = crImportRowHash(row);
+        const hash = crImportRowHash(row, file.exportType);
         if (seen.has(hash)) continue;
         seen.add(hash);
         const mapped = options.sideRowFor(file.exportType, rawPayloadOf(row) ?? row);
@@ -332,7 +375,7 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
         sideRows.push({
           ...mapped,
           row_hash: hash,
-          source_row_id: crSourceRowId(row),
+          source_row_id: crSourceRowId(row, file.exportType),
           batch_id: batchId,
           last_seen_batch_id: batchId,
           last_seen_at: new Date().toISOString(),
@@ -347,12 +390,12 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
       const byHash = new Map<string, CrRawRowRecord>();
       for (const row of file.rows) {
         const payload = rawPayloadOf(row) ?? (row as Record<string, unknown>);
-        const hash = crImportRowHash(row);
+        const hash = crImportRowHash(row, file.exportType);
         byHash.set(hash, {
           batch_id: batchId,
           export_type: String(file.exportType),
           row_hash: hash,
-          cr_row_id: crSourceRowId(row),
+          cr_row_id: crSourceRowId(row, file.exportType),
           payload,
         });
       }
@@ -400,8 +443,11 @@ export async function runCrImportSession<T extends Record<string, unknown>>(
  * Persisted row_hash for a row. Uses the CentralReach row id when present so the
  * global unique index on row_hash matches the in-memory identity used for dedupe.
  */
-export function identityToRowHash(row: Record<string, unknown>): string {
-  return crImportRowHash(row);
+export function identityToRowHash(
+  row: Record<string, unknown>,
+  kind?: CRUploadKind,
+): string {
+  return crImportRowHash(row, kind);
 }
 
 export { crImportStrategyFor };

@@ -219,6 +219,32 @@ function attendanceLabel(raw: string | null): string | null {
   return v;
 }
 
+/**
+ * Extract the local wall-clock time from a CentralReach timestamp such as
+ * `8/24/2026 21:45`. No Date parsing, so no timezone shift is introduced.
+ */
+export function crClockTime(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const m = raw.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])?/);
+  if (!m) return null;
+  let hour = Number(m[1]);
+  const meridiem = m[4]?.toLowerCase();
+  if (meridiem === "pm" && hour < 12) hour += 12;
+  if (meridiem === "am" && hour === 12) hour = 0;
+  if (!Number.isFinite(hour) || hour > 23) return null;
+  return `${String(hour).padStart(2, "0")}:${m[2]}:${(m[3] ?? "00").padStart(2, "0")}`;
+}
+
+const EVENT_START = [
+  "EventStartDateTime", "Event Start DateTime", "EventStart", "StartDateTime", "Start Date Time",
+];
+const EVENT_END = [
+  "EventEndDateTime", "Event End DateTime", "EventEnd", "EndDateTime", "End Date Time",
+];
+
+
 function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
   const code = resolveServiceCode(row);
   const deleted = crBool(row, ["Deleted", "IsDeleted", "Is Deleted"]);
@@ -235,7 +261,10 @@ function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
         ? "Cancelled"
         : explicitStatus ?? attendanceLabel(attendance);
   return {
-    event_date: date(row, ["EventDate", "Date", "StartDate", "AppointmentDate", "DateOfService", "Start"]),
+    event_date:
+      date(row, EVENT_START) ??
+      date(row, ["EventDate", "Date", "StartDate", "AppointmentDate", "DateOfService", "Start"]),
+
     procedure_code: code.procedureCode,
     billing_code: code.billingCode,
     billing_code_name: code.billingCodeName,
@@ -260,8 +289,13 @@ function scheduleRow(row: Record<string, unknown>): NormalizedCrRow {
     deleted,
     cancelled,
     converted_to_timesheet: converted,
-    start_time: text(row, ["StartTime", "Start Time", "EventStartTime", "TimeStart"]),
-    end_time: text(row, ["EndTime", "End Time", "EventEndTime", "TimeEnd"]),
+    start_time:
+      crClockTime(pickText(row, EVENT_START)) ??
+      text(row, ["StartTime", "Start Time", "EventStartTime", "TimeStart"]),
+    end_time:
+      crClockTime(pickText(row, EVENT_END)) ??
+      text(row, ["EndTime", "End Time", "EventEndTime", "TimeEnd"]),
+
     billing_creation_date: date(row, [
       "BillingCreationDate", "Billing Creation Date", "CreationDate", "Creation Date", "CreatedDate",
     ]),

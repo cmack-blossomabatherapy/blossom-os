@@ -34153,6 +34153,22 @@ export type Database = {
         Args: { _employee_id: string; _reason?: string }
         Returns: boolean
       }
+      report_authorization_events: {
+        Args: never
+        Returns: {
+          authorization_number: string
+          client_cr_id: string
+          client_name: string
+          created_at: string
+          event_date: string
+          event_type: string
+          payor: string
+          reason: string
+          record_id: string
+          source: string
+          state: string
+        }[]
+      }
       report_source_coverage: { Args: never; Returns: Json }
       resolve_alert_sla: {
         Args: { _alert_type: string; _payor: string; _state: string }
