@@ -16,12 +16,10 @@ const intakeAiSrc = fs.readFileSync("src/components/auth/IntakeAiCallsRoute.tsx"
 const phoneRouteSrc = fs.readFileSync("src/components/auth/PhoneSystemRoute.tsx", "utf8");
 
 describe("Phone After-Hours AI visibility", () => {
-  // Executive Leadership now uses the standard five-item menu, so /phone is
-  // reached by route (PhoneSystemRoute) rather than from the sidebar. What
-  // still matters here is that After-Hours AI is never in their menu.
-  it("Executive Leadership menu never exposes /phone/ai-calls", () => {
+  it("Executive Leadership menu has /phone but not /phone/ai-calls", () => {
     const exec = ROLE_MENUS.executive_leadership!;
     const paths = exec.sections.flatMap((s) => s.items.map((i) => i.path));
+    expect(paths).toContain("/phone");
     expect(paths).not.toContain("/phone/ai-calls");
     expect(paths).not.toContain("/phone/ai-calls/audit");
   });
