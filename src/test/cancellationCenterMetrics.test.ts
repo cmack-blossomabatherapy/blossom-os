@@ -165,8 +165,20 @@ describe("computeCancellationCenter", () => {
     expect(empty.truth.mode).toBe("empty");
   });
 
-  it("only queues clients with repeat cancellations", () => {
-    expect(m.followUps).toEqual([]);
+  it("queues only clients with repeat cancellations, with a plain-language reason", () => {
+    expect(m.followUps).toHaveLength(1);
+    expect(m.followUps[0].client).toBe("Client A");
+    expect(m.followUps[0].cancellations).toBe(3);
+    expect(m.followUps[0].reason).toBe("1 cancellation without a documented reason");
+    // Client B has zero cancellations, so it never enters the queue.
+    expect(m.followUps.some((f) => f.client === "Client B")).toBe(false);
+
+    const single = computeCancellationCenter([
+      row({ cancelled: true }),
+      row({ cancelled: false }),
+    ]);
+    expect(single.followUps).toEqual([]);
+
     const repeat = computeCancellationCenter([
       row({ cancelled: true, event_date: "2026-01-06" }),
       row({ cancelled: true, event_date: "2026-01-20" }),
