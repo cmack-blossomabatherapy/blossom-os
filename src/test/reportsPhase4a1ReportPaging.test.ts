@@ -111,10 +111,10 @@ describe("Phase 4A1 complete report paging", () => {
     expect(table.rows).toEqual([]);
   });
 
-  it("turns the safety cap into an explicit visible error", async () => {
+  it("turns the safety cap into an explicit visible error with no rows", async () => {
     state.total = CR_SAFETY_CAP + 5000;
     const res = await readRpcPaged("report_billing_facts", "billing facts");
     expect(res.error).toBe(CR_SAFETY_CAP_ERROR);
-    expect(res.rows).toHaveLength(CR_SAFETY_CAP);
+    expect(res.rows).toHaveLength(0);
   });
 });
