@@ -307,16 +307,34 @@ export function billingStatusRow(row: Record<string, unknown>): Record<string, u
 }
 
 function authorizationRow(row: Record<string, unknown>): NormalizedCrRow {
-  const authorized = num(row, [
-    "AuthorizedHours", "Authorized Hours", "AuthorizedHoursAll", "AuthorizedHoursMonth",
-    "authHours",
+  const window = (base: string, legacy: string[] = []) => ({
+    all: num(row, [`${base}HoursAll`, `${base} Hours All`, ...legacy.map((k) => `${k}All`)]),
+    month: num(row, [`${base}HoursMonth`, `${base} Hours Month`, ...legacy.map((k) => `${k}Month`)]),
+    range: num(row, [
+      `${base}HoursAuthRange`,
+      `${base} Hours Auth Range`,
+      `${base}Hours`,
+      `${base} Hours`,
+      ...legacy,
+    ]),
+  });
+
+  const authorizedW = window("Authorized", ["authHours"]);
+  const workedW = window("Worked", ["authHoursWkd", "UsedHours", "HoursWorked"]);
+  const scheduledW = window("Scheduled", ["authHoursSch"]);
+  const pendingW = window("Pending", ["authHoursPending", "authHoursPend"]);
+  const remainingW = window("Remaining", ["authHoursRem", "HoursRemaining"]);
+
+  const utilAll = num(row, ["UtilizationPercentAll", "Utilization Percent All"]);
+  const utilMonth = num(row, ["UtilizationPercentMonth", "Utilization Percent Month"]);
+  const utilRange = num(row, [
+    "UtilizationPercentAuthRange", "UtilizationPercent", "Utilization %", "UtilizationPct", "Utilization",
   ]);
-  const worked = num(row, [
-    "WorkedHours", "Worked Hours", "WorkedHoursAuthRange", "UsedHours", "HoursWorked", "authHoursWkd",
-  ]);
-  const remaining = num(row, [
-    "RemainingHours", "Remaining Hours", "RemainingHoursAuthRange", "HoursRemaining", "authHoursRem",
-  ]);
+
+  const authorized = authorizedW.range ?? authorizedW.all ?? authorizedW.month;
+  const worked = workedW.range ?? workedW.all ?? workedW.month;
+  const remaining = remainingW.range ?? remainingW.all ?? remainingW.month;
+
   const serviceCodes = text(row, ["ServiceCodes", "Service Codes", "ServiceCode", "Service Code"]);
   const clientLabels = text(row, ["ClientLabels", "Client Labels", "Labels"]);
   const activeRaw = text(row, ["IsActive", "Is Active", "Active"]);
@@ -329,7 +347,18 @@ function authorizationRow(row: Record<string, unknown>): NormalizedCrRow {
   const endDate = date(row, ["EndDate", "End Date", "AuthEndDate", "AuthorizationEnd", "ExpirationDate", "LastService"]);
   const codeFromServiceCodes = (serviceCodes ?? "").match(/\d{5}/)?.[0] ?? null;
   return {
+    authorization_id: text(row, ["AuthorizationId", "Authorization Id", "AuthId", "Id"]),
     authorization_number: text(row, ["AuthorizationNumber", "Authorization Number", "AuthNumber", "AuthId"]),
+    followup_authorization_number: text(row, [
+      "FollowUpAuthorizationNumber", "Follow Up Authorization Number",
+      "FollowupAuthorizationNumber", "FollowUpAuthNumber",
+    ]),
+    followup_service_codes: text(row, [
+      "FollowUpServiceCodes", "Follow Up Service Codes", "FollowupServiceCodes", "FollowUpServiceCode",
+    ]),
+    manager: text(row, ["Manager", "AuthManager", "Auth Manager", "CaseManager", "Case Manager"]),
+    implementer: text(row, ["Implementer", "AuthImplementer", "Auth Implementer"]),
+    frequency: text(row, ["Frequency", "AuthFrequency", "Auth Frequency"]),
     client_name: fullName(row, ["ClientFirstName"], ["ClientLastName"], CLIENT),
     client_cr_id: text(row, CLIENT_ID),
     payor: text(row, PAYOR),
@@ -344,10 +373,29 @@ function authorizationRow(row: Record<string, unknown>): NormalizedCrRow {
     followup_end_date: followupEnd,
     start_date: startDate ?? actualStart,
     end_date: endDate ?? actualEnd,
+    // Legacy compatibility columns stay populated for existing reports.
     authorized_hours: authorized,
     worked_hours: worked,
     remaining_hours:
       remaining ?? (authorized !== null && worked !== null ? authorized - worked : null),
+    authorized_hours_all: authorizedW.all,
+    authorized_hours_month: authorizedW.month,
+    authorized_hours_auth_range: authorizedW.range,
+    worked_hours_all: workedW.all,
+    worked_hours_month: workedW.month,
+    worked_hours_auth_range: workedW.range,
+    scheduled_hours_all: scheduledW.all,
+    scheduled_hours_month: scheduledW.month,
+    scheduled_hours_auth_range: scheduledW.range,
+    pending_hours_all: pendingW.all,
+    pending_hours_month: pendingW.month,
+    pending_hours_auth_range: pendingW.range,
+    remaining_hours_all: remainingW.all,
+    remaining_hours_month: remainingW.month,
+    remaining_hours_auth_range: remainingW.range,
+    utilization_percent_all: utilAll,
+    utilization_percent_month: utilMonth,
+    utilization_percent_auth_range: utilRange,
     status:
       text(row, STATUS) ??
       deriveAuthorizationStatus({
@@ -404,6 +452,8 @@ function utilizationRow(row: Record<string, unknown>): NormalizedCrRow {
 }
 
 function claimRow(row: Record<string, unknown>): NormalizedCrRow {
+  const amount = num(row, ["BilledAmount", "Billed Amount", "Charge", "Billed", "Amount"]);
+  const paid = num(row, ["PaidAmount", "Paid Amount", "Paid", "TotalPaid"]);
   return {
     claim_number: text(row, ["ClaimNumber", "Claim Number", "ClaimId", "Claim Id", "Id"]),
     client_name: fullName(row, ["ClientFirstName"], ["ClientLastName"], CLIENT),
@@ -413,8 +463,19 @@ function claimRow(row: Record<string, unknown>): NormalizedCrRow {
       "DateOfService", "Date of Service", "ServiceDate", "Date", "FirstService", "LastService",
     ]),
     procedure_code: text(row, CODE),
-    billed_amount: num(row, ["BilledAmount", "Billed Amount", "Charge", "Billed", "Amount"]),
-    paid_amount: num(row, ["PaidAmount", "Paid Amount", "Paid", "TotalPaid"]),
+    billed_amount: amount,
+    paid_amount: paid,
+    // CentralReach `Amount` has no documented unit (dollars vs cents vs units),
+    // so raw values are preserved and the unit stays explicitly unknown.
+    amount_raw: amount,
+    paid_amount_raw: paid,
+    amount_unit: "unknown",
+    action_date: date(row, ["ActionDate", "Action Date"]),
+    action_by: text(row, ["ActionBy", "Action By", "ActionUser", "ActionedBy"]),
+    submit_reason: crReason(text(row, ["SubmitReason", "Submit Reason", "Reason"])),
+    error_count: num(row, ["ErrorCount", "Error Count", "Errors"]),
+    exported: crBool(row, ["ClaimsExported", "Claims Exported", "Exported", "IsExported"]),
+    responses_status: text(row, ["ResponsesStatus", "Responses Status", "ResponseStatus"]),
     status: text(row, [...STATUS, "ResponsesStatus", "Responses Status"]),
   };
 }
