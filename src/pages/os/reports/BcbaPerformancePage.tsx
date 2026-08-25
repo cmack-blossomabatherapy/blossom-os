@@ -186,9 +186,7 @@ const relevantAction = (r: BcbaPerformanceRow): string => {
   }
   if (r.status === "needs_attention") {
     return driving.length
-      ? `Check in this week on ${driving.join(" and ")}${
-          r.nearestDeadlineBasis ? ` · nearest documented deadline: ${r.nearestDeadlineBasis}` : ""
-        }.`
+      ? `Check in this week on ${driving.join(" and ")}.`
       : "Check in this week on the flagged dimension.";
   }
   return "No action needed — keep the current cadence.";
