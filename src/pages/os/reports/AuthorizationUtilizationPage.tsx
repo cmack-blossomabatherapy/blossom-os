@@ -53,8 +53,8 @@ import {
   type UtilizationDataState,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationProration";
 import {
-  endDateOf,
-  startDateOf,
+  classifyContinuityRow,
+  selectCoveragePair,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
 import {
   UTILIZATION_RISK_LABELS,
@@ -194,30 +194,42 @@ export default function AuthorizationUtilizationPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }, []);
 
+  /**
+   * The one matched coverage pair used for scoping, filtering, display and
+   * trends. It is the exact same selector call the allocator and the proration
+   * make, so allocation, denominator, display and trend always reconcile.
+   */
+  const pairOf = useCallback(
+    (r: CrAuthorizationCurrentRow) =>
+      selectCoveragePair(r, { from: filters.from, to: filters.to, today }),
+    [filters.from, filters.to, today],
+  );
+
   const scopedAuths = useMemo(() => {
     if (scope === "all") return data.authCurrent;
-    // Active never includes a future-dated authorization: it has no hours to
-    // utilize yet. An explicit inactive flag always wins over the dates.
-    return data.authCurrent.filter(
-      (r) =>
-        resolveActiveScope(
-          { is_active: r.is_active, startDate: startDateOf(r), endDate: endDateOf(r) },
-          today,
-        ).active,
-    );
+    /**
+     * Default scope is current coverage only, straight from the shared
+     * continuity classification: active, or expiring today. Explicitly
+     * inactive, future, expired, malformed and unknown-date rows are not
+     * active and cannot be utilized inside the selected window.
+     */
+    return data.authCurrent.filter((r) => {
+      const continuity = classifyContinuityRow(r, today).continuity;
+      return continuity === "active" || continuity === "expiring";
+    });
   }, [data.authCurrent, scope, today]);
 
   const auths = useMemo(
     () =>
       applyFilters(scopedAuths, filters, (r) => ({
-        date: startDateOf(r),
-        endDate: endDateOf(r),
+        date: pairOf(r)?.start ?? null,
+        endDate: pairOf(r)?.end ?? null,
         state: r.state,
         client: r.client_name,
         payor: r.payor,
         code: r.service_codes ?? r.procedure_code,
       })),
-    [scopedAuths, filters],
+    [scopedAuths, filters, pairOf],
   );
 
   const billing = useMemo(
@@ -251,8 +263,8 @@ export default function AuthorizationUtilizationPage() {
     () =>
       computeAuthorizationTrend(
         auths.map((a) => ({
-          startDate: startDateOf(a),
-          endDate: endDateOf(a),
+          startDate: pairOf(a)?.start ?? null,
+          endDate: pairOf(a)?.end ?? null,
           // Full authorization-range hours, null-safe: never `Number(null)`.
           authorizedHours:
             numOrNull(a.authorized_hours_auth_range) ??
@@ -266,7 +278,7 @@ export default function AuthorizationUtilizationPage() {
           .map((a) => ({ date: a.date, hours: a.hours })),
         { from: filters.from, to: filters.to, grain: grain as TrendGrain },
       ),
-    [auths, result.allocations, filters.from, filters.to, grain],
+    [auths, result.allocations, filters.from, filters.to, grain, pairOf],
   );
 
   const filterFields = useMemo<FilterFieldConfig[]>(
