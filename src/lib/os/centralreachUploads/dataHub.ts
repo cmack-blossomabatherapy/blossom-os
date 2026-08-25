@@ -29,6 +29,12 @@ export interface CRBatchDescriptor {
   appendedRowCount?: number;
   /** Rows skipped because their identity already exists (any batch). */
   duplicateRowCount?: number;
+  /** Import contract used for this batch. */
+  importStrategy?: "append_fact" | "upsert_snapshot";
+  /** Existing CURRENT rows refreshed by this batch (snapshot strategy). */
+  updatedRowCount?: number;
+  /** Repeated identities within the same import that needed no extra write. */
+  unchangedRowCount?: number;
 }
 
 export interface CRBatchValidation {
