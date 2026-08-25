@@ -54,12 +54,10 @@ import {
   daysBetween,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationContinuity";
 import {
-  isActionResolved,
-  isProgressReportAction,
+  computeProgressReportOps,
   validDay,
 } from "@/lib/os/reports/crPrimary/metrics/authorizationActions";
 import { inDayRange } from "@/lib/os/reports/dateKey";
-
 
 import { classifyLifecycleEvent } from "@/lib/os/reports/crPrimary/metrics/authorizationLifecycle";
 import { computeParentTrainingAnalysis } from "@/lib/os/reports/crPrimary/metrics/parentTrainingV2";
@@ -146,22 +144,52 @@ const statusOf = (r: BcbaPerformanceRow, key: string) => {
   return d ? PERFORMANCE_STATUS_LABELS[d.status] : "Insufficient Data";
 };
 
-/** Every reason behind the overall status, in the words of each dimension. */
-const statusReasons = (r: BcbaPerformanceRow): string[] =>
-  r.dimensions
-    .filter((d) => d.status === r.status)
-    .map((d) => `${d.label}: ${d.reason}`);
+/**
+ * EVERY applicable dimension's status and reason — not only the dimensions that
+ * happen to match the overall worst status. A dimension is omitted only when it
+ * is genuinely not measurable for this BCBA, and that omission is itself stated.
+ */
+const statusReasons = (r: BcbaPerformanceRow): string[] => {
+  const applicable = r.dimensions.filter((d) => d.measurable);
+  const reasons = applicable.map(
+    (d) => `${d.label} — ${PERFORMANCE_STATUS_LABELS[d.status]}: ${d.reason}`,
+  );
+  const notApplicable = r.dimensions.filter((d) => !d.measurable);
+  if (notApplicable.length > 0) {
+    reasons.push(
+      `Not measurable from the source records: ${notApplicable.map((d) => d.label).join(", ")}`,
+    );
+  }
+  return reasons;
+};
 
-/** The single next step staff should take for this BCBA. */
+/** The dimensions actually responsible for the overall status. */
+const worstDimensions = (r: BcbaPerformanceRow) =>
+  r.dimensions.filter((d) => d.measurable && d.status === r.status);
+
+/**
+ * The next step staff should take, named after the dimension(s) that actually
+ * set the overall status rather than a generic coverage sentence.
+ */
 const relevantAction = (r: BcbaPerformanceRow): string => {
+  if (r.status === "insufficient_data") {
+    const missing = r.dimensions.filter((d) => !d.measurable).map((d) => d.label);
+    return missing.length
+      ? `Complete the source records for ${missing.join(", ")} so this BCBA can be measured.`
+      : "Complete the missing source records so this BCBA can be measured.";
+  }
+  const driving = worstDimensions(r).map((d) => d.label);
   if (r.status === "at_risk") {
-    return "Review with the BCBA now — confirm coverage, documentation, and reporting before scheduling more hours.";
+    return driving.length
+      ? `Review with the BCBA now — ${driving.join(" and ")} ${driving.length > 1 ? "are" : "is"} at risk.`
+      : "Review with the BCBA now.";
   }
   if (r.status === "needs_attention") {
-    return "Check in this week on the flagged dimension and the nearest documented deadline.";
-  }
-  if (r.status === "insufficient_data") {
-    return "Complete the missing source records so this BCBA can be measured.";
+    return driving.length
+      ? `Check in this week on ${driving.join(" and ")}${
+          r.nearestDeadlineBasis ? ` · nearest documented deadline: ${r.nearestDeadlineBasis}` : ""
+        }.`
+      : "Check in this week on the flagged dimension.";
   }
   return "No action needed — keep the current cadence.";
 };
@@ -185,7 +213,7 @@ const projectRows = (rows: BcbaPerformanceRow[]): Record<string, unknown>[] =>
     rbts: r.rbts,
     states: r.states.join(", "),
     drivers: r.drivers.join(", "),
-    reasons: statusReasons(r).join(" · ") || "No blocking reason recorded",
+    reasons: statusReasons(r).join(" · ") || "No measurable dimension recorded",
     action: relevantAction(r),
   }));
 
