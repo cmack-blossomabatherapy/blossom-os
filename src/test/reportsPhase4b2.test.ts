@@ -29,8 +29,8 @@ const ev = (over: Partial<CancellationCenterRow> = {}): CancellationCenterRow =>
   ({
     id: Math.random().toString(36).slice(2),
     event_date: "2026-03-02",
-    duration_hours: 2,
-    is_deleted: false,
+    scheduled_hours: 2,
+    deleted: false,
     cancelled: false,
     ...over,
   }) as CancellationCenterRow;
@@ -59,8 +59,8 @@ describe("Phase 4B2 · cancellation truth rules", () => {
       ev({ cancelled: false }),
       ev({ cancelled: false }),
       // Deleted rows are invisible everywhere, cancelled or not.
-      ev({ cancelled: true, is_deleted: true, cancellation_reason: "Client illness" }),
-      ev({ cancelled: false, is_deleted: true }),
+      ev({ cancelled: true, deleted: true, cancellation_reason: "Client illness" }),
+      ev({ cancelled: false, deleted: true }),
     ];
     const m = computeCancellationCenter(rows);
 
@@ -87,7 +87,7 @@ describe("Phase 4B2 · cancellation truth rules", () => {
       ev({ converted_to_timesheet: null }),
       ev({ converted_to_timesheet: null }),
       // Deleted rows never reach the conversion metric.
-      ev({ converted_to_timesheet: false, is_deleted: true }),
+      ev({ converted_to_timesheet: false, deleted: true }),
     ]);
 
     expect(m.conversion.converted).toBe(3);
@@ -102,12 +102,12 @@ describe("Phase 4B2 · cancellation truth rules", () => {
   it("keeps weekly counts, hours and rate as separate reconciling series", () => {
     const rows = [
       // Week of 2026-03-02 (Mon): 2 cancellations of 2h from 4 active events.
-      ev({ event_date: "2026-03-02", cancelled: true, duration_hours: 2 }),
-      ev({ event_date: "2026-03-03", cancelled: true, duration_hours: 2 }),
+      ev({ event_date: "2026-03-02", cancelled: true, scheduled_hours: 2 }),
+      ev({ event_date: "2026-03-03", cancelled: true, scheduled_hours: 2 }),
       ev({ event_date: "2026-03-04" }),
       ev({ event_date: "2026-03-05" }),
       // Week of 2026-03-09: 1 cancellation of 3h from 2 active events.
-      ev({ event_date: "2026-03-09", cancelled: true, duration_hours: 3 }),
+      ev({ event_date: "2026-03-09", cancelled: true, scheduled_hours: 3 }),
       ev({ event_date: "2026-03-10" }),
     ];
     const m = computeCancellationCenter(rows);
