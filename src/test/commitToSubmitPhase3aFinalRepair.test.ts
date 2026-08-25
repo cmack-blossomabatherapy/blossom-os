@@ -140,10 +140,9 @@ describe("notice guard: sequential on INSERT only, immutable identity on UPDATE"
     }
     // Level 3 stays an HR review requirement on update, with no employment action.
     expect(updateBranch).toMatch(/IF NEW\.notice_level = 3 THEN\s+NEW\.hr_review_required := true;/);
-    for (const forbidden = "terminat", lowered = updateBranch.toLowerCase(); ; ) {
+    const lowered = updateBranch.toLowerCase();
+    for (const forbidden of ["terminat", "suspend", "discipline", "pay_"]) {
       expect(lowered).not.toContain(forbidden);
-      expect(lowered).not.toContain("suspend");
-      break;
     }
   });
 
