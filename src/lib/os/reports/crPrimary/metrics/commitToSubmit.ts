@@ -371,9 +371,10 @@ function dayOf(value: string | null | undefined): string | null {
 }
 
 /**
- * True when an approved exception covers the record: either linked directly, or
- * an unlinked exception whose date window contains the service date. An
- * unlinked exception with no window at all covers the employee outright.
+ * True when an approved exception covers the record: either linked directly to
+ * this record, or an unlinked exception with a BOUNDED window (both dates) that
+ * contains the service date. An unlinked exception without both dates is not a
+ * blanket exception and never applies.
  */
 export function approvedExceptionApplies(
   record: C2sTrackerRecord,
@@ -386,34 +387,53 @@ export function approvedExceptionApplies(
     if (e.trackerRecordId) return e.trackerRecordId === record.id;
     const from = dayOf(e.appliesFrom);
     const to = dayOf(e.appliesTo);
-    if (!from && !to) return true;
+    if (!from || !to) return false;
     if (!serviceDay) return false;
-    if (from && serviceDay < from) return false;
-    if (to && serviceDay > to) return false;
-    return true;
+    return serviceDay >= from && serviceDay <= to;
   });
 }
 
-/** Coaching for the same employee that precedes the formal-recorded date. */
+/**
+ * Coaching for the same employee that precedes the formal-recorded date. With
+ * no formal-recorded date there is nothing for coaching to precede, so this is
+ * false rather than accepting any coaching.
+ */
 export function priorCoachingExists(
   record: C2sTrackerRecord,
   coaching: C2sCoachingRecord[] | undefined,
 ): boolean {
   const recordedOn = dayOf(record.formalViolationRecordedAt);
+  if (!recordedOn) return false;
   return (coaching ?? []).some((c) => {
     if (c.subjectEmployeeId !== record.subjectEmployeeId) return false;
     const coachedOn = dayOf(c.coachingDate);
     if (!coachedOn) return false;
-    if (!recordedOn) return true;
     return coachedOn <= recordedOn;
   });
 }
 
 /**
+ * Is the service date in scope for the configuration? Dates on/after the
+ * tracking start date are in scope. Earlier dates are in scope only when the
+ * configuration explicitly counts prior history.
+ */
+export function serviceDateInTrackingScope(
+  record: C2sTrackerRecord,
+  config: C2sProgramConfig | null | undefined,
+): boolean {
+  const start = dayOf(config?.trackingStartDate);
+  const serviceDay = dayOf(record.serviceDate);
+  if (!start || !serviceDay) return false;
+  if (serviceDay >= start) return true;
+  return config?.priorHistoryCounts === true;
+}
+
+/**
  * A formal violation may come only from an authoritative completion timestamp
- * or an explicitly reviewed tracker record, and only after an upheld review,
- * with prior coaching that precedes the formal-recorded date, an active
- * approved configuration, no approved exception, and no upheld dispute. BCBA
+ * or an explicitly reviewed tracker record, and only after an upheld review
+ * that was actually recorded, with prior coaching that precedes the
+ * formal-recorded date, an active approved configuration, a service date inside
+ * the tracking scope, no approved exception, and no upheld dispute. BCBA
  * Category 1 further requires authoritative completion plus reviewed QA
  * criteria.
  */
@@ -430,14 +450,25 @@ export function evaluateFormalViolation(
   if (!isConfigActive(context.config)) {
     reasons.push("Program configuration is not active and fully approved.");
   }
+  if (record.isFormalViolation !== true) {
+    reasons.push("Record carries no recorded formal violation disposition.");
+  }
   if (record.reviewStatus !== "upheld") {
     reasons.push("Record has no upheld review disposition.");
+  }
+  if (!dayOf(record.formalViolationRecordedAt)) {
+    reasons.push("A formal violation requires a recorded formal disposition date.");
   }
   if (
     record.sourceKind !== "reviewed_tracker" &&
     !(record.sourceKind === "authoritative_completion" && record.authoritativeCompletedAt)
   ) {
     reasons.push("No authoritative completion timestamp or reviewed tracker record.");
+  }
+  if (!serviceDateInTrackingScope(record, context.config)) {
+    reasons.push(
+      "Service date is outside the program tracking scope (before the tracking start date and prior history does not count).",
+    );
   }
   if (
     record.category === "bcba_category_1" &&
@@ -460,6 +491,7 @@ export function evaluateFormalViolation(
   if (upheldDispute) reasons.push("An upheld dispute overturns this record.");
   return { eligible: reasons.length === 0, reasons };
 }
+
 
 /** A proxy occurrence is never a formal violation. */
 export function proxyRowIsFormalViolation(_row: C2sProxyRow): false {
