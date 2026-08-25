@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportAIButton } from "@/components/ai/ReportAIButton";
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
 import { useUrlFilterState } from "@/hooks/useUrlFilterState";
+import { useUrlState } from "@/hooks/useUrlState";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
 import { optionsFor, applyFilters } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
@@ -50,14 +51,19 @@ import {
 } from "@/lib/os/reports/crPrimary/drilldown";
 import {
   isCancelledEventStrict,
-  isCountableEvent,
+  isActiveScheduleEvent,
   dayOfWeekLabel,
 } from "@/lib/os/reports/crPrimary/scheduleTruth";
+import {
+  previousWindow,
+  withCurrentMonthDefault,
+} from "@/lib/os/reports/crPrimary/reportWindow";
 import {
   NOT_DOCUMENTED,
   cancellationReasonBucket,
   computeCancellationCenter,
   eventCode,
+  type CancellationFollowUpEventRow,
   type CancellationFollowUpRow,
   type CancellationGroupRow,
 } from "@/lib/os/reports/crPrimary/metrics/cancellationCenter";
@@ -110,28 +116,21 @@ const BREAKDOWNS = [
 
 type BreakdownKey = (typeof BREAKDOWNS)[number]["key"];
 
-/** Same-length window immediately before the selected range, or null. */
-function previousWindow(from: string, to: string): { from: string; to: string } | null {
-  if (!from || !to) return null;
-  const start = new Date(`${from}T00:00:00Z`).getTime();
-  const end = new Date(`${to}T00:00:00Z`).getTime();
-  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return null;
-  const span = end - start + 86_400_000;
-  const prevEnd = new Date(start - 86_400_000);
-  const prevStart = new Date(start - span);
-  return {
-    from: prevStart.toISOString().slice(0, 10),
-    to: prevEnd.toISOString().slice(0, 10),
-  };
-}
+/**
+ * Filters default to the current calendar month (local dates) so opening the
+ * report never scans the whole history, and Reset returns here.
+ */
+const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function CancellationCommandCenter() {
   const [params] = useSearchParams();
   const savedId = params.get("saved");
   const data = useCrPrimaryReport(["scheduleCurrent"]);
-  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
-  const [tab, setTab] = useState<BreakdownKey>("reason");
+  const [tabParam, setTabParam] = useUrlState("tab", "reason");
+  const tab = (BREAKDOWNS.some((b) => b.key === tabParam) ? tabParam : "reason") as BreakdownKey;
+  const setTab = (next: BreakdownKey) => setTabParam(next);
   const [followUps, setFollowUps] = useState<Record<string, FollowUpStatus>>({});
 
   useEffect(() => {
@@ -147,7 +146,7 @@ export default function CancellationCommandCenter() {
       if (cancelled || !saved) return;
       try {
         const stored = JSON.parse(saved.insights?.[0] ?? "{}") as Partial<PrimaryReportFilters>;
-        setFilters({ ...EMPTY_FILTERS, ...stored });
+        setFilters({ ...DEFAULT_FILTERS, ...stored });
         toast.success(`Restored view "${saved.name}"`);
       } catch {
         /* saved entry predates filter-only views — nothing to restore */
@@ -196,7 +195,7 @@ export default function CancellationCommandCenter() {
   const rows = useMemo(() => applyFilters(allRows, filters, project), [allRows, filters]);
 
   const previousRows = useMemo(() => {
-    const window = previousWindow(filters.from, filters.to);
+    const window = previousWindow({ from: filters.from, to: filters.to });
     if (!window) return undefined;
     return applyFilters(allRows, { ...filters, ...window }, project);
   }, [allRows, filters]);
@@ -225,7 +224,7 @@ export default function CancellationCommandCenter() {
   );
 
   const cancelledRows = useMemo(
-    () => rows.filter((r) => isCountableEvent(r) && isCancelledEventStrict(r)),
+    () => rows.filter((r) => isActiveScheduleEvent(r) && isCancelledEventStrict(r)),
     [rows],
   );
 
@@ -243,7 +242,7 @@ export default function CancellationCommandCenter() {
         id: "cancellation-rate",
         label: "Cancellation rate",
         value: fmtPct(metrics.cancellationRate),
-        hint: `${fmtCount(metrics.cancelledEvents)} of ${fmtCount(metrics.countableEvents)} scheduled · ${comparisonHint}`,
+        hint: `${fmtCount(metrics.cancelledEvents)} of ${fmtCount(metrics.activeScheduleEvents)} active schedule events · ${comparisonHint}`,
         tone:
           metrics.cancellationRate == null
             ? ("neutral" as const)
@@ -252,6 +251,12 @@ export default function CancellationCommandCenter() {
               : metrics.cancellationRate >= 12
                 ? ("warn" as const)
                 : ("good" as const),
+      },
+      {
+        id: "active-schedule-events",
+        label: "Active schedule events",
+        value: fmtCount(metrics.activeScheduleEvents),
+        hint: "Every nondeleted event in range — the cancellation-rate denominator",
       },
       {
         id: "cancellations",
@@ -269,8 +274,8 @@ export default function CancellationCommandCenter() {
       {
         id: "kept-events",
         label: "Kept sessions",
-        value: fmtCount(metrics.activeEvents),
-        hint: `${fmtHours(metrics.activeHours)} hrs retained`,
+        value: fmtCount(metrics.keptEvents),
+        hint: `${fmtHours(metrics.keptHours)} hrs retained`,
         tone: "good" as const,
       },
       {
@@ -329,7 +334,7 @@ export default function CancellationCommandCenter() {
       return openDrilldown(
         "Kept sessions",
         "Scheduled events that were neither cancelled nor deleted in CentralReach.",
-        rows.filter((r) => isCountableEvent(r) && !isCancelledEventStrict(r)),
+        rows.filter((r) => isActiveScheduleEvent(r) && !isCancelledEventStrict(r)),
         "kept-sessions",
       );
     }
@@ -582,7 +587,7 @@ export default function CancellationCommandCenter() {
               <Save className="h-3.5 w-3.5" /> Save view
             </Button>
             <Badge variant="secondary" className="text-[10px]">
-              {fmtCount(metrics.countableEvents)} scheduled events in view
+              {fmtCount(metrics.activeScheduleEvents)} active schedule events in view
             </Badge>
             {metrics.deletedEvents > 0 && (
               <Badge variant="outline" className="text-[10px]">
@@ -594,7 +599,7 @@ export default function CancellationCommandCenter() {
             filters={filters}
             fields={filterFields}
             onChange={(next) => setFilters(next)}
-            onReset={() => setFilters(EMPTY_FILTERS)}
+            onReset={() => setFilters(DEFAULT_FILTERS)}
           />
         </>
       }
