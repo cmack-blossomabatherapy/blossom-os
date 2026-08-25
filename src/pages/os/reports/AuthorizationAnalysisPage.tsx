@@ -677,12 +677,129 @@ export default function AuthorizationCommandCenterPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="gaps" className="mt-3">
+          <TabsContent value="progress-reports" className="mt-3 space-y-4">
+            {!progressReports.hasEvents && progressReports.dueRows.length === 0 ? (
+              <ReportInsufficientData
+                title="No progress-report activity for this range"
+                detail="Progress-report counts come only from logged progress-report events, and due dates come only from the recorded next-action or appeal due date. Neither exists for the selected filters, so nothing is shown rather than a zero that looks like a fact."
+              />
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "PR submitted", value: progressReports.submitted },
+                    { label: "PR approved", value: progressReports.approved },
+                    { label: "PR denied", value: progressReports.denied },
+                    { label: "PR resubmitted", value: progressReports.resubmitted },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-xl border border-border/60 bg-card p-3">
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {s.label}
+                      </p>
+                      <p className="text-xl font-semibold tabular-nums">{fmtCount(s.value)}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <PrimaryTable
+                  title="Progress-report events"
+                  subtitle="True logged progress-report events only — an approval never implies a submission that was not logged."
+                  rows={progressReports.events}
+                  rowKey={(r) => r.key}
+                  columns={[
+                    { key: "date", label: "Event date", render: (r) => fmtDate(r.eventDate) },
+                    { key: "client", label: "Client", render: (r) => r.client },
+                    { key: "auth", label: "Authorization #", render: (r) => r.authorizationNumber },
+                    { key: "outcome", label: "Outcome", render: (r) => r.outcome },
+                    { key: "payor", label: "Payor", render: (r) => r.payor },
+                    { key: "state", label: "State", render: (r) => r.state },
+                    { key: "reason", label: "Reason / note", render: (r) => r.reason },
+                    { key: "source", label: "Logged from", render: (r) => r.source },
+                  ]}
+                  emptyLabel="No progress-report events logged for these filters."
+                />
+
+                <PrimaryTable
+                  title="Next actions and due dates"
+                  subtitle="Overdue is only ever computed from a recorded next-action or appeal due date. Rows without one say so."
+                  rows={progressReports.dueRows}
+                  rowKey={(r) => r.key}
+                  columns={
+                    [
+                      { key: "client", label: "Client", render: (r) => r.client },
+                      {
+                        key: "auth",
+                        label: "Authorization #",
+                        render: (r) => r.authorizationNumber,
+                      },
+                      { key: "status", label: "Stage", render: (r) => r.status },
+                      { key: "nextAction", label: "Next action", render: (r) => r.nextAction },
+                      {
+                        key: "due",
+                        label: "Due",
+                        align: "right",
+                        render: (r) =>
+                          r.dueDate ? (
+                            <span className="tabular-nums">{fmtDate(r.dueDate)}</span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">
+                              {NO_AUTHORITATIVE_DUE}
+                            </span>
+                          ),
+                      },
+                      {
+                        key: "state",
+                        label: "Status",
+                        align: "right",
+                        render: (r) => (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              r.overdue
+                                ? "bg-destructive/10 text-destructive border border-destructive/30"
+                                : r.dueSource === "none"
+                                  ? "bg-muted text-muted-foreground"
+                                  : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30"
+                            }`}
+                          >
+                            {r.overdue
+                              ? "Overdue"
+                              : r.dueSource === "none"
+                                ? "No due date"
+                                : "On track"}
+                          </span>
+                        ),
+                      },
+                    ] as PrimaryTableColumn<ProgressReportDueRow>[]
+                  }
+                  emptyLabel="No operational authorization actions match these filters."
+                />
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="pauses" className="mt-3 space-y-4">
             <PrimaryTable
-              title="Clients with no active authorization today"
-              subtitle="Each row needs confirmation before further sessions are scheduled — a missing snapshot row is not proof that coverage lapsed."
-              rows={continuity.clientsWithoutCoverage}
-              rowKey={(r) => r.client}
+              title="Confirmed pauses"
+              subtitle="Pause events actually logged by the authorization team, with the reason as recorded."
+              rows={pauses.confirmedPauses}
+              rowKey={(r) => r.key}
+              columns={[
+                { key: "date", label: "Pause date", render: (r) => fmtDate(r.eventDate) },
+                { key: "client", label: "Client", render: (r) => r.client },
+                { key: "auth", label: "Authorization #", render: (r) => r.authorizationNumber },
+                { key: "reason", label: "Reason", render: (r) => r.reason },
+                { key: "payor", label: "Payor", render: (r) => r.payor },
+                { key: "state", label: "State", render: (r) => r.state },
+                { key: "source", label: "Logged from", render: (r) => r.source },
+              ]}
+              emptyLabel="No pause events have been logged for these filters."
+            />
+
+            <PrimaryTable
+              title="Coverage-gap candidates · Needs Confirmation"
+              subtitle="Clients with no active authorization in the snapshot. These are questions to confirm, not confirmed pauses."
+              rows={pauses.candidates}
+              rowKey={(r) => r.key}
               columns={[
                 { key: "client", label: "Client", render: (r) => r.client },
                 { key: "state", label: "State", render: (r) => r.state },
@@ -700,10 +817,21 @@ export default function AuthorizationCommandCenterPage() {
                     <span className="text-[11px] text-muted-foreground">{r.note}</span>
                   ),
                 },
+                {
+                  key: "confirm",
+                  label: "Status",
+                  align: "right",
+                  render: () => (
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+                      Needs Confirmation
+                    </span>
+                  ),
+                },
               ]}
               emptyLabel="Every client in view has active authorization coverage today."
             />
           </TabsContent>
+
         </Tabs>
       </div>
 
