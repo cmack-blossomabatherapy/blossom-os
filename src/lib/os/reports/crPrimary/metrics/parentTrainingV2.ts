@@ -27,7 +27,11 @@ import {
 export const NO_TARGET_LABEL = "No target";
 
 export type PtTargetType = "hours" | "sessions";
-export type PtTargetSourceKind = "authorized_hours_month" | "frequency" | "none";
+export type PtTargetSourceKind =
+  | "authorized_hours_month"
+  | "frequency"
+  | "ambiguous"
+  | "none";
 
 export interface PtClientTarget {
   /** Null when the source documents nothing usable. */
@@ -39,6 +43,14 @@ export interface PtClientTarget {
   source: PtTargetSourceKind;
   /** Authorized monthly 97156 hours when the snapshot documents them. */
   authorizedMonthlyHours: number | null;
+  /**
+   * True when the snapshot documents SEVERAL conflicting usable requirements.
+   * The report shows "No target" and surfaces the conflict as a data gap rather
+   * than picking whichever row happened to come first.
+   */
+  ambiguous?: boolean;
+  /** Concise data-quality reason when `ambiguous` is true. */
+  ambiguousReason?: string | null;
 }
 
 export const NO_TARGET: PtClientTarget = {
@@ -178,29 +190,117 @@ export function strictAuthorizedHoursMonth(value: unknown): number | null {
   return parsed != null && parsed > 0 ? parsed : null;
 }
 
-/** Prefer documented authorized monthly hours; fall back to a clear cadence. */
+/**
+ * Deterministic, order-independent client target.
+ *
+ * Authorized monthly hours win over cadence. Duplicate equal values are ONE
+ * documented requirement. Several conflicting values are never resolved by row
+ * order and are never summed (the source does not prove they are additive) —
+ * the client gets "No target" plus an explicit ambiguous-target reason the page
+ * exposes under Data gaps.
+ */
 export function resolveClientTarget(auths: PtAuthorizationInput[]): PtClientTarget {
-  let best: PtClientTarget = NO_TARGET;
+  const hours = new Set<number>();
   for (const a of auths) {
-    const hours = strictAuthorizedHoursMonth(a.authorizedHoursMonth);
-    if (hours != null) {
-      return {
-        type: "hours",
-        perMonth: Math.round(hours * 10) / 10,
-        cadence: `${Math.round(hours * 10) / 10} authorized hour(s) per month`,
-        source: "authorized_hours_month",
-        authorizedMonthlyHours: Math.round(hours * 10) / 10,
-      };
-    }
-    if (best.source === "none") {
-      const parsed =
-        parseFrequencyTarget(a.frequency) ?? parseFrequencyTarget(a.serviceCodes ?? null);
-      if (parsed) best = parsed;
-    }
+    const h = strictAuthorizedHoursMonth(a.authorizedHoursMonth);
+    if (h != null) hours.add(Math.round(h * 10) / 10);
   }
-  return best;
+  if (hours.size === 1) {
+    const perMonth = [...hours][0];
+    return {
+      type: "hours",
+      perMonth,
+      cadence: `${perMonth} authorized hour(s) per month`,
+      source: "authorized_hours_month",
+      authorizedMonthlyHours: perMonth,
+    };
+  }
+  if (hours.size > 1) {
+    const listed = [...hours].sort((a, b) => a - b).join(", ");
+    return {
+      ...NO_TARGET,
+      source: "ambiguous",
+      ambiguous: true,
+      ambiguousReason: `Conflicting authorized monthly 97156 hours documented (${listed}) — no single target can be trusted.`,
+    };
+  }
+
+  // No usable authorized-hours value anywhere: only an unambiguous cadence may
+  // set a target, and only when every parsed cadence agrees.
+  const cadences = new Map<string, PtClientTarget>();
+  for (const a of auths) {
+    const parsed =
+      parseFrequencyTarget(a.frequency) ?? parseFrequencyTarget(a.serviceCodes ?? null);
+    if (parsed) cadences.set(`${parsed.type}|${parsed.perMonth}`, parsed);
+  }
+  if (cadences.size === 1) return [...cadences.values()][0];
+  if (cadences.size > 1) {
+    const listed = [...cadences.values()]
+      .map((c) => c.cadence)
+      .sort()
+      .join("; ");
+    return {
+      ...NO_TARGET,
+      source: "ambiguous",
+      ambiguous: true,
+      ambiguousReason: `Conflicting documented 97156 frequencies (${listed}) — no single target can be trusted.`,
+    };
+  }
+  return NO_TARGET;
 }
 
+/** One activity row's client identity, from billing or schedule. */
+export interface PtActivityIdentity {
+  clientCrId?: string | null;
+  clientName?: string | null;
+}
+
+export interface PtProvenClientProof {
+  /** True when an authorization row is proven by the filtered activity. */
+  passes(auth: PtActivityIdentity): boolean;
+}
+
+const normName = (v: unknown) => String(v ?? "").trim().toLowerCase();
+
+/**
+ * Provider-filter client proof, CR-ID first and order independent.
+ *
+ * - An authorization with a nonblank client CR ID passes ONLY when that exact
+ *   CR ID appears in the filtered activity. It never falls back to the name, so
+ *   a different client sharing a name cannot leak into a provider-scoped view.
+ * - An id-less authorization may use a normalized-name proof only when that
+ *   name is unambiguous in the activity: either the activity itself is id-less
+ *   under that name, or exactly one CR ID is associated with it.
+ */
+export function buildProvenClientProof(
+  rows: Iterable<PtActivityIdentity>,
+): PtProvenClientProof {
+  const crIds = new Set<string>();
+  const idsByName = new Map<string, Set<string>>();
+  const idlessNames = new Set<string>();
+  for (const r of rows) {
+    const id = String(r.clientCrId ?? "").trim();
+    const name = normName(r.clientName);
+    if (id) crIds.add(id);
+    if (!name) continue;
+    if (id) {
+      if (!idsByName.has(name)) idsByName.set(name, new Set());
+      idsByName.get(name)!.add(id);
+    } else {
+      idlessNames.add(name);
+    }
+  }
+  return {
+    passes(auth) {
+      const id = String(auth.clientCrId ?? "").trim();
+      if (id) return crIds.has(id);
+      const name = normName(auth.clientName);
+      if (!name) return false;
+      if (idlessNames.has(name)) return true;
+      return (idsByName.get(name)?.size ?? 0) === 1;
+    },
+  };
+}
 
 export interface PtSessionInput {
   date: string | null | undefined;
@@ -281,6 +381,10 @@ export interface PtClientRow {
   belowTarget: boolean;
   needsReschedule: boolean;
   ownershipGap: boolean;
+  /** Several conflicting target requirements documented — a real data gap. */
+  targetConflict: boolean;
+  /** Concise conflict reason, empty when there is no conflict. */
+  targetConflictReason: string;
   status: PtClientStatus;
   reason: string;
 }
@@ -464,6 +568,8 @@ export function computeParentTrainingAnalysis({
         belowTarget: false,
         needsReschedule: false,
         ownershipGap: owner == null,
+        targetConflict: target.ambiguous === true,
+        targetConflictReason: target.ambiguous ? String(target.ambiguousReason ?? "") : "",
         status: "on_track",
         reason: "",
       });
@@ -622,7 +728,9 @@ export function computeParentTrainingAnalysis({
             ? "below_target"
             : "on_track";
     r.reason = !r.hasTarget
-      ? "No authorized monthly hours and no unambiguous cadence documented, so no target applies."
+      ? r.targetConflict
+        ? r.targetConflictReason
+        : "No authorized monthly hours and no unambiguous cadence documented, so no target applies."
       : r.noUpcoming
         ? `No future kept 97156 session on the calendar (${round1(delivered)} of ${r.expectedToDate} expected ${unit} so far).`
         : r.needsReschedule
@@ -709,7 +817,7 @@ export function summarizeParentTraining(
     noUpcomingQueue: clientRows.filter((r) => r.noUpcoming),
     belowTargetQueue: clientRows.filter((r) => r.belowTarget),
     needsRescheduleQueue: clientRows.filter((r) => r.needsReschedule),
-    dataGapQueue: clientRows.filter((r) => r.ownershipGap),
+    dataGapQueue: clientRows.filter((r) => r.ownershipGap || r.targetConflict),
     trend: [...trend.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([label, value]) => ({ label, value })),

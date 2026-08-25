@@ -12,6 +12,7 @@ import path from "node:path";
 import {
   NO_TARGET_LABEL,
   computeParentTrainingAnalysis,
+  buildProvenClientProof,
   isAuthTargetInScope,
   resolveClientTarget,
   strictAuthorizedHoursMonth,
@@ -372,5 +373,161 @@ describe("Phase 4B3 — page copy and protected boundary", () => {
     for (const p of protectedPaths) {
       expect(fs.existsSync(path.join(process.cwd(), p))).toBe(true);
     }
+  });
+});
+
+/**
+ * Phase 4B3 audit fixes: provider-filter client proof is CR-ID first, and a
+ * client target is deterministic instead of first-row-wins.
+ */
+describe("Phase 4B3 audit — proof and deterministic targets", () => {
+  const activity = [
+    { clientCrId: "c1", clientName: "Jane Doe" },
+    { clientCrId: null, clientName: "Solo Alias" },
+    { clientCrId: "c9", clientName: "Twin Name" },
+    { clientCrId: "c10", clientName: "Twin Name" },
+    { clientCrId: "s1", clientName: "Schedule Only" },
+  ];
+
+  it("passes an authorization only on an exact CR ID, never on the name", () => {
+    const proof = buildProvenClientProof(activity);
+    expect(proof.passes({ clientCrId: "c1", clientName: "Jane Doe" })).toBe(true);
+    // Same name, different client id: must NOT leak into a provider-scoped view.
+    expect(proof.passes({ clientCrId: "c2", clientName: "Jane Doe" })).toBe(false);
+    // Schedule-only CR IDs remain supported.
+    expect(proof.passes({ clientCrId: "s1", clientName: "Schedule Only" })).toBe(true);
+  });
+
+  it("allows a unique id-less alias but rejects an ambiguous same-name alias", () => {
+    const proof = buildProvenClientProof(activity);
+    expect(proof.passes({ clientCrId: null, clientName: "Jane Doe" })).toBe(true);
+    expect(proof.passes({ clientCrId: "", clientName: "solo alias" })).toBe(true);
+    expect(proof.passes({ clientCrId: null, clientName: "Twin Name" })).toBe(false);
+    expect(proof.passes({ clientCrId: null, clientName: "" })).toBe(false);
+    expect(proof.passes({ clientCrId: null, clientName: "Unknown Person" })).toBe(false);
+  });
+
+  it("is order independent across activity permutations", () => {
+    const rotate = <T,>(xs: T[], n: number) => [...xs.slice(n), ...xs.slice(0, n)];
+    const probes = [
+      { clientCrId: "c1", clientName: "Jane Doe" },
+      { clientCrId: "c2", clientName: "Jane Doe" },
+      { clientCrId: null, clientName: "Twin Name" },
+      { clientCrId: null, clientName: "Solo Alias" },
+    ];
+    const baseline = probes.map((x) => buildProvenClientProof(activity).passes(x));
+    for (let n = 0; n < activity.length; n += 1) {
+      const proof = buildProvenClientProof(rotate(activity, n));
+      expect(probes.map((x) => proof.passes(x))).toEqual(baseline);
+    }
+  });
+
+  const auth = (over: Partial<PtAuthorizationInput> = {}): PtAuthorizationInput => ({
+    clientName: "Client A",
+    clientCrId: "c1",
+    procedureCode: "97156",
+    isActive: true,
+    startDate: "2026-01-01",
+    endDate: "2026-12-31",
+    ...over,
+  });
+
+  it("treats duplicate equal authorized hours as one documented target", () => {
+    const rows = [auth({ authorizedHoursMonth: 4 }), auth({ authorizedHoursMonth: 4 })];
+    for (const list of [rows, [...rows].reverse()]) {
+      const t = resolveClientTarget(list);
+      expect(t.source).toBe("authorized_hours_month");
+      expect(t.perMonth).toBe(4);
+      expect(t.ambiguous).not.toBe(true);
+    }
+  });
+
+  it("returns an ambiguous No target for conflicting authorized hours, never first-row-wins or a sum", () => {
+    const rows = [auth({ authorizedHoursMonth: 4 }), auth({ authorizedHoursMonth: 6 })];
+    for (const list of [rows, [...rows].reverse()]) {
+      const t = resolveClientTarget(list);
+      expect(t.cadence).toBe(NO_TARGET_LABEL);
+      expect(t.perMonth).toBeNull();
+      expect(t.source).toBe("ambiguous");
+      expect(t.ambiguous).toBe(true);
+      expect(t.ambiguousReason).toMatch(/Conflicting authorized monthly 97156 hours/);
+      expect(t.ambiguousReason).toMatch(/4, 6/);
+    }
+  });
+
+  it("accepts duplicate equal cadence and rejects conflicting cadence", () => {
+    const same = [
+      auth({ frequency: "2 sessions per month" }),
+      auth({ frequency: "2 sessions per month" }),
+    ];
+    for (const list of [same, [...same].reverse()]) {
+      const t = resolveClientTarget(list);
+      expect(t.source).toBe("frequency");
+      expect(t.perMonth).toBe(2);
+    }
+    const conflicting = [
+      auth({ frequency: "2 sessions per month" }),
+      auth({ frequency: "4 sessions per month" }),
+    ];
+    for (const list of [conflicting, [...conflicting].reverse()]) {
+      const t = resolveClientTarget(list);
+      expect(t.source).toBe("ambiguous");
+      expect(t.perMonth).toBeNull();
+      expect(t.cadence).toBe(NO_TARGET_LABEL);
+      expect(t.ambiguousReason).toMatch(/Conflicting documented 97156 frequencies/);
+    }
+  });
+
+  it("never lets blank, boolean or null hours become a target or an ambiguity", () => {
+    const t = resolveClientTarget([
+      auth({ authorizedHoursMonth: null }),
+      auth({ authorizedHoursMonth: "" as unknown as number }),
+      auth({ authorizedHoursMonth: true as unknown as number }),
+      auth({ authorizedHoursMonth: 0 }),
+    ]);
+    expect(t.source).toBe("none");
+    expect(t.ambiguous).not.toBe(true);
+    expect(t.cadence).toBe(NO_TARGET_LABEL);
+    // A single real positive value still works alongside missing values.
+    const real = resolveClientTarget([auth({ authorizedHoursMonth: null }), auth({ authorizedHoursMonth: 5 })]);
+    expect(real.perMonth).toBe(5);
+  });
+
+  it("surfaces a conflicting target as a data gap while plain No target is not an error", () => {
+    const r = computeParentTrainingAnalysis({
+      billed: [pt({ clientName: "Conflict Client", clientCrId: "cc1" })],
+      scheduled: [],
+      authorizations: [
+        auth({ clientName: "Conflict Client", clientCrId: "cc1", authorizedHoursMonth: 4 }),
+        auth({ clientName: "Conflict Client", clientCrId: "cc1", authorizedHoursMonth: 9 }),
+      ],
+      activeClients: [
+        { client: "Conflict Client", clientCrId: "cc1" },
+        { client: "Plain Client", clientCrId: "pc1" },
+      ],
+      resolveOwner: () => "BCBA One",
+      window: WINDOW,
+      today: TODAY,
+    } as ParentTrainingInput);
+    const conflict = r.clientRows.find((c) => c.client === "Conflict Client")!;
+    const plain = r.clientRows.find((c) => c.client === "Plain Client")!;
+    expect(conflict.status).toBe("no_target");
+    expect(conflict.hasTarget).toBe(false);
+    expect(conflict.targetConflict).toBe(true);
+    expect(conflict.reason).toMatch(/Conflicting authorized monthly 97156 hours/);
+    expect(r.dataGapQueue.map((c) => c.client)).toContain("Conflict Client");
+    expect(plain.status).toBe("no_target");
+    expect(plain.targetConflict).toBe(false);
+    expect(r.dataGapQueue.map((c) => c.client)).not.toContain("Plain Client");
+    expect(r.belowTargetQueue.map((c) => c.client)).not.toContain("Conflict Client");
+  });
+
+  it("keeps the page on the shared CR-ID-first proof helper", () => {
+    const page = fs.readFileSync(
+      path.join(process.cwd(), "src/pages/os/reports/ParentTrainingPage.tsx"),
+      "utf8",
+    );
+    expect(page).toMatch(/buildProvenClientProof/);
+    expect(page).not.toMatch(/nm:\$\{name\}/);
   });
 });
