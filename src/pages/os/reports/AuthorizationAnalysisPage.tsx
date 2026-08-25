@@ -144,6 +144,13 @@ const SOURCE_COUNT_COLUMNS: PrimaryTableColumn<SourceEventCountRow>[] = [
   },
 ];
 
+/**
+ * Open queues are a current workflow backlog, not dated activity, so the
+ * selected range must never hide them.
+ */
+const OPEN_WORK_SCOPE_HINT =
+  "The date range filters dated activity and turnaround KPIs, not the open backlog.";
+
 /** The four open-work queues, each with the rule that puts a record in it. */
 const QUEUE_SUMMARY_ROWS: {
   key: string;
@@ -504,28 +511,28 @@ export default function AuthorizationCommandCenterPage() {
         id: "pending-submissions",
         label: "Pending submissions",
         value: fmtCount(queues.pendingSubmissions.length),
-        hint: "Received with no submitted date recorded, and not resolved",
+        hint: `Current open work · received with no submitted date recorded, and not resolved. ${OPEN_WORK_SCOPE_HINT}`,
         tone: queues.pendingSubmissions.length > 0 ? ("warn" as const) : ("good" as const),
       },
       {
         id: "pending-decisions",
         label: "Pending decisions",
         value: fmtCount(queues.pendingDecisions.length),
-        hint: "Submitted with no approval or denial date recorded, and not resolved",
+        hint: `Current open work · submitted with no approval or denial date recorded, and not resolved. ${OPEN_WORK_SCOPE_HINT}`,
         tone: queues.pendingDecisions.length > 0 ? ("warn" as const) : ("good" as const),
       },
       {
         id: "overdue-actions",
         label: "Overdue actions",
         value: fmtCount(queues.overdueActions.length),
-        hint: "Unresolved work past a real recorded due date — missing dates are never overdue",
+        hint: `Current open work · unresolved past a real recorded due date; a missing due date is never overdue. ${OPEN_WORK_SCOPE_HINT}`,
         tone: queues.overdueActions.length > 0 ? ("bad" as const) : ("good" as const),
       },
       {
         id: "reassessment",
         label: "Reassessment / reauth work",
         value: fmtCount(queues.reassessmentWork.length),
-        hint: "Open reauthorization records in the current workflow",
+        hint: `Current open work · open reauthorization records. ${OPEN_WORK_SCOPE_HINT}`,
       },
       {
         id: "source-denials",
@@ -544,7 +551,7 @@ export default function AuthorizationCommandCenterPage() {
           timelines.avgReceivedToSubmittedDays == null
             ? NOT_DOCUMENTED
             : `${timelines.avgReceivedToSubmittedDays} day(s)`,
-        hint: `Average over ${fmtCount(timelines.documentedReceivedToSubmitted)} record(s) with both dates documented`,
+        hint: `Average over ${fmtCount(timelines.documentedReceivedToSubmitted)} record(s) whose submission date falls in this range and whose receipt date is documented`,
       },
       {
         id: "submission-to-decision",
@@ -553,7 +560,7 @@ export default function AuthorizationCommandCenterPage() {
           timelines.avgSubmittedToDecisionDays == null
             ? NOT_DOCUMENTED
             : `${timelines.avgSubmittedToDecisionDays} day(s)`,
-        hint: `Average over ${fmtCount(timelines.documentedSubmittedToDecision)} record(s) with both dates documented`,
+        hint: `Average over ${fmtCount(timelines.documentedSubmittedToDecision)} record(s) whose decision date falls in this range and whose submission date is documented`,
       },
       {
         id: "service-gap",
