@@ -64,7 +64,22 @@ export interface AllocationCounts {
   unjoined: number;
 }
 
+/** Per-billing-row allocation provenance, so trends can use only clean rows. */
+export interface BillingAllocationRow {
+  /** Billing row id when present, else a synthetic index key. */
+  key: string;
+  date: string | null;
+  hours: number;
+  client: string;
+  code: string | null;
+  basis: AllocationBasis;
+  /** Authorization slot the hours landed in; null for ambiguous/unjoined rows. */
+  slotKey: string | null;
+}
+
 export interface BillingAllocation {
+  /** Every billing row considered, with the basis it was allocated on. */
+  allocations: BillingAllocationRow[];
   /** Worked hours per authorization slot key. Each billing row lands in ≤ 1 slot. */
   bySlot: Map<string, WorkedIndexEntry>;
   /** How each allocated slot was matched, for provenance in the UI. */
@@ -141,6 +156,7 @@ export function allocateBillingToAuthorizations(
 ): BillingAllocation {
   const bySlot = new Map<string, WorkedIndexEntry>();
   const slotBasis = new Map<string, AllocationBasis>();
+  const allocations: BillingAllocationRow[] = [];
   const counts: AllocationCounts = { exact: 0, uniqueFallback: 0, ambiguous: 0, unjoined: 0 };
 
   interface Slot {
@@ -179,22 +195,40 @@ export function allocateBillingToAuthorizations(
     if (basis === "authorization_id" || !slotBasis.has(key)) slotBasis.set(key, basis);
   };
 
-  for (const row of billing) {
-    const date = String(row.date_of_service ?? "").slice(0, 10);
-    if (window.from && date && date < window.from) continue;
-    if (window.to && date && date > window.to) continue;
+  billing.forEach((row, rowIndex) => {
+    const date = String(row.date_of_service ?? "").slice(0, 10) || null;
+    // A billing row inside a selected window must have a usable date of
+    // service; an undated row cannot be proven to belong to the window.
+    if (window.from || window.to) {
+      if (!date) return;
+      if (window.from && date < window.from) return;
+      if (window.to && date > window.to) return;
+    }
     const hours = billingHoursOf(row);
+    const record = (basis: AllocationBasis, slotKey: string | null) => {
+      allocations.push({
+        key: String(row.id ?? `row-${rowIndex}`),
+        date,
+        hours,
+        client: String(row.client_name ?? "").trim() || "Unknown client",
+        code: row.procedure_code ?? null,
+        basis,
+        slotKey,
+      });
+    };
 
     const authId = billingAuthorizationId(row);
     const exact = authId ? byAuthId.get(authId) : undefined;
     if (exact && exact.length === 1) {
       counts.exact += 1;
       add(exact[0].key, hours, "authorization_id");
-      continue;
+      record("authorization_id", exact[0].key);
+      return;
     }
     if (exact && exact.length > 1) {
       counts.ambiguous += 1;
-      continue;
+      record("ambiguous", null);
+      return;
     }
 
     const crId = (cleanReasonText(row.client_cr_id) ?? "").toLowerCase();
@@ -216,14 +250,17 @@ export function allocateBillingToAuthorizations(
     if (candidates.length === 1) {
       counts.uniqueFallback += 1;
       add(candidates[0].key, hours, "unique_fallback");
+      record("unique_fallback", candidates[0].key);
     } else if (candidates.length > 1) {
       counts.ambiguous += 1;
+      record("ambiguous", null);
     } else {
       counts.unjoined += 1;
+      record("unjoined", null);
     }
-  }
+  });
 
-  return { bySlot, slotBasis, counts };
+  return { allocations, bySlot, slotBasis, counts };
 }
 
 export interface ProrationWindow {
