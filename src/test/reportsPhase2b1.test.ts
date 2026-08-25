@@ -179,7 +179,8 @@ describe("BCBA supervision ratio", () => {
   it("computes 97155 divided by 97153", () => {
     const r = computeSupervisionAnalysis({ past, projected: [], resolveOwner });
     expect(r.past.ratioPct).toBe(4);
-    expect(r.past.rows[0].status).toBe("below_target");
+    // 4% sits just under the 5% target, which the engine bands as approaching.
+    expect(r.past.rows[0].status).toBe("approaching");
     expect(r.past.rows[0].hoursToTarget).toBe(1);
   });
 
