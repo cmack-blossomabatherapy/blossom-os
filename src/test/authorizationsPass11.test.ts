@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { ROLE_MENUS } from "@/lib/os/roleMenus";
+import type { OSRole } from "@/lib/os/roles";
+
+
 
 const read = (p: string) => readFileSync(resolve(__dirname, "..", p), "utf8");
 
