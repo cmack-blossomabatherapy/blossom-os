@@ -53,30 +53,46 @@ export function createSupabaseCrImportStore(
 
     async insertRows(table, rows) {
       if (!rows.length) return;
-      const exportType = KIND_FOR_TABLE[table] ?? "unknown";
       for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
         const chunk = rows.slice(i, i + INSERT_CHUNK);
         const { error } = await db().from(table).insert(chunk);
         if (error) throw error;
+      }
+    },
 
-        if (options.rawByHash?.size) {
-          const raw = chunk
-            .map((row) => {
-              const payload = options.rawByHash?.get(String(row.row_hash));
-              if (!payload) return null;
-              return {
-                batch_id: row.batch_id,
-                export_type: exportType,
-                row_hash: String(row.row_hash),
-                payload,
-              };
-            })
-            .filter(Boolean);
-          if (raw.length) {
-            // Provenance is best-effort: a raw-row failure must not lose facts.
-            await db().from("cr_raw_rows").insert(raw);
-          }
-        }
+    async updateRows(table, rows) {
+      if (!rows.length) return;
+      // CURRENT tables: refresh the stored row matched by its stable identity.
+      for (const row of rows) {
+        const { row_hash: rowHash, ...values } = row as Record<string, unknown> & { row_hash: string };
+        const { error } = await db().from(table).update(values).eq("row_hash", rowHash);
+        if (error) throw error;
+      }
+    },
+
+    async upsertRows(table, rows) {
+      if (!rows.length) return;
+      for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
+        const chunk = rows.slice(i, i + INSERT_CHUNK);
+        const { error } = await db().from(table).upsert(chunk, { onConflict: "row_hash" });
+        if (error) throw error;
+      }
+    },
+
+    async saveRawRows(rows) {
+      if (!rows.length) return;
+      // Raw history is a hard requirement, not best-effort: every parsed row of
+      // every batch is persisted, including snapshot updates and duplicates.
+      for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
+        const chunk = rows.slice(i, i + INSERT_CHUNK).map((r) => ({
+          batch_id: r.batch_id,
+          export_type: r.export_type,
+          row_hash: r.row_hash,
+          cr_row_id: r.cr_row_id ?? null,
+          payload: r.payload,
+        }));
+        const { error } = await db().from("cr_raw_rows").insert(chunk);
+        if (error) throw error;
       }
     },
 
@@ -92,6 +108,9 @@ export function createSupabaseCrImportStore(
           parsed_row_count: batch.parsedRowCount ?? batch.rowCount ?? 0,
           appended_row_count: batch.appendedRowCount ?? 0,
           duplicate_row_count: batch.duplicateRowCount ?? 0,
+          updated_row_count: batch.updatedRowCount ?? 0,
+          unchanged_row_count: batch.unchangedRowCount ?? 0,
+          import_strategy: batch.importStrategy ?? "append_fact",
           deduped_row_count: batch.appendedRowCount ?? 0,
           coverage_start: batch.coverageStart ?? null,
           coverage_end: batch.coverageEnd ?? null,
@@ -115,6 +134,9 @@ export function createSupabaseCrImportStore(
           parsed_row_count: batch.parsedRowCount ?? 0,
           appended_row_count: batch.appendedRowCount ?? 0,
           duplicate_row_count: batch.duplicateRowCount ?? 0,
+          updated_row_count: batch.updatedRowCount ?? 0,
+          unchanged_row_count: batch.unchangedRowCount ?? 0,
+          import_strategy: batch.importStrategy ?? "append_fact",
           deduped_row_count: batch.appendedRowCount ?? 0,
           coverage_start: batch.coverageStart ?? null,
           coverage_end: batch.coverageEnd ?? null,
@@ -173,6 +195,9 @@ export interface CrBatchRecord {
   parsedRowCount: number;
   appendedRowCount: number;
   duplicateRowCount: number;
+  updatedRowCount: number;
+  unchangedRowCount: number;
+  importStrategy: string;
   coverageStart: string | null;
   coverageEnd: string | null;
   status: string | null;
@@ -195,6 +220,9 @@ export async function listCrImportBatches(limit = 100): Promise<CrBatchRecord[]>
     parsedRowCount: r.parsed_row_count ?? r.row_count ?? 0,
     appendedRowCount: r.appended_row_count ?? 0,
     duplicateRowCount: r.duplicate_row_count ?? 0,
+    updatedRowCount: r.updated_row_count ?? 0,
+    unchangedRowCount: r.unchanged_row_count ?? 0,
+    importStrategy: r.import_strategy ?? "append_fact",
     coverageStart: r.coverage_start ?? null,
     coverageEnd: r.coverage_end ?? null,
     status: r.status ?? null,
