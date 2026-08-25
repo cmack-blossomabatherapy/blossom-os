@@ -1,211 +1,541 @@
 /**
- * Primary report: Parent Training (`parent-training`).
+ * Primary report: Parent Training (`parent-training`) — Phase 2B1 rebuild.
  *
- * 97156 parent-training coverage per BCBA, client, payor, and state, plus the
- * gap list of active clients receiving direct hours with no parent training.
+ * 97156 parent training in three honest buckets, each from the source that can
+ * prove it:
+ *   - **Completed** — billed 97156 facts.
+ *   - **Upcoming**  — kept 97156 schedule events still ahead of today.
+ *   - **Cancelled** — 97156 events the source explicitly cancelled.
+ *
+ * Two action queues make this a working surface rather than a coverage
+ * percentage: clients with **no appointment at all**, and clients **below the
+ * monthly target**. Tabs, date window, BCBA, and payor all live in the URL so a
+ * link reproduces the exact view. Ownership comes from the canonical V3 adapter.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PrimaryReportShell } from "@/components/reports/crPrimary/PrimaryReportShell";
 import { KpiScorecards } from "@/components/reports/crPrimary/KpiScorecards";
 import { PrimaryChart } from "@/components/reports/crPrimary/PrimaryChart";
-import { PrimaryTable } from "@/components/reports/crPrimary/PrimaryTable";
+import { PrimaryTable, type PrimaryTableColumn } from "@/components/reports/crPrimary/PrimaryTable";
 import { DrilldownDrawer } from "@/components/reports/crPrimary/DrilldownDrawer";
 import {
   PrimaryFilterBar,
   type FilterFieldConfig,
 } from "@/components/reports/crPrimary/PrimaryFilterBar";
+import { ReportProvenance } from "@/components/reports/crPrimary/ReportProvenance";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrPrimaryReport } from "@/hooks/useCrPrimaryReport";
+import { useBcbaOwnershipV3 } from "@/hooks/useBcbaOwnershipV3";
+import { useUrlFilterState } from "@/hooks/useUrlFilterState";
+import { useUrlState } from "@/hooks/useUrlState";
+import { withCurrentMonthDefault } from "@/lib/os/reports/crPrimary/reportWindow";
 import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
-import { EMPTY_FILTERS, type DrilldownRequest, type KpiDefinition } from "@/lib/os/reports/crPrimary/types";
+import { EMPTY_FILTERS } from "@/lib/os/reports/crPrimary/types";
+import type {
+  DrilldownRequest,
+  KpiDefinition,
+  PrimaryReportFilters,
+  ReportBillingFactRow,
+} from "@/lib/os/reports/crPrimary/types";
 import { fmtCount, fmtDate, fmtHours, fmtPct } from "@/lib/os/reports/crPrimary/format";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
-import { BILLING_DRILLDOWN_COLUMNS, projectBillingRows } from "@/lib/os/reports/crPrimary/drilldown";
-import { computeParentTrainingMetrics } from "@/lib/os/reports/crPrimary/metrics/parentTraining";
-import { buildClientBcbaMap } from "@/lib/os/reports/crPrimary/metrics/supervision";
 import {
-  CODE_PARENT_TRAINING,
-  normalizeCode,
-} from "@/lib/os/reports/crPrimary/metrics/codes";
-import { Badge } from "@/components/ui/badge";
+  cancellationTruth,
+  eventDurationHours,
+  isDeletedEvent,
+} from "@/lib/os/reports/crPrimary/scheduleTruth";
+import { CODE_PARENT_TRAINING, normalizeCode } from "@/lib/os/reports/crPrimary/metrics/codes";
+import {
+  PT_MONTHLY_TARGET_HOURS,
+  computeParentTrainingAnalysis,
+  type PtClientRow,
+  type PtEventRow,
+} from "@/lib/os/reports/crPrimary/metrics/parentTrainingV2";
+import { pushRecent } from "@/lib/os/reportsCatalog";
+
+const FILTER_FIELDS = ["state", "client", "payor", "provider"] as const;
+const FILTER_LABELS: Record<string, string> = {
+  state: "State",
+  client: "Client",
+  payor: "Payor",
+  provider: "Provider",
+};
+
+type TabKey = "clients" | "completed" | "upcoming" | "cancelled" | "no-appointment" | "below-target";
+
+const CLIENT_COLUMNS = [
+  { key: "client", label: "Client" },
+  { key: "clientCrId", label: "CR Client Id" },
+  { key: "bcba", label: "BCBA" },
+  { key: "payor", label: "Payor" },
+  { key: "state", label: "State" },
+  { key: "completedHours", label: "Completed Hrs" },
+  { key: "completedSessions", label: "Completed Sessions" },
+  { key: "upcomingSessions", label: "Upcoming Sessions" },
+  { key: "cancelledSessions", label: "Cancelled Sessions" },
+  { key: "targetHours", label: "Target Hrs" },
+  { key: "lastCompleted", label: "Last Completed" },
+  { key: "nextScheduled", label: "Next Scheduled" },
+  { key: "note", label: "What This Means" },
+];
+
+const EVENT_COLUMNS = [
+  { key: "date", label: "Date" },
+  { key: "bucket", label: "Bucket" },
+  { key: "client", label: "Client" },
+  { key: "bcba", label: "BCBA" },
+  { key: "provider", label: "Provider" },
+  { key: "payor", label: "Payor" },
+  { key: "state", label: "State" },
+  { key: "hours", label: "Hours" },
+  { key: "reason", label: "Cancellation Reason" },
+];
+
+const BUCKET_LABEL: Record<PtEventRow["bucket"], string> = {
+  completed: "Completed",
+  upcoming: "Upcoming",
+  cancelled: "Cancelled",
+};
+
+const projectClients = (rows: PtClientRow[]): Record<string, unknown>[] =>
+  rows.map((r) => ({
+    client: r.client,
+    clientCrId: r.clientCrId || "—",
+    bcba: r.bcba,
+    payor: r.payor,
+    state: r.state,
+    completedHours: r.completedHours,
+    completedSessions: r.completedSessions,
+    upcomingSessions: r.upcomingSessions,
+    cancelledSessions: r.cancelledSessions,
+    targetHours: r.targetHours,
+    lastCompleted: r.lastCompleted ?? "None",
+    nextScheduled: r.nextScheduled ?? "None",
+    note: r.note,
+  }));
+
+const projectEvents = (rows: PtEventRow[]): Record<string, unknown>[] =>
+  rows.map((r) => ({
+    date: r.date ?? "Not documented",
+    bucket: BUCKET_LABEL[r.bucket],
+    client: r.client,
+    bcba: r.bcba,
+    provider: r.provider || "—",
+    payor: r.payor,
+    state: r.state,
+    hours: r.hours,
+    reason: r.reason ?? "—",
+  }));
+
+const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function ParentTrainingPage() {
-  const data = useCrPrimaryReport(["billing"]);
-  const [filters, setFilters] = useState({ ...EMPTY_FILTERS });
+  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent"]);
+  const ownership = useBcbaOwnershipV3();
+  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  const [tabParam, setTabParam] = useUrlState("tab", "clients");
+  const [bcbaParam, setBcbaParam] = useUrlState("bcba", "");
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
+  const tab = tabParam as TabKey;
 
-  const rows = useMemo(
+  useEffect(() => {
+    pushRecent("parent-training");
+  }, []);
+
+  const today = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+
+  const billing = useMemo(
     () =>
-      applyFilters(data.billing, filters, (r) => ({
+      applyFilters(data.billingFacts, filters, (r) => ({
         date: r.date_of_service,
         state: r.state,
         client: r.client_name,
-        provider: r.rendering_provider_name,
         payor: r.payor,
-        code: normalizeCode(r.procedure_code),
-        location: r.location,
-        status: r.status,
+        provider: r.provider_name,
+        code: r.procedure_code,
       })),
-    [data.billing, filters],
+    [data.billingFacts, filters],
   );
 
-  const metrics = useMemo(() => computeParentTrainingMetrics(rows), [rows]);
-  const clientToBcba = useMemo(() => buildClientBcbaMap(rows), [rows]);
-  const projected = useMemo(() => projectBillingRows(rows, clientToBcba), [rows, clientToBcba]);
+  const schedule = useMemo(
+    () =>
+      applyFilters(data.scheduleCurrent, filters, (r) => ({
+        date: r.event_date,
+        state: r.state,
+        client: r.client_name,
+        payor: r.payor,
+        provider: r.provider_name,
+        code: r.service_code ?? r.procedure_code,
+      })),
+    [data.scheduleCurrent, filters],
+  );
 
-  const fields: FilterFieldConfig[] = useMemo(
+  const resolveOwner = useMemo(() => {
+    const index = ownership.data;
+    return (s: { clientName?: string | null; clientCrId?: string | null; date?: string | null }) =>
+      index?.resolve({ clientCrId: s.clientCrId, clientName: s.clientName, date: s.date }).bcba ?? null;
+  }, [ownership.data]);
+
+  const analysis = useMemo(() => {
+    const billed = billing
+      .filter((r) => !r.is_void && !r.deleted)
+      .map((r: ReportBillingFactRow) => ({
+        date: r.date_of_service,
+        procedureCode: r.procedure_code,
+        hours: r.hours,
+        clientName: r.client_name,
+        clientCrId: r.client_cr_id,
+        providerName: r.provider_name,
+        payor: r.payor,
+        state: r.state,
+      }));
+
+    const scheduled = schedule
+      .filter((r) => !isDeletedEvent(r))
+      .map((r) => {
+        const truth = cancellationTruth(r);
+        return {
+          date: r.event_date,
+          procedureCode: r.service_code ?? r.procedure_code ?? r.billing_code,
+          hours: eventDurationHours(r),
+          clientName: r.client_name,
+          clientCrId: null,
+          providerName: r.provider_name,
+          payor: r.payor,
+          state: r.state,
+          cancelled: truth.cancelled,
+          cancellationReason: r.cancellation_reason,
+        };
+      });
+
+    // Every client with any activity in the window, so gaps are visible.
+    const activeClients = new Map<
+      string,
+      { client: string; clientCrId?: string | null; payor?: string | null; state?: string | null }
+    >();
+    for (const r of billing) {
+      const name = String(r.client_name ?? "").trim();
+      if (!name) continue;
+      if (!activeClients.has(name.toLowerCase())) {
+        activeClients.set(name.toLowerCase(), {
+          client: name,
+          clientCrId: r.client_cr_id,
+          payor: r.payor,
+          state: r.state,
+        });
+      }
+    }
+
+    return computeParentTrainingAnalysis({
+      billed,
+      scheduled,
+      activeClients: [...activeClients.values()],
+      resolveOwner,
+      window: { from: filters.from, to: filters.to },
+      today,
+    });
+  }, [billing, schedule, resolveOwner, filters.from, filters.to, today]);
+
+  const bcbaOptions = useMemo(
+    () => [...new Set(analysis.clientRows.map((r) => r.bcba))].sort((a, b) => a.localeCompare(b)),
+    [analysis.clientRows],
+  );
+
+  const clientRows = useMemo(
+    () => (bcbaParam ? analysis.clientRows.filter((r) => r.bcba === bcbaParam) : analysis.clientRows),
+    [analysis.clientRows, bcbaParam],
+  );
+  const eventRows = useMemo(
+    () => (bcbaParam ? analysis.events.filter((r) => r.bcba === bcbaParam) : analysis.events),
+    [analysis.events, bcbaParam],
+  );
+
+  const filterFields = useMemo<FilterFieldConfig[]>(
+    () =>
+      FILTER_FIELDS.map((key) => ({
+        key: key as FilterFieldConfig["key"],
+        label: FILTER_LABELS[key] ?? key,
+        options: optionsFor(data.billingFacts, (r: ReportBillingFactRow) =>
+          key === "client"
+            ? r.client_name
+            : key === "provider"
+              ? r.provider_name
+              : (r[key as "state" | "payor"] as string | null),
+        ),
+      })),
+    [data.billingFacts],
+  );
+
+  const noAppointment = clientRows.filter((r) => r.noAppointment);
+  const belowTarget = clientRows.filter((r) => r.belowTarget);
+
+  const kpis = useMemo<KpiDefinition[]>(
     () => [
-      { key: "state", label: "State", options: optionsFor(data.billing, (r) => r.state) },
-      { key: "client", label: "Client", options: optionsFor(data.billing, (r) => r.client_name) },
-      { key: "provider", label: "BCBA / Provider", options: optionsFor(data.billing, (r) => r.rendering_provider_name) },
-      { key: "payor", label: "Payor", options: optionsFor(data.billing, (r) => r.payor) },
+      {
+        id: "completed",
+        label: "Completed 97156 hrs",
+        value: fmtHours(analysis.completedHours),
+        hint: `${fmtCount(analysis.completedSessions)} billed session(s)`,
+      },
+      {
+        id: "coverage",
+        label: "Clients with parent training",
+        value: analysis.coveragePct == null ? "No clients in view" : fmtPct(analysis.coveragePct),
+        hint: `${fmtCount(analysis.clientsWithCompleted)} of ${fmtCount(analysis.clients)} clients`,
+        tone:
+          analysis.coveragePct == null
+            ? "neutral"
+            : analysis.coveragePct >= 80
+              ? "good"
+              : analysis.coveragePct >= 50
+                ? "warn"
+                : "bad",
+      },
+      {
+        id: "upcoming",
+        label: "Upcoming sessions",
+        value: fmtCount(analysis.upcomingSessions),
+        hint: `${fmtHours(analysis.upcomingHours)} still on the calendar`,
+      },
+      {
+        id: "cancelled",
+        label: "Cancelled sessions",
+        value: fmtCount(analysis.cancelledSessions),
+        hint:
+          analysis.cancellationRatePct == null
+            ? "No completed or cancelled sessions to compare"
+            : `${fmtPct(analysis.cancellationRatePct)} of parent-training sessions`,
+        tone: analysis.cancelledSessions > 0 ? "warn" : "good",
+      },
+      {
+        id: "no-appointment",
+        label: "No appointment",
+        value: fmtCount(noAppointment.length),
+        hint: "Nothing completed and nothing scheduled",
+        tone: noAppointment.length > 0 ? "bad" : "good",
+      },
+      {
+        id: "below-target",
+        label: "Below target",
+        value: fmtCount(belowTarget.length),
+        hint: `Target is ${PT_MONTHLY_TARGET_HOURS} hr per client per month (${analysis.monthsInWindow} month window)`,
+        tone: belowTarget.length > 0 ? "warn" : "good",
+      },
     ],
-    [data.billing],
+    [analysis, noAppointment.length, belowTarget.length],
   );
 
-  const kpis: KpiDefinition[] = [
+  const clientColumns: PrimaryTableColumn<PtClientRow>[] = [
+    { key: "client", label: "Client", render: (r) => <span className="font-medium">{r.client}</span> },
+    { key: "bcba", label: "BCBA", render: (r) => r.bcba },
+    { key: "payor", label: "Payor", render: (r) => r.payor },
     {
-      id: "coverage",
-      label: "PT Coverage",
-      value: fmtPct(metrics.coveragePct),
-      hint: "Active clients with 97156 hours",
-      tone: metrics.coveragePct >= 80 ? "good" : metrics.coveragePct >= 60 ? "warn" : "bad",
+      key: "completed",
+      label: "Completed Hrs",
+      align: "right",
+      render: (r) => fmtHours(r.completedHours),
     },
-    { id: "pt-hours", label: "97156 Hours", value: fmtHours(metrics.ptHours) },
-    { id: "active", label: "Active Clients", value: fmtCount(metrics.activeClients) },
-    { id: "with-pt", label: "Clients With PT", value: fmtCount(metrics.clientsWithPt), tone: "good" },
+    { key: "target", label: "Target Hrs", align: "right", render: (r) => fmtHours(r.targetHours) },
+    { key: "upcoming", label: "Upcoming", align: "right", render: (r) => fmtCount(r.upcomingSessions) },
     {
-      id: "missing",
-      label: "Clients Missing PT",
-      value: fmtCount(metrics.clientsMissingPt),
-      tone: metrics.clientsMissingPt > 0 ? "bad" : "good",
+      key: "cancelled",
+      label: "Cancelled",
+      align: "right",
+      render: (r) => fmtCount(r.cancelledSessions),
     },
-    { id: "bcbas", label: "BCBAs Delivering PT", value: fmtCount(metrics.bcbaCount) },
     {
-      id: "gaps",
-      label: "Gap Clients",
-      value: fmtCount(metrics.gapClients.length),
-      hint: "Direct hours, no parent training",
-      tone: metrics.gapClients.length > 0 ? "warn" : "good",
+      key: "last",
+      label: "Last Completed",
+      render: (r) => (r.lastCompleted ? fmtDate(r.lastCompleted) : "None"),
     },
-    { id: "months", label: "Months Covered", value: fmtCount(metrics.trend.length) },
+    {
+      key: "status",
+      label: "Status",
+      render: (r) =>
+        r.noAppointment ? (
+          <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
+            No appointment
+          </Badge>
+        ) : r.belowTarget ? (
+          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600">
+            Below target
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600">
+            On track
+          </Badge>
+        ),
+    },
   ];
 
-  const open = (title: string, predicate: (index: number) => boolean, subtitle?: string) => {
-    setDrilldown({
-      title,
-      subtitle: subtitle ?? "CentralReach session rows with the matched supervising BCBA.",
-      rows: projected.filter((_, i) => predicate(i)),
-      columns: BILLING_DRILLDOWN_COLUMNS,
-      exportName: `parent-training-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-    });
-  };
+  const eventColumns: PrimaryTableColumn<PtEventRow>[] = [
+    { key: "date", label: "Date", render: (r) => (r.date ? fmtDate(r.date) : "Not documented") },
+    { key: "client", label: "Client", render: (r) => r.client },
+    { key: "bcba", label: "BCBA", render: (r) => r.bcba },
+    { key: "provider", label: "Provider", render: (r) => r.provider || "—" },
+    { key: "hours", label: "Hours", align: "right", render: (r) => fmtHours(r.hours) },
+    { key: "reason", label: "Reason", render: (r) => r.reason ?? "—" },
+  ];
 
-  const onKpi = (id: string) => {
-    if (id === "pt-hours" || id === "coverage" || id === "with-pt")
-      return open("97156 parent training sessions", (i) => normalizeCode(rows[i].procedure_code) === CODE_PARENT_TRAINING);
-    if (id === "missing" || id === "gaps") {
-      const gapNames = new Set(metrics.gapClients.map((g) => g.name));
-      return open("Sessions for clients missing parent training", (i) =>
-        gapNames.has((rows[i].client_name ?? "").trim()),
-      );
+  const bucketRows = (bucket: PtEventRow["bucket"]) => eventRows.filter((r) => r.bucket === bucket);
+
+  const exportForTab = () => {
+    if (tab === "completed" || tab === "upcoming" || tab === "cancelled") {
+      const bucket = tab as PtEventRow["bucket"];
+      downloadCsv(`parent-training-${tab}`, projectEvents(bucketRows(bucket)), EVENT_COLUMNS);
+      return;
     }
-    return open("All session rows in scope", () => true);
+    const rows =
+      tab === "no-appointment" ? noAppointment : tab === "below-target" ? belowTarget : clientRows;
+    downloadCsv(`parent-training-${tab}`, projectClients(rows), CLIENT_COLUMNS);
   };
 
   return (
     <PrimaryReportShell
       title="Parent Training"
-      subtitle="97156 parent-training delivery and coverage from CentralReach, with the clients who have active services but no parent training on record."
+      subtitle="97156 parent training delivered, scheduled, and cancelled — with the clients who need an appointment."
       freshness={data.freshness}
-      loading={data.loading}
+      loading={data.loading || ownership.isLoading}
       empty={data.empty}
       errorMessage={data.errorMessage}
-      onRefresh={data.refresh}
-      exportDisabled={projected.length === 0}
-      onExport={() => downloadCsv("parent-training", projected, BILLING_DRILLDOWN_COLUMNS)}
+      dataQualityWarnings={[
+        billing.some((r) => normalizeCode(r.procedure_code) === CODE_PARENT_TRAINING)
+          ? ""
+          : "No billed 97156 hours for the selected filters — completed parent training will read zero.",
+      ].filter(Boolean)}
+      onRefresh={() => {
+        data.refresh();
+        ownership.refetch();
+      }}
+      onExport={exportForTab}
+      exportDisabled={clientRows.length === 0 && eventRows.length === 0}
       filters={
         <PrimaryFilterBar
           filters={filters}
-          fields={fields}
+          fields={filterFields}
           onChange={setFilters}
-          onReset={() => setFilters({ ...EMPTY_FILTERS })}
+          onReset={() => setFilters(DEFAULT_FILTERS)}
         />
       }
     >
-      <div className="space-y-4">
-        <KpiScorecards kpis={kpis} onSelect={onKpi} />
+      <ReportProvenance>
+        Completed parent training is billed 97156 only. Upcoming counts sessions still ahead of today
+        that have not been cancelled; a scheduled session is never counted as delivered. The target is{" "}
+        {PT_MONTHLY_TARGET_HOURS} hour per client per month, giving {analysis.monthsInWindow * PT_MONTHLY_TARGET_HOURS} hour(s)
+        for the selected window.
+      </ReportProvenance>
 
-        <PrimaryChart
-          title="Parent training hours over time"
-          subtitle="Monthly 97156 hours delivered"
-          type="line"
-          data={metrics.trend}
-          valueLabel="97156 hours"
-          height={300}
-        />
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <PrimaryChart
-            title="PT coverage by BCBA"
-            subtitle="Share of each BCBA's clients with parent training"
-            type="bar"
-            data={[...metrics.byBcba]
-              .sort((a, b) => a.coveragePct - b.coveragePct)
-              .slice(0, 12)
-              .map((b) => ({ label: b.name, value: b.coveragePct, secondary: b.hours }))}
-            valueLabel="Coverage %"
-            secondaryLabel="97156 hours"
-            onSelect={(label) =>
-              open(`BCBA · ${label}`, (i) => (clientToBcba.get((rows[i].client_name ?? "").trim()) ?? "Unassigned") === label)
-            }
-          />
-          <PrimaryChart
-            title="PT coverage by state"
-            type="bar"
-            data={metrics.byState.map((s) => ({ label: s.name, value: s.coveragePct }))}
-            valueLabel="Coverage %"
-            onSelect={(label) => open(`State · ${label}`, (i) => (rows[i].state ?? "Unknown") === label)}
-          />
-        </div>
-
-        <PrimaryTable
-          title="Clients with a parent training gap"
-          subtitle="Active direct services with little or no 97156 — action required"
-          rows={metrics.gapClients}
-          rowKey={(r) => r.name}
-          onRowClick={(r) => open(`Client · ${r.name}`, (i) => (rows[i].client_name ?? "").trim() === r.name)}
-          emptyLabel="No parent-training gaps in the current scope."
-          columns={[
-            { key: "name", label: "Client", render: (r) => <span className="font-medium">{r.name}</span> },
-            { key: "bcba", label: "Matched BCBA", render: (r) => r.bcba || "Unassigned" },
-            { key: "direct", label: "Direct Hours", align: "right", render: (r) => fmtHours(r.directHours) },
-            {
-              key: "pt",
-              label: "97156 Hours",
-              align: "right",
-              render: (r) => (
-                <Badge variant={r.ptHours > 0 ? "secondary" : "destructive"} className="text-[10px]">
-                  {fmtHours(r.ptHours)}
-                </Badge>
-              ),
-            },
-          ]}
-        />
-
-        <PrimaryTable
-          title="Parent training by client"
-          subtitle="Click a row to open its CentralReach sessions"
-          rows={metrics.byClient}
-          rowKey={(r) => r.name}
-          onRowClick={(r) => open(`Client · ${r.name}`, (i) => (rows[i].client_name ?? "").trim() === r.name)}
-          columns={[
-            { key: "name", label: "Client", render: (r) => <span className="font-medium">{r.name}</span> },
-            { key: "bcba", label: "Matched BCBA", render: (r) => r.bcba || "Unassigned" },
-            { key: "hours", label: "97156 Hours", align: "right", render: (r) => fmtHours(r.hours) },
-            { key: "last", label: "Last PT Session", align: "right", render: (r) => fmtDate(r.lastSession) },
-          ]}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs value={tab} onValueChange={setTabParam}>
+          <TabsList className="flex-wrap">
+            <TabsTrigger value="clients">Clients</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+            <TabsTrigger value="no-appointment">No appointment</TabsTrigger>
+            <TabsTrigger value="below-target">Below target</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          BCBA
+          <select
+            className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+            value={bcbaParam}
+            onChange={(e) => setBcbaParam(e.target.value)}
+          >
+            <option value="">All BCBAs</option>
+            {bcbaOptions.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
+
+      <KpiScorecards
+        kpis={kpis}
+        onSelect={(id) => {
+          if (id === "no-appointment") setTabParam("no-appointment");
+          else if (id === "below-target") setTabParam("below-target");
+          else if (id === "upcoming") setTabParam("upcoming");
+          else if (id === "cancelled") setTabParam("cancelled");
+          else setTabParam("clients");
+        }}
+      />
+
+      {tab === "clients" && (
+        <>
+          <PrimaryChart
+            title="Completed parent-training hours by BCBA"
+            type="bar"
+            data={analysis.byBcba.slice(0, 15).map((g) => ({ label: g.name, value: g.completedHours }))}
+            valueLabel="Hours"
+          />
+          <PrimaryTable
+            title="Parent training by client"
+            subtitle="Click a client to see every parent-training event."
+            columns={clientColumns}
+            rows={clientRows}
+            rowKey={(r) => r.client}
+            onRowClick={(r) =>
+              setDrilldown({
+                title: `${r.client} — parent training`,
+                subtitle: r.note,
+                rows: projectEvents(eventRows.filter((e) => e.client === r.client)),
+                columns: EVENT_COLUMNS,
+                exportName: "parent-training-client",
+              })
+            }
+            maxRows={300}
+          />
+        </>
+      )}
+
+      {(tab === "completed" || tab === "upcoming" || tab === "cancelled") && (
+        <PrimaryTable
+          title={`${BUCKET_LABEL[tab as PtEventRow["bucket"]]} parent-training sessions`}
+          subtitle={
+            tab === "completed"
+              ? "Billed 97156 facts."
+              : tab === "upcoming"
+                ? "Kept 97156 events still ahead of today."
+                : "97156 events the source explicitly cancelled."
+          }
+          columns={eventColumns}
+          rows={bucketRows(tab as PtEventRow["bucket"])}
+          rowKey={(r) => r.key}
+          maxRows={300}
+        />
+      )}
+
+      {(tab === "no-appointment" || tab === "below-target") && (
+        <PrimaryTable
+          title={tab === "no-appointment" ? "Needs a parent-training appointment" : "Below parent-training target"}
+          subtitle={
+            tab === "no-appointment"
+              ? "No completed and no scheduled 97156 in this window."
+              : `Completed fewer than ${analysis.monthsInWindow * PT_MONTHLY_TARGET_HOURS} target hour(s).`
+          }
+          columns={clientColumns}
+          rows={tab === "no-appointment" ? noAppointment : belowTarget}
+          rowKey={(r) => r.client}
+          onRowClick={(r) =>
+            setDrilldown({
+              title: `${r.client} — parent training`,
+              subtitle: r.note,
+              rows: projectEvents(eventRows.filter((e) => e.client === r.client)),
+              columns: EVENT_COLUMNS,
+              exportName: "parent-training-client",
+            })
+          }
+          maxRows={300}
+        />
+      )}
 
       <DrilldownDrawer request={drilldown} onClose={() => setDrilldown(null)} />
     </PrimaryReportShell>
