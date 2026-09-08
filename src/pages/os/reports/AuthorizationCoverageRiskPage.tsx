@@ -179,6 +179,41 @@ const continuityCsv = (r: ContinuityRow) => ({
   remainingHours: r.remainingHours ?? NOT_DOCUMENTED,
 });
 
+/**
+ * Explicit, flat projections for the drilldown drawer and CSV export. The
+ * shared drawer/export API takes plain records, so each queue row is projected
+ * field by field rather than widening the metric row types themselves.
+ */
+const coverageGapCsv = (r: CoverageGapRow): Record<string, unknown> => ({
+  client: r.client,
+  clientCrId: r.clientCrId,
+  payor: r.payor,
+  state: r.state,
+  lastEnd: r.lastEnd ?? NOT_DOCUMENTED,
+  note: r.note,
+});
+
+const billingGapCsv = (r: BillingCoverageGapRow): Record<string, unknown> => ({
+  dateOfService: r.dateOfService,
+  client: r.client,
+  clientCrId: r.clientCrId,
+  payor: r.payor,
+  state: r.state,
+  code: r.code,
+  note: r.note,
+});
+
+const scheduledGapCsv = (r: ScheduledCoverageGapRow): Record<string, unknown> => ({
+  eventDate: r.eventDate,
+  client: r.client,
+  clientCrId: r.clientCrId,
+  payor: r.payor,
+  state: r.state,
+  code: r.code,
+  note: r.note,
+});
+
+
 export default function AuthorizationCoverageRiskPage() {
   const data = useCrPrimaryReport(["authCurrent", "billingFacts", "scheduleCurrent"]);
   const [filters, setFilters] = useUrlFilterState({ ...EMPTY_FILTERS });
