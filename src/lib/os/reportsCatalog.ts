@@ -107,7 +107,7 @@ export const REPORTS: ReportDef[] = [
    * Reports Consolidation — Canonical Primary Reports
    * ----------------------------------------------------------------
    * The Reports page surfaces thirteen primary report cards (see
-   * PRIMARY_REPORT_IDS below). Eight are shared with every Blossom OS
+   * PRIMARY_REPORT_IDS below). Eleven are shared with every Blossom OS
    * user; the two finance reports keep their own role restriction.
    * These entries own the canonical id/title/route for each.
    *
@@ -519,10 +519,10 @@ export const REPORTS: ReportDef[] = [
  * Canonical Reports page catalog.
  *
  * /reports surfaces these 13 primary/shared reports plus the 9 department
- * dashboards. Eight of the primary reports are shared with every OS role; the
+ * dashboards. Eleven of the primary reports are shared with every OS role; the
  * two finance reports (claims submission, payment reconciliation) keep their
- * own role restriction, so a role outside their `visibleTo` list sees 17 cards
- * and an eligible finance/leadership role sees up to 19. Legacy REPORTS
+ * own role restriction, so a role outside their `visibleTo` list sees 20 cards
+ * and an eligible finance/leadership role sees up to 22. Legacy REPORTS
  * entries stay in the array for cross-linking/compatibility but are never
  * surfaced on /reports.
  */

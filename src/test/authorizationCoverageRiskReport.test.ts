@@ -149,3 +149,16 @@ describe("computeAuthorizationCoverageRisk", () => {
     expect(metrics.scheduledGaps).toHaveLength(0);
   });
 });
+
+describe("multi-code authorizations", () => {
+  it("matches activity under any documented code from procedure_code or service_codes", () => {
+    const auths = [auth({ client_cr_id: "cr-1", procedure_code: null, service_codes: "97153, 97155" })];
+    const billing = [
+      { id: "b1", date_of_service: "2026-06-10", procedure_code: "97155", client_name: "Jane Doe", client_cr_id: "cr-1" },
+      { id: "b2", date_of_service: "2026-06-10", procedure_code: "97153", client_name: "Jane Doe", client_cr_id: "cr-1" },
+      { id: "b3", date_of_service: "2026-06-10", procedure_code: "97156", client_name: "Jane Doe", client_cr_id: "cr-1" },
+    ];
+    const metrics = computeAuthorizationCoverageRisk(auths, billing, [], TODAY);
+    expect(metrics.billingGaps.map((g) => g.code)).toEqual(["97156"]);
+  });
+});

@@ -51,7 +51,67 @@ export interface PtcAuthorizationInput {
   payor?: string | null;
   procedureCode?: string | null;
   serviceCodes?: string | null;
+  /** Only `true` is proven active — null/unknown is never treated as active. */
   isActive?: boolean | null;
+  actualStartDate?: string | null;
+  actualEndDate?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+/** The selected calendar month window (`YYYY-MM-DD` inclusive). */
+export interface PtcWindow {
+  from: string | null | undefined;
+  to: string | null | undefined;
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const day = (v: string | null | undefined): string | null => {
+  const s = String(v ?? "").trim().slice(0, 10);
+  return DAY.test(s) ? s : null;
+};
+
+/** True when both bounds land inside the same calendar month. */
+export function isSingleCalendarMonth(w: PtcWindow): boolean {
+  const from = day(w.from);
+  const to = day(w.to);
+  if (!from || !to) return false;
+  return from.slice(0, 7) === to.slice(0, 7);
+}
+
+export type PtcAuthDateProvenance = "actual" | "fallback" | "none";
+
+/**
+ * Authoritative authorization date pair: actual dates first, then the base
+ * start/end fallback. A pair is never mixed across sources.
+ */
+export function authDatePair(a: PtcAuthorizationInput): {
+  start: string | null;
+  end: string | null;
+  provenance: PtcAuthDateProvenance;
+} {
+  const actual = { start: day(a.actualStartDate), end: day(a.actualEndDate) };
+  if (actual.start || actual.end) return { ...actual, provenance: "actual" };
+  const fallback = { start: day(a.startDate), end: day(a.endDate) };
+  if (fallback.start || fallback.end) return { ...fallback, provenance: "fallback" };
+  return { start: null, end: null, provenance: "none" };
+}
+
+/**
+ * In-scope = proven active AND the authoritative date pair overlaps the
+ * selected month. An authorization with no documented dates, or one whose
+ * coverage ended before the month, is ignored rather than assumed current.
+ */
+export function isAuthInScopeForMonth(a: PtcAuthorizationInput, w: PtcWindow): boolean {
+  if (a.isActive !== true) return false;
+  const from = day(w.from);
+  const to = day(w.to);
+  if (!from || !to) return false;
+  const { start, end } = authDatePair(a);
+  if (!end) return false;
+  if (end < from) return false;
+  if (start && start > to) return false;
+  return true;
 }
 
 function normalizePayor(v: string | null | undefined): string {
@@ -128,22 +188,44 @@ export interface PtcBcbaRow {
 export interface PtcAnalysis {
   clientRows: PtcClientRow[];
   bcbaRows: PtcBcbaRow[];
+  /** False when the selected range is not exactly one calendar month. */
+  singleMonth: boolean;
+  /** Staff-facing unavailable message when `singleMonth` is false. */
+  unavailableReason: string | null;
 }
 
 export interface PtcComputeInput {
   billed: PtcBilledInput[];
   authorizations: PtcAuthorizationInput[];
   resolveOwner: (s: { clientName?: string | null; clientCrId?: string | null; date?: string | null }) => string | null;
+  /** The selected calendar month. Compliance is a monthly rule only. */
+  window: PtcWindow;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const UNOWNED = "Unassigned";
 
+export const MULTI_MONTH_UNAVAILABLE =
+  "Choose one calendar month. Parent training compliance thresholds are monthly, so they cannot be applied to a range that spans more than one month.";
+
 export function computeParentTrainingCompliance({
   billed,
   authorizations,
   resolveOwner,
+  window,
 }: PtcComputeInput): PtcAnalysis {
+  if (!isSingleCalendarMonth(window)) {
+    return {
+      clientRows: [],
+      bcbaRows: [],
+      singleMonth: false,
+      unavailableReason: MULTI_MONTH_UNAVAILABLE,
+    };
+  }
+
+  // Ownership is resolved as of a date inside the selected month.
+  const ownershipDate = day(window.to);
+
   const identity = buildClientIdentityResolver(
     billed as unknown as ClientIdentityInput[],
     authorizations as unknown as ClientIdentityInput[],
@@ -171,11 +253,26 @@ export function computeParentTrainingCompliance({
     else entry.hours97153 += hrs;
   }
 
+  // Only proven-active 97156 authorizations whose authoritative date pair
+  // overlaps the selected month set a target. Expired, out-of-window and
+  // unknown-active rows are ignored, never assumed current.
   const authsByClient = new Map<string, PtcAuthorizationInput[]>();
   for (const a of authorizations) {
+    if (!isParentTrainingAuth(a)) continue;
+    if (!isAuthInScopeForMonth(a, window)) continue;
     const key = identity.keyFor(a.clientCrId, a.clientName);
     if (!authsByClient.has(key)) authsByClient.set(key, []);
     authsByClient.get(key)!.push(a);
+    // A client with an in-scope authorization belongs in the universe even
+    // with zero billed hours — that is exactly the Monitor case.
+    if (!clients.has(key)) {
+      clients.set(key, {
+        client: String(a.clientName ?? "").trim() || "Unknown client",
+        clientCrId: String(a.clientCrId ?? "").trim(),
+        hours97156: 0,
+        hours97153: 0,
+      });
+    }
   }
 
   const clientRows: PtcClientRow[] = [];
@@ -183,7 +280,8 @@ export function computeParentTrainingCompliance({
     const auths = authsByClient.get(key) ?? [];
     const resolution = resolveClientPayorRule(auths);
     const bcba =
-      resolveOwner({ clientName: c.client, clientCrId: c.clientCrId || null, date: null }) ?? UNOWNED;
+      resolveOwner({ clientName: c.client, clientCrId: c.clientCrId || null, date: ownershipDate }) ??
+      UNOWNED;
 
     let status: PtcClientStatus;
     let reason: string;
@@ -257,5 +355,5 @@ export function computeParentTrainingCompliance({
 
   const bcbaRows = [...bcbaMap.values()].sort((a, b) => a.bcba.localeCompare(b.bcba));
 
-  return { clientRows, bcbaRows };
+  return { clientRows, bcbaRows, singleMonth: true, unavailableReason: null };
 }

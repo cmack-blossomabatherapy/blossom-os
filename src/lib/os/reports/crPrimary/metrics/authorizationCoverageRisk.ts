@@ -94,11 +94,29 @@ export interface CoverageRiskMetrics {
 const VOID_LIKE = /void|deleted|cancel/;
 
 /**
+ * Every documented five-digit code on an authorization row, read from BOTH
+ * `procedure_code` and `service_codes` (either column may carry a delimited
+ * list). An authorization covering 97153 and 97155 must match activity under
+ * either code.
+ */
+export function documentedAuthCodes(row: ContinuityAuthRow): string[] {
+  const raw = `${row.procedure_code ?? ""} ${row.service_codes ?? ""}`;
+  const tokens = raw.split(/[^0-9A-Za-z]+/).filter(Boolean);
+  const codes = new Set<string>();
+  for (const t of tokens) {
+    const c = normalizeCode(t);
+    if (/^(\d{5}|\d{4}[A-Z])$/.test(c)) codes.add(c);
+  }
+  return [...codes];
+}
+
+/**
  * True when at least one of a client's authorization rows carries a matched
- * coverage pair (see `coveragePairsOf`) spanning `date`. Code-aware: when
- * both the activity and the authorization row carry a normalized code, they
- * must agree. An authorization row with no documented code is still eligible
- * coverage, so an undocumented code column can never manufacture a gap.
+ * coverage pair (see `coveragePairsOf`) spanning `date`. Code-aware: when the
+ * activity carries a normalized code and the authorization documents any
+ * codes, the activity code must appear among them. An authorization row with
+ * no documented code is still eligible coverage, so an undocumented code
+ * column can never manufacture a gap.
  */
 function authCandidatesCoverDate(
   authRows: ContinuityAuthRow[],
@@ -107,8 +125,8 @@ function authCandidatesCoverDate(
 ): boolean {
   return authRows.some((row) => {
     if (row.is_active === false) return false;
-    const authCode = normalizeCode(row.procedure_code ?? row.service_codes ?? "");
-    if (code && authCode && authCode !== code) return false;
+    const authCodes = documentedAuthCodes(row);
+    if (code && authCodes.length > 0 && !authCodes.includes(code)) return false;
     return coveragePairsOf(row).some((p) => p.start <= date && date <= p.end);
   });
 }
