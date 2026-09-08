@@ -78,8 +78,13 @@ const projectAction = (rows: ActionQueueRow[]): Record<string, unknown>[] =>
   }));
 
 export default function ClinicOperationsPage() {
-  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent", "authCurrent"]);
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  // The selected window is pushed to the database before pagination, so a
+  // current-month view never pages years of history.
+  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent", "authCurrent"], {
+    from: filters.from || null,
+    to: filters.to || null,
+  });
   const [tabParam, setTabParam] = useUrlState("tab", "overview");
   const [clinicParam, setClinicParam] = useUrlState("clinic", "all");
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);

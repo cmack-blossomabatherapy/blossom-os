@@ -64,8 +64,13 @@ const csvRow = (r: ClaimsQueueRow) => ({
 });
 
 export default function ClaimsQueuePage() {
-  const data = useCrPrimaryReport(["claimsStatus"]);
   const [filters, setFilters] = useState({ ...EMPTY_FILTERS });
+  // Current-snapshot claims only; the selected window is pushed to the
+  // database before pagination (blank bounds keep the All Dates behaviour).
+  const data = useCrPrimaryReport(["claimsStatus"], {
+    from: filters.from || null,
+    to: filters.to || null,
+  });
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
   const [tab, setTab] = useState<BreakdownKey>("response");
 

@@ -215,9 +215,14 @@ const projectComplianceClients = (rows: PtcClientRow[]): Record<string, unknown>
 const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function ParentTrainingPage() {
-  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent", "authCurrent"]);
-  const ownership = useBcbaOwnershipV3();
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  // The selected window is pushed to the database before pagination, so a
+  // current-month view never pages years of history.
+  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent", "authCurrent"], {
+    from: filters.from || null,
+    to: filters.to || null,
+  });
+  const ownership = useBcbaOwnershipV3();
   const [tabParam, setTabParam] = useUrlState("tab", "clients");
   const [bcbaParam, setBcbaParam] = useUrlState("bcba", "");
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
