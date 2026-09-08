@@ -26,7 +26,7 @@ import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS, type DrilldownRequest, type KpiDefinition } from "@/lib/os/reports/crPrimary/types";
 import { fmtCount, fmtDate, fmtHours } from "@/lib/os/reports/crPrimary/format";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
-import { localIsoDate } from "@/lib/os/reports/crPrimary/reportWindow";
+import { localIsoDate, withCurrentMonthDefault } from "@/lib/os/reports/crPrimary/reportWindow";
 import {
   computeAuthorizationCoverageRisk,
   NOT_DOCUMENTED,
