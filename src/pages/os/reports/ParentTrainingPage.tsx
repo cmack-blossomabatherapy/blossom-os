@@ -55,6 +55,13 @@ import {
   type PtClientRow,
   type PtEventRow,
 } from "@/lib/os/reports/crPrimary/metrics/parentTrainingV2";
+import {
+  computeParentTrainingCompliance,
+  NO_TARGET_LABEL as PTC_NO_TARGET_LABEL,
+  NEEDS_PAYOR_REVIEW_LABEL,
+  type PtcClientRow,
+  type PtcBcbaRow,
+} from "@/lib/os/reports/crPrimary/metrics/parentTrainingCompliance";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 
 const FILTER_FIELDS = ["state", "client", "payor", "provider"] as const;
@@ -73,7 +80,8 @@ type TabKey =
   | "no-upcoming"
   | "below-target"
   | "needs-reschedule"
-  | "data-gaps";
+  | "data-gaps"
+  | "compliance";
 
 const CLIENT_COLUMNS = [
   { key: "client", label: "Client" },
@@ -149,6 +157,59 @@ const projectEvents = (rows: PtEventRow[]): Record<string, unknown>[] =>
     state: r.state,
     hours: r.hours,
     reason: r.reason ?? "—",
+  }));
+
+const COMPLIANCE_BCBA_COLUMNS = [
+  { key: "bcba", label: "BCBA" },
+  { key: "completed97156Hours", label: "Completed 97156 Hrs" },
+  { key: "completed97153Hours", label: "Completed 97153 Hrs" },
+  { key: "status", label: "Status" },
+];
+
+const COMPLIANCE_CLIENT_COLUMNS = [
+  { key: "client", label: "Client" },
+  { key: "clientCrId", label: "CR Client Id" },
+  { key: "bcba", label: "BCBA" },
+  { key: "payor", label: "Payor" },
+  { key: "thresholdHours", label: "Required Hrs / Month" },
+  { key: "completed97156Hours", label: "Completed 97156 Hrs" },
+  { key: "gapHours", label: "Gap Hrs" },
+  { key: "status", label: "Status" },
+  { key: "reason", label: "Why" },
+];
+
+const COMPLIANCE_STATUS_LABEL: Record<PtcClientRow["status"], string> = {
+  healthy: "Healthy",
+  monitor: "Monitor",
+  no_target: PTC_NO_TARGET_LABEL,
+  needs_payor_review: NEEDS_PAYOR_REVIEW_LABEL,
+};
+
+const COMPLIANCE_BCBA_STATUS_LABEL: Record<PtcBcbaRow["status"], string> = {
+  healthy: "Healthy",
+  monitor: "Monitor",
+  no_target: PTC_NO_TARGET_LABEL,
+};
+
+const projectComplianceBcba = (rows: PtcBcbaRow[]): Record<string, unknown>[] =>
+  rows.map((r) => ({
+    bcba: r.bcba,
+    completed97156Hours: r.completed97156Hours,
+    completed97153Hours: r.completed97153Hours,
+    status: COMPLIANCE_BCBA_STATUS_LABEL[r.status],
+  }));
+
+const projectComplianceClients = (rows: PtcClientRow[]): Record<string, unknown>[] =>
+  rows.map((r) => ({
+    client: r.client,
+    clientCrId: r.clientCrId || "\u2014",
+    bcba: r.bcba,
+    payor: r.payor ?? "\u2014",
+    thresholdHours: r.thresholdHours ?? PTC_NO_TARGET_LABEL,
+    completed97156Hours: r.completed97156Hours,
+    gapHours: r.gapHours ?? "\u2014",
+    status: COMPLIANCE_STATUS_LABEL[r.status],
+    reason: r.reason,
   }));
 
 const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
@@ -358,6 +419,116 @@ export default function ParentTrainingPage() {
   const clientRows = analysis.clientRows;
   const eventRows = analysis.events;
 
+  /**
+   * Compliance is a SEPARATE payer-policy view: completed, nonvoid, nondeleted
+   * billed 97156 in the selected calendar month against a per-client payor
+   * threshold. 97153 is shown for activity context only and is never a
+   * denominator here. This intentionally ignores the authorization-target /
+   * cadence machinery above — it has its own payor rule.
+   */
+  const complianceAnalysis = useMemo(
+    () =>
+      computeParentTrainingCompliance({
+        billed: billing.map((r) => ({
+          date: r.date_of_service,
+          procedureCode: r.procedure_code,
+          hours: r.hours,
+          clientName: r.client_name,
+          clientCrId: r.client_cr_id,
+          isVoid: r.is_void,
+          deleted: r.deleted,
+        })),
+        authorizations: authRows.map((a) => ({
+          clientName: a.client_name,
+          clientCrId: a.client_cr_id,
+          payor: a.payor,
+          procedureCode: a.procedure_code,
+          serviceCodes: a.service_codes,
+          isActive: a.is_active,
+        })),
+        resolveOwner,
+      }),
+    [billing, authRows, resolveOwner],
+  );
+
+  const complianceClientColumns: PrimaryTableColumn<PtcClientRow>[] = [
+    { key: "client", label: "Client", render: (r) => <span className="font-medium">{r.client}</span> },
+    { key: "payor", label: "Payor", render: (r) => r.payor ?? "\u2014" },
+    {
+      key: "required",
+      label: "Required Hrs / Month",
+      align: "right",
+      render: (r) => (r.thresholdHours == null ? PTC_NO_TARGET_LABEL : fmtHours(r.thresholdHours)),
+    },
+    {
+      key: "completed",
+      label: "Completed 97156 Hrs",
+      align: "right",
+      render: (r) => fmtHours(r.completed97156Hours),
+    },
+    {
+      key: "gap",
+      label: "Gap Hrs",
+      align: "right",
+      render: (r) => (r.gapHours == null ? "\u2014" : fmtHours(r.gapHours)),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (r) => (
+        <Badge
+          variant="outline"
+          className={
+            r.status === "healthy"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+              : r.status === "monitor"
+                ? "border-amber-500/30 bg-amber-500/10 text-amber-600"
+                : r.status === "needs_payor_review"
+                  ? "border-destructive/30 bg-destructive/10 text-destructive"
+                  : "border-border bg-muted text-muted-foreground"
+          }
+        >
+          {COMPLIANCE_STATUS_LABEL[r.status]}
+        </Badge>
+      ),
+    },
+    { key: "reason", label: "Why", render: (r) => r.reason },
+  ];
+
+  const complianceBcbaColumns: PrimaryTableColumn<PtcBcbaRow>[] = [
+    { key: "bcba", label: "BCBA", render: (r) => r.bcba },
+    {
+      key: "completed97156",
+      label: "Completed 97156 Hrs",
+      align: "right",
+      render: (r) => fmtHours(r.completed97156Hours),
+    },
+    {
+      key: "completed97153",
+      label: "Completed 97153 Hrs",
+      align: "right",
+      render: (r) => fmtHours(r.completed97153Hours),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (r) => (
+        <Badge
+          variant="outline"
+          className={
+            r.status === "healthy"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+              : r.status === "monitor"
+                ? "border-amber-500/30 bg-amber-500/10 text-amber-600"
+                : "border-border bg-muted text-muted-foreground"
+          }
+        >
+          {COMPLIANCE_BCBA_STATUS_LABEL[r.status]}
+        </Badge>
+      ),
+    },
+  ];
+
 
   const filterFields = useMemo<FilterFieldConfig[]>(
     () =>
@@ -521,6 +692,14 @@ export default function ParentTrainingPage() {
   const bucketRows = (bucket: PtEventRow["bucket"]) => eventRows.filter((r) => r.bucket === bucket);
 
   const exportForTab = () => {
+    if (tab === "compliance") {
+      downloadCsv(
+        "parent-training-compliance-bcba",
+        projectComplianceBcba(complianceAnalysis.bcbaRows),
+        COMPLIANCE_BCBA_COLUMNS,
+      );
+      return;
+    }
     if (tab === "completed" || tab === "upcoming" || tab === "cancelled") {
       const bucket = tab as PtEventRow["bucket"];
       downloadCsv(`parent-training-${tab}`, projectEvents(bucketRows(bucket)), EVENT_COLUMNS);
@@ -561,7 +740,9 @@ export default function ParentTrainingPage() {
         ownership.refetch();
       }}
       onExport={exportForTab}
-      exportDisabled={clientRows.length === 0 && eventRows.length === 0}
+      exportDisabled={
+        clientRows.length === 0 && eventRows.length === 0 && complianceAnalysis.bcbaRows.length === 0
+      }
       filters={
         <PrimaryFilterBar
           filters={filters}
@@ -590,6 +771,7 @@ export default function ParentTrainingPage() {
             <TabsTrigger value="below-target">Below target</TabsTrigger>
             <TabsTrigger value="needs-reschedule">Needs reschedule</TabsTrigger>
             <TabsTrigger value="data-gaps">Data gaps</TabsTrigger>
+            <TabsTrigger value="compliance">Compliance</TabsTrigger>
           </TabsList>
         </Tabs>
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -710,6 +892,55 @@ export default function ParentTrainingPage() {
           }
           maxRows={300}
         />
+      )}
+
+      {tab === "compliance" && (
+        <>
+          <ReportProvenance>
+            Compliance is a separate payer-policy view: completed, nonvoid, nondeleted billed 97156
+            in the selected calendar month against each client's payor threshold (2.0 hr/month for
+            Peachstate, 0.25 hr/month for any other single documented payor). 97153 is shown for
+            activity context only and is never a denominator here. Clients with no documented 97156
+            payor show "{PTC_NO_TARGET_LABEL}"; clients with more than one distinct active 97156
+            authorization payor show "{NEEDS_PAYOR_REVIEW_LABEL}" rather than an arbitrary pick.
+          </ReportProvenance>
+          <PrimaryTable
+            title="Parent training compliance by BCBA"
+            subtitle="A BCBA is Healthy only when every resolvable client meets their own threshold; Monitor when any resolvable client is below. Click a BCBA to see client-level detail."
+            columns={complianceBcbaColumns}
+            rows={complianceAnalysis.bcbaRows}
+            rowKey={(r) => r.bcba}
+            onRowClick={(r) =>
+              setDrilldown({
+                title: `${r.bcba} — parent training compliance`,
+                subtitle: "Payor rule, required hours, completed hours, gap, and reason per client.",
+                rows: projectComplianceClients(
+                  complianceAnalysis.clientRows.filter((c) => r.clientKeys.includes(c.clientKey)),
+                ),
+                columns: COMPLIANCE_CLIENT_COLUMNS,
+                exportName: "parent-training-compliance-clients",
+              })
+            }
+            maxRows={300}
+          />
+          <PrimaryTable
+            title="Parent training compliance by client"
+            subtitle="Click a client to see the exact payor rule, required hours, completed hours, gap, and reason."
+            columns={complianceClientColumns}
+            rows={complianceAnalysis.clientRows}
+            rowKey={(r) => r.clientKey}
+            onRowClick={(r) =>
+              setDrilldown({
+                title: `${r.client} — parent training compliance`,
+                subtitle: r.reason,
+                rows: projectComplianceClients([r]),
+                columns: COMPLIANCE_CLIENT_COLUMNS,
+                exportName: "parent-training-compliance-client",
+              })
+            }
+            maxRows={300}
+          />
+        </>
       )}
 
       <DrilldownDrawer request={drilldown} onClose={() => setDrilldown(null)} />

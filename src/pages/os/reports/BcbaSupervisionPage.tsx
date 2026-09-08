@@ -56,7 +56,15 @@ import {
   type SupervisionRatioStatus,
   type SupervisionSessionInput,
 } from "@/lib/os/reports/crPrimary/metrics/bcbaSupervisionV2";
+import {
+  CLINIC_SCOPE_OPTIONS,
+  clinicScopeLabel,
+  type ClinicKey,
+} from "@/lib/os/reports/crPrimary/metrics/clinicNormalizer";
 import { pushRecent } from "@/lib/os/reportsCatalog";
+
+const RBT_CLINIC_SOURCE_NOTE =
+  "Riverdale's per-RBT ratios need a supervision-log / multi-participant CentralReach export that carries the supervised RBT participant on each 97155 session (session participants with role, plus the CR provider id) — the current billing/schedule feeds do not carry that link.";
 
 const FILTER_FIELDS = ["state", "client", "payor", "provider"] as const;
 const FILTER_LABELS: Record<string, string> = {
@@ -129,10 +137,15 @@ export default function BcbaSupervisionPage() {
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
   const [viewParam, setViewParam] = useUrlState("view", "past");
   const [groupParam, setGroupParam] = useUrlState("group", "bcba");
+  const [clinicParam, setClinicParam] = useUrlState("clinic", "all");
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
 
   const view = viewParam === "projected" ? "projected" : "past";
   const grouping = (GROUPINGS.find((g) => g.key === groupParam)?.key ?? "bcba") as SupervisionGrouping;
+  const clinicScope = (CLINIC_SCOPE_OPTIONS.find((o) => o.key === clinicParam)?.key ?? "all") as
+    | ClinicKey
+    | "all";
+  const clinicLabel = clinicScopeLabel(clinicScope);
 
   useEffect(() => {
     pushRecent("bcba-supervision");
@@ -188,6 +201,7 @@ export default function BcbaSupervisionPage() {
         providerCrId: r.provider_cr_id ?? null,
         state: r.state,
         payor: r.payor,
+        location: r.location,
       }));
 
     // Projected adds only kept sessions still ahead of today.
@@ -203,10 +217,11 @@ export default function BcbaSupervisionPage() {
         providerCrId: r.provider_cr_id ?? null,
         state: r.state,
         payor: r.payor,
+        location: r.location,
       }));
 
-    return computeSupervisionAnalysis({ past, projected, grouping, resolveOwner });
-  }, [billing, schedule, grouping, resolveOwner, today]);
+    return computeSupervisionAnalysis({ past, projected, grouping, resolveOwner, clinicScope });
+  }, [billing, schedule, grouping, resolveOwner, today, clinicScope]);
 
   const active = view === "projected" ? analysis.projected : analysis.past;
 
@@ -308,10 +323,10 @@ export default function BcbaSupervisionPage() {
   const openGroups = (title: string, rows: SupervisionGroupRow[]) =>
     setDrilldown({
       title,
-      subtitle: `${rows.length.toLocaleString("en-US")} group(s) · ${SUPERVISION_VIEW_LABELS[view]}`,
+      subtitle: `${rows.length.toLocaleString("en-US")} group(s) · ${SUPERVISION_VIEW_LABELS[view]} · ${clinicLabel}`,
       rows: projectGroups(rows),
       columns: EXPORT_COLUMNS,
-      exportName: "bcba-supervision",
+      exportName: `bcba-supervision-${clinicScope}`,
     });
 
   const columns: PrimaryTableColumn<SupervisionGroupRow>[] = [
@@ -422,7 +437,7 @@ export default function BcbaSupervisionPage() {
         ownership.refetch();
       }}
       onExport={() =>
-        downloadCsv("bcba-supervision", projectGroups(active.rows), EXPORT_COLUMNS)
+        downloadCsv(`bcba-supervision-${clinicScope}`, projectGroups(active.rows), EXPORT_COLUMNS)
       }
       exportDisabled={active.rows.length === 0}
       filters={
@@ -439,7 +454,7 @@ export default function BcbaSupervisionPage() {
         {SUPERVISION_VIEW_LABELS.projected} adds every future active, nondeleted, noncancelled
         scheduled session — a scheduled session is never counted as delivered. The{" "}
         {SUPERVISION_BENCHMARK_PCT}% figure is the {SUPERVISION_BENCHMARK_LABEL}. Ownership matches
-        the BCBA Productivity report. {SUPERVISION_PROVENANCE_NOTE}
+        the BCBA Productivity report. Clinic scope: {clinicLabel}. {SUPERVISION_PROVENANCE_NOTE}
       </ReportProvenance>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -463,6 +478,37 @@ export default function BcbaSupervisionPage() {
           ))}
         </div>
       </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-xs font-medium text-muted-foreground mr-1">Clinic:</span>
+        {CLINIC_SCOPE_OPTIONS.map((o) => (
+          <Button
+            key={o.key}
+            size="sm"
+            variant={clinicScope === o.key ? "default" : "outline"}
+            className="h-8 text-xs"
+            onClick={() => setClinicParam(o.key)}
+          >
+            {o.label}
+          </Button>
+        ))}
+        {clinicScope !== "riverdale" && (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="h-8 text-xs"
+            onClick={() => setClinicParam("riverdale")}
+          >
+            Riverdale (one click)
+          </Button>
+        )}
+      </div>
+
+      {clinicScope === "riverdale" && grouping === "rbt" && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
+          {RBT_CLINIC_SOURCE_NOTE}
+        </div>
+      )}
 
       <KpiScorecards
         kpis={kpis}

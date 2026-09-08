@@ -22,6 +22,7 @@
  *   two units on one axis.
  */
 import { pct, weekStart } from "../format";
+import { localIsoDate } from "../reportWindow";
 import {
   DAY_OF_WEEK_ORDER,
   cleanReasonText,
@@ -46,6 +47,53 @@ export const NOT_DOCUMENTED = "Not documented";
  */
 export const CONVERSION_TIMING_NOTE =
   "The schedule source records whether an event was converted to a timesheet, but not when, so late conversion cannot be measured here.";
+
+/**
+ * Conversion and the unconverted queue only ever look at ELAPSED active
+ * sessions (event date strictly before today). A future appointment cannot be
+ * unconverted work — it has not happened yet.
+ */
+export const ELAPSED_CONVERSION_NOTE =
+  "Conversion counts only sessions whose scheduled date has already passed. Future-dated appointments are never counted as unconverted."
+;
+
+/**
+ * An active (nondeleted) schedule event whose event date is strictly before
+ * `todayIso` (local calendar date). Conversion is operational follow-up work,
+ * so a future-dated appointment can never be "unconverted" — it has not
+ * happened yet.
+ */
+export function isElapsedScheduleEvent(
+  row: { event_date?: string | null },
+  todayIso: string,
+): boolean {
+  const date = String(row.event_date ?? "").slice(0, 10);
+  if (!date) return false;
+  return date < todayIso;
+}
+
+export interface CoverageWarningInput {
+  filterFrom?: string | null;
+  filterTo?: string | null;
+  coverageStart?: string | null;
+  coverageEnd?: string | null;
+}
+
+/**
+ * Plain-language warning when the selected filter window reaches outside the
+ * source's proven coverage window. Returns `null` when coverage is unknown or
+ * the filter sits entirely inside it — never a guess either way.
+ */
+export function coverageOutsideRangeWarning(input: CoverageWarningInput): string | null {
+  const { filterFrom, filterTo, coverageStart, coverageEnd } = input;
+  if (!coverageStart || !coverageEnd) return null;
+  const from = filterFrom ? String(filterFrom).slice(0, 10) : null;
+  const to = filterTo ? String(filterTo).slice(0, 10) : null;
+  const outsideStart = !!from && from < coverageStart;
+  const outsideEnd = !!to && to > coverageEnd;
+  if (!outsideStart && !outsideEnd) return null;
+  return `The scheduling snapshot only covers ${coverageStart} to ${coverageEnd}. The selected filter range extends outside that window, so this is not complete data for any dates outside ${coverageStart}–${coverageEnd}.`;
+}
 
 export interface CancellationCenterRow extends ScheduleTruthRow {
   id?: string;
@@ -295,6 +343,8 @@ export interface CancellationCenterOptions {
    * set (e.g. the unfiltered snapshot). Omitted, it is built from `rows`.
    */
   identity?: CancellationIdentity;
+  /** Local ISO "today" used to decide which active events have elapsed. Defaults to the real local date. */
+  today?: string;
 }
 
 function summarize(rows: CancellationCenterRow[]) {
@@ -312,6 +362,7 @@ export function computeCancellationCenter(
   opts: CancellationCenterOptions = {},
 ): CancellationCenterMetrics {
   const followUpThreshold = opts.followUpThreshold ?? 2;
+  const today = opts.today ?? localIsoDate();
   const identity = opts.identity ?? buildCancellationIdentity(rows);
   const deleted = rows.filter(isDeletedEvent);
   // Active schedule events = every nondeleted event. This is the denominator.
@@ -388,11 +439,14 @@ export function computeCancellationCenter(
     const code = eventCode(row);
     const reason = isCancelled ? cancellationReasonBucket(row) : "";
 
-    // Conversion is a property of every active event, cancelled or kept. A
-    // missing flag is unknown — it is never counted as "not converted".
-    if (row.converted_to_timesheet == null) conversionUnknown += 1;
-    else if (row.converted_to_timesheet) converted += 1;
-    else unconverted += 1;
+    // Conversion is follow-up work, so only ELAPSED active events (event date
+    // strictly before today) count — a future appointment is never
+    // "unconverted". A missing flag is unknown, never counted as unconverted.
+    if (isElapsedScheduleEvent(row, today)) {
+      if (row.converted_to_timesheet == null) conversionUnknown += 1;
+      else if (row.converted_to_timesheet) converted += 1;
+      else unconverted += 1;
+    }
 
     if (isCancelled) {
       cancelledHours += hours;

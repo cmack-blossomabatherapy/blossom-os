@@ -20,11 +20,35 @@
 import type { CrEraReconciliationRow, CrPaymentCurrentRow } from "../types";
 import { validDay } from "./authorizationActions";
 import { finiteNumberOrNull } from "./numeric";
+import { localIsoDate } from "../reportWindow";
 
 export const PAYMENT_AMOUNT_SUPPRESSION_NOTE =
   "Payment and remittance amounts are hidden: the CentralReach exports do not confirm the unit of their amount columns, so no dollar value or total can be stated honestly here.";
 
 export const NOT_DOCUMENTED = "Not documented";
+
+/** Days after the last documented payment date before coverage is "stale". */
+export const PAYMENT_STALE_COVERAGE_DAYS = 14;
+
+/**
+ * Plain-language warning when the payment source's proven date coverage ends
+ * materially before today. An upload happening today never implies the
+ * payment activity itself is current — only the coverage end date proves that.
+ * Returns `null` when coverage is unknown or still within the threshold.
+ */
+export function stalePaymentsCoverageWarning(
+  coverageEnd: string | null,
+  todayIso: string = localIsoDate(),
+  thresholdDays: number = PAYMENT_STALE_COVERAGE_DAYS,
+): string | null {
+  if (!coverageEnd) return null;
+  const end = new Date(`${coverageEnd}T00:00:00Z`);
+  const today = new Date(`${todayIso}T00:00:00Z`);
+  if (Number.isNaN(end.getTime()) || Number.isNaN(today.getTime())) return null;
+  const diffDays = Math.round((today.getTime() - end.getTime()) / 86400000);
+  if (diffDays < thresholdDays) return null;
+  return `Payment date coverage actually ends ${coverageEnd}. This file being uploaded today does not mean payment activity is current — there is no payment data documented after ${coverageEnd}.`;
+}
 
 export type PaymentApplicationState =
   | "Applied to a billing entry"
@@ -138,6 +162,7 @@ function bucket<T>(rows: T[], pick: (row: T) => string): ReconciliationBucket[] 
 export function computePaymentReconciliation(
   payments: CrPaymentCurrentRow[],
   era: CrEraReconciliationRow[],
+  todayIso: string = localIsoDate(),
 ): PaymentReconciliationMetrics {
   const paymentRows: PaymentRow[] = payments.map((r, index) => ({
     key: r.id ?? r.source_row_id ?? `payment-${index}`,
@@ -180,6 +205,9 @@ export function computePaymentReconciliation(
     .filter((n): n is number => n != null);
 
   const warnings: string[] = [PAYMENT_AMOUNT_SUPPRESSION_NOTE];
+  const paymentsCoverageEnd = dates[dates.length - 1] ?? null;
+  const staleCoverageWarning = stalePaymentsCoverageWarning(paymentsCoverageEnd, todayIso);
+  if (staleCoverageWarning) warnings.push(staleCoverageWarning);
   const noPaymentDate = paymentRows.filter((r) => r.recordDate == null).length;
   if (noPaymentDate > 0) {
     warnings.push(

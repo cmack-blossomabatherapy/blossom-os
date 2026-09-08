@@ -20,6 +20,10 @@
  */
 import { CODE_DIRECT, CODE_SUPERVISION, hoursOf, normalizeCode } from "./codes";
 import { buildClientIdentityResolver, type ClientIdentityResolver } from "./clientIdentity";
+import { clinicScopeLabel, matchesClinicScope, type ClinicKey } from "./clinicNormalizer";
+
+export { clinicScopeLabel };
+export type { ClinicKey };
 
 export const SUPERVISION_BENCHMARK_PCT = 5;
 export const SUPERVISION_BENCHMARK_LABEL = "Blossom operational benchmark";
@@ -62,6 +66,8 @@ export interface SupervisionSessionInput {
   providerCrId?: string | null;
   state?: string | null;
   payor?: string | null;
+  /** Raw CentralReach location text, used only for clinic scoping. */
+  location?: string | null;
   /**
    * Provider the supervision is explicitly linked to, when the source records
    * one. Without it, a 97155 row can never be attributed to an RBT.
@@ -69,6 +75,15 @@ export interface SupervisionSessionInput {
   supervisedProviderName?: string | null;
   /** CR id of the explicitly linked supervised provider, when recorded. */
   supervisedProviderCrId?: string | null;
+}
+
+/** Restrict a list of sessions to the sessions whose location matches the clinic scope. */
+export function filterSessionsByClinicScope(
+  sessions: SupervisionSessionInput[],
+  scope: ClinicKey | "all" | null | undefined,
+): SupervisionSessionInput[] {
+  if (!scope || scope === "all") return sessions;
+  return sessions.filter((s) => matchesClinicScope(s.location, scope));
 }
 
 export interface SupervisionGroupRow {
@@ -313,6 +328,8 @@ export interface SupervisionAnalysisInput {
   grouping?: SupervisionGrouping;
   /** Canonical owner lookup, backed by the V3 ownership adapter. */
   resolveOwner: (s: SupervisionSessionInput) => string | null;
+  /** URL-addressable clinic scope. Every KPI/chart/table/export must respect it. */
+  clinicScope?: ClinicKey | "all" | null;
 }
 
 export function computeSupervisionAnalysis({
@@ -320,24 +337,29 @@ export function computeSupervisionAnalysis({
   projected,
   grouping = "bcba",
   resolveOwner,
+  clinicScope = "all",
 }: SupervisionAnalysisInput): SupervisionAnalysis {
+  const past0 = filterSessionsByClinicScope(past, clinicScope);
+  const projected0 = filterSessionsByClinicScope(projected, clinicScope);
+  const past1 = past0;
+  const projected1 = projected0;
   const identity = {
     client: buildClientIdentityResolver(
-      past.map((s) => ({ client: s.clientName, clientCrId: s.clientCrId })),
-      projected.map((s) => ({ client: s.clientName, clientCrId: s.clientCrId })),
+      past1.map((s) => ({ client: s.clientName, clientCrId: s.clientCrId })),
+      projected1.map((s) => ({ client: s.clientName, clientCrId: s.clientCrId })),
     ),
     provider: buildClientIdentityResolver(
-      past.map((s) => ({ client: s.providerName, clientCrId: s.providerCrId })),
-      projected.map((s) => ({ client: s.providerName, clientCrId: s.providerCrId })),
-      past.map((s) => ({ client: s.supervisedProviderName, clientCrId: s.supervisedProviderCrId })),
-      projected.map((s) => ({
+      past1.map((s) => ({ client: s.providerName, clientCrId: s.providerCrId })),
+      projected1.map((s) => ({ client: s.providerName, clientCrId: s.providerCrId })),
+      past1.map((s) => ({ client: s.supervisedProviderName, clientCrId: s.supervisedProviderCrId })),
+      projected1.map((s) => ({
         client: s.supervisedProviderName,
         clientCrId: s.supervisedProviderCrId,
       })),
     ),
   };
-  const pastView = buildView(past, projected, grouping, resolveOwner, "past", identity);
-  const projectedView = buildView(past, projected, grouping, resolveOwner, "projected", identity);
+  const pastView = buildView(past1, projected1, grouping, resolveOwner, "past", identity);
+  const projectedView = buildView(past1, projected1, grouping, resolveOwner, "projected", identity);
   const delta =
     pastView.ratioPct != null && projectedView.ratioPct != null
       ? round1(projectedView.ratioPct - pastView.ratioPct)

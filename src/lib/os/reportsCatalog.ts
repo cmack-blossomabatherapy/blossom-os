@@ -341,10 +341,75 @@ export const REPORTS: ReportDef[] = [
     tags: ["Documentation", "Timeliness", "Commit to Submit"],
     drilldownPath: "/reports/commit-to-submit-compliance",
   },
-
-
-
-
+  {
+    id: "clinic-operations",
+    title: "Clinic Operations",
+    description:
+      "Clinic-by-clinic operational activity: active clients and providers proven by activity in range, delivered hours, upcoming scheduled hours, cancellations, and the elapsed sessions still waiting on documentation. Capacity and staffing coverage are not measured. Data freshness is shown inside the report.",
+    category: "operations",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "Operations",
+    lastUpdated: "Live",
+    popularity: 92,
+    featured: true,
+    aiInsight:
+      "Compare clinic activity and see which elapsed sessions still need documentation before anything else.",
+    kpiPreviews: [
+      { label: "Active clients", value: "Live", trend: "up" },
+      { label: "Delivered hrs", value: "Live", trend: "up" },
+      { label: "Needs action", value: "Live", trend: "down" },
+    ],
+    sparkline: [40, 44, 48, 52, 56, 58, 62, 66, 70],
+    tags: ["Clinics", "Riverdale", "Peachtree Corners", "Operations"],
+    drilldownPath: "/reports/clinic-operations",
+  },
+  {
+    id: "authorization-coverage-risk",
+    title: "Authorization Coverage Risk",
+    description:
+      "Clients with no active coverage today, expired and soon-expiring authorizations, and activity or scheduled sessions with no matched coverage. Every gap is a candidate for staff confirmation, never a confirmed pause. Data freshness is shown inside the report.",
+    category: "operations",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "Authorizations",
+    lastUpdated: "Live",
+    popularity: 93,
+    featured: true,
+    aiInsight:
+      "See coverage risk before it becomes a service interruption, with the source behind every candidate.",
+    kpiPreviews: [
+      { label: "No coverage", value: "Live", trend: "down" },
+      { label: "Expiring ≤14d", value: "Live", trend: "down" },
+      { label: "Activity gaps", value: "Live", trend: "down" },
+    ],
+    sparkline: [60, 56, 54, 50, 48, 46, 44, 40, 38],
+    tags: ["Authorizations", "Coverage", "Risk"],
+    drilldownPath: "/reports/authorization-coverage-risk",
+  },
+  {
+    id: "documentation-readiness",
+    title: "Documentation Readiness",
+    description:
+      "Provider-level documentation readiness: locked and unlocked rows, missing provider signatures, and incomplete tasks, with the largest actionable backlog first. Operational readiness only — not formal Commit to Submit compliance. Data freshness is shown inside the report.",
+    category: "operations",
+    visibleTo: "all",
+    type: "dashboard",
+    owner: "Operations",
+    lastUpdated: "Live",
+    popularity: 91,
+    featured: true,
+    aiInsight:
+      "Start with the providers carrying the largest unlocked backlog; issue counts can overlap.",
+    kpiPreviews: [
+      { label: "Locked %", value: "Live", trend: "up" },
+      { label: "Unlocked", value: "Live", trend: "down" },
+      { label: "Needs action", value: "Live", trend: "down" },
+    ],
+    sparkline: [45, 48, 52, 55, 58, 62, 65, 68, 72],
+    tags: ["Documentation", "Readiness", "Providers"],
+    drilldownPath: "/reports/documentation-readiness",
+  },
 
   // Leadership
   { id: "exec-overview", title: "Executive Overview", description: "Company-wide KPIs, lead flow, and operating posture.", category: "leadership", visibleTo: ["super_admin", "executive_leadership", "operations_leadership"], type: "dashboard", owner: "Leadership", lastUpdated: "2h ago", popularity: 97, featured: true, aiInsight: "Net growth up +11 - fastest weekly gain since Feb.", kpiPreviews: [{ label: "Active Clients", value: "142", delta: "+8", trend: "up" }, { label: "Pipeline", value: "$182k", delta: "+$24k", trend: "up" }, { label: "Conversion", value: "34%", delta: "+4pt", trend: "up" }], sparkline: [22, 28, 26, 35, 41, 48, 52, 60, 58, 67, 72, 78], tags: ["KPI", "Growth"], detailView: "executive" },
@@ -466,11 +531,15 @@ export const PRIMARY_REPORT_IDS = [
   "cancellation-command-center",
   "authorization-analysis",
   "authorization-utilization-hour-based",
+  "authorization-coverage-risk",
+  "clinic-operations",
   "parent-training",
   "bcba-supervision",
   "bcba-performance",
+  "documentation-readiness",
   "commit-to-submit-compliance",
   "claims-submission-queue",
+
   "payment-reconciliation",
 ] as const;
 
