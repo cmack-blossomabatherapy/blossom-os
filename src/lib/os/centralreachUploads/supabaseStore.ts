@@ -35,19 +35,34 @@ export function createSupabaseCrImportStore(
 ): CrImportStore<Record<string, unknown>> {
   return {
     async loadExistingIdentities(table: string): Promise<string[]> {
+      // Keyset (seek) pagination on the existing unique `row_hash` index.
+      // OFFSET/range pagination re-scans and discards every earlier row, so on
+      // large CURRENT tables (tens of thousands of rows) later pages degrade
+      // until the identity scan hits statement_timeout before the batch is
+      // even created. Seeking forward on the indexed key keeps every page a
+      // bounded index range scan.
       const identities: string[] = [];
-      for (let from = 0; ; from += PAGE) {
-        const { data, error } = await db()
-          .from(table)
-          .select("row_hash")
-          .range(from, from + PAGE - 1);
+      let cursor: string | null = null;
+      for (;;) {
+        let q = db().from(table).select("row_hash").order("row_hash", { ascending: true }).limit(PAGE);
+        if (cursor !== null) q = q.gt("row_hash", cursor);
+        const { data, error } = await q;
         if (error) throw error;
-        const rows = (data ?? []) as { row_hash: string }[];
-        rows.forEach((r) => r.row_hash && identities.push(rowHashToIdentity(r.row_hash)));
+        const rows = (data ?? []) as { row_hash: string | null }[];
+        if (!rows.length) break;
+        for (const r of rows) {
+          if (r.row_hash) identities.push(rowHashToIdentity(r.row_hash));
+        }
+        const last = rows[rows.length - 1]?.row_hash ?? null;
+        // No advanceable cursor means we cannot make progress; stop instead of
+        // looping forever on the same page.
+        if (!last || last === cursor) break;
+        cursor = last;
         if (rows.length < PAGE) break;
       }
       return identities;
     },
+
 
     async insertRows(table, rows) {
       if (!rows.length) return;
