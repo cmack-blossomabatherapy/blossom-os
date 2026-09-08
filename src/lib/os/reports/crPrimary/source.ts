@@ -58,6 +58,34 @@ function failed<T>(error: string): CrLoadResult<T> {
 }
 
 /**
+ * Selected report date window pushed to the database BEFORE pagination.
+ *
+ * Without this, a routine current-month report still paged every historical
+ * row out of the Data API before the client filtered it away, which left the
+ * page in a skeleton state for tens of seconds. An absent/blank bound means
+ * "no restriction", so a deliberate All Dates selection still reads history.
+ */
+export interface CrDateWindow {
+  column: string;
+  from?: string | null;
+  to?: string | null;
+}
+
+function hasBound(w?: CrDateWindow | null): boolean {
+  return !!(w && (w.from || w.to));
+}
+
+/** Apply the window as `gte`/`lte` when the query builder supports them. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pushWindow(query: any, w?: CrDateWindow | null): any {
+  if (!hasBound(w) || !w) return query;
+  let q = query;
+  if (w.from && typeof q.gte === "function") q = q.gte(w.column, w.from);
+  if (w.to && typeof q.lte === "function") q = q.lte(w.column, w.to);
+  return q;
+}
+
+/**
  * Complete, deterministic paging over a normalized table or curated view.
  *
  * The Data API silently caps every response at 1,000 rows, so a single read
@@ -70,6 +98,7 @@ export async function readTable<T>(
   table: string,
   columns: string,
   orderColumn = "id",
+  window?: CrDateWindow | null,
 ): Promise<CrLoadResult<T>> {
   const rows: T[] = [];
   try {
@@ -80,6 +109,7 @@ export async function readTable<T>(
       if (typeof query.order === "function") {
         query = query.order(orderColumn, { ascending: true });
       }
+      query = pushWindow(query, window);
       const { data, error } = await query.range(from, to);
       if (error) return failed<T>(error.message);
       const page = (data ?? []) as T[];
@@ -104,16 +134,18 @@ export async function readTable<T>(
 export async function readRpcPaged<T>(
   name: string,
   label: string,
+  window?: CrDateWindow | null,
 ): Promise<CrLoadResult<T>> {
   const rows: T[] = [];
   try {
     for (let from = 0; from < CR_SAFETY_CAP; from += CR_PAGE_SIZE) {
       const to = Math.min(from + CR_PAGE_SIZE, CR_SAFETY_CAP) - 1;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const query = (supabase as any).rpc(name);
-      if (typeof query?.range !== "function") {
+      const base = (supabase as any).rpc(name);
+      if (typeof base?.range !== "function") {
         return failed<T>(`${CR_RPC_PAGING_UNAVAILABLE_ERROR} (${label})`);
       }
+      const query = pushWindow(base, window);
       const { data, error } = await query.range(from, to);
       if (error) return failed<T>(error.message);
       const page = (data ?? []) as T[];
@@ -127,17 +159,25 @@ export async function readRpcPaged<T>(
 }
 
 
-export function fetchCrBillingSessions(): Promise<CrLoadResult<CrBillingSessionRow>> {
+export function fetchCrBillingSessions(
+  window?: { from?: string | null; to?: string | null } | null,
+): Promise<CrLoadResult<CrBillingSessionRow>> {
   return readTable<CrBillingSessionRow>(
     "cr_billing_sessions",
     "id,batch_id,date_of_service,procedure_code,hours,client_name,client_cr_id,rendering_provider_name,rendering_provider_cr_id,provider_contact_labels,payor,state,location,status",
+    "id",
+    window ? { column: "date_of_service", ...window } : null,
   );
 }
 
-export function fetchCrScheduleEvents(): Promise<CrLoadResult<CrScheduleEventRow>> {
+export function fetchCrScheduleEvents(
+  window?: { from?: string | null; to?: string | null } | null,
+): Promise<CrLoadResult<CrScheduleEventRow>> {
   return readTable<CrScheduleEventRow>(
     "cr_schedule_events",
     "id,batch_id,event_date,procedure_code,scheduled_hours,client_name,client_cr_id,provider_name,provider_cr_id,status,cancellation_reason,cancelled_by,state,location,payor",
+    "id",
+    window ? { column: "event_date", ...window } : null,
   );
 }
 
@@ -153,10 +193,14 @@ export function fetchCrAuthorizations(): Promise<CrLoadResult<CrAuthorizationRow
  * instead of `cr_schedule_events` so they always see one row per event with
  * the explicit cancellation / deletion truth columns.
  */
-export function fetchCrScheduleCurrent(): Promise<CrLoadResult<CrScheduleCurrentRow>> {
+export function fetchCrScheduleCurrent(
+  window?: { from?: string | null; to?: string | null } | null,
+): Promise<CrLoadResult<CrScheduleCurrentRow>> {
   return readTable<CrScheduleCurrentRow>(
     "v_cr_schedule_current",
     "id,event_date,start_time,end_time,service_code,procedure_code,billing_code,billing_code_name,scheduled_hours,client_name,client_cr_id,provider_name,provider_cr_id,status,attendance,cancelled,deleted,converted_to_timesheet,cancellation_reason,cancelled_by,state,location,payor,billing_creation_date,last_seen_at",
+    "id",
+    window ? { column: "event_date", ...window } : null,
   );
 }
 
@@ -203,8 +247,14 @@ export function fetchReportAuthorizationActions(): Promise<
 }
 
 /** Curated billing facts via `report_billing_facts` (sessions + status join). */
-export function fetchReportBillingFacts(): Promise<CrLoadResult<ReportBillingFactRow>> {
-  return readRpc<ReportBillingFactRow>("report_billing_facts", "billing facts");
+export function fetchReportBillingFacts(
+  window?: { from?: string | null; to?: string | null } | null,
+): Promise<CrLoadResult<ReportBillingFactRow>> {
+  return readRpc<ReportBillingFactRow>(
+    "report_billing_facts",
+    "billing facts",
+    window ? { column: "date_of_service", ...window } : null,
+  );
 }
 
 /**
@@ -309,8 +359,14 @@ export function summarizeFreshness(batches: CrBatchSummary[]) {
  * unconfirmed, so no staff-facing claims report may display or estimate a
  * dollar value.
  */
-export function fetchCrClaimsStatus(): Promise<CrLoadResult<CrClaimsStatusRow>> {
-  return readRpcPaged<CrClaimsStatusRow>("report_claims_status", "claims submission status");
+export function fetchCrClaimsStatus(
+  window?: { from?: string | null; to?: string | null } | null,
+): Promise<CrLoadResult<CrClaimsStatusRow>> {
+  return readRpcPaged<CrClaimsStatusRow>(
+    "report_claims_status",
+    "claims submission status",
+    window ? { column: "date_of_service", ...window } : null,
+  );
 }
 
 /** Curated payments snapshot RPC — no references, notes, check numbers or amounts. */

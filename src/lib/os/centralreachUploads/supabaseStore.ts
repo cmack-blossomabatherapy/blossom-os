@@ -185,14 +185,15 @@ export interface CrNormalizedCounts {
 export async function fetchCrNormalizedCounts(): Promise<CrNormalizedCounts> {
   // Readiness reads the curated CURRENT views for snapshot kinds so counts
   // reflect the latest successful snapshot batch instead of historical rows.
-  // Billing and claims intentionally keep counting their base tables.
+  // Billing intentionally keeps counting its append-fact base table; claims
+  // reads the curated current view so readiness matches the daily snapshot.
   const tables: Array<[keyof CrNormalizedCounts, string]> = [
     ["batches", "cr_import_batches"],
     ["billing", "cr_billing_sessions"],
     ["scheduling", "v_cr_schedule_current"],
     ["authorization", "v_cr_authorization_current"],
     ["utilization", "cr_authorization_utilization"],
-    ["claims", "cr_claims"],
+    ["claims", "v_cr_claims_current"],
     ["contacts", "cr_contacts"],
     ["payments", "v_cr_payments_current"],
     ["eraPayments", "v_cr_era_reconciliation"],

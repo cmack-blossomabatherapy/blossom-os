@@ -34434,6 +34434,28 @@ export type Database = {
           },
         ]
       }
+      v_cr_claims_current: {
+        Row: {
+          action_by: string | null
+          action_date: string | null
+          amount_unit: string | null
+          claim_number: string | null
+          client_name: string | null
+          date_of_service: string | null
+          error_count: number | null
+          exported: boolean | null
+          id: string | null
+          last_seen_at: string | null
+          payor: string | null
+          procedure_code: string | null
+          responses_status: string | null
+          source_row_id: string | null
+          state: string | null
+          status: string | null
+          submit_reason: string | null
+        }
+        Relationships: []
+      }
       v_cr_claims_status: {
         Row: {
           action_by: string | null

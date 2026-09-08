@@ -178,8 +178,13 @@ type TabKey = "utilization" | "trends" | "reconciliation" | "gaps";
 const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function AuthorizationUtilizationPage() {
-  const data = useCrPrimaryReport(["authCurrent", "billingFacts"]);
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  // The selected window is pushed to the database before pagination, so a
+  // current-month view never pages years of history.
+  const data = useCrPrimaryReport(["authCurrent", "billingFacts"], {
+    from: filters.from || null,
+    to: filters.to || null,
+  });
   const [tabParam, setTabParam] = useUrlState("tab", "utilization");
   const TAB_KEYS: TabKey[] = ["utilization", "trends", "reconciliation", "gaps"];
   const tab = (TAB_KEYS.includes(tabParam as TabKey) ? tabParam : "utilization") as TabKey;

@@ -112,8 +112,49 @@ export interface CrPrimaryReportData {
 
 const EMPTY_RESULT = { rows: [], error: null } as const;
 
-export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
+/**
+ * For current-snapshot datasets keep only the newest batch of each export
+ * type, so coverage/freshness matches the single batch the current view
+ * selects instead of summing every retained historical snapshot.
+ */
+function currentSnapshotBatches(
+  batches: CrBatchSummary[],
+  currentOnlyTypes: Set<string>,
+): CrBatchSummary[] {
+  if (!currentOnlyTypes.size) return batches;
+  const seen = new Set<string>();
+  const sorted = [...batches].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return sorted.filter((b) => {
+    const type = (b.exportType ?? "").toLowerCase();
+    if (!currentOnlyTypes.has(type)) return true;
+    if (seen.has(type)) return false;
+    seen.add(type);
+    return true;
+  });
+}
+
+/**
+ * Optional selected date window. Reports that pass it get the window pushed to
+ * the database before pagination, so a routine current-month view never pages
+ * years of history. Omit it (or leave the bounds blank) for All Dates.
+ */
+export interface CrReportWindow {
+  from?: string | null;
+  to?: string | null;
+}
+
+/**
+ * Datasets whose freshness must describe the ONE current snapshot batch the
+ * report actually reads, not every retained historical batch of that type.
+ */
+const CURRENT_SNAPSHOT_DATASETS: CrDataset[] = ["claimsStatus"];
+
+export function useCrPrimaryReport(
+  datasets: CrDataset[],
+  window?: CrReportWindow,
+): CrPrimaryReportData {
   const key = datasets.slice().sort().join(",");
+  const windowKey = `${window?.from ?? ""}|${window?.to ?? ""}`;
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [billing, setBilling] = useState<CrBillingSessionRow[]>([]);
@@ -143,13 +184,21 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       setLoading(true);
       const errors: string[] = [];
       const batchTypes = [...wanted].flatMap((d) => BATCH_TYPES[d]);
+      const currentOnlyTypes = new Set(
+        [...wanted]
+          .filter((d) => CURRENT_SNAPSHOT_DATASETS.includes(d))
+          .flatMap((d) => BATCH_TYPES[d]),
+      );
+
+      const [from, to] = windowKey.split("|");
+      const win = from || to ? { from: from || null, to: to || null } : null;
 
       const [b, s, a, u, sc, ac, ae, aa, bf, bt, cs, pay, era, tsd, batchRes] = await Promise.all([
-        wanted.has("billing") ? fetchCrBillingSessions() : Promise.resolve(EMPTY_RESULT),
-        wanted.has("schedule") ? fetchCrScheduleEvents() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("billing") ? fetchCrBillingSessions(win) : Promise.resolve(EMPTY_RESULT),
+        wanted.has("schedule") ? fetchCrScheduleEvents(win) : Promise.resolve(EMPTY_RESULT),
         wanted.has("authorizations") ? fetchCrAuthorizations() : Promise.resolve(EMPTY_RESULT),
         wanted.has("utilization") ? fetchCrUtilization() : Promise.resolve(EMPTY_RESULT),
-        wanted.has("scheduleCurrent") ? fetchCrScheduleCurrent() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("scheduleCurrent") ? fetchCrScheduleCurrent(win) : Promise.resolve(EMPTY_RESULT),
         wanted.has("authCurrent") ? fetchCrAuthorizationCurrent() : Promise.resolve(EMPTY_RESULT),
         wanted.has("authEvents")
           ? fetchReportAuthorizationEvents()
@@ -157,9 +206,9 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
         wanted.has("authActions")
           ? fetchReportAuthorizationActions()
           : Promise.resolve(EMPTY_RESULT),
-        wanted.has("billingFacts") ? fetchReportBillingFacts() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("billingFacts") ? fetchReportBillingFacts(win) : Promise.resolve(EMPTY_RESULT),
         wanted.has("bcbaTargets") ? fetchReportBcbaTargets() : Promise.resolve(EMPTY_RESULT),
-        wanted.has("claimsStatus") ? fetchCrClaimsStatus() : Promise.resolve(EMPTY_RESULT),
+        wanted.has("claimsStatus") ? fetchCrClaimsStatus(win) : Promise.resolve(EMPTY_RESULT),
         wanted.has("payments") ? fetchCrPaymentsCurrent() : Promise.resolve(EMPTY_RESULT),
         wanted.has("eraPayments") ? fetchCrEraReconciliation() : Promise.resolve(EMPTY_RESULT),
         wanted.has("timesheetDocs")
@@ -186,7 +235,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
       setPayments(pay.rows as CrPaymentCurrentRow[]);
       setEraPayments(era.rows as CrEraReconciliationRow[]);
       setTimesheetDocs(tsd.rows as CrTimesheetDocSummaryRow[]);
-      setBatches(batchRes.rows);
+      setBatches(currentSnapshotBatches(batchRes.rows, currentOnlyTypes));
       setErrorMessage(errors.length ? errors[0] : null);
       setLoading(false);
     })();
@@ -194,7 +243,7 @@ export function useCrPrimaryReport(datasets: CrDataset[]): CrPrimaryReportData {
     return () => {
       cancelled = true;
     };
-  }, [key, nonce]);
+  }, [key, nonce, windowKey]);
 
   /**
    * Lifecycle events alone never make a report "non-empty" — an authorization
