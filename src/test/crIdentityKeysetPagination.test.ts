@@ -74,7 +74,9 @@ describe("loadExistingIdentities — keyset pagination on row_hash", () => {
 
     expect(ids).toHaveLength(46_488);
     expect(rangeCalled).toBe(false);
-    expect(queries.length).toBe(Math.ceil(46_488 / 1000) + 1);
+    // 46 full pages plus a short 488-row final page ends the scan.
+    expect(queries.length).toBe(47);
+
     expect(queries.every((q) => q.limit === 1000)).toBe(true);
     expect(queries.every((q) => q.table === "cr_payments")).toBe(true);
   });
