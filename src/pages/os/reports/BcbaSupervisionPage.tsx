@@ -132,9 +132,12 @@ function projectGroups(rows: SupervisionGroupRow[]): Record<string, unknown>[] {
 const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function BcbaSupervisionPage() {
-  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent"]);
-  const ownership = useBcbaOwnershipV3();
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  const data = useCrPrimaryReport(["billingFacts", "scheduleCurrent"], {
+    from: filters.from || null,
+    to: filters.to || null,
+  });
+  const ownership = useBcbaOwnershipV3();
   const [viewParam, setViewParam] = useUrlState("view", "past");
   const [groupParam, setGroupParam] = useUrlState("group", "bcba");
   const [clinicParam, setClinicParam] = useUrlState("clinic", "all");

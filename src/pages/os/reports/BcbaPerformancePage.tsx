@@ -229,15 +229,18 @@ const projectIncentives = (rows: IncentiveProgressRow[]): Record<string, unknown
 const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function BcbaPerformancePage() {
+  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
   const data = useCrPrimaryReport([
     "billingFacts",
     "authCurrent",
     "authActions",
     "authEvents",
     "bcbaTargets",
-  ]);
+  ], {
+    from: filters.from || null,
+    to: filters.to || null,
+  });
   const ownership = useBcbaOwnershipV3();
-  const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
   const [tabParam, setTabParam] = useUrlState("tab", "status");
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
   const tab = tabParam === "incentives" ? "incentives" : "status";
