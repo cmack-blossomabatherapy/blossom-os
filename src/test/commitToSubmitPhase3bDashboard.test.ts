@@ -160,19 +160,25 @@ describe("activation and proxy honesty on the page", () => {
 });
 
 describe("repair pass — catalog, pagination, authority, and page contract", () => {
-  it("PRIMARY_REPORT_IDS is exactly the canonical eight and excludes progress-reports", () => {
+  it("PRIMARY_REPORT_IDS is exactly the canonical thirteen and excludes progress-reports", () => {
     expect([...PRIMARY_REPORT_IDS]).toEqual([
       "bcba-productivity-report-v3",
       "cancellation-command-center",
       "authorization-analysis",
       "authorization-utilization-hour-based",
+      "authorization-coverage-risk",
+      "clinic-operations",
       "parent-training",
       "bcba-supervision",
       "bcba-performance",
+      "documentation-readiness",
       "commit-to-submit-compliance",
+      "claims-submission-queue",
+      "payment-reconciliation",
     ]);
     expect(PRIMARY_REPORT_IDS).not.toContain("progress-reports");
   });
+
 
   it("keeps the legacy progress-reports card and route without making it primary", () => {
     expect(REPORTS.find((r) => r.id === "progress-reports")?.drilldownPath).toBe(

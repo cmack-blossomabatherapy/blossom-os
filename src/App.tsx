@@ -82,6 +82,10 @@ import CrAuthorizationAnalysisPage from "./pages/os/reports/AuthorizationAnalysi
 import CrAuthorizationUtilizationPage from "./pages/os/reports/AuthorizationUtilizationPage";
 import CrClaimsQueuePage from "./pages/os/reports/ClaimsQueuePage";
 import CrPaymentReconciliationPage from "./pages/os/reports/PaymentReconciliationPage";
+import ClinicOperationsPage from "./pages/os/reports/ClinicOperationsPage";
+import AuthorizationCoverageRiskPage from "./pages/os/reports/AuthorizationCoverageRiskPage";
+import DocumentationReadinessPage from "./pages/os/reports/DocumentationReadinessPage";
+
 import CrBcbaSupervisionPage from "./pages/os/reports/BcbaSupervisionPage";
 import CrParentTrainingPage from "./pages/os/reports/ParentTrainingPage";
 import CrCommitToSubmitCompliancePage from "./pages/os/reports/CommitToSubmitCompliancePage";
@@ -1094,6 +1098,10 @@ const App = () => (
                   <Route path="/reports/parent-training" element={<ReportRoleGuard reportId="parent-training"><CrParentTrainingPage /></ReportRoleGuard>} />
                   <Route path="/reports/claims-submission-queue" element={<ReportRoleGuard reportId="claims-submission-queue"><CrClaimsQueuePage /></ReportRoleGuard>} />
                   <Route path="/reports/payment-reconciliation" element={<ReportRoleGuard reportId="payment-reconciliation"><CrPaymentReconciliationPage /></ReportRoleGuard>} />
+                  <Route path="/reports/clinic-operations" element={<ReportRoleGuard reportId="clinic-operations"><ClinicOperationsPage /></ReportRoleGuard>} />
+                  <Route path="/reports/authorization-coverage-risk" element={<ReportRoleGuard reportId="authorization-coverage-risk"><AuthorizationCoverageRiskPage /></ReportRoleGuard>} />
+                  <Route path="/reports/documentation-readiness" element={<ReportRoleGuard reportId="documentation-readiness"><DocumentationReadinessPage /></ReportRoleGuard>} />
+
                   <Route path="/reports/commit-to-submit-compliance" element={<ReportRoleGuard reportId="commit-to-submit-compliance"><CrCommitToSubmitCompliancePage /></ReportRoleGuard>} />
                   <Route path="/reports/bcba-supervision" element={<ReportRoleGuard reportId="bcba-supervision"><CrBcbaSupervisionPage /></ReportRoleGuard>} />
                   <Route path="/reports/authorization-utilization-hour-based-legacy" element={<ReportRoleGuard reportId="authorization-utilization-hour-based"><QaAuthUtilizationDashboard /></ReportRoleGuard>} />
