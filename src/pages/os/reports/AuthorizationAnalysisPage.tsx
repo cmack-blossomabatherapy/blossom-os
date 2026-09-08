@@ -360,8 +360,11 @@ type TabKey = (typeof TABS)[number]["key"];
 const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function AuthorizationCommandCenterPage() {
-  const data = useCrPrimaryReport(["authCurrent", "authEvents", "authActions", "billingFacts"]);
   const [filters, setFilters] = useUrlFilterState<PrimaryReportFilters>(DEFAULT_FILTERS);
+  const data = useCrPrimaryReport(["authCurrent", "authEvents", "authActions", "billingFacts"], {
+    from: filters.from || null,
+    to: filters.to || null,
+  });
   const [tabParam, setTabParam] = useUrlState("tab", "continuity");
   const tab = (TABS.some((t) => t.key === tabParam) ? tabParam : "continuity") as TabKey;
   const setTab = (next: TabKey) => setTabParam(next);

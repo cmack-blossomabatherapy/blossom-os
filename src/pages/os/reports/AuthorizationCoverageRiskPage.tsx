@@ -215,8 +215,11 @@ const scheduledGapCsv = (r: ScheduledCoverageGapRow): Record<string, unknown> =>
 
 
 export default function AuthorizationCoverageRiskPage() {
-  const data = useCrPrimaryReport(["authCurrent", "billingFacts", "scheduleCurrent"]);
   const [filters, setFilters] = useUrlFilterState({ ...EMPTY_FILTERS });
+  const data = useCrPrimaryReport(["authCurrent", "billingFacts", "scheduleCurrent"], {
+    from: filters.from || null,
+    to: filters.to || null,
+  });
   const [tabParam, setTabParam] = useUrlState("tab", "overview");
   const tab = (TABS.some((t) => t.key === tabParam) ? tabParam : "overview") as TabKey;
   const [drilldown, setDrilldown] = useState<DrilldownRequest | null>(null);
