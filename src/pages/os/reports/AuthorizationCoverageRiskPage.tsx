@@ -404,8 +404,7 @@ export default function AuthorizationCoverageRiskPage() {
     }
   };
 
-    }
-  };
+
 
   const exportDisabled =
     tab === "activity-gaps"
