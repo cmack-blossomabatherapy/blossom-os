@@ -173,8 +173,12 @@ export interface ClinicOperationsInput {
   today: string;
   /** `v_cr_schedule_current` coverage end from freshness, if known. */
   scheduleCoverageEnd: string | null;
+  /** `v_cr_schedule_current` coverage start from freshness, if known. */
+  scheduleCoverageStart?: string | null;
   /** Selected filter window end (`filters.to`), if set. */
   windowTo: string | null;
+  /** Selected filter window start (`filters.from`), if set. */
+  windowFrom?: string | null;
 }
 
 export function computeClinicOperations(input: ClinicOperationsInput): ClinicOperationsMetrics {
@@ -283,9 +287,12 @@ export function computeClinicOperations(input: ClinicOperationsInput): ClinicOpe
     if (isFuture) {
       agg.upcomingScheduledHours += hours;
     } else {
-      // Elapsed, kept session: check timesheet conversion.
+      // Elapsed, kept session: only an EXPLICITLY false conversion flag counts
+      // as unconverted work. A null/unknown flag is not evidence of a missing
+      // timesheet, so it is excluded rather than counted against the provider.
+      const conversionKnown = r.convertedToTimesheet != null;
       const converted = isConvertedToTimesheet(truthRow);
-      if (!converted) {
+      if (conversionKnown && !converted) {
         agg.elapsedUnconverted += 1;
         actionQueue.push({
           key: `unconverted-${r.eventDate}-${r.clientCrId ?? r.clientName}-${actionQueue.length}`,
@@ -338,16 +345,26 @@ export function computeClinicOperations(input: ClinicOperationsInput): ClinicOpe
   const totalCancellations = clinics.reduce((s, c) => s + c.strictCancellations, 0);
   const totalUnconverted = clinics.reduce((s, c) => s + c.elapsedUnconverted, 0);
 
-  const scheduleCoverageIncomplete = !!(
-    input.windowTo &&
-    input.scheduleCoverageEnd &&
-    input.windowTo > input.scheduleCoverageEnd
+  const endsAfterCoverage = !!(
+    input.windowTo && input.scheduleCoverageEnd && input.windowTo > input.scheduleCoverageEnd
   );
+  const startsBeforeCoverage = !!(
+    input.windowFrom &&
+    input.scheduleCoverageStart &&
+    input.windowFrom < input.scheduleCoverageStart
+  );
+  const scheduleCoverageIncomplete = endsAfterCoverage || startsBeforeCoverage;
 
   const warnings = [CLINIC_OPS_DATA_GAP_NOTE];
   if (scheduleCoverageIncomplete) {
+    const bounds = [
+      input.scheduleCoverageStart ? `from ${input.scheduleCoverageStart}` : null,
+      input.scheduleCoverageEnd ? `through ${input.scheduleCoverageEnd}` : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
     warnings.push(
-      `The selected date range extends past the scheduling snapshot coverage (through ${input.scheduleCoverageEnd}). Upcoming scheduled hours, cancellations, and timesheet-conversion status are incomplete for dates after that.`,
+      `The selected date range falls outside the scheduling snapshot coverage (${bounds}). Upcoming scheduled hours, cancellations, and timesheet-conversion status are incomplete for dates outside that window.`,
     );
   }
 

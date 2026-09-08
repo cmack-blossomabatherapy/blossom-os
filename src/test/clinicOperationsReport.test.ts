@@ -185,3 +185,54 @@ describe("incomplete schedule coverage flag", () => {
     expect(m.dataQualityWarnings).toContain(CLINIC_OPS_DATA_GAP_NOTE);
   });
 });
+
+describe("conversion flag honesty and both coverage boundaries", () => {
+  it("counts an elapsed session as unconverted only when the conversion flag is explicitly false", () => {
+    const m = computeClinicOperations({
+      ...base,
+      billing: [],
+      schedule: [
+        schedule({ eventDate: "2026-03-01", convertedToTimesheet: false }),
+        schedule({ eventDate: "2026-03-02", convertedToTimesheet: null, status: "Scheduled" }),
+      ],
+    });
+    expect(m.elapsedUnconverted).toBe(1);
+  });
+
+  it("flags coverage when the selected start is before source coverage start", () => {
+    const m = computeClinicOperations({
+      ...base,
+      windowFrom: "2026-02-01",
+      windowTo: "2026-03-15",
+      scheduleCoverageStart: "2026-03-01",
+      scheduleCoverageEnd: "2026-03-31",
+      billing: [],
+      schedule: [],
+    });
+    expect(m.scheduleCoverageIncomplete).toBe(true);
+  });
+
+  it("flags coverage when the selected end is after source coverage end, and not when fully inside", () => {
+    const outside = computeClinicOperations({
+      ...base,
+      windowFrom: "2026-03-05",
+      windowTo: "2026-04-10",
+      scheduleCoverageStart: "2026-03-01",
+      scheduleCoverageEnd: "2026-03-31",
+      billing: [],
+      schedule: [],
+    });
+    expect(outside.scheduleCoverageIncomplete).toBe(true);
+
+    const inside = computeClinicOperations({
+      ...base,
+      windowFrom: "2026-03-05",
+      windowTo: "2026-03-15",
+      scheduleCoverageStart: "2026-03-01",
+      scheduleCoverageEnd: "2026-03-31",
+      billing: [],
+      schedule: [],
+    });
+    expect(inside.scheduleCoverageIncomplete).toBe(false);
+  });
+});

@@ -124,9 +124,20 @@ export default function ClinicOperationsPage() {
         clinicScope,
         today,
         scheduleCoverageEnd: data.freshness.coverageEnd,
+        scheduleCoverageStart: data.freshness.coverageStart,
         windowTo: filters.to || null,
+        windowFrom: filters.from || null,
       }),
-    [billing, schedule, clinicScope, today, data.freshness.coverageEnd, filters.to],
+    [
+      billing,
+      schedule,
+      clinicScope,
+      today,
+      data.freshness.coverageEnd,
+      data.freshness.coverageStart,
+      filters.to,
+      filters.from,
+    ],
   );
 
   const filterFields = useMemo<FilterFieldConfig[]>(

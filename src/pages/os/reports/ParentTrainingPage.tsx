@@ -445,10 +445,15 @@ export default function ParentTrainingPage() {
           procedureCode: a.procedure_code,
           serviceCodes: a.service_codes,
           isActive: a.is_active,
+          actualStartDate: a.actual_start_date,
+          actualEndDate: a.actual_end_date,
+          startDate: a.start_date,
+          endDate: a.end_date,
         })),
         resolveOwner,
+        window: { from: filters.from, to: filters.to },
       }),
-    [billing, authRows, resolveOwner],
+    [billing, authRows, resolveOwner, filters.from, filters.to],
   );
 
   const complianceClientColumns: PrimaryTableColumn<PtcClientRow>[] = [
@@ -894,15 +899,21 @@ export default function ParentTrainingPage() {
         />
       )}
 
-      {tab === "compliance" && (
+      {tab === "compliance" && !complianceAnalysis.singleMonth && (
+        <ReportProvenance>{complianceAnalysis.unavailableReason}</ReportProvenance>
+      )}
+
+      {tab === "compliance" && complianceAnalysis.singleMonth && (
         <>
           <ReportProvenance>
             Compliance is a separate payer-policy view: completed, nonvoid, nondeleted billed 97156
             in the selected calendar month against each client's payor threshold (2.0 hr/month for
-            Peachstate, 0.25 hr/month for any other single documented payor). 97153 is shown for
-            activity context only and is never a denominator here. Clients with no documented 97156
-            payor show "{PTC_NO_TARGET_LABEL}"; clients with more than one distinct active 97156
-            authorization payor show "{NEEDS_PAYOR_REVIEW_LABEL}" rather than an arbitrary pick.
+            Peachstate, 0.25 hr/month for any other single documented payor). The client list
+            includes every client with an active, in-month 97156 authorization, so a client with an
+            authorization and no delivered hours still appears. 97153 is shown for activity context
+            only and is never a denominator here. Clients with no documented 97156 payor show "
+            {PTC_NO_TARGET_LABEL}"; clients with more than one distinct active 97156 authorization
+            payor show "{NEEDS_PAYOR_REVIEW_LABEL}" rather than an arbitrary pick.
           </ReportProvenance>
           <PrimaryTable
             title="Parent training compliance by BCBA"
