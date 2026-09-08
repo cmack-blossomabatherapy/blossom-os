@@ -82,6 +82,10 @@ import CrAuthorizationAnalysisPage from "./pages/os/reports/AuthorizationAnalysi
 import CrAuthorizationUtilizationPage from "./pages/os/reports/AuthorizationUtilizationPage";
 import CrClaimsQueuePage from "./pages/os/reports/ClaimsQueuePage";
 import CrPaymentReconciliationPage from "./pages/os/reports/PaymentReconciliationPage";
+import ClinicOperationsPage from "./pages/os/reports/ClinicOperationsPage";
+import AuthorizationCoverageRiskPage from "./pages/os/reports/AuthorizationCoverageRiskPage";
+import DocumentationReadinessPage from "./pages/os/reports/DocumentationReadinessPage";
+
 import CrBcbaSupervisionPage from "./pages/os/reports/BcbaSupervisionPage";
 import CrParentTrainingPage from "./pages/os/reports/ParentTrainingPage";
 import CrCommitToSubmitCompliancePage from "./pages/os/reports/CommitToSubmitCompliancePage";
