@@ -435,7 +435,7 @@ export default function AuthorizationCoverageRiskPage() {
         <PrimaryFilterBar
           filters={filters}
           onChange={setFilters}
-          onReset={() => setFilters({ ...EMPTY_FILTERS })}
+          onReset={() => setFilters(DEFAULT_FILTERS)}
           fields={filterFields}
         />
       }
