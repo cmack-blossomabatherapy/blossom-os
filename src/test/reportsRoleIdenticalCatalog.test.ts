@@ -36,42 +36,43 @@ function idsFor(role: string) {
 const SHARED_PRIMARY = PRIMARY.filter((id) => !ROLE_RESTRICTED_PRIMARY_REPORT_IDS.has(id));
 
 /**
- * The shared catalog is identical for every OS role: 8 shared primary cards +
- * 9 department dashboards = 17. The two finance reports (claims submission,
+ * The shared catalog is identical for every OS role: 11 shared primary cards +
+ * 9 department dashboards = 20. The two finance reports (claims submission,
  * payment reconciliation) keep their own catalog `visibleTo` restriction, so an
- * eligible finance/leadership role sees up to 19 cards.
+ * eligible finance/leadership role sees up to 22 cards.
  */
 describe("/reports catalog", () => {
   const baseline = idsFor("super_admin").filter(
     (id) => !ROLE_RESTRICTED_PRIMARY_REPORT_IDS.has(id),
   );
 
-  it("shared baseline is exactly the 8 shared primary + 9 department dashboards", () => {
-    expect(SHARED_PRIMARY).toHaveLength(8);
+  it("shared baseline is exactly the 11 shared primary + 9 department dashboards", () => {
+    expect(SHARED_PRIMARY).toHaveLength(11);
     expect(visibleDepartmentDashboardsForRole("super_admin").map((r) => r.id).sort())
       .toEqual([...DEPARTMENTS].sort());
-    expect(baseline).toHaveLength(17);
+    expect(baseline).toHaveLength(20);
   });
 
   for (const r of OS_ROLES) {
-    it(`${r.id} sees the identical 17-card shared catalog with no duplicates`, () => {
+    it(`${r.id} sees the identical 20-card shared catalog with no duplicates`, () => {
       const all = idsFor(r.id);
       const shared = all.filter((id) => !ROLE_RESTRICTED_PRIMARY_REPORT_IDS.has(id));
       expect(shared).toEqual(baseline);
-      expect(shared).toHaveLength(17);
+      expect(shared).toHaveLength(20);
       expect(new Set(all).size).toBe(all.length);
       for (const id of SHARED_PRIMARY) expect(shared).toContain(id);
       for (const id of DEPARTMENTS) expect(shared).toContain(id);
-      expect(all.length).toBeLessThanOrEqual(19);
+      expect(all.length).toBeLessThanOrEqual(22);
     });
   }
 
   it("no role sees a legacy catalog of 81 / 85 reports", () => {
     for (const r of OS_ROLES) {
-      expect(idsFor(r.id).length).toBeGreaterThanOrEqual(17);
-      expect(idsFor(r.id).length).toBeLessThanOrEqual(19);
+      expect(idsFor(r.id).length).toBeGreaterThanOrEqual(20);
+      expect(idsFor(r.id).length).toBeLessThanOrEqual(22);
     }
   });
+
 
   it("every visible card routes to a mounted page, never /coming-soon", () => {
     expect(genericRoute).toBe(true);
