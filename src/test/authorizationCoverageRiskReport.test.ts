@@ -108,8 +108,11 @@ describe("computeAuthorizationCoverageRisk", () => {
     const metrics = computeAuthorizationCoverageRisk(auths, [], [], TODAY);
     expect(metrics.clientsWithoutCoverage).toHaveLength(1);
     const note = metrics.clientsWithoutCoverage[0].note.toLowerCase();
-    expect(note).toContain("confirmation");
-    expect(note).not.toContain("confirmed service pause");
+    // The note must ask for confirmation and must never assert a pause as fact.
+    expect(note).toContain("needs confirmation");
+    expect(note).not.toMatch(/\bis (a )?confirmed\b/);
+    expect(note).not.toMatch(/\bpaused\b/);
+
   });
 
   it("flags future kept scheduled activity with no matched active coverage", () => {
