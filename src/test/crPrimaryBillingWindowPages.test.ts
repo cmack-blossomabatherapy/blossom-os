@@ -45,7 +45,7 @@ describe("date-capable non-V3 billing-fact report pages", () => {
     expect(text).toMatch(/withCurrentMonthDefault/);
     expect(text).toMatch(/const DEFAULT_FILTERS = withCurrentMonthDefault\(EMPTY_FILTERS\)/);
     expect(text).toMatch(/useUrlFilterState\(DEFAULT_FILTERS\)/);
-    expect(text).toMatch(/onReset\(\(\) => setFilters\(DEFAULT_FILTERS\)\)/);
+    expect(text).toMatch(/onReset=\{\(\) => setFilters\(DEFAULT_FILTERS\)\}/);
     // All Dates is still reachable: the loader passes null when filters are blank.
     expect(text).toMatch(/from: filters\.from \|\| null,\s*to: filters\.to \|\| null/);
   });
