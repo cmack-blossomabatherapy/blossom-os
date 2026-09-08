@@ -105,3 +105,28 @@ describe("cancellation report defaults and URL state", () => {
     expect(page).toContain("Cancellation follow-up queue");
   });
 });
+
+describe("coverage warning is deduplicated", () => {
+  it("passes the coverage warning to the shell via dataQualityWarnings only once", () => {
+    // The warning is computed once and routed through the shared shell's
+    // data-quality section — never duplicated as an inline banner.
+    expect(page).toContain("dataQualityWarnings");
+    expect(page).toMatch(/coverageOutsideRangeWarning/);
+    // Set-based dedup preserves order while collapsing identical strings.
+    expect(page).toMatch(/new Set\(/);
+  });
+
+  it("does not render the coverage warning as a separate inline ReportProvenance banner", () => {
+    // After dedup the coverage warning lives only in dataQualityWarnings.
+    // Count how many times the coverageWarning JSX expression appears as a
+    // rendered child — it must be zero outside the dataQualityWarnings array.
+    const inlineMatches = page.match(/\{coverageWarning\s*&&\s*<ReportProvenance/g) ?? [];
+    expect(inlineMatches.length).toBe(0);
+  });
+
+  it("still computes coverageWarning for the data-quality array", () => {
+    // The warning variable is still computed and still feeds dataQualityWarnings.
+    expect(page).toMatch(/coverageWarning\s*=\s*useMemo/);
+    expect(page).toMatch(/dataQualityWarnings.*coverageWarning/s);
+  });
+});
