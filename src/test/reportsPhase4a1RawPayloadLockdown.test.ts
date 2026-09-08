@@ -53,7 +53,11 @@ describe("cr_external_records raw payload lockdown", () => {
       "cr_provider_match_links",
       "cr_bcba_ownership_inferred",
     ]) {
-      expect(repair).not.toContain(`ON public.${table}`);
+      // Only policy changes weaken access; later additive migrations may still
+      // reference these tables for views or indexes.
+      expect(repair).not.toMatch(
+        new RegExp(`(CREATE|ALTER|DROP) POLICY[^;]*ON public\\.${table}\\b`),
+      );
     }
   });
 

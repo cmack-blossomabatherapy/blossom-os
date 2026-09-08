@@ -94,9 +94,13 @@ describe("Data Hub readiness maps snapshot kinds to curated current views", () =
     expect(store).toMatch(/\["timesheet", "v_cr_timesheet_documentation"\]/);
   });
 
-  it("leaves billing and claims counting their base tables", () => {
+  it("leaves billing counting its append-fact base table", () => {
     expect(store).toMatch(/\["billing", "cr_billing_sessions"\]/);
-    expect(store).toMatch(/\["claims", "cr_claims"\]/);
+  });
+
+  it("counts claims from the curated current view", () => {
+    expect(store).toMatch(/\["claims", "v_cr_claims_current"\]/);
+    expect(store).not.toMatch(/\["claims", "cr_claims"\]/);
   });
 
   it("no longer counts historical base tables for snapshot kinds", () => {
