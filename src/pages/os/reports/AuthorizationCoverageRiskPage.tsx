@@ -339,23 +339,50 @@ export default function AuthorizationCoverageRiskPage() {
     });
 
   const openCoverageGaps = (title: string, subtitle: string, rows: CoverageGapRow[], exportName: string) =>
-    setDrilldown({ title, subtitle, rows, columns: COVERAGE_GAP_EXPORT_COLUMNS, exportName });
+    setDrilldown({
+      title,
+      subtitle,
+      rows: rows.map(coverageGapCsv),
+      columns: COVERAGE_GAP_EXPORT_COLUMNS,
+      exportName,
+    });
 
   const openBillingGaps = (title: string, subtitle: string, rows: BillingCoverageGapRow[], exportName: string) =>
-    setDrilldown({ title, subtitle, rows, columns: BILLING_GAP_EXPORT_COLUMNS, exportName });
+    setDrilldown({
+      title,
+      subtitle,
+      rows: rows.map(billingGapCsv),
+      columns: BILLING_GAP_EXPORT_COLUMNS,
+      exportName,
+    });
 
   const openScheduledGaps = (
     title: string,
     subtitle: string,
     rows: ScheduledCoverageGapRow[],
     exportName: string,
-  ) => setDrilldown({ title, subtitle, rows, columns: SCHEDULED_GAP_EXPORT_COLUMNS, exportName });
+  ) =>
+    setDrilldown({
+      title,
+      subtitle,
+      rows: rows.map(scheduledGapCsv),
+      columns: SCHEDULED_GAP_EXPORT_COLUMNS,
+      exportName,
+    });
 
   const exportForTab = () => {
     if (tab === "activity-gaps") {
-      downloadCsv("authorization-coverage-risk-billing-gaps", metrics.billingGaps, BILLING_GAP_EXPORT_COLUMNS);
+      downloadCsv(
+        "authorization-coverage-risk-billing-gaps",
+        metrics.billingGaps.map(billingGapCsv),
+        BILLING_GAP_EXPORT_COLUMNS,
+      );
     } else if (tab === "scheduled-gaps") {
-      downloadCsv("authorization-coverage-risk-scheduled-gaps", metrics.scheduledGaps, SCHEDULED_GAP_EXPORT_COLUMNS);
+      downloadCsv(
+        "authorization-coverage-risk-scheduled-gaps",
+        metrics.scheduledGaps.map(scheduledGapCsv),
+        SCHEDULED_GAP_EXPORT_COLUMNS,
+      );
     } else if (tab === "data-gaps") {
       downloadCsv(
         "authorization-coverage-risk-data-gaps",
@@ -371,9 +398,12 @@ export default function AuthorizationCoverageRiskPage() {
     } else {
       downloadCsv(
         "authorization-coverage-risk-overview",
-        metrics.clientsWithoutCoverage,
+        metrics.clientsWithoutCoverage.map(coverageGapCsv),
         COVERAGE_GAP_EXPORT_COLUMNS,
       );
+    }
+  };
+
     }
   };
 
