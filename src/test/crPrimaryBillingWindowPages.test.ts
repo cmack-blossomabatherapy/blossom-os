@@ -39,4 +39,14 @@ describe("date-capable non-V3 billing-fact report pages", () => {
     const text = readFileSync("src/pages/os/reports/CancellationCommandCenter.tsx", "utf8");
     expect(text).toMatch(/useCrPrimaryReport\(\["scheduleCurrent"\]\)/);
   });
+
+  it("defaults Authorization Coverage Risk to the current month, not All Dates", () => {
+    const text = readFileSync("src/pages/os/reports/AuthorizationCoverageRiskPage.tsx", "utf8");
+    expect(text).toMatch(/withCurrentMonthDefault/);
+    expect(text).toMatch(/const DEFAULT_FILTERS = withCurrentMonthDefault\(EMPTY_FILTERS\)/);
+    expect(text).toMatch(/useUrlFilterState\(DEFAULT_FILTERS\)/);
+    expect(text).toMatch(/onReset\(\(\) => setFilters\(DEFAULT_FILTERS\)\)/);
+    // All Dates is still reachable: the loader passes null when filters are blank.
+    expect(text).toMatch(/from: filters\.from \|\| null,\s*to: filters\.to \|\| null/);
+  });
 });
