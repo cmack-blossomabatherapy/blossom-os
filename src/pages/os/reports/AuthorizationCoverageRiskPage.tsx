@@ -212,10 +212,10 @@ const scheduledGapCsv = (r: ScheduledCoverageGapRow): Record<string, unknown> =>
   code: r.code,
   note: r.note,
 });
-
+const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function AuthorizationCoverageRiskPage() {
-  const [filters, setFilters] = useUrlFilterState({ ...EMPTY_FILTERS });
+  const [filters, setFilters] = useUrlFilterState(DEFAULT_FILTERS);
   const data = useCrPrimaryReport(["authCurrent", "billingFacts", "scheduleCurrent"], {
     from: filters.from || null,
     to: filters.to || null,
