@@ -55,16 +55,20 @@ import {
   dayOfWeekLabel,
 } from "@/lib/os/reports/crPrimary/scheduleTruth";
 import {
+  localIsoDate,
   previousWindow,
   withCurrentMonthDefault,
 } from "@/lib/os/reports/crPrimary/reportWindow";
 import {
   CONVERSION_TIMING_NOTE,
+  ELAPSED_CONVERSION_NOTE,
   NOT_DOCUMENTED,
   buildCancellationIdentity,
   cancellationReasonBucket,
   computeCancellationCenter,
+  coverageOutsideRangeWarning,
   eventCode,
+  isElapsedScheduleEvent,
   type CancellationFollowUpEventRow,
   type CancellationFollowUpRow,
   type CancellationGroupRow,
@@ -217,9 +221,28 @@ export default function CancellationCommandCenter() {
    */
   const identity = useMemo(() => buildCancellationIdentity(allRows), [allRows]);
 
+  const today = useMemo(() => localIsoDate(), []);
+
   const metrics = useMemo(
-    () => computeCancellationCenter(rows, { previous: previousRows, identity }),
-    [rows, previousRows, identity],
+    () => computeCancellationCenter(rows, { previous: previousRows, identity, today }),
+    [rows, previousRows, identity, today],
+  );
+
+  /** Warn out loud whenever the selected filter window reaches outside the scheduling snapshot's proven coverage. */
+  const coverageWarning = useMemo(
+    () =>
+      coverageOutsideRangeWarning({
+        filterFrom: filters.from,
+        filterTo: filters.to,
+        coverageStart: data.freshness.coverageStart,
+        coverageEnd: data.freshness.coverageEnd,
+      }),
+    [filters.from, filters.to, data.freshness.coverageStart, data.freshness.coverageEnd],
+  );
+
+  const dataQualityWarnings = useMemo(
+    () => (coverageWarning ? [coverageWarning] : []),
+    [coverageWarning],
   );
 
   const filterFields = useMemo<FilterFieldConfig[]>(
@@ -252,8 +275,14 @@ export default function CancellationCommandCenter() {
    * because the source carries no conversion timestamp.
    */
   const unconvertedQueue = useMemo(
-    () => rows.filter((r) => isActiveScheduleEvent(r) && r.converted_to_timesheet === false),
-    [rows],
+    () =>
+      rows.filter(
+        (r) =>
+          isActiveScheduleEvent(r) &&
+          r.converted_to_timesheet === false &&
+          isElapsedScheduleEvent(r, today),
+      ),
+    [rows, today],
   );
 
   const unconvertedColumns: PrimaryTableColumn<CrScheduleCurrentRow>[] = [
@@ -386,7 +415,7 @@ export default function CancellationCommandCenter() {
         id: "conversion-rate",
         label: "Timesheet conversion",
         value: fmtPct(metrics.conversion.conversionRate),
-        hint: `${fmtCount(metrics.conversion.converted)} converted of ${fmtCount(metrics.conversion.knownStates)} events with a reported state · ${fmtCount(metrics.conversion.unknown)} not reported`,
+        hint: `${fmtCount(metrics.conversion.converted)} converted of ${fmtCount(metrics.conversion.knownStates)} elapsed events with a reported state · ${fmtCount(metrics.conversion.unknown)} not reported`,
         tone:
           metrics.conversion.conversionRate == null
             ? ("neutral" as const)
@@ -400,21 +429,21 @@ export default function CancellationCommandCenter() {
         id: "converted",
         label: "Converted",
         value: fmtCount(metrics.conversion.converted),
-        hint: "Active nondeleted events the source reports as converted to a timesheet",
+        hint: "Elapsed active nondeleted events the source reports as converted to a timesheet",
         tone: "good" as const,
       },
       {
         id: "not-converted",
         label: "Unconverted",
         value: fmtCount(metrics.conversion.unconverted),
-        hint: "Active events the source reports as not converted to a timesheet",
+        hint: "Elapsed active events (already past their scheduled date) the source reports as not converted to a timesheet",
         tone: metrics.conversion.unconverted > 0 ? ("warn" as const) : ("good" as const),
       },
       {
         id: "conversion-unknown",
         label: "Conversion not reported",
         value: fmtCount(metrics.conversion.unknown),
-        hint: "No conversion flag on the source event — excluded from the rate denominator",
+        hint: "No conversion flag on an elapsed source event — excluded from the rate denominator",
         tone: metrics.conversion.unknown > 0 ? ("warn" as const) : ("good" as const),
       },
     ],
@@ -463,24 +492,39 @@ export default function CancellationCommandCenter() {
     if (id === "not-converted") {
       return openDrilldown(
         "Active events not converted to a timesheet",
-        "The source reports these nondeleted events as not converted. Conversion timing is not available from this source, so this is a state, not a lateness measure.",
-        rows.filter((r) => isActiveScheduleEvent(r) && r.converted_to_timesheet === false),
+        "The source reports these elapsed, nondeleted events as not converted. Conversion timing is not available from this source, so this is a state, not a lateness measure. Future-dated appointments are never included here.",
+        rows.filter(
+          (r) =>
+            isActiveScheduleEvent(r) &&
+            r.converted_to_timesheet === false &&
+            isElapsedScheduleEvent(r, today),
+        ),
         "events-not-converted",
       );
     }
     if (id === "conversion-unknown") {
       return openDrilldown(
         "Active events with no reported conversion state",
-        "The source carries no conversion flag for these events, so they are excluded from the conversion rate rather than counted as unconverted.",
-        rows.filter((r) => isActiveScheduleEvent(r) && r.converted_to_timesheet == null),
+        "The source carries no conversion flag for these elapsed events, so they are excluded from the conversion rate rather than counted as unconverted.",
+        rows.filter(
+          (r) =>
+            isActiveScheduleEvent(r) &&
+            isElapsedScheduleEvent(r, today) &&
+            r.converted_to_timesheet == null,
+        ),
         "events-conversion-not-reported",
       );
     }
     if (id === "conversion-rate" || id === "converted") {
       return openDrilldown(
         "Active events converted to a timesheet",
-        "Converted ÷ (converted + not converted). Events with no reported state are excluded from the denominator.",
-        rows.filter((r) => isActiveScheduleEvent(r) && r.converted_to_timesheet === true),
+        "Converted ÷ (converted + not converted), elapsed events only. Events with no reported state are excluded from the denominator.",
+        rows.filter(
+          (r) =>
+            isActiveScheduleEvent(r) &&
+            isElapsedScheduleEvent(r, today) &&
+            r.converted_to_timesheet === true,
+        ),
         "events-converted",
       );
     }
@@ -796,6 +840,7 @@ export default function CancellationCommandCenter() {
       loading={data.loading}
       empty={data.empty}
       errorMessage={data.errorMessage}
+      dataQualityWarnings={dataQualityWarnings}
       onRefresh={data.refresh}
       onExport={exportView}
       exportDisabled={cancelledRows.length === 0}
@@ -837,6 +882,10 @@ export default function CancellationCommandCenter() {
       }
     >
       <div className="space-y-5">
+        {coverageWarning && (
+          <ReportProvenance tone="warn">{coverageWarning}</ReportProvenance>
+        )}
+
         <ReportProvenance tone={metrics.truth.mode === "explicit" ? "info" : "warn"}>
           {metrics.truth.label} Deleted events are excluded from every count, and every nondeleted
           event in range — cancellations included — is the cancellation-rate denominator. Clients and
@@ -858,11 +907,16 @@ export default function CancellationCommandCenter() {
 
         {view === "conversion" ? (
           <div className="space-y-5">
+            {coverageWarning && (
+              <ReportProvenance tone="warn">{coverageWarning}</ReportProvenance>
+            )}
             <ReportProvenance>
-              Conversion counts only active nondeleted sessions whose conversion state the source
-              actually reports. Deleted events are excluded entirely, events with no conversion flag
-              are shown as an explicit unknown state and are excluded from the rate denominator, and
-              nothing here is ever labelled converted late. {CONVERSION_TIMING_NOTE}
+              Conversion counts only ELAPSED active nondeleted sessions — the event date must be
+              strictly before today — whose conversion state the source actually reports. A
+              future-dated appointment is never unconverted work. Deleted events are excluded
+              entirely, events with no conversion flag are shown as an explicit unknown state and are
+              excluded from the rate denominator, and nothing here is ever labelled converted late.{" "}
+              {ELAPSED_CONVERSION_NOTE} {CONVERSION_TIMING_NOTE}
             </ReportProvenance>
 
             <KpiScorecards kpis={conversionKpis} onSelect={handleKpi} />
@@ -885,6 +939,7 @@ export default function CancellationCommandCenter() {
                     rows.filter(
                       (r) =>
                         isActiveScheduleEvent(r) &&
+                        isElapsedScheduleEvent(r, today) &&
                         (label === "Converted"
                           ? r.converted_to_timesheet === true
                           : label === "Not converted"
@@ -933,7 +988,7 @@ export default function CancellationCommandCenter() {
 
             <PrimaryTable
               title="Timesheet conversion queue"
-              subtitle="Active nondeleted sessions the source states were not converted to a timesheet. The source records whether an event converted, never when, so nothing here is ever labelled converted late."
+              subtitle="Elapsed active nondeleted sessions (event date already past) the source states were not converted to a timesheet. Future-dated appointments are never included, and the source records whether an event converted, never when, so nothing here is ever labelled converted late."
               rows={unconvertedQueue}
               rowKey={(r) => r.id}
               columns={unconvertedColumns}
