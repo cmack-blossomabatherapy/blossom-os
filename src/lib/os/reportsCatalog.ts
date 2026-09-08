@@ -531,11 +531,15 @@ export const PRIMARY_REPORT_IDS = [
   "cancellation-command-center",
   "authorization-analysis",
   "authorization-utilization-hour-based",
+  "authorization-coverage-risk",
+  "clinic-operations",
   "parent-training",
   "bcba-supervision",
   "bcba-performance",
+  "documentation-readiness",
   "commit-to-submit-compliance",
   "claims-submission-queue",
+
   "payment-reconciliation",
 ] as const;
 
