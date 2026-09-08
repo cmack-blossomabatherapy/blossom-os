@@ -26,7 +26,7 @@ import { applyFilters, optionsFor } from "@/lib/os/reports/crPrimary/filters";
 import { EMPTY_FILTERS, type DrilldownRequest, type KpiDefinition } from "@/lib/os/reports/crPrimary/types";
 import { fmtCount, fmtDate, fmtHours } from "@/lib/os/reports/crPrimary/format";
 import { downloadCsv } from "@/lib/os/reports/crPrimary/csv";
-import { localIsoDate } from "@/lib/os/reports/crPrimary/reportWindow";
+import { localIsoDate, withCurrentMonthDefault } from "@/lib/os/reports/crPrimary/reportWindow";
 import {
   computeAuthorizationCoverageRisk,
   NOT_DOCUMENTED,
@@ -212,10 +212,10 @@ const scheduledGapCsv = (r: ScheduledCoverageGapRow): Record<string, unknown> =>
   code: r.code,
   note: r.note,
 });
-
+const DEFAULT_FILTERS = withCurrentMonthDefault(EMPTY_FILTERS);
 
 export default function AuthorizationCoverageRiskPage() {
-  const [filters, setFilters] = useUrlFilterState({ ...EMPTY_FILTERS });
+  const [filters, setFilters] = useUrlFilterState(DEFAULT_FILTERS);
   const data = useCrPrimaryReport(["authCurrent", "billingFacts", "scheduleCurrent"], {
     from: filters.from || null,
     to: filters.to || null,
@@ -435,7 +435,7 @@ export default function AuthorizationCoverageRiskPage() {
         <PrimaryFilterBar
           filters={filters}
           onChange={setFilters}
-          onReset={() => setFilters({ ...EMPTY_FILTERS })}
+          onReset={() => setFilters(DEFAULT_FILTERS)}
           fields={filterFields}
         />
       }
