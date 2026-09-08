@@ -241,7 +241,7 @@ export default function CancellationCommandCenter() {
   );
 
   const dataQualityWarnings = useMemo(
-    () => (coverageWarning ? [coverageWarning] : []),
+    () => [...new Set((coverageWarning ? [coverageWarning] : []).filter(Boolean))],
     [coverageWarning],
   );
 
@@ -882,10 +882,6 @@ export default function CancellationCommandCenter() {
       }
     >
       <div className="space-y-5">
-        {coverageWarning && (
-          <ReportProvenance tone="warn">{coverageWarning}</ReportProvenance>
-        )}
-
         <ReportProvenance tone={metrics.truth.mode === "explicit" ? "info" : "warn"}>
           {metrics.truth.label} Deleted events are excluded from every count, and every nondeleted
           event in range — cancellations included — is the cancellation-rate denominator. Clients and
@@ -907,9 +903,6 @@ export default function CancellationCommandCenter() {
 
         {view === "conversion" ? (
           <div className="space-y-5">
-            {coverageWarning && (
-              <ReportProvenance tone="warn">{coverageWarning}</ReportProvenance>
-            )}
             <ReportProvenance>
               Conversion counts only ELAPSED active nondeleted sessions — the event date must be
               strictly before today — whose conversion state the source actually reports. A
